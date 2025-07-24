@@ -105,152 +105,642 @@ The standalone API may adopt technologies not present in the mother repository:
    - Cloud-specific services
 
 2. **Government Standards**
+   - [API Technical Guidance (DoD CTO, July 2024)](https://www.cto.mil/wp-content/uploads/2024/08/API-Tech-Guidance-MVCR1-July2024-Cleared.pdf)
+   - [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework)
    - FedRAMP compliance tools
    - FISMA security controls
-   - Accessibility standards
+   - Accessibility standards (Section 508)
    - Performance benchmarks
 
 ## Extraction Strategy
 
-### Approach: Copy with History Preservation
+### Component-Based Iterative Approach
 
-We will use a **selective extraction** approach that:
-1. Preserves git history for API-related files
-2. Maintains the API code in the mother repository
-3. Establishes a clear baseline for future synchronization
-4. Allows for independent evolution of both codebases
+We will use a **component-based extraction** approach that focuses on understanding dependencies and extracting components incrementally:
 
-### Why Not Fork?
-- A fork implies the entire repository, not just the API
-- Forking creates unnecessary overhead
-- We want a clean, API-only repository structure
+1. **Identify components and sub-components**, understand their inter-dependencies
+2. **Copy over the least inter-dependent sub-component first** to the new repository
+3. **Perform exhaustive tests** on the newly copied sub-component
+4. **Create/update related documentation** for the extracted component
+5. **Repeat the process** with other sub-components until the API is fully standalone
 
-## Pre-Extraction Checklist
+### Why Component-Based Extraction?
+- Reduces risk by validating each component independently
+- Allows for iterative improvements and adjustments
+- Ensures thorough testing at each step
+- Creates clear documentation for each component
+- Enables better understanding of the codebase structure
+- **Provides opportunity to enhance each component during extraction**
 
-### 1. Analysis Phase
-- [ ] Document all API endpoints and their dependencies
-- [ ] Identify shared utilities that need copying
-- [ ] List integration points with mother repo
-- [ ] Document environment variables and configurations
-- [ ] Map all external service dependencies
+### Improvement Philosophy: Extract and Enhance
 
-### 2. Planning Phase
-- [ ] Define synchronization strategy
-- [ ] Establish versioning approach
-- [ ] Plan branching strategy for both repos
-- [ ] Document team responsibilities
-- [ ] Create communication protocols
+Each component extraction presents an opportunity to improve security, reliability, performance, and code quality. Rather than simply copying code, we'll enhance each component to meet GSA standards and modern best practices.
 
-### 3. Technical Preparation
-- [ ] Ensure all API tests can run independently
-- [ ] Document API-specific deployment process
-- [ ] Prepare standalone documentation
-- [ ] Plan monitoring and logging strategy
-- [ ] Review security considerations
+#### Improvement Categories Applied During Extraction
 
-## Extraction Steps
+1. **Security Enhancements**
+   - Replace vulnerable patterns with secure implementations
+   - Add comprehensive input validation and sanitization
+   - Implement proper authentication and authorization
+   - Add security headers and protective middleware
+   - Implement comprehensive audit logging
 
-### Phase 1: Repository Preparation (Day 1)
+2. **Reliability Improvements**
+   - Add comprehensive error handling and recovery
+   - Implement retry mechanisms with exponential backoff
+   - Add circuit breakers for external dependencies
+   - Implement detailed health checks and monitoring
+   - Add distributed tracing and metrics collection
 
-1. **Create extraction workspace**
+3. **Performance Optimizations**
+   - Implement strategic caching layers
+   - Add database query optimization and indexing
+   - Implement pagination, filtering, and field selection
+   - Add response compression and streaming
+   - Optimize resource usage and connection pooling
+
+4. **Code Quality Standards**
+   - Add type hints to all functions and methods
+   - Implement comprehensive testing (>80% coverage)
+   - Add detailed documentation and examples
+   - Implement strict linting and formatting rules
+   - Add automated code review standards
+
+## Component Analysis
+
+### API Components Identification
+
+1. **Core Framework Components**
+   - FastAPI application structure
+   - Main application entry point
+   - Application configuration
+   - Dependency injection setup
+
+2. **API Endpoint Components**
+   - Health check endpoints
+   - Authentication endpoints
+   - Business logic endpoints
+   - Administrative endpoints
+
+3. **Middleware & Utilities**
+   - Request/response middleware
+   - Error handling
+   - Logging utilities
+   - Validation helpers
+
+4. **Data Layer Components**
+   - Database models
+   - Migration system
+   - Repository patterns
+   - Database utilities
+
+5. **Security Components**
+   - Authentication system (currently Keycloak-dependent)
+   - Authorization middleware
+   - Security headers
+   - Rate limiting
+
+6. **External Integration Components**
+   - APISIX gateway integration
+   - External service clients
+   - Third-party API integrations
+
+### Dependency Analysis
+
+| Component | Dependencies | Extraction Priority |
+|-----------|--------------|-------------------|
+| Core Framework | None | 1 - First |
+| Health Endpoints | Core Framework | 2 - Second |
+| Configuration | Core Framework | 2 - Second |
+| Logging/Utilities | Core Framework | 3 - Third |
+| Database Models | Core Framework, Config | 4 - Fourth |
+| Basic API Endpoints | Core, Models, Utils | 5 - Fifth |
+| Authentication | Major refactoring needed | 6 - Last |
+| External Integrations | Remove/Replace | 7 - Optional |
+
+## Extraction Steps with Improvements
+
+### Phase 1: Core Framework Extraction (Week 1)
+
+#### Component: FastAPI Application Structure
+
+**Improvements to Apply:**
+- ✅ **Security**: Implement security headers middleware (HSTS, CSP, X-Frame-Options)
+- ✅ **Security**: Add CORS with restrictive default policy
+- ✅ **Security**: Implement request ID tracking for audit trails
+- ✅ **Reliability**: Add comprehensive error handling framework
+- ✅ **Reliability**: Implement structured logging with correlation IDs
+- ✅ **Performance**: Add response compression middleware
+- ✅ **Performance**: Implement request/response timing metrics
+- ✅ **Quality**: Enforce strict type hints from the start
+- ✅ **Quality**: Set up pre-commit hooks for code quality
+
+1. **Setup New Repository with Enhanced Structure**
    ```bash
-   mkdir violentutf-extraction
-   cd violentutf-extraction
+   # Create new repository with quality controls
+   mkdir violentutf-api
+   cd violentutf-api
+   git init
 
-   # Clone mother repository
-   git clone https://github.com/GSA-TTS/violentutf.git
+   # Create enhanced structure
+   mkdir -p app/{core,api,middleware,models,utils} tests/{unit,integration,security} docs/{api,architecture}
+   touch app/__init__.py app/main.py
+
+   # Set up quality tools from start
+   pip install pre-commit black isort flake8 mypy pytest pytest-cov bandit safety
    ```
 
-2. **Create history-preserved extraction**
-   ```bash
-   # Clone again for extraction
-   git clone https://github.com/GSA-TTS/violentutf.git violentutf-api-extract
-   cd violentutf-api-extract
+2. **Extract and Enhance Core Framework**
+   ```python
+   # app/main.py - Enhanced with security and monitoring
+   from fastapi import FastAPI
+   from fastapi.middleware.cors import CORSMiddleware
+   from fastapi.middleware.gzip import GZipMiddleware
+   from starlette.middleware.sessions import SessionMiddleware
 
-   # Use git filter-repo to extract with history
-   git filter-repo \
-     --path violentutf_api/ \
-     --path tests/api_tests/ \
-     --path tests/test_orchestrator_api.py \
-     --path tests/test_unit_api_endpoints.py \
-     --path tests/test_apisix_integration.py
+   from app.core.config import settings
+   from app.middleware.security import SecurityHeadersMiddleware
+   from app.middleware.logging import LoggingMiddleware
+   from app.middleware.metrics import MetricsMiddleware
+   from app.core.errors import setup_exception_handlers
+
+   def create_application() -> FastAPI:
+       app = FastAPI(
+           title=settings.PROJECT_NAME,
+           version=settings.VERSION,
+           openapi_url=f"{settings.API_V1_STR}/openapi.json",
+           docs_url=f"{settings.API_V1_STR}/docs",
+           redoc_url=f"{settings.API_V1_STR}/redoc",
+       )
+
+       # Security middleware
+       app.add_middleware(SecurityHeadersMiddleware)
+       app.add_middleware(
+           CORSMiddleware,
+           allow_origins=settings.ALLOWED_ORIGINS,
+           allow_credentials=True,
+           allow_methods=["GET", "POST", "PUT", "DELETE"],
+           allow_headers=["*"],
+       )
+
+       # Performance middleware
+       app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+       # Monitoring middleware
+       app.add_middleware(MetricsMiddleware)
+       app.add_middleware(LoggingMiddleware)
+
+       # Session middleware with secure settings
+       app.add_middleware(
+           SessionMiddleware,
+           secret_key=settings.SECRET_KEY,
+           https_only=True,
+           same_site="strict"
+       )
+
+       # Setup exception handlers
+       setup_exception_handlers(app)
+
+       return app
+
+   app = create_application()
    ```
 
-### Phase 2: Repository Restructuring (Day 2)
+3. **Implement Enhanced Configuration**
+   ```python
+   # app/core/config.py - With validation and security
+   from typing import List, Optional
+   from pydantic import BaseSettings, validator, SecretStr
+   from functools import lru_cache
 
-1. **Reorganize directory structure**
-   ```bash
-   # Flatten the structure
-   mv violentutf_api/fastapi_app/* .
-   mv violentutf_api/migrations ./migrations
-   mv violentutf_api/docker-compose.yml ./docker-compose.yml
+   class Settings(BaseSettings):
+       PROJECT_NAME: str = "ViolentUTF API"
+       VERSION: str = "1.0.0"
+       API_V1_STR: str = "/api/v1"
 
-   # Move tests to appropriate location
-   mkdir -p tests/integration
-   mv tests/api_tests/* tests/
-   mv tests/test_*api*.py tests/integration/
+       # Security settings
+       SECRET_KEY: SecretStr
+       ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+       ALGORITHM: str = "HS256"
+       ALLOWED_ORIGINS: List[str] = []
 
-   # Clean up empty directories
-   rm -rf violentutf_api
-   find . -type d -empty -delete
+       # Database settings with validation
+       DATABASE_URL: Optional[str] = None
+
+       # Performance settings
+       WORKERS_PER_CORE: int = 1
+       MAX_WORKERS: int = 10
+       USE_CACHE: bool = True
+       CACHE_TTL: int = 300
+
+       # Monitoring settings
+       ENABLE_METRICS: bool = True
+       LOG_LEVEL: str = "INFO"
+
+       @validator("DATABASE_URL", pre=True)
+       def validate_database_url(cls, v: Optional[str]) -> Optional[str]:
+           if v and not v.startswith(("postgresql://", "sqlite://")):
+               raise ValueError("Invalid database URL")
+           return v
+
+       class Config:
+           env_file = ".env"
+           case_sensitive = True
+
+   @lru_cache()
+   def get_settings() -> Settings:
+       return Settings()
+
+   settings = get_settings()
    ```
 
-2. **Update import paths**
+4. **Test and Validate Enhanced Framework**
    ```bash
-   # Update Python imports
-   find . -name "*.py" -type f -exec sed -i '' \
-     -e 's/from violentutf_api\.fastapi_app/from/g' \
-     -e 's/import violentutf_api\.fastapi_app/import/g' \
-     {} +
+   # Run comprehensive tests
+   pytest tests/unit/test_core.py -v
+   pytest tests/integration/test_startup.py -v
+
+   # Security scan
+   bandit -r app/
+   safety check
+
+   # Type checking
+   mypy app/ --strict
+
+   # Test coverage
+   pytest --cov=app --cov-report=html --cov-fail-under=80
    ```
 
-### Phase 3: Standalone Configuration (Day 3)
+5. **Document Enhanced Component**
+   - Document security middleware configuration
+   - Create performance tuning guide
+   - Document monitoring and metrics
+   - Note improvements over mother repo
 
-1. **Create root configuration files**
-   ```bash
-   # Copy requirements to root
-   cp requirements*.txt ./
+### Phase 2: Basic Functionality (Week 2)
 
-   # Create project files
-   touch README.md
-   touch CHANGELOG.md
-   touch .env.example
+#### Component: Health & Configuration
+
+**Improvements to Apply:**
+- ✅ **Security**: Add input validation framework
+- ✅ **Security**: Implement secure configuration management
+- ✅ **Reliability**: Add comprehensive health checks with dependency monitoring
+- ✅ **Reliability**: Implement readiness vs liveness probes
+- ✅ **Performance**: Optimize health check queries
+- ✅ **Performance**: Add caching for configuration
+- ✅ **Quality**: Add unit tests for all utilities
+- ✅ **Quality**: Document all configuration options
+
+1. **Extract and Enhance Health Endpoints**
+   ```python
+   # app/api/endpoints/health.py - Enhanced health checks
+   from typing import Dict, Any
+   import asyncio
+   from datetime import datetime
+   from fastapi import APIRouter, status, Response
+   from sqlalchemy import text
+
+   from app.core.config import settings
+   from app.db.session import get_db
+   from app.utils.cache import cache_client
+   from app.utils.monitoring import track_health_check
+
+   router = APIRouter()
+
+   @router.get("/health", status_code=status.HTTP_200_OK)
+   @track_health_check
+   async def health_check() -> Dict[str, Any]:
+       """Basic health check - always returns 200 if service is running"""
+       return {
+           "status": "healthy",
+           "timestamp": datetime.utcnow().isoformat(),
+           "service": settings.PROJECT_NAME,
+           "version": settings.VERSION
+       }
+
+   @router.get("/ready")
+   async def readiness_check(response: Response) -> Dict[str, Any]:
+       """
+       Comprehensive readiness check - verifies all dependencies
+       Returns 503 if any critical dependency is down
+       """
+       checks = {
+           "database": False,
+           "cache": False,
+           "disk_space": False,
+           "memory": False
+       }
+
+       # Parallel dependency checks
+       results = await asyncio.gather(
+           check_database(),
+           check_cache(),
+           check_disk_space(),
+           check_memory(),
+           return_exceptions=True
+       )
+
+       checks["database"] = results[0] is True
+       checks["cache"] = results[1] is True
+       checks["disk_space"] = results[2] is True
+       checks["memory"] = results[3] is True
+
+       all_healthy = all(checks.values())
+
+       if not all_healthy:
+           response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+       return {
+           "status": "ready" if all_healthy else "not ready",
+           "timestamp": datetime.utcnow().isoformat(),
+           "checks": checks,
+           "details": {
+               "failed_checks": [k for k, v in checks.items() if not v]
+           }
+       }
+
+   async def check_database() -> bool:
+       """Check database connectivity with timeout"""
+       try:
+           async with get_db() as db:
+               await asyncio.wait_for(
+                   db.execute(text("SELECT 1")),
+                   timeout=5.0
+               )
+           return True
+       except Exception:
+           return False
+
+   async def check_cache() -> bool:
+       """Check cache connectivity"""
+       if not settings.USE_CACHE:
+           return True
+       try:
+           await cache_client.ping()
+           return True
+       except Exception:
+           return False
+
+   def check_disk_space(threshold: float = 0.9) -> bool:
+       """Check if disk space is below threshold"""
+       import shutil
+       usage = shutil.disk_usage("/")
+       return (usage.used / usage.total) < threshold
+
+   def check_memory(threshold: float = 0.9) -> bool:
+       """Check if memory usage is below threshold"""
+       import psutil
+       return psutil.virtual_memory().percent < (threshold * 100)
    ```
 
-2. **Update Docker configuration**
-   - Adjust Dockerfile paths
-   - Update docker-compose.yml volumes
-   - Fix working directory references
+2. **Extract Configuration System**
+   - Copy configuration modules
+   - Remove APISIX/Keycloak configurations
+   - Implement environment-based config
+   - Add configuration validation
 
-3. **Initialize new repository**
-   ```bash
-   git remote remove origin
-   git remote add origin https://github.com/GSA-TTS/violentutf-api.git
-   git branch -M main
+3. **Test Components**
+   - Unit tests for each endpoint
+   - Configuration loading tests
+   - Integration tests for health checks
+   - Performance benchmarks
+
+### Phase 3: Data Layer (Week 3)
+
+#### Component: Database & Models
+
+**Improvements to Apply:**
+- ✅ **Security**: Implement SQL injection prevention at ORM level
+- ✅ **Security**: Add row-level security capabilities
+- ✅ **Security**: Implement audit columns for all models
+- ✅ **Reliability**: Add connection pooling with resilience
+- ✅ **Reliability**: Implement automatic retry logic
+- ✅ **Performance**: Add strategic database indexes
+- ✅ **Performance**: Implement query optimization patterns
+- ✅ **Quality**: Add comprehensive model validation
+
+1. **Extract and Enhance Database Models**
+   ```python
+   # app/models/base.py - Enhanced base model with security and audit
+   from datetime import datetime
+   from typing import Optional
+   from sqlalchemy import Column, DateTime, String, Boolean, Index
+   from sqlalchemy.ext.declarative import declared_attr
+   from sqlalchemy.orm import validates
+   from sqlalchemy.dialects.postgresql import UUID
+   import uuid
+
+   from app.db.base_class import Base
+
+   class AuditMixin:
+       """Mixin for comprehensive audit fields"""
+
+       @declared_attr
+       def id(cls) -> Column:
+           return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+       @declared_attr
+       def created_at(cls) -> Column:
+           return Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+       @declared_attr
+       def updated_at(cls) -> Column:
+           return Column(
+               DateTime,
+               default=datetime.utcnow,
+               onupdate=datetime.utcnow,
+               nullable=False,
+               index=True
+           )
+
+       @declared_attr
+       def created_by(cls) -> Column:
+           return Column(String(255), index=True)
+
+       @declared_attr
+       def updated_by(cls) -> Column:
+           return Column(String(255))
+
+       @declared_attr
+       def is_deleted(cls) -> Column:
+           return Column(Boolean, default=False, nullable=False, index=True)
+
+       @declared_attr
+       def deleted_at(cls) -> Column:
+           return Column(DateTime, index=True)
+
+       @declared_attr
+       def deleted_by(cls) -> Column:
+           return Column(String(255))
+
+       @declared_attr
+       def version(cls) -> Column:
+           """Optimistic locking version"""
+           return Column(Integer, default=1, nullable=False)
+
+   class SecureModelBase(Base, AuditMixin):
+       """Enhanced base model with security and audit features"""
+       __abstract__ = True
+
+       @validates('*')
+       def validate_string_length(self, key, value):
+           """Prevent SQL injection through overly long strings"""
+           if isinstance(value, str):
+               if len(value) > 10000:
+                   raise ValueError(f"String too long for {key}")
+               # Additional validation for common injection patterns
+               if any(pattern in value.lower() for pattern in ['<script', 'javascript:', 'onerror']):
+                   raise ValueError(f"Invalid content in {key}")
+           return value
+
+       @declared_attr
+       def __table_args__(cls):
+           return (
+               Index(f'idx_{cls.__tablename__}_active', 'is_deleted', 'created_at'),
+               Index(f'idx_{cls.__tablename__}_audit', 'created_by', 'created_at'),
+           )
    ```
 
-### Phase 4: Validation (Day 4)
-
-1. **Test standalone functionality**
+2. **Test Data Layer**
    ```bash
-   # Create virtual environment
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
+   # Initialize database
+   alembic init migrations
+   alembic revision --autogenerate -m "Initial models"
+   alembic upgrade head
 
-   # Run tests
-   pytest tests/
-
-   # Test Docker build
-   docker build -t violentutf-api:test .
-   docker-compose up -d
+   # Test CRUD operations
+   pytest tests/test_models.py
    ```
 
-2. **Verify API endpoints**
-   - Test all endpoints
-   - Verify authentication
-   - Check database connectivity
-   - Validate external service integrations
+3. **Document Data Layer**
+   - Document model relationships
+   - Create migration guide
+   - Note schema differences from mother repo
+
+### Phase 4-5: API Endpoints (Weeks 4-5)
+
+#### Component: Business Logic Endpoints
+
+**Improvements to Apply:**
+- ✅ **Security**: Implement comprehensive input validation
+- ✅ **Security**: Add rate limiting per endpoint
+- ✅ **Security**: Implement request signing for sensitive operations
+- ✅ **Reliability**: Add idempotency support
+- ✅ **Reliability**: Implement circuit breakers for external calls
+- ✅ **Performance**: Add pagination and filtering
+- ✅ **Performance**: Implement response caching
+- ✅ **Quality**: Add OpenAPI documentation
+- ✅ **Quality**: Implement contract testing
+
+#### Component: Business Logic Endpoints
+
+1. **Extract API Endpoints (Iteratively)**
+   - Start with read-only endpoints
+   - Copy one resource at a time
+   - Remove external dependencies
+   - Implement standalone versions
+
+2. **For Each Endpoint Group:**
+   ```
+   a. Copy endpoint code
+   b. Adapt for standalone operation
+   c. Write comprehensive tests
+   d. Document API changes
+   e. Validate against GSA standards
+   ```
+
+3. **Refactor for Standalone**
+   - Remove APISIX routing
+   - Implement direct API access
+   - Add built-in rate limiting
+   - Ensure stateless operation
+
+### Phase 6: Security Implementation (Week 6)
+
+#### Component: Authentication & Authorization
+
+**Improvements to Apply:**
+- ✅ **Security**: Replace Keycloak with JWT + API keys
+- ✅ **Security**: Implement OAuth2 for third-party access
+- ✅ **Security**: Add MFA support
+- ✅ **Security**: Implement comprehensive audit logging
+- ✅ **Reliability**: Add auth failover mechanisms
+- ✅ **Performance**: Implement token caching
+- ✅ **Quality**: Add security testing suite
+- ✅ **Quality**: Document all auth flows
+
+#### Component: Authentication & Authorization
+
+1. **Replace External Authentication**
+   - Remove Keycloak dependencies
+   - Implement JWT-based authentication
+   - Add API key support
+   - Create user management endpoints
+
+2. **Test Security**
+   ```bash
+   # Security tests
+   pytest tests/test_security.py
+
+   # Penetration testing
+   python security_scan.py
+   ```
+
+3. **Document Security Model**
+   - Authentication flows
+   - Authorization patterns
+   - Security best practices
+   - Compliance checklist
+
+## Quality Gates for Each Phase
+
+Before moving to the next phase, each component must pass:
+
+### 1. Security Review
+- [ ] Static security analysis (Bandit, safety)
+- [ ] Dynamic security testing
+- [ ] Dependency vulnerability scan
+- [ ] Code review by security team
+
+### 2. Performance Validation
+- [ ] Load testing passed
+- [ ] Response time < 200ms (p95)
+- [ ] Resource usage within limits
+- [ ] No memory leaks detected
+
+### 3. Reliability Verification
+- [ ] All error cases handled
+- [ ] Retry logic implemented
+- [ ] Circuit breakers configured
+- [ ] Monitoring in place
+
+### 4. Code Quality Standards
+- [ ] Test coverage > 80%
+- [ ] All functions have type hints
+- [ ] Documentation complete
+- [ ] Linting passed (score > 9.5/10)
+
+## Continuous Improvement Tracking
+
+For each extracted component:
+
+### 1. Baseline Metrics (from mother repo)
+- Performance benchmarks
+- Security vulnerabilities
+- Code quality scores
+- Test coverage
+
+### 2. Post-Improvement Metrics
+- Same metrics after enhancements
+- Improvement percentage
+- New capabilities added
+- Technical debt reduced
+
+### 3. Success Targets
+- 50% reduction in response time
+- Zero high/critical vulnerabilities
+- 80%+ test coverage
+- 100% type hint coverage
 
 ## Post-Extraction Setup
 
@@ -375,22 +865,40 @@ As an official GSA repository, implement elevated standards:
 
 ## Timeline
 
-### Week 1: Extraction
-- Day 1: Repository preparation
-- Day 2: Restructuring
-- Day 3: Configuration
-- Day 4: Validation
-- Day 5: Documentation
+### Week 1: Core Framework Extraction
+- Setup new repository structure
+- Extract FastAPI core components
+- Implement basic configuration
+- Test core functionality
+- Document framework setup
 
-### Week 2: Setup
-- Day 6-7: CI/CD implementation
-- Day 8-9: Testing and optimization
-- Day 10: Team training
+### Week 2: Basic Functionality
+- Extract health check endpoints
+- Implement configuration system
+- Extract utility functions
+- Test all basic components
+- Document API contracts
 
-### Week 3: Stabilization
-- Day 11-12: Monitor both repositories
-- Day 13-14: Address issues
-- Day 15: Project review
+### Week 3: Data Layer
+- Extract database models
+- Set up migration system
+- Implement repository patterns
+- Test data operations
+- Document data architecture
+
+### Week 4-5: API Endpoints
+- Extract business endpoints iteratively
+- Remove external dependencies
+- Implement standalone routing
+- Test each endpoint thoroughly
+- Document API changes
+
+### Week 6: Security & Finalization
+- Replace external authentication
+- Implement authorization
+- Security testing and hardening
+- Final integration testing
+- Complete documentation
 
 ## Ongoing Maintenance
 
@@ -434,6 +942,7 @@ This extraction strategy enables the ViolentUTF API to become an independent pro
 
 ---
 
-**Document Version**: 2.0
+**Document Version**: 3.0
 **Last Updated**: 2024-07-24
 **Status**: Ready for Implementation
+**Enhancement**: Includes comprehensive improvement strategy for each component extraction phase

@@ -79,6 +79,27 @@ This document outlines the strategy for maintaining synchronization between the 
    - Undocumented functionality
    - Non-compliant security patterns
 
+### Consider Reverse Sync (API → Mother)
+1. **Security Improvements**
+   - Enhanced input validation patterns
+   - Better error handling frameworks
+   - Improved authentication mechanisms
+   - Security middleware implementations
+
+2. **Performance Optimizations**
+   - Optimized database queries
+   - Better caching strategies
+   - Improved pagination implementations
+   - Resource optimization techniques
+
+3. **Code Quality Improvements**
+   - Well-tested utility functions
+   - Better abstraction patterns
+   - Improved error handling
+   - Enhanced logging frameworks
+
+**Note**: When syncing improvements from API to mother repo, ensure they don't break existing integrations with APISIX/Keycloak.
+
 ## Technical Implementation
 
 ### 1. Git Remote Setup
@@ -279,13 +300,15 @@ Maintain a synchronization log in both repositories:
 - **Commit**: abc123
 - **Description**: Fixed authentication bypass
 - **Status**: Completed
+- **Quality Improvements**: Added input validation, enhanced error handling
 
 ## 2024-07-20
-- **Type**: Bug Fix
+- **Type**: Performance Improvement
 - **Direction**: API → Mother
 - **Commit**: def456
-- **Description**: Fixed rate limiting issue
+- **Description**: Optimized database query performance
 - **Status**: Completed
+- **Performance Gain**: 50% reduction in query time
 ```
 
 ### 2. Compatibility Matrix
@@ -302,6 +325,11 @@ Maintain a synchronization log in both repositories:
 - **Time to Sync**: Average time from identification to merge
 - **Divergence Index**: Number of unique commits per repo
 - **Compatibility Score**: % of shared tests passing
+- **Improvement Metrics**:
+  - Security vulnerabilities fixed during sync
+  - Performance improvements achieved
+  - Code quality enhancements made
+  - Test coverage improvements
 
 ## Best Practices
 
@@ -394,6 +422,46 @@ git am *.patch
 
 ---
 
-**Document Version**: 1.0
+## Improvement Sync Strategy
+
+When extracting components, we'll enhance them significantly. Some improvements may benefit the mother repository:
+
+### 1. Identifying Sync-Worthy Improvements
+- Security fixes that apply to shared code
+- Performance optimizations for common operations
+- Bug fixes in business logic
+- Improved error handling patterns
+- Better testing strategies
+
+### 2. Improvement Sync Process
+1. **Document the improvement** with before/after metrics
+2. **Isolate the change** from API-specific enhancements
+3. **Test compatibility** with mother repo architecture
+4. **Create detailed PR** with improvement rationale
+5. **Measure impact** after sync
+
+### 3. Improvement Tracking
+Maintain a log of improvements that could benefit both repos:
+
+```markdown
+# Improvement Opportunities Log
+
+## Enhanced Query Performance
+- **Location**: API repo - user queries
+- **Improvement**: 60% faster with new indexing
+- **Applicable to Mother**: Yes, same query pattern
+- **Status**: Pending sync
+
+## Security Input Validation
+- **Location**: API repo - all endpoints
+- **Improvement**: Comprehensive validation framework
+- **Applicable to Mother**: Yes, with modifications
+- **Status**: Under review
+```
+
+---
+
+**Document Version**: 2.0
 **Last Updated**: 2024-07-24
 **Review Schedule**: Quarterly
+**Enhancement**: Added improvement synchronization strategy
