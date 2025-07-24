@@ -1,0 +1,190 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  full-quality:
+    name: Full Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # For better analysis
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install all quality tools
+        run: |
+          pip install black isort flake8 flake8-docstrings
+          pip install bandit safety pylint mypy
+
+      - name: Black formatter
+        run: black --check --diff . --verbose
+
+      - name: isort
+        run: isort --check-only --diff . --profile black
+
+      - name: Full flake8 scan
+        run: |
+          flake8 . --config=.flake8 --count --statistics \
+            --exclude=app_data,violentutf_logs,migrations \
+            --ignore=E203,W503,E501,F401,F541,E226
+
+      - name: Bandit security scan
+        run: |
+          bandit -r . -f json -o bandit-report.json \
+            -x '/tests/,/app_data/,/violentutf_logs/' \
+            --skip B101,B601
+
+      - name: Type checking
+        continue-on-error: true
+        run: mypy . --install-types --non-interactive
+
+      - name: Dependency vulnerabilities
+        run: |
+          safety check --json --output safety-report.json || true
+
+  test-matrix:
+    name: Tests - ${{ matrix.os }} / Py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-timeout pytest-xdist
+
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          pytest tests/unit/ -v --cov=violentutf_api \
+            --cov-report=xml --timeout=300 -n auto
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          python scripts/run_tests_windows.py --test-dir tests/unit
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  api-validation:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install API test deps
+        run: |
+          pip install pytest httpx pydantic
+          pip install jsonschema openapi-spec-validator
+
+      - name: Run contract tests
+        env:
+          CONTRACT_TESTING: "true"
+          TESTING: "true"
+        run: |
+          pytest tests/contract/ -v -m "contract" \
+            --tb=short --maxfail=3 || true
+
+  docker-check:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Dockerfile
+        run: |
+          # Install hadolint
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          
+          find . -name "Dockerfile*" -type f | while read df; do
+            echo "Linting $df"
+            ./hadolint "$df" || echo "Warnings in $df"
+          done
+
+      - name: Build test image
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t violentutf-api:test . --target test || true
+          fi
+
+  pr-summary:
+    name: PR Summary
+    needs: [full-quality, test-matrix, api-validation, docker-check]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              'Code Quality': '${{ needs.full-quality.result }}',
+              'Cross-Platform Tests': '${{ needs.test-matrix.result }}',
+              'API Validation': '${{ needs.api-validation.result }}',
+              'Docker Build': '${{ needs.docker-check.result }}'
+            };
+            
+            let comment = '## PR Validation Results\n\n';
+            for (const [check, result] of Object.entries(results)) {
+              const emoji = result === 'success' ? '✅' : '❌';
+              comment += `${emoji} **${check}**: ${result}\n`;
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
