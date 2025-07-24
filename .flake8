@@ -23,7 +23,7 @@ exclude =
     scripts
 per-file-ignores =
     __init__.py:F401
-    tests/*:F401,F811,ANN101
+    tests/*:F401,F811,ANN101,ANN401,D202
 max-complexity = 10
 statistics = True
 count = True
