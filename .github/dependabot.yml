@@ -1,0 +1,69 @@
+version: 2
+updates:
+  # Python dependencies - main
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    assignees:
+      - "tamnguyen"  # Replace with your GitHub username
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      development-tools:
+        patterns:
+          - "black"
+          - "isort"
+          - "flake8*"
+          - "pytest*"
+          - "mypy"
+          - "pylint"
+      security-tools:
+        patterns:
+          - "bandit"
+          - "safety"
+          - "pip-audit"
+      api-frameworks:
+        patterns:
+          - "fastapi*"
+          - "pydantic*"
+          - "uvicorn*"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    assignees:
+      - "tamnguyen"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    assignees:
+      - "tamnguyen"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"

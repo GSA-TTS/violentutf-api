@@ -1,0 +1,41 @@
+title = "gitleaks config for violentutf-api"
+
+[allowlist]
+description = "Allowlisted files and patterns"
+regexes = [
+    '''example''',
+    '''template''',
+    '''\.test\.''',
+    '''test_'''
+]
+paths = [
+    '''\.env\.example''',
+    '''\.env\.template''',
+    '''README\.md''',
+    '''docs/'''
+]
+
+[[rules]]
+description = "Generic API Key"
+regex = '''(?i)(api[_\-]?key|apikey)[[:space:]]*[:=][[:space:]]*['\"]([0-9a-zA-Z\-_]{20,})['\"]'''
+tags = ["key", "API", "generic"]
+
+[[rules]]
+description = "Generic Secret"
+regex = '''(?i)(secret|password|passwd|pwd)[[:space:]]*[:=][[:space:]]*['\"]([^'\"]{8,})['\"]'''
+tags = ["secret", "generic"]
+
+[[rules]]
+description = "JWT Secret"
+regex = '''(?i)jwt[_\-]?secret[[:space:]]*[:=][[:space:]]*['\"]([^'\"]{32,})['\"]'''
+tags = ["jwt", "secret"]
+
+[[rules]]
+description = "Database URL with password"
+regex = '''[a-zA-Z]+://[^:]+:([^@]+)@[^/]+/\w+'''
+tags = ["database", "password"]
+
+[[rules]]
+description = "Private Key"
+regex = '''-----BEGIN (RSA|EC|OPENSSH|DSA|ED25519) PRIVATE KEY-----'''
+tags = ["key", "private"]

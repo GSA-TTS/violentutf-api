@@ -1,0 +1,41 @@
+# CODEOWNERS for violentutf-api
+# This file defines code ownership for automated review requests
+# Even as a solo developer, this helps track responsibility areas
+
+# Default owner for everything
+*                           @tamnguyen
+
+# API Core
+/src/api/                   @tamnguyen
+/src/core/                  @tamnguyen
+/src/models/                @tamnguyen
+
+# Security-sensitive files
+/src/auth/                  @tamnguyen
+/src/security/              @tamnguyen
+*.env.example               @tamnguyen
+**/secrets.py               @tamnguyen
+
+# Configuration files
+/.github/                   @tamnguyen
+/.allstar/                  @tamnguyen
+/docker-compose*.yml        @tamnguyen
+/Dockerfile*                @tamnguyen
+
+# Documentation
+/docs/                      @tamnguyen
+*.md                        @tamnguyen
+
+# Tests
+/tests/                     @tamnguyen
+/tests/security/            @tamnguyen
+
+# CI/CD
+/.github/workflows/         @tamnguyen
+/scripts/                   @tamnguyen
+
+# Dependencies
+requirements*.txt           @tamnguyen
+pyproject.toml             @tamnguyen
+poetry.lock                @tamnguyen
+package*.json              @tamnguyen
