@@ -247,7 +247,8 @@ Each component extraction presents an opportunity to improve security, reliabili
    touch app/__init__.py app/main.py
 
    # Set up quality tools from start
-   pip install pre-commit black isort flake8 mypy pytest pytest-cov bandit safety
+   pip install pre-commit ruff mypy>=1.8.0 pytest>=7.4.0 pytest-cov>=4.1.0
+   pip install bandit[toml]>=1.7.0 pip-audit>=2.6.0 semgrep>=1.45.0  # Security tools
    ```
 
 2. **Extract and Enhance Core Framework**
@@ -321,8 +322,11 @@ Each component extraction presents an opportunity to improve security, reliabili
        # Security settings
        SECRET_KEY: SecretStr
        ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+       REFRESH_TOKEN_EXPIRE_DAYS: int = 7
        ALGORITHM: str = "HS256"
        ALLOWED_ORIGINS: List[str] = []
+       SECURE_COOKIES: bool = True
+       CSRF_PROTECTION: bool = True
 
        # Database settings with validation
        DATABASE_URL: Optional[str] = None
@@ -361,8 +365,9 @@ Each component extraction presents an opportunity to improve security, reliabili
    pytest tests/integration/test_startup.py -v
 
    # Security scan
-   bandit -r app/
-   safety check
+   bandit -r app/ -f json -o bandit_report.json
+   pip-audit --desc --fix  # Auto-fix where possible
+   semgrep --config=auto app/ --json -o semgrep_report.json
 
    # Type checking
    mypy app/ --strict
@@ -524,7 +529,7 @@ Each component extraction presents an opportunity to improve security, reliabili
    # app/models/base.py - Enhanced base model with security and audit
    from datetime import datetime
    from typing import Optional
-   from sqlalchemy import Column, DateTime, String, Boolean, Index
+   from sqlalchemy import Column, DateTime, String, Boolean, Index, Integer
    from sqlalchemy.ext.declarative import declared_attr
    from sqlalchemy.orm import validates
    from sqlalchemy.dialects.postgresql import UUID
@@ -609,7 +614,7 @@ Each component extraction presents an opportunity to improve security, reliabili
    alembic upgrade head
 
    # Test CRUD operations
-   pytest tests/test_models.py
+   pytest tests/test_models.py -v --cov=app.models
    ```
 
 3. **Document Data Layer**
@@ -682,8 +687,13 @@ Each component extraction presents an opportunity to improve security, reliabili
    # Security tests
    pytest tests/test_security.py
 
-   # Penetration testing
-   python security_scan.py
+   # Security testing
+   pytest tests/test_security.py -v
+
+   # Automated security scanning
+   bandit -r app/ -ll  # Only high severity
+   pip-audit --fix
+   semgrep --config=p/security-audit app/
    ```
 
 3. **Document Security Model**

@@ -26,7 +26,7 @@
 ### Setup Tasks
 - [ ] Create new violentutf-api repository
 - [ ] Initialize enhanced Python project structure
-- [ ] Set up pre-commit hooks (black, isort, flake8, mypy, bandit)
+- [ ] Set up pre-commit hooks (ruff, mypy, bandit, pip-audit)
 - [ ] Configure GitHub branch protection with quality gates
 - [ ] Create comprehensive directory structure (app, tests, docs)
 - [ ] Install security and quality tools
@@ -63,7 +63,7 @@
 - [ ] Configure optimal worker settings
 
 ### Testing & Validation
-- [ ] Run security scans (bandit, safety)
+- [ ] Run security scans (bandit, pip-audit, semgrep)
 - [ ] Execute type checking (mypy --strict)
 - [ ] Test startup and shutdown procedures
 - [ ] Validate all middleware integration
@@ -228,7 +228,8 @@
 
 ### Authentication Enhancement
 - [ ] Remove all Keycloak dependencies
-- [ ] Implement JWT authentication with refresh tokens
+- [ ] Implement JWT authentication with PyJWT (not python-jose)
+- [ ] Add secure refresh token rotation
 - [ ] Add API key authentication support
 - [ ] Implement OAuth2 flows for third-party
 - [ ] Create MFA/2FA support
@@ -269,7 +270,8 @@
 - [ ] Create encryption audit logs
 
 ### Testing & Validation
-- [ ] Run penetration testing
+- [ ] Run penetration testing with OWASP ZAP
+- [ ] Execute semgrep security audit
 - [ ] Execute OWASP security tests
 - [ ] Test authentication bypasses
 - [ ] Validate authorization rules
@@ -283,19 +285,20 @@
 ### Code Quality Standards
 - [ ] Configure mandatory 80% test coverage with enforcement
 - [ ] Set up strict type hint enforcement (mypy --strict)
-- [ ] Configure comprehensive linting (flake8, pylint, black, isort)
+- [ ] Configure comprehensive linting (ruff for fast black/isort/flake8 replacement)
 - [ ] Implement pre-commit hooks for all quality checks
 - [ ] Set up automated code review requirements (2+ reviewers)
 - [ ] Configure branch protection with quality gates
 - [ ] Add code complexity metrics (McCabe)
-- [ ] Implement security linting (bandit)
+- [ ] Implement security linting (bandit, semgrep)
 - [ ] Add performance profiling requirements
 - [ ] Create code quality dashboards
 
 ### Security Compliance
 - [ ] Implement all FISMA security controls
 - [ ] Set up continuous security scanning (SAST/DAST)
-- [ ] Configure real-time dependency vulnerability checks
+- [ ] Configure real-time dependency vulnerability checks with pip-audit
+- [ ] Set up GitHub Dependabot for automated updates
 - [ ] Implement OWASP secure coding standards
 - [ ] Create automated security testing pipeline
 - [ ] Set up security incident response automation
