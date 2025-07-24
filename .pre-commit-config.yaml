@@ -43,7 +43,7 @@ repos:
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: ['-r', '.', '-x', '/tests/', '--skip', 'B101,B601']
+        args: ['-ll', '--skip', 'B101,B601']
 
   # Secret detection - Yelp maintained
   - repo: https://github.com/Yelp/detect-secrets
