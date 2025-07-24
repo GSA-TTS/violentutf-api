@@ -1,0 +1,12 @@
+# Binary artifacts configuration
+# Lists allowed binary files in the repository
+optConfig:
+  disableRepoOverride: false
+  optOutStrategy: true
+action: issue
+# Add any binary files your API needs here
+ignoreFiles: []
+  # Examples (uncomment and modify as needed):
+  # - "static/images/logo.png"
+  # - "certs/ssl.pem"
+  # - "data/sample.db"
