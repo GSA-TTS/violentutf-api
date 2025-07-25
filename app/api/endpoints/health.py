@@ -38,8 +38,8 @@ async def readiness_check(response: Response) -> Dict[str, Any]:
 
     Returns 503 if any critical dependency is down.
     """
-    # Use enhanced dependency health check
-    health_result = await check_dependency_health()
+    # Use enhanced dependency health check with caching (10 second TTL)
+    health_result = await check_dependency_health(cache_ttl=10)
 
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)

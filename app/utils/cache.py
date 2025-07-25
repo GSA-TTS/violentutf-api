@@ -1,9 +1,14 @@
 """Redis cache client with health checks and connection management."""
 
 import asyncio
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import redis.asyncio as redis
+
+if TYPE_CHECKING:
+    RedisClient = redis.Redis[str]
+else:
+    RedisClient = redis.Redis
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
@@ -11,10 +16,10 @@ from ..core.config import settings
 logger = get_logger(__name__)
 
 # Global Redis client
-cache_client: Optional[redis.Redis[str]] = None
+cache_client: Optional[RedisClient] = None
 
 
-def create_cache_client() -> Optional[redis.Redis[str]]:
+def create_cache_client() -> Optional[RedisClient]:
     """Create Redis cache client with connection pooling."""
     if not settings.REDIS_URL:
         logger.warning("No Redis URL configured - cache features disabled")
@@ -38,7 +43,7 @@ def create_cache_client() -> Optional[redis.Redis[str]]:
         return None
 
 
-def get_cache_client() -> Optional[redis.Redis[str]]:
+def get_cache_client() -> Optional[RedisClient]:
     """Get or create the cache client."""
     global cache_client
 

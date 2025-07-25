@@ -275,6 +275,12 @@ class TestConnectionCounting:
 class TestDependencyHealth:
     """Test comprehensive dependency health checking."""
 
+    def setup_method(self) -> None:
+        """Clear health check cache before each test."""
+        from app.utils.monitoring import clear_health_check_cache
+
+        clear_health_check_cache()
+
     @pytest.mark.asyncio
     async def test_check_dependency_health_all_healthy(self) -> None:
         """Test dependency health check when all services are healthy."""

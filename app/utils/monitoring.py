@@ -3,7 +3,7 @@
 import asyncio
 import time
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from prometheus_client import Counter, Histogram
 from structlog.stdlib import get_logger
@@ -28,6 +28,9 @@ resource_usage = {
     "cache_connections": 0,
     "active_requests": 0,
 }
+
+# Health check cache: key -> (timestamp, result)
+health_check_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 
 
 def track_health_check(func: Callable[..., object]) -> Callable[..., object]:
@@ -190,15 +193,25 @@ def decrement_connection_count(connection_type: str) -> None:
         logger.debug("Connection count decremented", type=connection_type, count=resource_usage[key])
 
 
-async def check_dependency_health() -> Dict[str, Any]:
+async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
     """
     Check health of all dependencies with detailed metrics.
+
+    Args:
+        cache_ttl: Cache time-to-live in seconds (default: 10)
 
     Returns:
         Dictionary with dependency health status
     """
     from ..db.session import check_database_health
     from .cache import check_cache_health
+
+    # Check cache first
+    cache_key = "dependency_health"
+    cached_result = get_cached_health_check(cache_key, cache_ttl)
+    if cached_result is not None:
+        logger.debug("Using cached health check result", cache_key=cache_key)
+        return cached_result
 
     start_time = time.time()
 
@@ -237,6 +250,9 @@ async def check_dependency_health() -> Dict[str, Any]:
             "dependency_health_check_complete", overall_healthy=result["overall_healthy"], duration=total_duration
         )
 
+        # Cache the result
+        cache_health_check_result(cache_key, result)
+
         return result
 
     except Exception as e:
@@ -246,3 +262,42 @@ async def check_dependency_health() -> Dict[str, Any]:
             "error": str(e),
             "check_duration_seconds": time.time() - start_time,
         }
+
+
+def get_cached_health_check(cache_key: str, ttl: int) -> Optional[Dict[str, Any]]:
+    """
+    Get cached health check result if still valid.
+
+    Args:
+        cache_key: Cache key
+        ttl: Time-to-live in seconds
+
+    Returns:
+        Cached result or None if expired/not found
+    """
+    if cache_key in health_check_cache:
+        timestamp, result = health_check_cache[cache_key]
+        if time.time() - timestamp < ttl:
+            return result
+        else:
+            # Remove expired entry
+            del health_check_cache[cache_key]
+    return None
+
+
+def cache_health_check_result(cache_key: str, result: Dict[str, Any]) -> None:
+    """
+    Cache health check result.
+
+    Args:
+        cache_key: Cache key
+        result: Result to cache
+    """
+    health_check_cache[cache_key] = (time.time(), result)
+    logger.debug("Cached health check result", cache_key=cache_key)
+
+
+def clear_health_check_cache() -> None:
+    """Clear all cached health check results."""
+    health_check_cache.clear()
+    logger.info("Health check cache cleared")
