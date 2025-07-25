@@ -11,7 +11,7 @@ from structlog.stdlib import get_logger
 logger = get_logger(__name__)
 
 
-class ErrorDetail(BaseModel):  # type: ignore[misc]
+class ErrorDetail(BaseModel):
     """Standard error response model."""
 
     error: str
@@ -21,7 +21,7 @@ class ErrorDetail(BaseModel):  # type: ignore[misc]
     timestamp: Optional[str] = None
 
 
-class APIError(HTTPException):  # type: ignore[misc]
+class APIError(HTTPException):
     """Base API exception with consistent error handling."""
 
     def __init__(
@@ -226,8 +226,8 @@ def setup_error_handlers(app: FastAPI, development_mode: bool = False) -> None:
     app.state.development_mode = development_mode
 
     # Custom error handlers
-    app.add_exception_handler(APIError, api_error_handler)
-    app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.add_exception_handler(APIError, api_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
 
     # Generic error handler for unexpected exceptions
     app.add_exception_handler(Exception, generic_error_handler)

@@ -31,7 +31,7 @@ ACTIVE_REQUESTS = Gauge(
 )
 
 
-class MetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
+class MetricsMiddleware(BaseHTTPMiddleware):
     """Collect metrics for all requests."""
 
     async def dispatch(
@@ -92,15 +92,27 @@ class MetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
 
     def _normalize_endpoint(self: "MetricsMiddleware", path: str) -> str:
         """Normalize endpoint path for metrics grouping."""
-        # Replace UUIDs with placeholder
         import re
 
-        path = re.sub(
-            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-            "{id}",
-            path,
-            flags=re.IGNORECASE,
-        )
-        # Replace numeric IDs with placeholder
-        path = re.sub(r"/\d+", "/{id}", path)
-        return path
+        # Split path into segments
+        segments = path.split("/")
+
+        # Process each segment
+        for i, segment in enumerate(segments):
+            if not segment:  # Skip empty segments
+                continue
+
+            # Check if segment looks like an ID
+            # UUID pattern
+            if re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", segment, re.IGNORECASE):
+                segments[i] = "{id}"
+            # Numeric ID
+            elif re.match(r"^\d+$", segment):
+                segments[i] = "{id}"
+            # Alphanumeric ID (at least one letter and one number, or contains dash/underscore)
+            elif re.match(r"^[a-zA-Z0-9\-_]+$", segment) and (
+                re.search(r"\d", segment) or "-" in segment or "_" in segment
+            ):
+                segments[i] = "{id}"
+
+        return "/".join(segments)

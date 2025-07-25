@@ -12,7 +12,7 @@ from ..core.config import settings
 logger = get_logger(__name__)
 
 
-class LoggingMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
+class LoggingMiddleware(BaseHTTPMiddleware):
     """Log all requests and responses with timing."""
 
     async def dispatch(

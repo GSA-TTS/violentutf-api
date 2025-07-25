@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, MutableMapping, Optional, Union
 
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
@@ -10,7 +10,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 from .config import settings
 
 
-def add_app_context(logger: logging.Logger, method_name: str, event_dict: Dict[str, Any]) -> Dict[str, Any]:
+def add_app_context(logger: object, method_name: str, event_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
     """Add application context to all logs."""
     event_dict["service"] = settings.PROJECT_NAME
     event_dict["environment"] = settings.ENVIRONMENT
@@ -18,7 +18,9 @@ def add_app_context(logger: logging.Logger, method_name: str, event_dict: Dict[s
     return event_dict
 
 
-def sanitize_sensitive_data(logger: logging.Logger, method_name: str, event_dict: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_sensitive_data(
+    logger: object, method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     """Remove or mask sensitive data from logs."""
     sensitive_keys = {
         "password",
@@ -32,7 +34,7 @@ def sanitize_sensitive_data(logger: logging.Logger, method_name: str, event_dict
         "ssn",
     }
 
-    def _sanitize_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    def _sanitize_dict(d: MutableMapping[str, Any]) -> Dict[str, Any]:
         """Recursively sanitize dictionary."""
         sanitized = {}
         for key, value in d.items():
@@ -115,6 +117,13 @@ def log_request_context(
 def clear_request_context() -> None:
     """Clear request context after request completion."""
     clear_contextvars()
+
+
+def get_request_context() -> Dict[str, Any]:
+    """Get current request context from context vars."""
+    from structlog.contextvars import get_contextvars
+
+    return dict(get_contextvars())
 
 
 # Initialize logger for this module

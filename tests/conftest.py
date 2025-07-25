@@ -33,6 +33,7 @@ def test_settings() -> Settings:
         LOG_FORMAT="text",
         RATE_LIMIT_ENABLED=False,
         ENABLE_METRICS=False,
+        _env_file=None,  # Disable .env file loading for tests
     )
 
 

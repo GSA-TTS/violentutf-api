@@ -12,14 +12,14 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-class LoginRequest(BaseModel):  # type: ignore[misc]
+class LoginRequest(BaseModel):
     """Login request model."""
 
     username: str
     password: str
 
 
-class LoginResponse(BaseModel):  # type: ignore[misc]
+class LoginResponse(BaseModel):
     """Login response model."""
 
     access_token: str
@@ -27,7 +27,7 @@ class LoginResponse(BaseModel):  # type: ignore[misc]
     token_type: str = "bearer"
 
 
-class UserCreate(BaseModel):  # type: ignore[misc]
+class UserCreate(BaseModel):
     """User creation request."""
 
     username: str
@@ -35,7 +35,7 @@ class UserCreate(BaseModel):  # type: ignore[misc]
     password: str
 
 
-@router.post("/login", response_model=LoginResponse)  # type: ignore[misc]
+@router.post("/login", response_model=LoginResponse)
 async def login(request: LoginRequest) -> LoginResponse:
     """Login endpoint (placeholder)."""
     # TODO: Implement actual user authentication
@@ -60,7 +60,7 @@ async def login(request: LoginRequest) -> LoginResponse:
     )
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)  # type: ignore[misc]
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate) -> Dict[str, str]:
     """Register new user (placeholder)."""
     # TODO: Implement actual user registration

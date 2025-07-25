@@ -36,11 +36,18 @@ repos:
     rev: v1.17.0
     hooks:
       - id: mypy
-        args: ['--ignore-missing-imports', '--no-strict-optional']
+        args: ['--ignore-missing-imports', '--strict']
         additional_dependencies:
           - types-requests
           - types-redis
           - types-passlib
+          - types-bleach
+          - types-psutil
+          - pydantic
+          - fastapi
+          - starlette
+          - redis
+          - sqlalchemy
 
   # Security scanning - PyCQA maintained
   - repo: https://github.com/PyCQA/bandit

@@ -42,7 +42,7 @@ def create_access_token(
     )
 
     logger.info("Access token created", sub=data.get("sub"))
-    return encoded_jwt  # type: ignore[no-any-return]
+    return str(encoded_jwt)
 
 
 def create_refresh_token(
@@ -66,7 +66,7 @@ def create_refresh_token(
     )
 
     logger.info("Refresh token created", sub=data.get("sub"))
-    return encoded_jwt  # type: ignore[no-any-return]
+    return str(encoded_jwt)
 
 
 def decode_token(token: str) -> Dict[str, Any]:
@@ -80,10 +80,10 @@ def decode_token(token: str) -> Dict[str, Any]:
         return payload  # type: ignore[no-any-return]
     except jwt.ExpiredSignatureError:
         logger.warning("Token expired")
-        raise
+        raise ValueError("Token has expired")
     except jwt.InvalidTokenError as e:
         logger.warning("Invalid token", error=str(e))
-        raise
+        raise ValueError("Could not validate credentials")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

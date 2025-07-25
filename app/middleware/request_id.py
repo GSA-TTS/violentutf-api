@@ -1,5 +1,6 @@
 """Request ID tracking middleware."""
 
+import time
 import uuid
 from typing import Awaitable, Callable
 
@@ -12,7 +13,7 @@ from ..core.logging import clear_request_context, log_request_context
 logger = get_logger(__name__)
 
 
-class RequestIDMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
+class RequestIDMiddleware(BaseHTTPMiddleware):
     """Add unique request ID to each request for tracing."""
 
     async def dispatch(
@@ -42,27 +43,37 @@ class RequestIDMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
             client_ip=client_ip,
         )
 
+        # Record start time for request duration
+        start_time = time.time()
+
         try:
             # Process request
             response = await call_next(request)
 
+            # Calculate request duration
+            duration_ms = (time.time() - start_time) * 1000
+
             # Add request ID to response headers
             response.headers["X-Request-ID"] = request_id
 
-            # Log request completion
+            # Log request completion with timing
             logger.info(
                 "request_completed",
                 status_code=response.status_code,
-                duration_ms=0,  # TODO: Add timing
+                duration_ms=round(duration_ms, 2),
             )
 
             return response
 
         except Exception as e:
-            # Log exception
+            # Calculate duration even for failed requests
+            duration_ms = (time.time() - start_time) * 1000
+
+            # Log exception with timing
             logger.exception(
                 "request_failed",
                 exc_type=type(e).__name__,
+                duration_ms=round(duration_ms, 2),
             )
             raise
         finally:

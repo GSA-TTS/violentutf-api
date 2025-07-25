@@ -1,7 +1,6 @@
-"""Enhanced health check endpoints."""
+"""Enhanced health check endpoints with real database and cache connectivity."""
 
 import asyncio
-import os
 import shutil
 from datetime import datetime, timezone
 from typing import Any, Dict
@@ -11,12 +10,16 @@ from fastapi import APIRouter, Response, status
 from structlog.stdlib import get_logger
 
 from ...core.config import settings
+from ...db.session import check_database_health
+from ...utils.cache import check_cache_health
+from ...utils.monitoring import check_dependency_health, track_health_check
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/health", status_code=status.HTTP_200_OK)  # type: ignore[misc]
+@router.get("/health", status_code=status.HTTP_200_OK)
+@track_health_check
 async def health_check() -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
     return {
@@ -28,56 +31,52 @@ async def health_check() -> Dict[str, Any]:
     }
 
 
-@router.get("/ready")  # type: ignore[misc]
+@router.get("/ready")
+@track_health_check
 async def readiness_check(response: Response) -> Dict[str, Any]:
     """Return comprehensive readiness check - verifies all dependencies.
 
     Returns 503 if any critical dependency is down.
     """
-    checks = {
-        "database": False,
-        "cache": False,
-        "disk_space": False,
-        "memory": False,
+    # Use enhanced dependency health check
+    health_result = await check_dependency_health()
+
+    # Run additional system checks in parallel
+    system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
+
+    # Process system check results
+    disk_healthy = not isinstance(system_checks[0], Exception) and system_checks[0]
+    memory_healthy = not isinstance(system_checks[1], Exception) and system_checks[1]
+
+    # Combine all checks
+    all_checks = {
+        "database": health_result["checks"]["database"],
+        "cache": health_result["checks"]["cache"],
+        "disk_space": disk_healthy,
+        "memory": memory_healthy,
     }
 
-    # Run all checks in parallel
-    check_tasks = [
-        check_database(),
-        check_cache(),
-        check_disk_space(),
-        check_memory(),
-    ]
-
-    results = await asyncio.gather(*check_tasks, return_exceptions=True)
-
-    # Process results
-    for check_name, result in zip(checks.keys(), results):
-        if isinstance(result, Exception):
-            logger.error(f"{check_name}_check_failed", error=str(result))
-            checks[check_name] = False
-        else:
-            checks[check_name] = bool(result)
-
-    # Determine overall health
-    all_healthy = all(checks.values())
+    all_healthy = all(all_checks.values())
 
     if not all_healthy:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        logger.warning("readiness_check_failed", failed_checks=[k for k, v in all_checks.items() if not v])
 
     return {
         "status": "ready" if all_healthy else "not ready",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "checks": checks,
+        "checks": all_checks,
         "details": {
-            "failed_checks": [k for k, v in checks.items() if not v],
+            "failed_checks": [k for k, v in all_checks.items() if not v],
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
+            "metrics": health_result.get("metrics", {}),
+            "check_duration": health_result.get("check_duration_seconds", 0),
         },
     }
 
 
-@router.get("/live")  # type: ignore[misc]
+@router.get("/live")
 async def liveness_check() -> Dict[str, Any]:
     """Return liveness probe - checks if the application is running.
 
@@ -89,36 +88,9 @@ async def liveness_check() -> Dict[str, Any]:
     }
 
 
-async def check_database() -> bool:
-    """Check database connectivity with timeout."""
-    if not settings.DATABASE_URL:
-        # Database is optional
-        return True
-
-    try:
-        # TODO: Implement actual database check
-        # For now, return True if DATABASE_URL is set
-        await asyncio.sleep(0.1)  # Simulate check
-        return True
-    except Exception as e:
-        logger.error("database_check_failed", error=str(e))
-        return False
-
-
-async def check_cache() -> bool:
-    """Check cache connectivity."""
-    if not settings.REDIS_URL:
-        # Cache is optional
-        return True
-
-    try:
-        # TODO: Implement actual Redis check
-        # For now, return True if REDIS_URL is set
-        await asyncio.sleep(0.1)  # Simulate check
-        return True
-    except Exception as e:
-        logger.error("cache_check_failed", error=str(e))
-        return False
+# Database and cache checks are now handled by the imported functions:
+# - check_database_health from ...db.session
+# - check_cache_health from ...utils.cache
 
 
 async def check_disk_space(threshold: float = 0.9) -> bool:

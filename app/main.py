@@ -29,6 +29,56 @@ logger = get_logger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
+async def _initialize_database() -> None:
+    """Initialize database connection."""
+    try:
+        from .db.session import get_session_maker
+
+        session_maker = get_session_maker()
+        if session_maker:
+            logger.info("database_initialized")
+        else:
+            logger.info("database_not_configured")
+    except Exception as e:
+        logger.error("database_initialization_failed", error=str(e))
+
+
+async def _initialize_cache() -> None:
+    """Initialize cache connection."""
+    try:
+        from .utils.cache import get_cache_client
+
+        cache_client = get_cache_client()
+        if cache_client:
+            logger.info("cache_initialized")
+        else:
+            logger.info("cache_not_configured")
+    except Exception as e:
+        logger.error("cache_initialization_failed", error=str(e))
+
+
+async def _shutdown_database() -> None:
+    """Close database connections."""
+    try:
+        from .db.session import close_database_connections
+
+        await close_database_connections()
+        logger.info("database_connections_closed")
+    except Exception as e:
+        logger.error("database_shutdown_error", error=str(e))
+
+
+async def _shutdown_cache() -> None:
+    """Close cache connections."""
+    try:
+        from .utils.cache import close_cache_connections
+
+        await close_cache_connections()
+        logger.info("cache_connections_closed")
+    except Exception as e:
+        logger.error("cache_shutdown_error", error=str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
@@ -40,16 +90,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # Startup tasks
-    # TODO: Initialize database
-    # TODO: Initialize cache
-    # TODO: Run migrations
+    logger.info("initializing_application_dependencies")
+    await _initialize_database()
+    await _initialize_cache()
+    logger.info("application_startup_complete")
 
     yield
 
     # Shutdown tasks
     logger.info("shutting_down_application")
-    # TODO: Close database connections
-    # TODO: Close cache connections
+    await _shutdown_database()
+    await _shutdown_cache()
 
 
 def create_application() -> FastAPI:
@@ -108,7 +159,7 @@ def create_application() -> FastAPI:
         app.mount("/metrics", metrics_app)
 
     # Root endpoint
-    @app.get("/")  # type: ignore[misc]
+    @app.get("/")
     async def root() -> dict[str, Any]:
         """Root endpoint."""
         return {
