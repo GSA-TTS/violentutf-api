@@ -9,7 +9,7 @@ We're so glad you're thinking about contributing to a GSA open source project! I
 
 ## Submit an issue
 
-Use the issue tracker to suggest feature requests, report bugs, and ask questions. This is also a great way to connect with the developers of the project as well as others who are interested in this solution.  
+Use the issue tracker to suggest feature requests, report bugs, and ask questions. This is also a great way to connect with the developers of the project as well as others who are interested in this solution.
 
 ## Requesting a change
 

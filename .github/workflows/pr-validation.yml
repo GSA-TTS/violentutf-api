@@ -146,7 +146,7 @@ jobs:
           # Install hadolint
           wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
-          
+
           find . -name "Dockerfile*" -type f | while read df; do
             echo "Linting $df"
             ./hadolint "$df" || echo "Warnings in $df"
@@ -175,13 +175,13 @@ jobs:
               'API Validation': '${{ needs.api-validation.result }}',
               'Docker Build': '${{ needs.docker-check.result }}'
             };
-            
+
             let comment = '## PR Validation Results\n\n';
             for (const [check, result] of Object.entries(results)) {
               const emoji = result === 'success' ? '✅' : '❌';
               comment += `${emoji} **${check}**: ${result}\n`;
             }
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
