@@ -1,68 +1,177 @@
-# Reports
+# Reports Directory
 
-This directory contains various reports generated during the development and extraction of the ViolentUTF API.
+This directory contains implementation reports, verification documents, and project status tracking for the ViolentUTF API development.
+
+## Report Structure
+
+Reports follow a consistent naming convention and format for easy navigation and historical tracking.
+
+### Naming Convention
+- **Completion Reports**: `ISSUE_<number>_COMPLETION_REPORT.md`
+- **Verification Reports**: `ISSUE_<number>_VERIFICATION.md`
+- **Status Reports**: `issue_<number>_status.md`
+- **Summary Reports**: `<topic>_SUMMARY.md`
+
+### Report Types
+
+#### Implementation Reports
+Document the completion of specific features or issues:
+- Summary of work completed
+- Test results and coverage metrics
+- Security scan outcomes
+- Implementation decisions
+- Files created or modified
+
+#### Verification Reports
+Provide evidence that requirements were met:
+- Checklist of requirements
+- Test evidence
+- Code examples
+- Performance metrics
+- Compliance verification
+
+#### Status Reports
+Track ongoing work and identify gaps:
+- Current implementation status
+- Missing features
+- Recommendations
+- Next steps
+
+#### Summary Reports
+High-level overviews of major milestones:
+- Extraction summaries
+- Architecture decisions
+- Migration guides
+- Lessons learned
 
 ## Available Reports
 
-### [Issue #12 Completion Report](./ISSUE_12_COMPLETION_REPORT.md)
-- Summary of core framework extraction
-- Test results and coverage
-- Security scan results
-- Completed tasks checklist
+### Core Framework (Issues #12-13)
+- Core framework extraction and setup
+- Security middleware implementation
+- Basic functionality enhancements
 
-### [Issue #12 Verification](./ISSUE_12_VERIFICATION.md)
-- Detailed verification of all requirements
-- Evidence of completion
-- Directory structure documentation
-- Implementation details
+### API Features (Issues #14-15)
+- Health endpoint implementation
+- Configuration system extraction
+- Utility functions and helpers
 
-### [Extraction Summary](./EXTRACTION_SUMMARY.md)
-- Overview of extraction process
-- Key decisions made
-- Architecture changes
-- Migration notes
-
-## Report Categories
-
-### Implementation Reports
-- Feature completion status
-- Technical decisions
-- Architecture documentation
-- Migration guides
-
-### Quality Reports
-- Test coverage analysis
-- Code quality metrics
-- Performance benchmarks
-- Security scan results
-
-### Compliance Reports
-- GSA standards compliance
-- FISMA requirements
-- Accessibility compliance
-- Security compliance
+### Additional Features (Issue #16+)
+- Further enhancements and features
+- Performance optimizations
+- Security hardening
 
 ## Generating Reports
 
 ### Test Coverage Report
 ```bash
-pytest --cov=app --cov-report=html
-# Report available in htmlcov/index.html
+# Generate HTML coverage report
+pytest --cov=app --cov-report=html --cov-report=term
+
+# Generate XML for CI integration
+pytest --cov=app --cov-report=xml
 ```
 
-### Security Scan Report
+### Security Scan Reports
 ```bash
-bandit -r app/ -f json -o bandit-report.json
-pip-audit --output-format json > pip-audit-report.json
+# Bandit security scan
+bandit -r app/ -f json -o reports/bandit-$(date +%Y%m%d).json
+
+# Dependency audit
+pip-audit --desc --format json > reports/pip-audit-$(date +%Y%m%d).json
+
+# Semgrep scan
+semgrep --config=auto --json -o reports/semgrep-$(date +%Y%m%d).json app/
 ```
 
-### Performance Report
+### Performance Reports
 ```bash
-locust -f tests/performance/locustfile.py
+# Run load tests
+locust -f tests/performance/locustfile.py --html reports/performance-$(date +%Y%m%d).html
+
+# Generate API performance metrics
+python scripts/benchmark_api.py > reports/api-benchmark-$(date +%Y%m%d).json
 ```
 
-## Historical Reports
+### Code Quality Reports
+```bash
+# Type checking report
+mypy app/ --html-report reports/mypy-$(date +%Y%m%d)
 
-Reports are organized by date and issue number for easy reference:
-- `ISSUE_<number>_<type>_REPORT.md`
-- Example: `ISSUE_12_COMPLETION_REPORT.md`
+# Linting report
+flake8 app/ --format=html --htmldir=reports/flake8-$(date +%Y%m%d)
+
+# Complexity analysis
+radon cc app/ -j > reports/complexity-$(date +%Y%m%d).json
+```
+
+## Report Templates
+
+When creating new reports, use these templates for consistency:
+
+### Completion Report Template
+```markdown
+# Issue #XX Completion Report
+
+## Issue Title: [Title]
+
+## Summary
+[Brief overview of what was accomplished]
+
+## Test Results
+[Coverage metrics, test outcomes]
+
+## Security Compliance
+[Security scan results, vulnerabilities addressed]
+
+## Completed Tasks
+[Checklist of completed items]
+
+## Key Features Implemented
+[Major features and improvements]
+
+## Files Created/Modified
+[List of affected files]
+
+## Notes
+[Additional context or decisions]
+```
+
+### Verification Report Template
+```markdown
+# Issue #XX Verification: [Title]
+
+## Requirements Checklist
+- [ ] Requirement 1
+- [ ] Requirement 2
+
+## Evidence of Completion
+[Screenshots, code examples, test results]
+
+## Functional Verification
+[How features were tested]
+
+## Performance Validation
+[Performance metrics and benchmarks]
+
+## Conclusion
+[Summary of verification outcome]
+```
+
+## Historical Context
+
+These reports serve as:
+- **Decision Records**: Document why certain approaches were taken
+- **Progress Tracking**: Show evolution of the codebase
+- **Knowledge Base**: Help new team members understand the project
+- **Compliance Evidence**: Demonstrate adherence to standards
+- **Quality Metrics**: Track improvements over time
+
+## Contributing
+
+When adding new reports:
+1. Follow the naming convention
+2. Use appropriate templates
+3. Include relevant metrics and evidence
+4. Cross-reference related reports
+5. Update this README if adding new report types

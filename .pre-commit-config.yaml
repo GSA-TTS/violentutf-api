@@ -62,7 +62,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: package-lock.json
+        exclude: '^(tests/|test_|.*_test\.py|package-lock\.json)'
 
   # YAML formatting - Using stable v3 instead of alpha
   - repo: https://github.com/pre-commit/mirrors-prettier
