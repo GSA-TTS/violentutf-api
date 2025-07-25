@@ -11,8 +11,8 @@
 
 This document tracks all identified issues in the ViolentUTF API codebase following the completion of Issue #12 (Core Framework Extraction). Issues are categorized by severity and mapped to the [extraction strategy phases](../planning/violentutf-api_spinoff/extraction_strategy.md) where they will be addressed.
 
-**Current Status**: ✅ Issue #13 Complete - Basic functionality enhancement implemented
-**Next Phase**: Continue with extraction strategy Phase 3 - Data Layer Implementation
+**Current Status**: ✅ Issue #16 Complete - Database models with audit mixin fully implemented
+**Next Phase**: Continue with extraction strategy Phase 4 - API Enhancement and Security
 
 ---
 
