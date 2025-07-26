@@ -1,9 +1,10 @@
 """User model with comprehensive audit and security features - SQLAlchemy 2.0 Compatible."""
 
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from sqlalchemy import Boolean, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
@@ -55,6 +56,32 @@ class User(Base, BaseModelMixin):
         comment="Whether the user has administrative privileges",
     )
 
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        server_default="false",
+        comment="Whether the user email has been verified",
+    )
+
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Timestamp when the user was verified",
+    )
+
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Timestamp of the user's last successful login",
+    )
+
+    last_login_ip: Mapped[Optional[str]] = mapped_column(
+        String(45),  # IPv6 max length is 39, plus some margin
+        nullable=True,
+        comment="IP address of the user's last successful login",
+    )
+
     # Relationships
     api_keys: Mapped[List["APIKey"]] = relationship(
         "APIKey",
@@ -89,7 +116,7 @@ class User(Base, BaseModelMixin):
         # Security validation
         self.validate_string_security(key, value)
 
-        return value.lower()
+        return value
 
     @validates("email")
     def validate_email_field(self: "User", key: str, value: str) -> str:

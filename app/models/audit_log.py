@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Type, Union
 
 from sqlalchemy import DateTime, Index, Integer, String, text
-from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.db.base_class import Base
+from app.db.types import GUID, JSONType
 from app.models.mixins import AuditMixin, SecurityValidationMixin
 
 
@@ -35,7 +35,7 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
 
     # Actor information
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         nullable=True,
         index=True,
         comment="User who performed the action (null for system actions)",
@@ -53,17 +53,17 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
         String(500), nullable=True, comment="User agent string from the request"
     )
 
-    # Change tracking
+    # Change tracking with cross-database JSON support
     changes: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSON,
+        JSONType,
         nullable=True,
         default=None,
-        comment="JSON object with before/after values for updates",
+        comment="JSON with before/after values for updates",
     )
 
-    # Additional context
+    # Additional context with cross-database JSON support
     action_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSON,
+        JSONType,
         nullable=True,
         default=None,
         comment="Additional context or metadata about the action",

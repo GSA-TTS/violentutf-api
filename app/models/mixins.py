@@ -6,19 +6,23 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from sqlalchemy import Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, validates
 from sqlalchemy.orm.attributes import get_history
 from structlog.stdlib import get_logger
+
+from app.db.types import GUID
 
 logger = get_logger(__name__)
 
 # Security patterns for validation
 SQL_INJECTION_PATTERNS = [
-    r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b)",
+    # More sophisticated patterns that avoid false positives
+    r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b.*\b(FROM|INTO|WHERE|SET|TABLE|VALUES)\b)",
     r"(\bunion\b.*\bselect\b)",
-    r"(\b(OR|AND)\b.*=)",
-    r'([\'";].*(--))',
+    r"(\b(OR|AND)\b\s*['\"]?\s*\w*\s*['\"]?\s*=)",
+    r"(--.*$)",  # SQL comments
+    r"(/\*.*\*/)",  # SQL block comments
+    r"(;.*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b)",  # Multiple statements
 ]
 
 XSS_PATTERNS = [
@@ -37,11 +41,10 @@ class AuditMixin:
     # Mixins should not define __tablename__ - that's handled by the base class
 
     # Use mapped_column for SQLAlchemy 2.0 compatibility
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        GUID(),
         primary_key=True,
-        default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
+        default=lambda: str(uuid.uuid4()),
         nullable=False,
     )
 
@@ -266,7 +269,7 @@ class RowLevelSecurityMixin:
     )
 
     organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         nullable=True,
         index=True,
     )

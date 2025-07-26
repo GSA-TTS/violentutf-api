@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
-from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
+from app.db.types import GUID, JSONType
 from app.models.mixins import BaseModelMixin
 
 if TYPE_CHECKING:
@@ -38,13 +38,13 @@ class APIKey(Base, BaseModelMixin):
         String(10), nullable=False, index=True, comment="First few characters of key for identification"
     )
 
-    # Permissions stored as JSON for flexibility
+    # Permissions stored as JSON with cross-database compatibility
     permissions: Mapped[Dict[str, Any]] = mapped_column(
-        JSON,
+        JSONType,
         nullable=False,
         default=dict,
         server_default=text("'{}'"),
-        comment="JSON object containing permission scopes",
+        comment="JSON containing permission scopes",
     )
 
     # Usage tracking
@@ -67,7 +67,7 @@ class APIKey(Base, BaseModelMixin):
 
     # User relationship
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("user.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -200,7 +200,16 @@ class APIKey(Base, BaseModelMixin):
         """Check if the API key has expired."""
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) > self.expires_at
+
+        # Handle both timezone-aware and naive datetimes
+        now = datetime.now(timezone.utc)
+        expires_at = self.expires_at
+
+        # If expires_at is naive, assume it's UTC
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        return now > expires_at
 
     def is_active(self: "APIKey") -> bool:
         """Check if the API key is active and valid."""

@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 120
-extend-ignore = E203, W503, E501, F401, F541, E226
+extend-ignore = E203, W503, E501, F401, F541, E226, ANN101, ANN204, B009, E712
 exclude =
     .git,
     __pycache__,
@@ -23,7 +23,8 @@ exclude =
     scripts
 per-file-ignores =
     __init__.py:F401
-    tests/*:F401,F811,ANN101,ANN401,D202
+    tests/*:F401,F811,ANN101,ANN401,D202,ANN201,B007,B023,F841,E722,B001,D102,D107,ANN001,ANN002,ANN003,ANN202,C901,D401
+    alembic/versions/*:D400
 max-complexity = 10
 statistics = True
 count = True

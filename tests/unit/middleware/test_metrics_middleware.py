@@ -10,12 +10,7 @@ from fastapi.testclient import TestClient
 from prometheus_client import REGISTRY
 
 from app.core.config import settings
-from app.middleware.metrics import (
-    ACTIVE_REQUESTS,
-    REQUEST_COUNT,
-    REQUEST_DURATION,
-    MetricsMiddleware,
-)
+from app.middleware.metrics import ACTIVE_REQUESTS, REQUEST_COUNT, REQUEST_DURATION, MetricsMiddleware
 
 
 class TestMetricsMiddleware:

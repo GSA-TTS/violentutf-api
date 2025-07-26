@@ -32,6 +32,8 @@ class TestDatabaseEngine:
         """Test successful engine creation."""
         mock_settings.DATABASE_URL = "postgresql+asyncpg://user:pass@localhost/test"  # pragma: allowlist secret
         mock_settings.DEBUG = False
+        mock_settings.DATABASE_POOL_SIZE = 10
+        mock_settings.DATABASE_MAX_OVERFLOW = 20
         mock_engine = MagicMock()
         mock_create_engine.return_value = mock_engine
 
@@ -45,6 +47,9 @@ class TestDatabaseEngine:
             max_overflow=20,
             pool_pre_ping=True,
             pool_recycle=3600,
+            pool_timeout=30,
+            pool_reset_on_return="commit",
+            connect_args={},
         )
 
     @patch("app.db.session.settings")
@@ -133,12 +138,9 @@ class TestDatabaseContext:
     async def test_get_db_success(self) -> None:
         """Test successful database context usage."""
         mock_session = AsyncMock()
-        mock_session_maker = MagicMock()
-        mock_session_maker.return_value.__aenter__.return_value = mock_session
-        mock_session_maker.return_value.__aexit__.return_value = None
 
-        with patch("app.db.session.get_session_maker") as mock_get_session_maker:
-            mock_get_session_maker.return_value = mock_session_maker
+        with patch("app.db.session.db_circuit_breaker") as mock_circuit_breaker:
+            mock_circuit_breaker.call = AsyncMock(return_value=mock_session)
 
             async with get_db() as db:
                 assert db == mock_session
@@ -149,12 +151,9 @@ class TestDatabaseContext:
     async def test_get_db_exception_rollback(self) -> None:
         """Test database context with exception triggers rollback."""
         mock_session = AsyncMock()
-        mock_session_maker = MagicMock()
-        mock_session_maker.return_value.__aenter__.return_value = mock_session
-        mock_session_maker.return_value.__aexit__.return_value = None
 
-        with patch("app.db.session.get_session_maker") as mock_get_session_maker:
-            mock_get_session_maker.return_value = mock_session_maker
+        with patch("app.db.session.db_circuit_breaker") as mock_circuit_breaker:
+            mock_circuit_breaker.call = AsyncMock(return_value=mock_session)
 
             with pytest.raises(ValueError):
                 async with get_db():
