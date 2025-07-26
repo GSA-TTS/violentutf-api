@@ -4,14 +4,11 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import redis.asyncio as redis
-
-if TYPE_CHECKING:
-    RedisClient = redis.Redis[str]
-else:
-    RedisClient = redis.Redis
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
+
+RedisClient = redis.Redis[str]
 
 logger = get_logger(__name__)
 
@@ -27,7 +24,7 @@ def create_cache_client() -> Optional[RedisClient]:
 
     try:
         # Create Redis client with connection pooling
-        client = redis.from_url(
+        client: RedisClient = redis.from_url(
             settings.REDIS_URL,
             encoding="utf-8",
             decode_responses=True,

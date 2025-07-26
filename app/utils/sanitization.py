@@ -410,3 +410,98 @@ def sanitize_ai_prompt(prompt: str, max_length: int = 50000) -> str:
     sanitized = re.sub(r"\s+", " ", sanitized).strip()
 
     return sanitized
+
+
+def sanitize_string(text: str, max_length: int = 1000, allow_html: bool = False, strip_sql: bool = True) -> str:
+    """
+    Sanitize a string for general use.
+
+    Args:
+        text: String to sanitize
+        max_length: Maximum allowed string length
+        allow_html: Whether to allow HTML content
+        strip_sql: Whether to strip SQL injection patterns
+
+    Returns:
+        Sanitized string
+    """
+    if not text or not isinstance(text, str):
+        return ""
+
+    # Limit length first
+    if len(text) > max_length:
+        text = text[:max_length]
+
+    # Remove control characters except tab, newline, carriage return
+    text = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", text)
+
+    # Handle HTML content
+    if allow_html:
+        text = sanitize_html(text)
+    else:
+        # Escape HTML if not allowing it
+        text = html.escape(text)
+
+    # Handle SQL injection patterns if requested
+    if strip_sql:
+        text = sanitize_sql_input(text)
+
+    # Clean up whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
+
+
+def sanitize_dict(
+    data: Any, max_key_length: int = 100, max_value_length: int = 1000, allow_html: bool = False  # noqa: ANN401
+) -> Dict[str, Any]:  # noqa: C901
+    """
+    Sanitize all string values in a dictionary.
+
+    Args:
+        data: Dictionary to sanitize
+        max_key_length: Maximum length for keys
+        max_value_length: Maximum length for string values
+        allow_html: Whether to allow HTML in values
+
+    Returns:
+        Dictionary with sanitized string values
+    """
+    if not isinstance(data, dict):
+        return {}
+
+    sanitized: Dict[str, Any] = {}
+
+    for key, value in data.items():
+        # Sanitize key
+        if isinstance(key, str):
+            clean_key = sanitize_string(key, max_length=max_key_length, allow_html=False)
+            if not clean_key:  # Skip empty keys
+                continue
+        else:
+            clean_key = str(key)[:max_key_length]
+
+        # Sanitize value based on type
+        if isinstance(value, str):
+            clean_value = sanitize_string(value, max_length=max_value_length, allow_html=allow_html)
+            sanitized[clean_key] = clean_value
+        elif isinstance(value, dict):
+            # Recursively sanitize nested dictionaries
+            sanitized[clean_key] = sanitize_dict(value, max_key_length, max_value_length, allow_html)
+        elif isinstance(value, list):
+            # Sanitize list items
+            clean_list: List[Any] = []
+            for item in value:
+                if isinstance(item, str):
+                    clean_item = sanitize_string(item, max_length=max_value_length, allow_html=allow_html)
+                    clean_list.append(clean_item)
+                elif isinstance(item, dict):
+                    clean_list.append(sanitize_dict(item, max_key_length, max_value_length, allow_html))
+                else:
+                    clean_list.append(item)
+            sanitized[clean_key] = clean_list
+        else:
+            # Keep non-string values as-is
+            sanitized[clean_key] = value
+
+    return sanitized

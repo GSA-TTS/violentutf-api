@@ -25,6 +25,10 @@ per-file-ignores =
     __init__.py:F401
     tests/*:F401,F811,ANN101,ANN401,D202,ANN201,B007,B023,F841,E722,B001,D102,D107,ANN001,ANN002,ANN003,ANN202,C901,D401
     alembic/versions/*:D400
+    app/middleware/input_sanitization.py:C901
+    app/middleware/session.py:C901
+    app/utils/sanitization.py:C901
+    app/schemas/common.py:ANN001,ANN102
 max-complexity = 10
 statistics = True
 count = True
