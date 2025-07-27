@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRFProtectionMiddleware
 from app.middleware.input_sanitization import InputSanitizationMiddleware
-from app.middleware.logging_middleware import LoggingMiddleware
+from app.middleware.logging import LoggingMiddleware
 from app.middleware.metrics import MetricsMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.request_signing import RequestSigningMiddleware

@@ -1,8 +1,10 @@
 """API route configuration."""
 
+from typing import Any, Dict
+
 from fastapi import APIRouter
 
-from .endpoints import auth, health
+from .endpoints import api_keys, audit_logs, auth, health, sessions, users
 
 api_router = APIRouter()
 
@@ -24,4 +26,47 @@ api_router.include_router(
         401: {"description": "Unauthorized"},
         403: {"description": "Forbidden"},
     },
+)
+
+# Include CRUD endpoints with comprehensive error responses
+crud_error_responses: Dict[int | str, Dict[str, Any]] = {
+    400: {"description": "Bad request"},
+    401: {"description": "Unauthorized"},
+    403: {"description": "Forbidden"},
+    404: {"description": "Not found"},
+    409: {"description": "Conflict"},
+    422: {"description": "Validation error"},
+    500: {"description": "Internal server error"},
+}
+
+# Include Users CRUD endpoints
+api_router.include_router(
+    users.router,
+    prefix="/api/v1",
+    tags=["Users"],
+    responses=crud_error_responses,
+)
+
+# Include API Keys CRUD endpoints
+api_router.include_router(
+    api_keys.router,
+    prefix="/api/v1",
+    tags=["API Keys"],
+    responses=crud_error_responses,
+)
+
+# Include Sessions CRUD endpoints
+api_router.include_router(
+    sessions.router,
+    prefix="/api/v1",
+    tags=["Sessions"],
+    responses=crud_error_responses,
+)
+
+# Include Audit Logs read-only endpoints
+api_router.include_router(
+    audit_logs.router,
+    prefix="/api/v1",
+    tags=["Audit Logs"],
+    responses=crud_error_responses,
 )

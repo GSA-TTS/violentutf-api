@@ -12,6 +12,8 @@ from app.models.mixins import BaseModelMixin
 
 if TYPE_CHECKING:
     from app.models.api_key import APIKey
+    from app.models.audit_log import AuditLog
+    from app.models.session import Session
 
 
 class User(Base, BaseModelMixin):
@@ -90,6 +92,17 @@ class User(Base, BaseModelMixin):
         lazy="dynamic",
     )
 
+    audit_logs: Mapped[List["AuditLog"]] = relationship(
+        "AuditLog", back_populates="user", foreign_keys="AuditLog.user_id", lazy="dynamic", cascade="all, delete-orphan"
+    )
+
+    sessions: Mapped[List["Session"]] = relationship(
+        "Session",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
     # Model-specific constraints (will be combined by AuditMixin)
     _model_constraints = (
         UniqueConstraint("username", "is_deleted", name="uq_user_username_active"),
@@ -116,7 +129,8 @@ class User(Base, BaseModelMixin):
         # Security validation
         self.validate_string_security(key, value)
 
-        return value
+        # Normalize to lowercase for case-insensitive matching
+        return value.lower()
 
     @validates("email")
     def validate_email_field(self: "User", key: str, value: str) -> str:
@@ -161,9 +175,17 @@ class User(Base, BaseModelMixin):
 
         return value
 
+    def __str__(self: "User") -> str:
+        """Return human-readable string representation of user."""
+        status = "active" if self.is_active else "inactive"
+        verified = "verified" if self.is_verified else "unverified"
+        return f"User '{self.username}' ({self.email}) - {status}, {verified}"
+
     def __repr__(self: "User") -> str:
         """Return string representation of user."""
-        return f"<User(username={self.username}, email={self.email}, active={self.is_active})>"
+        return (
+            f"<User(id={str(self.id)[:8]}, username='{self.username}', email='{self.email}', active={self.is_active})>"
+        )
 
     def to_dict(self: "User") -> Dict[str, Any]:
         """Convert user to dictionary for serialization."""
@@ -177,3 +199,31 @@ class User(Base, BaseModelMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    def get_display_name(self: "User") -> str:
+        """Get display-friendly name for the user."""
+        if self.full_name:
+            return self.full_name
+        return self.username
+
+    def get_status_display(self: "User") -> str:
+        """Get human-readable status of the user."""
+        if not self.is_active:
+            return "Inactive"
+        if not self.is_verified:
+            return "Pending Verification"
+        return "Active"
+
+    def can_login(self: "User") -> bool:
+        """Check if user can login."""
+        return self.is_active and self.is_verified
+
+    def update_login_info(self: "User", ip_address: Optional[str] = None) -> None:
+        """Update login information."""
+        from datetime import datetime, timezone
+
+        self.last_login_at = datetime.now(timezone.utc)
+        if ip_address:
+            self.last_login_ip = ip_address
+
+        # Update timestamp (login count tracking could be added later)

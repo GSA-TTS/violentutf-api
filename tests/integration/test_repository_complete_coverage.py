@@ -49,18 +49,35 @@ class TestBaseRepositoryCoverage:
     @pytest.mark.asyncio
     async def test_get_by_id_model_without_soft_delete(self):
         """Test get_by_id for model without is_deleted (line 131)."""
+        from unittest.mock import patch
 
-        class SimpleModel:
-            id = "test-id"
+        from sqlalchemy import Column, String
+
+        from app.db.base_class import Base
+
+        # Create a proper SQLAlchemy model without is_deleted field
+        class SimpleModel(Base):
+            __tablename__ = "simple_test_model"
+            id = Column(String, primary_key=True)
 
         mock_session = MagicMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = SimpleModel()
+        mock_result.scalar_one_or_none.return_value = SimpleModel(id="test-id")
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        repo = BaseRepository(mock_session, SimpleModel)
-        result = await repo.get_by_id("test-id")
-        assert result is not None
+        # Mock the select function to avoid actual SQL compilation
+        with patch("app.repositories.base.select") as mock_select:
+            mock_query = MagicMock()
+            mock_select.return_value.where.return_value = mock_query
+
+            repo = BaseRepository(mock_session, SimpleModel)
+            result = await repo.get_by_id("test-id")
+
+            # Verify select was called with the model
+            mock_select.assert_called_once_with(SimpleModel)
+            # Verify session.execute was called
+            mock_session.execute.assert_called_once_with(mock_query)
+            assert result is not None
 
     @pytest.mark.asyncio
     async def test_get_by_id_exception(self, user_repo: BaseRepository[User]):

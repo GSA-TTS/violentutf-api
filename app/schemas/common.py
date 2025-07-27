@@ -56,19 +56,21 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response."""
 
     items: List[T] = Field(..., description="List of items")
-    total: int = Field(..., description="Total number of items")
-    page: int = Field(..., description="Current page number")
-    page_size: int = Field(..., description="Items per page")
-    total_pages: int = Field(..., description="Total number of pages")
+    total: int = Field(..., ge=0, description="Total number of items")
+    page: int = Field(..., ge=1, description="Current page number")
+    page_size: int = Field(..., ge=1, description="Items per page")
+    total_pages: int = Field(..., ge=0, description="Total number of pages")
 
     @field_validator("total_pages", mode="before")
     @classmethod
-    def calculate_total_pages(cls, v, values) -> int:  # type: ignore[no-untyped-def]
+    def calculate_total_pages(cls, v: Optional[int], info) -> int:  # type: ignore[no-untyped-def]
         """Calculate total pages based on total items and page size."""
         if v is not None:
             return int(v)
-        total = values.get("total", 0)
-        page_size = values.get("page_size", 20)
+        # Access other fields using info.data
+        data = info.data if hasattr(info, "data") else {}
+        total = data.get("total", 0)
+        page_size = data.get("page_size", 20)
         return (total + page_size - 1) // page_size if page_size > 0 else 0
 
 

@@ -10,16 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.pool import NullPool, QueuePool
 
 from app.db.session import (
-    async_session_maker,
     check_database_health,
     close_database_connections,
     db_circuit_breaker,
-    engine,
     get_connection_pool_stats,
     get_db,
-    get_engine,
     get_session_maker,
-    recreate_database_pool,
     reset_circuit_breaker,
 )
 from app.utils.circuit_breaker import CircuitState

@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from .common import PaginatedResponse
 
@@ -12,6 +12,7 @@ from .common import PaginatedResponse
 class UserBase(BaseModel):
     """Base user schema with common fields."""
 
+    model_config = ConfigDict(extra="forbid")  # Forbid extra fields
     username: str = Field(
         ...,
         min_length=3,
@@ -32,11 +33,14 @@ class UserBase(BaseModel):
         """Validate full name doesn't contain malicious content."""
         if v is None:
             return v
-        # Remove any potential HTML/JS
-        cleaned = re.sub(r"<[^>]*>", "", v)
-        # Remove any potential SQL injection attempts
-        if any(pattern in cleaned.lower() for pattern in ["<script", "javascript:", "onerror"]):
+
+        # Check for dangerous patterns BEFORE cleaning
+        dangerous_patterns = ["<script", "javascript:", "onerror"]
+        if any(pattern in v.lower() for pattern in dangerous_patterns):
             raise ValueError("Full name contains invalid content")
+
+        # Remove any potential HTML/JS after validation
+        cleaned = re.sub(r"<[^>]*>", "", v)
         return cleaned.strip() if cleaned else None
 
 
@@ -83,11 +87,14 @@ class UserCreate(BaseModel):
         """Validate full name doesn't contain malicious content."""
         if v is None:
             return v
-        # Remove any potential HTML/JS
-        cleaned = re.sub(r"<[^>]*>", "", v)
-        # Remove any potential SQL injection attempts
-        if any(pattern in cleaned.lower() for pattern in ["<script", "javascript:", "onerror"]):
+
+        # Check for dangerous patterns BEFORE cleaning
+        dangerous_patterns = ["<script", "javascript:", "onerror"]
+        if any(pattern in v.lower() for pattern in dangerous_patterns):
             raise ValueError("Full name contains invalid content")
+
+        # Remove any potential HTML/JS after validation
+        cleaned = re.sub(r"<[^>]*>", "", v)
         return cleaned.strip() if cleaned else None
 
 
@@ -107,11 +114,14 @@ class UserUpdate(BaseModel):
         """Validate full name doesn't contain malicious content."""
         if v is None:
             return v
-        # Remove any potential HTML/JS
-        cleaned = re.sub(r"<[^>]*>", "", v)
-        # Remove any potential SQL injection attempts
-        if any(pattern in cleaned.lower() for pattern in ["<script", "javascript:", "onerror"]):
+
+        # Check for dangerous patterns BEFORE cleaning
+        dangerous_patterns = ["<script", "javascript:", "onerror"]
+        if any(pattern in v.lower() for pattern in dangerous_patterns):
             raise ValueError("Full name contains invalid content")
+
+        # Remove any potential HTML/JS after validation
+        cleaned = re.sub(r"<[^>]*>", "", v)
         return cleaned.strip() if cleaned else None
 
 

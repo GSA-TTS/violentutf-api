@@ -23,8 +23,7 @@ import pytest_asyncio
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash
-from app.db.session import DatabaseManager
+from app.core.security import hash_password
 from app.models.api_key import APIKey
 from app.models.audit_log import AuditLog
 from app.models.user import User

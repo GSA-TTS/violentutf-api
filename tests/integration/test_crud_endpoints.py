@@ -1,0 +1,457 @@
+"""Integration tests for CRUD endpoints flow."""
+
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict
+
+import pytest
+from fastapi import status
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import hash_password
+from app.models.api_key import APIKey
+from app.models.audit_log import AuditLog
+from app.models.session import Session
+from app.models.user import User
+
+
+class TestCRUDEndpointsIntegration:
+    """Integration tests for complete CRUD endpoints flow."""
+
+    @pytest.fixture
+    async def test_user(self, db_session: AsyncSession) -> User:
+        """Create a test user in the database."""
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            password_hash=hash_password("TestPass123!"),
+            full_name="Test User",
+            is_active=True,
+            is_superuser=False,
+            is_verified=True,
+            created_by="system",
+            updated_by="system",
+        )
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+        return user
+
+    @pytest.fixture
+    async def admin_user(self, db_session: AsyncSession) -> User:
+        """Create an admin user in the database."""
+        admin = User(
+            username="admin",
+            email="admin@example.com",
+            password_hash=hash_password("AdminPass123!"),
+            full_name="Admin User",
+            is_active=True,
+            is_superuser=True,
+            is_verified=True,
+            created_by="system",
+            updated_by="system",
+        )
+        db_session.add(admin)
+        await db_session.commit()
+        await db_session.refresh(admin)
+        return admin
+
+    @pytest.fixture
+    async def auth_token(self, client: AsyncClient, test_user: User) -> str:
+        """Get authentication token for test user."""
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"username": test_user.username, "password": "TestPass123!"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        return response.json()["access_token"]
+
+    @pytest.fixture
+    async def admin_token(self, client: AsyncClient, admin_user: User) -> str:
+        """Get authentication token for admin user."""
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"username": admin_user.username, "password": "AdminPass123!"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        return response.json()["access_token"]
+
+    @pytest.mark.asyncio
+    async def test_complete_user_crud_flow(
+        self,
+        client: AsyncClient,
+        admin_token: str,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test complete user CRUD flow."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Create a new user
+        user_data = {
+            "username": "newuser",
+            "email": "new@example.com",
+            "password": "NewPass123!",
+            "full_name": "New User",
+            "is_superuser": False,
+        }
+
+        create_response = await client.post(
+            "/api/v1/users",
+            json=user_data,
+            headers=headers,
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        created_user = create_response.json()["data"]
+        user_id = created_user["id"]
+
+        # 2. List users with pagination
+        list_response = await client.get(
+            "/api/v1/users",
+            params={"page": 1, "per_page": 10},
+            headers=headers,
+        )
+        assert list_response.status_code == status.HTTP_200_OK
+        assert any(u["id"] == user_id for u in list_response.json()["data"])
+
+        # 3. Get user by ID
+        get_response = await client.get(
+            f"/api/v1/users/{user_id}",
+            headers=headers,
+        )
+        assert get_response.status_code == status.HTTP_200_OK
+        assert get_response.json()["data"]["username"] == "newuser"
+
+        # 4. Update user
+        update_data = {"full_name": "Updated User Name"}
+        update_response = await client.put(
+            f"/api/v1/users/{user_id}",
+            json=update_data,
+            headers=headers,
+        )
+        assert update_response.status_code == status.HTTP_200_OK
+
+        # 5. Verify update
+        verify_response = await client.get(
+            f"/api/v1/users/{user_id}",
+            headers=headers,
+        )
+        assert verify_response.json()["data"]["full_name"] == "Updated User Name"
+
+        # 6. Delete user
+        delete_response = await client.delete(
+            f"/api/v1/users/{user_id}",
+            headers=headers,
+        )
+        assert delete_response.status_code == status.HTTP_200_OK
+        assert delete_response.json()["data"]["success"] is True
+
+        # 7. Verify deletion (soft delete)
+        final_response = await client.get(
+            f"/api/v1/users/{user_id}",
+            headers=headers,
+        )
+        assert final_response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_api_key_lifecycle(
+        self,
+        client: AsyncClient,
+        test_user: User,
+        auth_token: str,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test complete API key lifecycle."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        # 1. Create API key
+        key_data = {
+            "name": "Test API Key",
+            "description": "Integration test key",
+            "permissions": {"read": True, "write": False},
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        }
+
+        create_response = await client.post(
+            "/api/v1/api-keys",
+            json=key_data,
+            headers=headers,
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        created_key = create_response.json()["data"]
+        key_id = created_key["id"]
+        full_key = created_key["key"]  # Save for later validation
+
+        # 2. List my API keys
+        list_response = await client.get(
+            "/api/v1/api-keys/my-keys",
+            headers=headers,
+        )
+        assert list_response.status_code == status.HTTP_200_OK
+        assert any(k["id"] == key_id for k in list_response.json()["data"])
+
+        # 3. Validate API key
+        validate_response = await client.post(
+            f"/api/v1/api-keys/{key_id}/validate",
+            headers=headers,
+        )
+        assert validate_response.status_code == status.HTTP_200_OK
+        assert validate_response.json()["data"]["success"] is True
+
+        # 4. Update API key
+        update_data = {
+            "name": "Updated API Key",
+            "permissions": {"read": True, "write": True},
+        }
+        update_response = await client.put(
+            f"/api/v1/api-keys/{key_id}",
+            json=update_data,
+            headers=headers,
+        )
+        assert update_response.status_code == status.HTTP_200_OK
+
+        # 5. Revoke API key
+        revoke_response = await client.post(
+            f"/api/v1/api-keys/{key_id}/revoke",
+            headers=headers,
+        )
+        assert revoke_response.status_code == status.HTTP_200_OK
+
+        # 6. Validate revoked key
+        validate_revoked = await client.post(
+            f"/api/v1/api-keys/{key_id}/validate",
+            headers=headers,
+        )
+        assert validate_revoked.status_code == status.HTTP_200_OK
+        assert validate_revoked.json()["data"]["success"] is False
+
+    @pytest.mark.asyncio
+    async def test_session_management_flow(
+        self,
+        client: AsyncClient,
+        test_user: User,
+        auth_token: str,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test session management flow."""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        # 1. Create a session
+        session_data = {
+            "user_id": str(test_user.id),
+            "session_token": f"test_session_{uuid.uuid4()}",
+            "device_info": "Test Device",
+            "ip_address": "127.0.0.1",
+            "expires_at": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+        }
+
+        create_response = await client.post(
+            "/api/v1/sessions",
+            json=session_data,
+            headers=headers,
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        session_id = create_response.json()["data"]["id"]
+
+        # 2. Get my sessions
+        my_sessions = await client.get(
+            "/api/v1/sessions/my-sessions",
+            headers=headers,
+        )
+        assert my_sessions.status_code == status.HTTP_200_OK
+        assert any(s["id"] == session_id for s in my_sessions.json()["data"])
+
+        # 3. Extend session
+        extend_response = await client.post(
+            f"/api/v1/sessions/{session_id}/extend",
+            json={"extension_minutes": 60},
+            headers=headers,
+        )
+        assert extend_response.status_code == status.HTTP_200_OK
+
+        # 4. Revoke specific session
+        revoke_response = await client.post(
+            f"/api/v1/sessions/{session_id}/revoke",
+            json={"reason": "Test revocation"},
+            headers=headers,
+        )
+        assert revoke_response.status_code == status.HTTP_200_OK
+
+        # 5. Verify session is revoked
+        get_response = await client.get(
+            f"/api/v1/sessions/{session_id}",
+            headers=headers,
+        )
+        assert get_response.status_code == status.HTTP_200_OK
+        assert get_response.json()["data"]["is_active"] is False
+
+    @pytest.mark.asyncio
+    async def test_audit_log_tracking(
+        self,
+        client: AsyncClient,
+        admin_user: User,
+        admin_token: str,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that actions are properly tracked in audit logs."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Perform some actions
+        # Create a user
+        user_data = {
+            "username": "audittest",
+            "email": "audit@example.com",
+            "password": "AuditPass123!",
+        }
+        user_response = await client.post(
+            "/api/v1/users",
+            json=user_data,
+            headers=headers,
+        )
+        assert user_response.status_code == status.HTTP_201_CREATED
+        user_id = user_response.json()["data"]["id"]
+
+        # Update the user
+        await client.put(
+            f"/api/v1/users/{user_id}",
+            json={"full_name": "Audit Test User"},
+            headers=headers,
+        )
+
+        # 2. Check audit logs
+        # Wait a moment for audit logs to be written
+        import asyncio
+
+        await asyncio.sleep(0.5)
+
+        # Get audit logs for the user
+        logs_response = await client.get(
+            f"/api/v1/audit-logs/resource/user/{user_id}",
+            headers=headers,
+        )
+        assert logs_response.status_code == status.HTTP_200_OK
+        logs = logs_response.json()["data"]
+
+        # Should have at least create and update actions
+        actions = [log["action"] for log in logs]
+        assert "user.create" in actions
+        assert "user.update" in actions
+
+        # 3. Get audit statistics
+        stats_response = await client.get(
+            "/api/v1/audit-logs/statistics",
+            headers=headers,
+        )
+        assert stats_response.status_code == status.HTTP_200_OK
+        stats = stats_response.json()["data"]
+        assert stats["total_logs"] > 0
+
+        # 4. Test export functionality
+        export_response = await client.post(
+            "/api/v1/audit-logs/export",
+            json={
+                "format": "json",
+                "resource_type": "user",
+                "include_metadata": True,
+            },
+            headers=headers,
+        )
+        assert export_response.status_code == status.HTTP_200_OK
+        assert export_response.headers["content-type"] == "application/json"
+
+    @pytest.mark.asyncio
+    async def test_idempotency_middleware(
+        self,
+        client: AsyncClient,
+        auth_token: str,
+    ) -> None:
+        """Test idempotency middleware with repeated requests."""
+        headers = {
+            "Authorization": f"Bearer {auth_token}",
+            "Idempotency-Key": f"test-key-{uuid.uuid4()}",
+        }
+
+        # First request - create API key
+        key_data = {
+            "name": "Idempotent Key",
+            "permissions": {"read": True},
+        }
+
+        first_response = await client.post(
+            "/api/v1/api-keys",
+            json=key_data,
+            headers=headers,
+        )
+        assert first_response.status_code == status.HTTP_201_CREATED
+        first_data = first_response.json()
+
+        # Second request with same idempotency key
+        second_response = await client.post(
+            "/api/v1/api-keys",
+            json=key_data,
+            headers=headers,
+        )
+        assert second_response.status_code == status.HTTP_201_CREATED
+        second_data = second_response.json()
+
+        # Should return the same response
+        assert first_data["data"]["id"] == second_data["data"]["id"]
+
+        # Different idempotency key should create new resource
+        headers["Idempotency-Key"] = f"test-key-{uuid.uuid4()}"
+        third_response = await client.post(
+            "/api/v1/api-keys",
+            json={**key_data, "name": "Another Key"},
+            headers=headers,
+        )
+        assert third_response.status_code == status.HTTP_201_CREATED
+        assert third_response.json()["data"]["id"] != first_data["data"]["id"]
+
+    @pytest.mark.asyncio
+    async def test_permission_boundaries(
+        self,
+        client: AsyncClient,
+        test_user: User,
+        auth_token: str,
+        admin_user: User,
+        admin_token: str,
+    ) -> None:
+        """Test permission boundaries between users and admins."""
+        user_headers = {"Authorization": f"Bearer {auth_token}"}
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Regular user cannot access admin endpoints
+        admin_only_endpoints = [
+            ("GET", "/api/v1/sessions/statistics"),
+            ("GET", "/api/v1/api-keys/usage-stats"),
+            ("GET", "/api/v1/audit-logs"),
+            ("POST", f"/api/v1/users/{admin_user.id}/verify"),
+        ]
+
+        for method, endpoint in admin_only_endpoints:
+            if method == "GET":
+                response = await client.get(endpoint, headers=user_headers)
+            else:
+                response = await client.post(endpoint, headers=user_headers)
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # 2. Users can only modify their own resources
+        # Try to delete another user's data
+        delete_response = await client.delete(
+            f"/api/v1/users/{admin_user.id}",
+            headers=user_headers,
+        )
+        assert delete_response.status_code == status.HTTP_403_FORBIDDEN
+
+        # 3. Admin can access everything
+        admin_list = await client.get(
+            "/api/v1/users",
+            headers=admin_headers,
+        )
+        assert admin_list.status_code == status.HTTP_200_OK
+
+        stats = await client.get(
+            "/api/v1/sessions/statistics",
+            headers=admin_headers,
+        )
+        assert stats.status_code == status.HTTP_200_OK

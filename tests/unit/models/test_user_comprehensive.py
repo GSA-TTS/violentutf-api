@@ -471,7 +471,9 @@ class TestUserRelationships:
 
         assert relationship_property.mapper.class_.__name__ == "APIKey"
         assert relationship_property.back_populates == "user"
-        assert "all" in relationship_property.cascade
+        # In SQLAlchemy 2.0+, "all" is expanded to individual cascade options
+        # Check for "delete" which is part of the "all" cascade
+        assert "delete" in relationship_property.cascade
         assert "delete-orphan" in relationship_property.cascade
         assert relationship_property.lazy == "dynamic"
 

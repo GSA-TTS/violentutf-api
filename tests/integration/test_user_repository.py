@@ -48,19 +48,24 @@ class TestUserRepository:
         assert found is None
 
     @pytest.mark.asyncio
-    async def test_get_by_username_case_sensitive(self, user_repo: UserRepository, async_db_session: AsyncSession):
-        """Test username lookup is case sensitive."""
-        # Create user
+    async def test_get_by_username_case_insensitive(self, user_repo: UserRepository, async_db_session: AsyncSession):
+        """Test username lookup is case insensitive (usernames are normalized to lowercase)."""
+        # Create user - username will be normalized to lowercase
         await user_repo.create(username="TestUser", email="case@example.com", password_hash=get_test_password_hash())
         await async_db_session.commit()
 
-        # Try different case
+        # All case variations should find the user
         found = await user_repo.get_by_username("testuser")
-        assert found is None
+        assert found is not None
+        assert found.username == "testuser"
 
-        # Exact case should work
         found = await user_repo.get_by_username("TestUser")
         assert found is not None
+        assert found.username == "testuser"
+
+        found = await user_repo.get_by_username("TESTUSER")
+        assert found is not None
+        assert found.username == "testuser"
 
     @pytest.mark.asyncio
     async def test_get_by_email_existing(self, user_repo: UserRepository, async_db_session: AsyncSession):

@@ -53,6 +53,7 @@ class AuditMixin:
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         server_default=text("CURRENT_TIMESTAMP"),
+        index=True,
     )
 
     created_by: Mapped[str] = mapped_column(
@@ -68,6 +69,7 @@ class AuditMixin:
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         server_default=text("CURRENT_TIMESTAMP"),
+        index=True,
     )
 
     updated_by: Mapped[str] = mapped_column(

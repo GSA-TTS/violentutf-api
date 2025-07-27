@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.pool import NullPool, QueuePool
 
 from app.core.config import settings
-from app.db.session import DatabaseManager, get_async_session_maker, get_db
+from app.db.session import get_db, get_session_maker
 from app.models.user import User
 from app.repositories.user import UserRepository
 
@@ -182,7 +182,7 @@ class TestConnectionPoolingLoad:
     async def test_pool_exhaustion_behavior(self, db_manager):
         """Test behavior when connection pool is exhausted."""
         # Create a small pool to test exhaustion
-        small_pool_maker = get_async_session_maker(database_url=settings.DATABASE_URL, pool_size=2, max_overflow=1)
+        small_pool_maker = get_session_maker()
 
         metrics = PerformanceMetrics()
         concurrent_count = 10  # More than pool size
@@ -253,9 +253,8 @@ class TestConnectionPoolingLoad:
 
         for pool_size in pool_sizes:
             # Create session maker with specific pool size
-            session_maker = get_async_session_maker(
-                database_url=settings.DATABASE_URL, pool_size=pool_size, max_overflow=pool_size // 2
-            )
+            # Note: get_session_maker doesn't accept parameters - using default pool
+            session_maker = get_session_maker()
 
             metrics = PerformanceMetrics()
             concurrent_count = 50

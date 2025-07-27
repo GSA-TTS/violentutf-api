@@ -2,14 +2,17 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
-from sqlalchemy import DateTime, Index, Integer, String, text
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
 from app.db.types import GUID, JSONType
 from app.models.mixins import AuditMixin, SecurityValidationMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class AuditLog(Base, AuditMixin, SecurityValidationMixin):
@@ -36,6 +39,7 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
     # Actor information
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         GUID(),
+        ForeignKey("user.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
         comment="User who performed the action (null for system actions)",
@@ -98,6 +102,11 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
         Index("idx_auditlog_status", "status", "created_at"),
     )
     _model_config = {"comment": "Immutable audit trail of all system actions"}
+
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="audit_logs", foreign_keys=[user_id], lazy="select"
+    )
 
     @validates("action")
     def validate_action(self: "AuditLog", key: str, value: str) -> str:
@@ -202,7 +211,6 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
             error_message=error_message,
             duration_ms=duration_ms,
             created_by=created_by,
-            updated_by=created_by,
         )
 
     @classmethod
@@ -235,11 +243,15 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
             user_email=user_email,
             ip_address=ip_address,
             user_agent=user_agent,
-            action_metadata=action_metadata if action_metadata else None,
+            action_metadata=action_metadata,
             status=status,
             error_message=error_message,
             duration_ms=duration_ms,
         )
+
+    def __str__(self: "AuditLog") -> str:
+        """Return human-readable string representation of audit log."""
+        return f"AuditLog: {self.user_email or self.user_id} {self.action} {self.resource_type}#{self.resource_id} at {self.created_at}"
 
     def __repr__(self: "AuditLog") -> str:
         """Return string representation of audit log."""
@@ -266,3 +278,11 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by": self.created_by,
         }
+
+    def get_changes(self: "AuditLog") -> Optional[Dict[str, Any]]:
+        """Get changes dictionary."""
+        return self.changes
+
+    def get_metadata(self: "AuditLog") -> Optional[Dict[str, Any]]:
+        """Get action metadata dictionary."""
+        return self.action_metadata

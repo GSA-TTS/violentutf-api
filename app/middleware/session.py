@@ -2,8 +2,9 @@
 
 from typing import Any, Awaitable, Callable, Dict, Optional
 
-from fastapi import Request, Response
+from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
@@ -15,7 +16,7 @@ logger = get_logger(__name__)
 class SessionMiddleware(BaseHTTPMiddleware):
     """Middleware for secure session management."""
 
-    def __init__(self, app: BaseHTTPMiddleware) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize session middleware."""
         super().__init__(app)
         self.session_manager = get_session_manager()

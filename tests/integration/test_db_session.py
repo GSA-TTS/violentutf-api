@@ -27,6 +27,22 @@ from app.utils.circuit_breaker import CircuitState
 
 
 class TestDatabaseSession:
+    """Test database session management and circuit breaker integration."""
+
+    @pytest.fixture(autouse=True)
+    async def setup_method(self):
+        """Setup method to ensure database is configured."""
+        import os
+
+        os.environ["TESTING"] = "1"
+        os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+
+        # Reset the engine to use test configuration
+        from app.db.session import reset_engine
+
+        if callable(reset_engine):
+            reset_engine()
+
     """Test database session management and error scenarios."""
 
     @pytest_asyncio.fixture(autouse=True)

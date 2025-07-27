@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable, List, Optional, Set
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
@@ -37,7 +38,7 @@ CSRF_EXEMPT_PATHS: List[str] = [
 class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     """Middleware for CSRF protection using double-submit cookie pattern."""
 
-    def __init__(self, app: BaseHTTPMiddleware) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize CSRF middleware."""
         super().__init__(app)
         # Generate a secret for signing tokens (in production, this should be persistent)
@@ -155,6 +156,10 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
 
         # Validate signature
         try:
+            # Check if token has the expected format
+            if "." not in cookie_token:
+                return False
+
             token_part, signature_part = cookie_token.rsplit(".", 1)
             expected_signature = hmac.new(
                 self.csrf_secret,

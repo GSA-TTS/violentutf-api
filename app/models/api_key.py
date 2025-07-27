@@ -56,7 +56,7 @@ class APIKey(Base, BaseModelMixin):
         String(45), nullable=True, comment="IP address from last use (supports IPv6)"
     )
 
-    usage_count: Mapped[Optional[int]] = mapped_column(
+    usage_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0", comment="Number of times key has been used"
     )
 
@@ -71,7 +71,11 @@ class APIKey(Base, BaseModelMixin):
         ForeignKey("user.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="User who owns this API key",
+        comment="ID of the user who owns this API key",
+    )
+
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None, comment="Timestamp when API key was revoked"
     )
 
     user: Mapped["User"] = relationship(
@@ -225,11 +229,8 @@ class APIKey(Base, BaseModelMixin):
     def record_usage(self: "APIKey", ip_address: Optional[str] = None) -> None:
         """Record usage of the API key."""
         self.last_used_at = datetime.now(timezone.utc)
-        # Handle None case for usage_count
-        if self.usage_count is None:
-            self.usage_count = 1
-        else:
-            self.usage_count += 1
+        # Increment usage count
+        self.usage_count += 1
         if ip_address:
             self.last_used_ip = ip_address
 
@@ -258,21 +259,88 @@ class APIKey(Base, BaseModelMixin):
 
         return False
 
+    def __str__(self: "APIKey") -> str:
+        """Return human-readable string representation of API key."""
+        status = "active" if self.is_active() else "inactive"
+        return f"APIKey '{self.name}' ({self.key_prefix}***) - {status}"
+
     def __repr__(self: "APIKey") -> str:
         """Return string representation of API key."""
-        return f"<APIKey(name={self.name}, prefix={self.key_prefix}, active={self.is_active()})>"
+        return f"<APIKey(id={str(self.id)[:8]}, name='{self.name}', prefix='{self.key_prefix}', active={self.is_active()}, usage={self.usage_count})>"
 
-    def to_dict(self: "APIKey") -> Dict[str, Any]:
-        """Convert API key to dictionary for serialization."""
+    def mask_key(self: "APIKey", key: Optional[str] = None) -> str:
+        """
+        Return masked version of API key for display purposes.
+
+        Args:
+            key: The full key to mask. If None, uses key_prefix.
+
+        Returns:
+            Masked key string for safe display.
+        """
+        if key is None:
+            # Use prefix for masking when full key not available
+            if not self.key_prefix:
+                return "***"
+            return f"{self.key_prefix}{'*' * max(16 - len(self.key_prefix), 3)}"
+
+        if not key:
+            return "***"
+
+        # For full keys, show first 6 chars and mask the rest
+        if len(key) <= 6:
+            return f"{key[:2]}{'*' * (len(key) - 2)}"
+
+        return f"{key[:6]}{'*' * (len(key) - 6)}"
+
+    def to_dict(self: "APIKey", include_sensitive: bool = False) -> Dict[str, Any]:
+        """
+        Convert API key to dictionary for serialization.
+
+        Args:
+            include_sensitive: Whether to include sensitive data like full key.
+
+        Returns:
+            Dictionary representation of the API key.
+        """
         return {
             "id": str(self.id),
             "name": self.name,
             "description": self.description,
             "key_prefix": self.key_prefix,
+            "masked_key": self.mask_key() if not include_sensitive else None,
             "permissions": self.permissions,
             "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
+            "last_used_ip": self.last_used_ip,
             "usage_count": self.usage_count,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "is_active": self.is_active(),
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
         }
+
+    def get_display_name(self: "APIKey") -> str:
+        """Get display-friendly name for the API key."""
+        if self.description:
+            return f"{self.name} - {self.description[:50]}{'...' if len(self.description) > 50 else ''}"
+        return self.name
+
+    def get_status_display(self: "APIKey") -> str:
+        """Get human-readable status of the API key."""
+        if not self.is_active():
+            if self.revoked_at:
+                return "Revoked"
+            elif self.is_expired():
+                return "Expired"
+            else:
+                return "Inactive"
+
+        if self.expires_at:
+            from datetime import datetime, timezone
+
+            days_until_expiry = (self.expires_at.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).days
+            if days_until_expiry <= 7:
+                return f"Active (expires in {days_until_expiry} days)"
+
+        return "Active"

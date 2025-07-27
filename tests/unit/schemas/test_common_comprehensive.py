@@ -412,7 +412,8 @@ class TestIdempotencyHeader:
                 IdempotencyHeader(idempotency_key=key)
 
             errors = exc_info.value.errors()
-            assert any("string does not match regex" in str(e) for e in errors)
+            # Pydantic v2 uses "String should match pattern" instead of "string does not match regex"
+            assert any("pattern" in str(e) for e in errors)
 
     def test_idempotency_header_length_validation(self):
         """Test idempotency header length validation."""

@@ -1,14 +1,32 @@
 """Redis cache client with health checks and connection management."""
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, cast
 
 import redis.asyncio as redis
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
 
-RedisClient = redis.Redis[str]
+if TYPE_CHECKING:
+    # Define a protocol that matches the Redis interface we use
+    class RedisProtocol(Protocol):
+        async def ping(self) -> bool: ...
+
+        async def get(self, key: str) -> Optional[str]: ...
+
+        async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool: ...
+
+        async def setex(self, key: str, ttl: int, value: str) -> bool: ...
+
+        async def delete(self, key: str) -> int: ...
+
+        async def close(self) -> None: ...
+
+    RedisClient = RedisProtocol
+else:
+    # For runtime, use the actual Redis class
+    RedisClient = redis.Redis
 
 logger = get_logger(__name__)
 
@@ -24,14 +42,17 @@ def create_cache_client() -> Optional[RedisClient]:
 
     try:
         # Create Redis client with connection pooling
-        client: RedisClient = redis.from_url(
-            settings.REDIS_URL,
-            encoding="utf-8",
-            decode_responses=True,
-            max_connections=20,
-            retry_on_timeout=True,
-            retry_on_error=[redis.ConnectionError, redis.TimeoutError],
-            health_check_interval=30,
+        client = cast(
+            RedisClient,
+            redis.from_url(
+                settings.REDIS_URL,
+                encoding="utf-8",
+                decode_responses=True,
+                max_connections=20,
+                retry_on_timeout=True,
+                retry_on_error=[redis.ConnectionError, redis.TimeoutError],
+                health_check_interval=30,
+            ),
         )
         logger.info("Redis cache client created successfully")
         return client

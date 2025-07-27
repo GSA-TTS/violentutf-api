@@ -7,7 +7,9 @@ from urllib.parse import unquote
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..utils.sanitization import sanitize_dict, sanitize_string
@@ -35,7 +37,7 @@ MAX_BODY_SIZE = 10 * 1024 * 1024
 class InputSanitizationMiddleware(BaseHTTPMiddleware):
     """Middleware for comprehensive input sanitization."""
 
-    def __init__(self, app: BaseHTTPMiddleware) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize input sanitization middleware."""
         super().__init__(app)
 
@@ -79,10 +81,10 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                     content={"detail": "Invalid headers"},
                 )
 
-            # Sanitize request body if present
+            # Handle body sanitization
             content_type = request.headers.get("content-type", "").split(";")[0].strip()
             if self._should_sanitize_body(request, content_type):
-                # Read and sanitize body
+                # Store original body
                 body = await request.body()
 
                 # Check body size
@@ -97,6 +99,7 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                         content={"detail": "Request body too large"},
                     )
 
+                # Sanitize body
                 sanitized_body = await self._sanitize_body(body, content_type)
                 if sanitized_body is None:
                     return JSONResponse(
@@ -104,14 +107,21 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                         content={"detail": "Invalid request body"},
                     )
 
-                # Replace request body with sanitized version
+                # Store sanitized body in request state
+                request.state.sanitized_body = sanitized_body
+
+                # Create a new scope with updated body
+                scope = dict(request.scope)
+
+                # Create receive function that returns sanitized body
                 async def receive() -> Dict[str, Any]:
                     return {
                         "type": "http.request",
                         "body": sanitized_body,
                     }
 
-                request._receive = receive
+                # Create new request with sanitized body
+                request = Request(scope, receive=receive)
 
         except Exception as e:
             logger.error("input_sanitization_error", error=str(e))
@@ -330,3 +340,15 @@ def get_sanitized_query_params(request: Request) -> Optional[Dict[str, str]]:
         Sanitized parameters or None
     """
     return getattr(request.state, "sanitized_query_params", None)
+
+
+def get_sanitized_body(request: Request) -> Optional[bytes]:
+    """Get sanitized body from request state.
+
+    Args:
+        request: Current request
+
+    Returns:
+        Sanitized body or None
+    """
+    return getattr(request.state, "sanitized_body", None)

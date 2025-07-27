@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Any, Dict, MutableMapping, Optional, Union
+from typing import Any, Dict, MutableMapping, Optional, Union, cast
 
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
@@ -94,7 +94,7 @@ def setup_logging() -> None:
 
 def get_logger(name: Optional[str] = None) -> structlog.stdlib.BoundLogger:
     """Get a configured logger instance."""
-    return structlog.get_logger(name)
+    return cast(structlog.stdlib.BoundLogger, structlog.get_logger(name))
 
 
 def log_request_context(

@@ -1,5 +1,6 @@
 """Comprehensive tests for session management to achieve 90%+ coverage."""
 
+import json
 import secrets
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -110,7 +111,7 @@ class TestCreateSession:
         assert session_id in call_args[0][0]
 
         # Check session data
-        session_data = call_args[0][1]
+        session_data = json.loads(call_args[0][1])
         assert session_data["user_id"] == user_id
         assert session_data["role"] == "admin"
         assert session_data["email"] == "test@example.com"
@@ -133,7 +134,7 @@ class TestCreateSession:
         assert session_id is not None
 
         # Check stored data
-        session_data = mock_cache.set.call_args[0][1]
+        session_data = json.loads(mock_cache.set.call_args[0][1])
         assert session_data["ip_address"] == ip_address
         assert session_data["user_agent"] == user_agent
         assert session_data["permissions"] == ["read", "write"]
@@ -159,8 +160,8 @@ class TestCreateSession:
 
         # Check TTL was set correctly
         call_kwargs = mock_cache.set.call_args[1]
-        assert "expire" in call_kwargs
-        assert call_kwargs["expire"] == 7200
+        assert "ex" in call_kwargs
+        assert call_kwargs["ex"] == 7200
 
     @pytest.mark.asyncio
     async def test_create_session_cache_failure(self, session_manager, mock_cache):
@@ -209,7 +210,7 @@ class TestGetSession:
     @pytest.mark.asyncio
     async def test_get_session_exists(self, session_manager, mock_cache, sample_session_data):
         """Test retrieving an existing session."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         result = await session_manager.get_session("test_session_123")
 
@@ -237,12 +238,12 @@ class TestGetSession:
     async def test_get_session_updates_last_accessed(self, session_manager, mock_cache, sample_session_data):
         """Test that get_session updates last accessed time."""
         original_time = sample_session_data["last_accessed"]
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         result = await session_manager.get_session("test_session_123")
 
         # Check that set was called with updated last_accessed
-        updated_data = mock_cache.set.call_args[0][1]
+        updated_data = json.loads(mock_cache.set.call_args[0][1])
         assert updated_data["last_accessed"] != original_time
 
     @pytest.mark.asyncio
@@ -270,7 +271,7 @@ class TestGetSession:
     @pytest.mark.asyncio
     async def test_get_session_set_error_after_get(self, session_manager, mock_cache, sample_session_data):
         """Test when update after get fails."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
         mock_cache.set.side_effect = Exception("Cache write error")
 
         with patch("app.core.session.logger") as mock_logger:
@@ -287,7 +288,7 @@ class TestRotateSession:
     async def test_rotate_session_success(self, session_manager, mock_cache, sample_session_data):
         """Test successful session rotation."""
         old_session_id = "old_session_123"
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         new_session_id = await session_manager.rotate_session(old_session_id)
 
@@ -298,7 +299,7 @@ class TestRotateSession:
         mock_cache.delete.assert_called_once_with(f"{SESSION_KEY_PREFIX}{old_session_id}")
 
         # Verify new session was created
-        new_session_data = mock_cache.set.call_args[0][1]
+        new_session_data = json.loads(mock_cache.set.call_args[0][1])
         assert new_session_data["rotated"] is True
         assert "rotated_at" in new_session_data
         assert new_session_data["previous_session_id"] == old_session_id[:8] + "..."
@@ -320,21 +321,21 @@ class TestRotateSession:
         old_session_id = "old_session_456"
         new_ip = "10.0.0.2"
         new_ua = "NewBrowser/2.0"
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         new_session_id = await session_manager.rotate_session(old_session_id, ip_address=new_ip, user_agent=new_ua)
 
         assert new_session_id is not None
 
         # Check updated values
-        new_session_data = mock_cache.set.call_args[0][1]
+        new_session_data = json.loads(mock_cache.set.call_args[0][1])
         assert new_session_data["ip_address"] == new_ip
         assert new_session_data["user_agent"] == new_ua
 
     @pytest.mark.asyncio
     async def test_rotate_session_cache_failure(self, session_manager, mock_cache, sample_session_data):
         """Test session rotation when cache operations fail."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
         mock_cache.set.side_effect = Exception("Cache write error")
 
         with patch("app.core.session.logger") as mock_logger:
@@ -354,7 +355,7 @@ class TestRotateSession:
     @pytest.mark.asyncio
     async def test_rotate_session_logs_info(self, session_manager, mock_cache, sample_session_data):
         """Test that successful rotation logs info."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         with patch("app.core.session.logger") as mock_logger:
             new_session_id = await session_manager.rotate_session("old_session")
@@ -459,7 +460,7 @@ class TestExtendSession:
     @pytest.mark.asyncio
     async def test_extend_session_success(self, session_manager, mock_cache, sample_session_data):
         """Test successful session extension."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
         session_manager.session_ttl = 1800  # 30 minutes
 
         result = await session_manager.extend_session("test_session", additional_minutes=15)
@@ -468,7 +469,7 @@ class TestExtendSession:
 
         # Check new TTL
         call_kwargs = mock_cache.set.call_args[1]
-        assert call_kwargs["expire"] == 2700  # 1800 + (15 * 60)
+        assert call_kwargs["ex"] == 2700  # 1800 + (15 * 60)
 
     @pytest.mark.asyncio
     async def test_extend_session_not_found(self, session_manager, mock_cache):
@@ -491,7 +492,7 @@ class TestExtendSession:
     @pytest.mark.asyncio
     async def test_extend_session_cache_error(self, session_manager, mock_cache, sample_session_data):
         """Test extension when cache operations fail."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
         mock_cache.set.side_effect = Exception("Cache write error")
 
         with patch("app.core.session.logger") as mock_logger:
@@ -503,7 +504,7 @@ class TestExtendSession:
     @pytest.mark.asyncio
     async def test_extend_session_logs_info(self, session_manager, mock_cache, sample_session_data):
         """Test that successful extension logs info."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         with patch("app.core.session.logger") as mock_logger:
             await session_manager.extend_session("log_session", additional_minutes=20)
@@ -519,7 +520,7 @@ class TestValidateSession:
     @pytest.mark.asyncio
     async def test_validate_session_valid(self, session_manager, mock_cache, sample_session_data):
         """Test validating a valid session."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         result = await session_manager.validate_session("test_session")
 
@@ -537,7 +538,7 @@ class TestValidateSession:
     @pytest.mark.asyncio
     async def test_validate_session_ip_check_enabled(self, session_manager, mock_cache, sample_session_data):
         """Test session validation with IP checking enabled."""
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         with patch("app.core.session.settings") as mock_settings:
             mock_settings.CSRF_PROTECTION = True
@@ -558,7 +559,7 @@ class TestValidateSession:
         # Create old session data
         old_time = datetime.now(timezone.utc) - timedelta(hours=2)
         sample_session_data["created_at"] = old_time.isoformat()
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         with patch("app.core.session.settings") as mock_settings:
             mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
@@ -567,7 +568,7 @@ class TestValidateSession:
 
             assert result is True
             # Check that rotation was recommended (session is older than 30 min)
-            updated_data = mock_cache.set.call_args[0][1]
+            updated_data = json.loads(mock_cache.set.call_args[0][1])
             assert updated_data.get("rotation_recommended") is True
 
     @pytest.mark.asyncio
@@ -576,7 +577,7 @@ class TestValidateSession:
         # Create recent session data
         recent_time = datetime.now(timezone.utc) - timedelta(minutes=10)
         sample_session_data["created_at"] = recent_time.isoformat()
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         with patch("app.core.session.settings") as mock_settings:
             mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
@@ -585,7 +586,7 @@ class TestValidateSession:
 
             assert result is True
             # Check that rotation was not recommended
-            updated_data = mock_cache.set.call_args[0][1]
+            updated_data = json.loads(mock_cache.set.call_args[0][1])
             assert updated_data.get("rotation_recommended") is None
 
 
@@ -658,7 +659,7 @@ class TestSessionSecurityScenarios:
     async def test_session_fixation_prevention(self, session_manager, mock_cache, sample_session_data):
         """Test that rotation changes session ID completely."""
         old_id = "old_session_fixation"
-        mock_cache.get.return_value = sample_session_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_session_data.copy())
 
         new_id = await session_manager.rotate_session(old_id)
 
@@ -682,7 +683,7 @@ class TestSessionSecurityScenarios:
             "created_at": datetime.now(timezone.utc).isoformat(),
             "last_accessed": datetime.now(timezone.utc).isoformat(),
         }
-        mock_cache.get.return_value = sample_data.copy()
+        mock_cache.get.return_value = json.dumps(sample_data.copy())
 
         # Multiple gets should work
         result1 = await session_manager.get_session(session_id)

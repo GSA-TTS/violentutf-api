@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
@@ -39,7 +40,7 @@ SIGNED_PATHS: List[str] = [
 class RequestSigningMiddleware(BaseHTTPMiddleware):
     """Middleware for request signing verification."""
 
-    def __init__(self, app: BaseHTTPMiddleware) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize request signing middleware."""
         super().__init__(app)
         self.cache = get_cache_client()

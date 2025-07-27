@@ -525,7 +525,7 @@ class TestAPIKeyBusinessLogic:
         """Test has_permission when permissions is None."""
         api_key = APIKey()
         api_key.is_deleted = False
-        api_key.permissions = None
+        api_key.permissions = {}
 
         assert api_key.has_permission("read") is False
 

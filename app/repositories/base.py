@@ -1,11 +1,14 @@
 """Base repository class providing common CRUD operations."""
 
 import uuid
-from typing import Any, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
+from datetime import datetime, timezone
+from typing import Dict, Generic, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
-from sqlalchemy import and_, delete, func, select, update
+from sqlalchemy import and_, delete, desc, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import Select
+from sqlalchemy.sql.elements import ColumnElement
 from structlog.stdlib import get_logger
 
 from ..db.base_class import Base
@@ -59,55 +62,23 @@ class BaseRepository(Generic[T]):
     - Audit trail integration
     - Connection resilience patterns
     - Query optimization
+    - Advanced filtering and pagination
     """
 
-    def __init__(self, session: AsyncSession, model: Type[T]):
+    def __init__(self, session: AsyncSession, model: Optional[Type[T]] = None):
         """
         Initialize repository with database session and model.
 
         Args:
             session: Async SQLAlchemy session
-            model: SQLAlchemy model class
+            model: SQLAlchemy model class (optional if set in subclass)
         """
         self.session = session
-        self.model = model
-        self.logger = logger.bind(repository=self.__class__.__name__, model=model.__name__)
-
-    async def create(self, **kwargs: Any) -> T:  # noqa: ANN401
-        """
-        Create a new entity.
-
-        Args:
-            **kwargs: Entity attributes
-
-        Returns:
-            Created entity
-
-        Raises:
-            ValueError: If required fields are missing
-            IntegrityError: If constraints are violated
-        """
-        try:
-            # Generate UUID if not provided
-            if "id" not in kwargs:
-                kwargs["id"] = str(uuid.uuid4())
-
-            # Set audit fields
-            if "created_by" not in kwargs:
-                kwargs["created_by"] = "system"
-            if "updated_by" not in kwargs:
-                kwargs["updated_by"] = kwargs.get("created_by", "system")
-
-            entity = self.model(**kwargs)
-            self.session.add(entity)
-            await self.session.flush()  # Get the ID without committing
-
-            self.logger.info("Entity created", entity_id=entity.id)
-            return entity
-
-        except Exception as e:
-            self.logger.error("Failed to create entity", error=str(e), kwargs=kwargs)
-            raise
+        if model:
+            self.model = model
+        elif not hasattr(self, "model"):
+            raise ValueError("Model must be provided either in constructor or as class attribute")
+        self.logger = logger.bind(repository=self.__class__.__name__, model=self.model.__name__)
 
     async def get_by_id(self, entity_id: Union[str, uuid.UUID]) -> Optional[T]:
         """
@@ -144,7 +115,7 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to get entity by ID", entity_id=str(entity_id), error=str(e))
             raise
 
-    async def update(self, entity_id: Union[str, uuid.UUID], **kwargs: Any) -> Optional[T]:  # noqa: ANN401
+    async def update(self, entity_id: Union[str, uuid.UUID], **kwargs: object) -> Optional[T]:
         """
         Update entity by ID.
 
@@ -257,7 +228,7 @@ class BaseRepository(Generic[T]):
         self,
         page: int = 1,
         size: int = 20,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[Dict[str, object]] = None,
         include_deleted: bool = False,
         eager_load: Optional[List[str]] = None,
         order_by: Optional[str] = "created_at",
@@ -354,7 +325,7 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to list entities", page=page, size=size, error=str(e))
             raise
 
-    async def count(self, filters: Optional[Dict[str, Any]] = None, include_deleted: bool = False) -> int:
+    async def count(self, filters: Optional[Dict[str, object]] = None, include_deleted: bool = False) -> int:
         """
         Count entities with optional filtering.
 
@@ -473,3 +444,288 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             self.logger.error("Failed to restore entity", entity_id=str(entity_id), error=str(e))
             raise
+
+    # Enhanced methods for CRUD router compatibility
+
+    async def get(self, entity_id: Union[str, uuid.UUID]) -> Optional[T]:
+        """Alias for get_by_id for consistency with CRUD router."""
+        return await self.get_by_id(entity_id)
+
+    async def create(self, data: Dict[str, object]) -> T:
+        """
+        Create entity from dictionary data.
+
+        Args:
+            data: Dictionary of entity attributes
+
+        Returns:
+            Created entity
+        """
+        # Generate UUID if not provided
+        if "id" not in data:
+            data["id"] = str(uuid.uuid4())
+
+        # Set audit fields
+        if "created_by" not in data:
+            data["created_by"] = "system"
+        if "updated_by" not in data:
+            data["updated_by"] = data.get("created_by", "system")
+
+        entity = self.model(**data)
+        self.session.add(entity)
+        await self.session.flush()  # Get the ID without committing
+
+        self.logger.info("Entity created", entity_id=entity.id)
+        return entity
+
+    async def delete_permanent(self, entity_id: Union[str, uuid.UUID]) -> bool:
+        """
+        Permanently delete entity.
+
+        Args:
+            entity_id: Entity identifier
+
+        Returns:
+            True if entity was deleted, False if not found
+        """
+        entity_id_str = str(entity_id)
+
+        delete_query = delete(self.model).where(self.model.id == entity_id_str)
+        result = await self.session.execute(delete_query)
+        deleted = result.rowcount > 0
+
+        if deleted:
+            self.logger.info("Entity permanently deleted", entity_id=entity_id_str)
+        else:
+            self.logger.warning("Entity not found for permanent deletion", entity_id=entity_id_str)
+
+        return deleted
+
+    async def list_paginated(
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        filters: Optional[Dict[str, object]] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
+        include_deleted: bool = False,
+    ) -> Tuple[List[T], int]:
+        """
+        List entities with pagination and filtering.
+
+        Args:
+            page: Page number (1-based)
+            per_page: Items per page
+            filters: Optional filters to apply
+            sort_by: Field to sort by
+            sort_order: Sort order ("asc" or "desc")
+            include_deleted: Whether to include soft-deleted entities
+
+        Returns:
+            Tuple of (items, total_count)
+        """
+        # Validate pagination parameters
+        page = max(1, page)
+        per_page = max(1, min(per_page, 100))
+
+        # Build base query
+        query = select(self.model)
+
+        # Apply soft delete filter
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            query = query.where(getattr(self.model, "is_deleted") == False)
+
+        # Apply filters
+        if filters:
+            query = self._apply_filters(query, filters)
+
+        # Count total items
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await self.session.execute(count_query)
+        total_count = total_result.scalar() or 0
+
+        # Apply sorting
+        if sort_by and hasattr(self.model, sort_by):
+            sort_field = getattr(self.model, sort_by)
+            if sort_order.lower() == "desc":
+                query = query.order_by(desc(sort_field))
+            else:
+                query = query.order_by(sort_field)
+        else:
+            # Default sort by created_at desc if available
+            # Use getattr to safely access the attribute
+            created_at_col = getattr(self.model, "created_at", None)
+            if created_at_col is not None:
+                query = query.order_by(desc(created_at_col))
+
+        # Apply pagination
+        offset = (page - 1) * per_page
+        query = query.offset(offset).limit(per_page)
+
+        # Execute query
+        result = await self.session.execute(query)
+        items = list(result.scalars().all())
+
+        self.logger.debug(
+            "Listed entities with pagination",
+            page=page,
+            per_page=per_page,
+            total=total_count,
+            returned=len(items),
+            filters=filters,
+        )
+
+        return items, total_count
+
+    def _apply_filters(self, query: Select[Tuple[T]], filters: Dict[str, object]) -> Select[Tuple[T]]:
+        """Apply filters to query."""
+        for key, value in filters.items():
+            if key == "search" and value and isinstance(value, str):
+                # Apply search across searchable fields
+                query = self._apply_search_filter(query, value)
+            elif key in ["created_after", "created_before", "updated_after", "updated_before"] and isinstance(
+                value, datetime
+            ):
+                # Apply date range filters
+                query = self._apply_date_filter(query, key, value)
+            elif key == "advanced_filters" and value and isinstance(value, list):
+                # Apply advanced operator-based filters
+                filter_logic = filters.get("filter_logic", "and")
+                logic = filter_logic if isinstance(filter_logic, str) else "and"
+                # Type cast to satisfy mypy
+                advanced_filters = [f for f in value if isinstance(f, dict)]
+                query = self._apply_advanced_filters(query, advanced_filters, logic)
+            elif hasattr(self.model, key):
+                # Apply simple field filters
+                if isinstance(value, list):
+                    query = query.where(getattr(self.model, key).in_(value))
+                else:
+                    query = query.where(getattr(self.model, key) == value)
+
+        return query
+
+    def _apply_search_filter(self, query: Select[Tuple[T]], search_term: str) -> Select[Tuple[T]]:
+        """Apply search filter across searchable fields."""
+        # Define searchable fields for each model
+        searchable_fields = self._get_searchable_fields()
+
+        if not searchable_fields:
+            return query
+
+        search_conditions = []
+        for field_name in searchable_fields:
+            if hasattr(self.model, field_name):
+                field = getattr(self.model, field_name)
+                # Use ilike for case-insensitive search
+                search_conditions.append(field.ilike(f"%{search_term}%"))
+
+        if search_conditions:
+            query = query.where(or_(*search_conditions))
+
+        return query
+
+    def _get_searchable_fields(self) -> List[str]:
+        """Get list of searchable fields for the model."""
+        # Override in subclasses to define searchable fields
+        # Default to common string fields
+        searchable = []
+        for column in self.model.__table__.columns:
+            if str(column.type).startswith("VARCHAR") or str(column.type).startswith("TEXT"):
+                searchable.append(column.name)
+        return searchable
+
+    def _apply_date_filter(self, query: Select[Tuple[T]], filter_type: str, date_value: datetime) -> Select[Tuple[T]]:
+        """Apply date range filters."""
+        created_at_col = getattr(self.model, "created_at", None)
+        updated_at_col = getattr(self.model, "updated_at", None)
+
+        if filter_type == "created_after" and created_at_col is not None:
+            query = query.where(created_at_col >= date_value)
+        elif filter_type == "created_before" and created_at_col is not None:
+            query = query.where(created_at_col <= date_value)
+        elif filter_type == "updated_after" and updated_at_col is not None:
+            query = query.where(updated_at_col >= date_value)
+        elif filter_type == "updated_before" and updated_at_col is not None:
+            query = query.where(updated_at_col <= date_value)
+
+        return query
+
+    def _apply_advanced_filters(
+        self, query: Select[Tuple[T]], filters: List[Dict[str, object]], logic: str = "and"
+    ) -> Select[Tuple[T]]:
+        """Apply advanced operator-based filters."""
+        conditions: List[ColumnElement[bool]] = []
+
+        for filter_spec in filters:
+            field_name = filter_spec.get("field")
+            operator = filter_spec.get("operator")
+            value = filter_spec.get("value")
+
+            if (
+                not field_name
+                or not operator
+                or not isinstance(field_name, str)
+                or not isinstance(operator, str)
+                or not hasattr(self.model, field_name)
+            ):
+                continue
+
+            field = getattr(self.model, field_name)
+            # Type cast for specific filter types
+            if isinstance(value, (str, int, float, bool, type(None))) or (
+                isinstance(value, list) and all(isinstance(v, (str, int, float, bool)) for v in value)
+            ):
+                condition = self._build_filter_condition(field, operator, value)
+            else:
+                continue  # Skip unsupported value types
+
+            if condition is not None:
+                conditions.append(condition)
+
+        if conditions:
+            if logic.lower() == "or":
+                query = query.where(or_(*conditions))
+            else:
+                query = query.where(and_(*conditions))
+
+        return query
+
+    def _build_filter_condition(
+        self, field: ColumnElement[object], operator: str, value: Union[str, int, float, bool, List[object], None]
+    ) -> Optional[ColumnElement[bool]]:
+        """Build filter condition based on operator."""
+        # Define operator mappings for better maintainability
+        simple_operators = {
+            "eq": lambda f, v: f == v,
+            "ne": lambda f, v: f != v,
+            "gt": lambda f, v: f > v,
+            "lt": lambda f, v: f < v,
+            "gte": lambda f, v: f >= v,
+            "lte": lambda f, v: f <= v,
+        }
+
+        # Handle simple comparison operators
+        if operator in simple_operators:
+            return simple_operators[operator](field, value)  # type: ignore[no-untyped-call,no-any-return]
+
+        # Handle special operators with type checking
+        return self._build_special_filter_condition(field, operator, value)
+
+    def _build_special_filter_condition(
+        self, field: ColumnElement[object], operator: str, value: Union[str, int, float, bool, List[object], None]
+    ) -> Optional[ColumnElement[bool]]:
+        """Build special filter conditions (list, string, null operations)."""
+        if operator == "in" and isinstance(value, list):
+            return field.in_(value)
+        elif operator == "nin" and isinstance(value, list):
+            return ~field.in_(value)
+        elif operator in ("contains", "icontains") and isinstance(value, str):
+            return field.ilike(f"%{value}%")
+        elif operator == "startswith" and isinstance(value, str):
+            return field.ilike(f"{value}%")
+        elif operator == "endswith" and isinstance(value, str):
+            return field.ilike(f"%{value}")
+        elif operator == "isnull":
+            return field.is_(None) if value else field.is_not(None)
+
+        return None

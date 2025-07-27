@@ -22,9 +22,10 @@ from sqlalchemy.exc import TimeoutError as SQLTimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.config import settings
-from app.db.session import CircuitBreaker, CircuitState, DatabaseManager, get_db_with_retry
+from app.db.session import get_db
 from app.models.user import User
 from app.repositories.user import UserRepository
+from app.utils.circuit_breaker import CircuitBreaker, CircuitState
 
 
 class FailureSimulator:

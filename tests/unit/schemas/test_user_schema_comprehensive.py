@@ -115,7 +115,10 @@ class TestUserBase:
 
         for email in valid_emails:
             user = UserBase(username="testuser", email=email)
-            assert user.email == email.lower()  # Pydantic normalizes emails
+            # Pydantic v2 EmailStr only normalizes domain part to lowercase
+            local, domain = email.split("@")
+            expected_email = f"{local}@{domain.lower()}"
+            assert user.email == expected_email
 
         # Invalid emails
         invalid_emails = [
@@ -313,7 +316,7 @@ class TestUserCreate:
             UserCreate(username="validuser", email="invalid-email", password="ValidP@ss1")
 
         # Full name XSS validation
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             UserCreate(
                 username="validuser",
                 email="test@example.com",

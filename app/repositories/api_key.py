@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
@@ -165,7 +165,7 @@ class APIKeyRepository(BaseRepository[APIKey]):
                 raise ValueError("key_prefix must be at least 6 characters")
 
             # Create API key
-            api_key_data = {
+            api_key_data: Dict[str, Any] = {
                 "user_id": user_id,
                 "name": name,
                 "key_hash": key_hash,
@@ -178,7 +178,7 @@ class APIKeyRepository(BaseRepository[APIKey]):
                 "updated_by": created_by,
             }
 
-            api_key = await self.create(**api_key_data)
+            api_key = await self.create(api_key_data)
 
             self.logger.info(
                 "API key created successfully",
@@ -426,4 +426,168 @@ class APIKeyRepository(BaseRepository[APIKey]):
 
         except Exception as e:
             self.logger.error("Failed to get expired API keys", error=str(e))
+            raise
+
+    async def validate(self, key: str) -> Optional[APIKey]:
+        """
+        Validate an API key string and return the APIKey if valid.
+
+        Args:
+            key: The raw API key string to validate
+
+        Returns:
+            APIKey instance if valid and active, None otherwise
+        """
+        try:
+            # Hash the provided key for lookup
+            import hashlib
+
+            key_hash = hashlib.sha256(key.encode()).hexdigest()
+
+            # Find the API key by hash
+            query = select(self.model).where(and_(self.model.key_hash == key_hash, self.model.is_deleted == False))
+
+            result = await self.session.execute(query)
+            api_key = result.scalar_one_or_none()
+
+            if api_key and api_key.is_active():
+                return api_key
+
+            return None
+
+        except Exception as e:
+            self.logger.error("Failed to validate API key", error=str(e))
+            raise
+
+    async def revoke(self, key_id: str) -> bool:
+        """
+        Revoke an API key by setting its revoked_at timestamp.
+
+        Args:
+            key_id: The ID of the API key to revoke
+
+        Returns:
+            True if successfully revoked, False if not found
+        """
+        try:
+            # Find the API key
+            api_key = await self.get_by_id(key_id)
+
+            if not api_key:
+                self.logger.warning("API key not found for revocation", key_id=key_id)
+                return False
+
+            # Set revoked timestamp
+            from datetime import datetime, timezone
+
+            api_key.revoked_at = datetime.now(timezone.utc)
+
+            # Save changes
+            await self.session.commit()
+
+            self.logger.info("API key revoked successfully", key_id=key_id)
+            return True
+
+        except Exception as e:
+            self.logger.error("Failed to revoke API key", key_id=key_id, error=str(e))
+            await self.session.rollback()
+            raise
+
+    async def list_user_keys(self, user_id: str) -> List[APIKey]:
+        """
+        List all active API keys for a specific user.
+
+        Args:
+            user_id: The ID of the user
+
+        Returns:
+            List of active APIKey instances for the user
+        """
+        try:
+            # Convert user_id to UUID
+            import uuid
+
+            user_uuid = uuid.UUID(user_id)
+
+            # Query user's active API keys
+            query = (
+                select(self.model)
+                .where(
+                    and_(
+                        self.model.user_id == user_uuid, self.model.is_deleted == False, self.model.revoked_at.is_(None)
+                    )
+                )
+                .order_by(self.model.created_at.desc())
+            )
+
+            result = await self.session.execute(query)
+            api_keys = result.scalars().all()
+
+            self.logger.debug("Listed user API keys", user_id=str(user_uuid), count=len(api_keys))
+            return list(api_keys)
+
+        except Exception as e:
+            self.logger.error("Failed to list user API keys", user_id=str(user_id), error=str(e))
+            raise
+
+    async def get_statistics(self) -> Dict[str, Any]:
+        """
+        Get API key usage statistics.
+
+        Returns:
+            Dictionary containing various statistics
+        """
+        try:
+            # Total keys count
+            total_query = select(func.count(self.model.id))
+            total_result = await self.session.execute(total_query)
+            total_keys = total_result.scalar() or 0
+
+            # Active keys count
+            active_query = select(func.count(self.model.id)).where(
+                and_(
+                    self.model.is_deleted == False,
+                    self.model.revoked_at.is_(None),
+                    or_(self.model.expires_at.is_(None), self.model.expires_at > datetime.now(timezone.utc)),
+                )
+            )
+            active_result = await self.session.execute(active_query)
+            active_keys = active_result.scalar() or 0
+
+            # Expired keys count
+            expired_query = select(func.count(self.model.id)).where(
+                and_(self.model.expires_at.is_not(None), self.model.expires_at <= datetime.now(timezone.utc))
+            )
+            expired_result = await self.session.execute(expired_query)
+            expired_keys = expired_result.scalar() or 0
+
+            # Revoked keys count
+            revoked_query = select(func.count(self.model.id)).where(self.model.revoked_at.is_not(None))
+            revoked_result = await self.session.execute(revoked_query)
+            revoked_keys = revoked_result.scalar() or 0
+
+            # Keys used today
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            used_today_query = select(func.count(self.model.id)).where(
+                and_(self.model.last_used_at.is_not(None), self.model.last_used_at >= today_start)
+            )
+            used_today_result = await self.session.execute(used_today_query)
+            keys_used_today = used_today_result.scalar() or 0
+
+            # Total requests
+            total_requests_query = select(func.sum(self.model.usage_count))
+            total_requests_result = await self.session.execute(total_requests_query)
+            total_requests = total_requests_result.scalar() or 0
+
+            return {
+                "total_keys": total_keys,
+                "active_keys": active_keys,
+                "expired_keys": expired_keys,
+                "revoked_keys": revoked_keys,
+                "keys_used_today": keys_used_today,
+                "total_requests": total_requests,
+            }
+
+        except Exception as e:
+            self.logger.error("Failed to get API key statistics", error=str(e))
             raise

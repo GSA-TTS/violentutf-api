@@ -1,7 +1,7 @@
 """User repository with authentication and user management methods."""
 
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,11 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, session: AsyncSession):
         """Initialize user repository."""
         super().__init__(session, User)
+
+    @property
+    def db(self) -> AsyncSession:
+        """Access to database session for transaction management."""
+        return self.session
 
     async def get_by_username(self, username: str) -> Optional[User]:
         """
@@ -176,7 +181,7 @@ class UserRepository(BaseRepository[User]):
                 raise ValueError(f"Email '{email}' already exists")
 
             # Create user with hashed password
-            user_data = {
+            user_data: Dict[str, Any] = {
                 "username": username,  # Store username as provided
                 "email": email.lower(),  # Store email in lowercase
                 "password_hash": hash_password(password),
@@ -187,7 +192,7 @@ class UserRepository(BaseRepository[User]):
                 "updated_by": created_by,
             }
 
-            user = await self.create(**user_data)
+            user = await self.create(user_data)
 
             self.logger.info(
                 "User created successfully",
@@ -488,4 +493,126 @@ class UserRepository(BaseRepository[User]):
 
         except Exception as e:
             self.logger.error("Failed to get unverified users", error=str(e))
+            raise
+
+    async def verify_email(self, user_id: str) -> Optional[User]:
+        """Verify user email by setting email_verified to True.
+
+        Args:
+            user_id: User ID to verify
+
+        Returns:
+            Updated user or None if not found
+        """
+        try:
+            # Get user
+            user = await self.get_by_id(user_id)
+            if not user:
+                logger.warning("verify_email_user_not_found", user_id=user_id)
+                return None
+
+            # Update email verification status
+            user.is_verified = True
+            user.updated_at = datetime.utcnow()
+
+            await self.db.commit()
+            await self.db.refresh(user)
+
+            logger.info("user_email_verified", user_id=user_id, email=user.email)
+            return user
+
+        except Exception as e:
+            logger.error("verify_email_error", user_id=user_id, error=str(e))
+            await self.db.rollback()
+            raise
+
+    async def revoke(self, user_id: str, reason: str = "Manual revocation") -> bool:
+        """Revoke user access by deactivating the account.
+
+        Args:
+            user_id: User ID to revoke
+            reason: Reason for revocation
+
+        Returns:
+            True if revoked successfully
+        """
+        try:
+            # Get user
+            user = await self.get_by_id(user_id)
+            if not user:
+                logger.warning("revoke_user_not_found", user_id=user_id)
+                return False
+
+            # Deactivate user
+            user.is_active = False
+            user.updated_at = datetime.utcnow()
+
+            await self.db.commit()
+
+            logger.info("user_revoked", user_id=user_id, reason=reason)
+            return True
+
+        except Exception as e:
+            logger.error("revoke_user_error", user_id=user_id, error=str(e))
+            await self.db.rollback()
+            raise
+
+    async def update_last_login(self, user_id: str) -> Optional[User]:
+        """Update user's last login timestamp.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Updated user or None if not found
+        """
+        try:
+            # Get user
+            user = await self.get_by_id(user_id)
+            if not user:
+                return None
+
+            # Update last login
+            user.last_login_at = datetime.utcnow()
+            user.updated_at = datetime.utcnow()
+
+            await self.db.commit()
+            await self.db.refresh(user)
+
+            return user
+
+        except Exception as e:
+            logger.error("update_last_login_error", user_id=user_id, error=str(e))
+            await self.db.rollback()
+            raise
+
+    async def change_password(self, user_id: str, new_password_hash: str) -> Optional[User]:
+        """Change user password.
+
+        Args:
+            user_id: User ID
+            new_password_hash: New password hash
+
+        Returns:
+            Updated user or None if not found
+        """
+        try:
+            # Get user
+            user = await self.get_by_id(user_id)
+            if not user:
+                return None
+
+            # Update password
+            user.password_hash = new_password_hash
+            user.updated_at = datetime.utcnow()
+
+            await self.db.commit()
+            await self.db.refresh(user)
+
+            logger.info("password_changed", user_id=user_id)
+            return user
+
+        except Exception as e:
+            logger.error("change_password_error", user_id=user_id, error=str(e))
+            await self.db.rollback()
             raise

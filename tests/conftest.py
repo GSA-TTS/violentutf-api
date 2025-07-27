@@ -27,7 +27,7 @@ def test_settings() -> Settings:
         SECRET_KEY="test-secret-key-for-testing-only-32chars",  # pragma: allowlist secret
         ENVIRONMENT="development",
         DEBUG=True,
-        DATABASE_URL="sqlite:///./test.db",
+        DATABASE_URL="sqlite+aiosqlite:///./test.db",
         REDIS_URL=None,
         LOG_LEVEL="DEBUG",
         LOG_FORMAT="text",

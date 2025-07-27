@@ -24,7 +24,7 @@ from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.pool import Pool
 
-from app.db.session import DatabaseManager, get_async_session_maker, get_db
+from app.db.session import get_db, get_session_maker
 from app.models.user import User
 from app.repositories.user import UserRepository
 
