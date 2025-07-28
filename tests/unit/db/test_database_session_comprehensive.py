@@ -294,7 +294,7 @@ class TestCheckDatabaseHealth:
         """Test health check when circuit breaker is open."""
         from app.utils.circuit_breaker import CircuitBreakerException
 
-        with patch("app.db.session.get_db", side_effect=CircuitBreakerException("Circuit open")):
+        with patch("app.db.session.get_db", side_effect=CircuitBreakerException("Circuit open", "test-circuit")):
             with patch("app.db.session.logger") as mock_logger:
                 result = await check_database_health()
 

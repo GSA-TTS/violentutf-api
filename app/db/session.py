@@ -20,6 +20,9 @@ logger = get_logger(__name__)
 _engine: Optional[AsyncEngine] = None
 _async_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
 
+# Public attribute for testing compatibility
+engine: Optional[AsyncEngine] = None
+
 # Circuit breaker for database operations
 db_circuit_breaker = CircuitBreaker(
     name="database_operations",
@@ -32,9 +35,11 @@ db_circuit_breaker = CircuitBreaker(
 
 def create_database_engine() -> Optional[AsyncEngine]:
     """Create database engine with enhanced connection pooling and resilience."""
-    # For testing, allow override of database URL
+    # Use database URL from settings - let tests handle URL configuration
     database_url = settings.DATABASE_URL
-    if not database_url and os.getenv("TESTING"):
+
+    # Only use test fallback if no URL configured and not in unit test environment
+    if not database_url and os.getenv("TESTING") and not os.getenv("PYTEST_CURRENT_TEST"):
         database_url = "sqlite+aiosqlite:///./test.db"
         logger.info("Using test database URL", url=database_url)
 
@@ -87,6 +92,11 @@ def create_database_engine() -> Optional[AsyncEngine]:
             max_overflow=pool_settings.get("max_overflow", "N/A"),
             database_type="sqlite" if settings.DATABASE_URL and "sqlite" in settings.DATABASE_URL else "postgresql",
         )
+
+        # Sync public engine attribute for testing compatibility
+        global engine
+        engine = db_engine
+
         return db_engine
 
     except Exception as e:
@@ -96,13 +106,14 @@ def create_database_engine() -> Optional[AsyncEngine]:
 
 def get_session_maker() -> Optional[async_sessionmaker[AsyncSession]]:
     """Get or create the session maker."""
-    global _engine, _async_session_maker
+    global _engine, _async_session_maker, engine
 
     if _async_session_maker is None:
         _engine = create_database_engine()
         if _engine is None:
             return None
 
+        engine = _engine  # Sync public attribute
         _async_session_maker = async_sessionmaker(
             bind=_engine,
             class_=AsyncSession,
@@ -201,7 +212,7 @@ async def check_database_health(timeout: float = 5.0) -> bool:
 
 async def close_database_connections() -> None:
     """Close all database connections for graceful shutdown."""
-    global _engine, _async_session_maker
+    global _engine, _async_session_maker, engine
 
     if _engine is not None:
         try:
@@ -212,6 +223,7 @@ async def close_database_connections() -> None:
             await _engine.dispose()
             _engine = None
             _async_session_maker = None
+            engine = None  # Sync public attribute
 
             logger.info("Database connections closed successfully")
         except Exception as e:
@@ -317,7 +329,7 @@ async def validate_database_connection() -> bool:
         # If health check failed, try to recreate the engine
         logger.warning("Database connection validation failed, attempting recovery")
 
-        global _engine, _async_session_maker
+        global _engine, _async_session_maker, engine
 
         # Close existing connections
         if _engine:
@@ -329,6 +341,7 @@ async def validate_database_connection() -> bool:
             logger.error("Failed to recreate database engine")
             return False
 
+        engine = _engine  # Sync public attribute
         _async_session_maker = async_sessionmaker(
             bind=_engine,
             class_=AsyncSession,
@@ -478,8 +491,59 @@ async def recover_database_connection(max_attempts: int = 3, retry_delay: float 
     return False
 
 
+def get_engine() -> Optional[AsyncEngine]:
+    """
+    Get the current database engine.
+
+    Returns:
+        The current async engine or None if not initialized
+    """
+    global _engine, engine
+    if _engine is None:
+        _engine = create_database_engine()
+        engine = _engine  # Sync public attribute
+    return _engine
+
+
+async def recreate_database_pool() -> bool:
+    """
+    Recreate the database connection pool.
+
+    Returns:
+        True if recreation was successful, False otherwise
+    """
+    global _engine, _async_session_maker, engine
+
+    try:
+        # Close existing connections
+        if _engine:
+            await _engine.dispose()
+            logger.info("Existing database engine disposed")
+
+        # Recreate engine and session maker
+        _engine = create_database_engine()
+        if _engine is None:
+            logger.error("Failed to recreate database engine")
+            return False
+
+        engine = _engine  # Sync public attribute
+        _async_session_maker = async_sessionmaker(
+            bind=_engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+
+        logger.info("Database pool recreated successfully")
+        return True
+
+    except Exception as e:
+        logger.error("Failed to recreate database pool", error=str(e))
+        return False
+
+
 def reset_engine() -> None:
     """Reset the database engine for testing."""
-    global _engine, _async_session_maker
+    global _engine, _async_session_maker, engine
     _engine = None
     _async_session_maker = None
+    engine = None

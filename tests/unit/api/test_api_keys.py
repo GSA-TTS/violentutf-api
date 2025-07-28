@@ -7,10 +7,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt
 import pytest
 from fastapi import status
 from httpx import AsyncClient
 
+from app.core.config import settings
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
 from app.schemas.api_key import APIKeyCreate, APIKeyPermissionTemplate, APIKeyResponse, APIKeyUpdate
@@ -18,6 +20,39 @@ from app.schemas.api_key import APIKeyCreate, APIKeyPermissionTemplate, APIKeyRe
 
 class TestAPIKeyEndpoints:
     """Test suite for API Key CRUD endpoints."""
+
+    def create_test_jwt_token(
+        self,
+        user_id: str = "test-user-123",
+        roles: list = None,
+        organization_id: str = None,
+        token_type: str = "access",
+        exp_delta: timedelta = None,
+    ) -> str:
+        """Create test JWT token with proper structure."""
+        if roles is None:
+            roles = ["viewer"]
+        if exp_delta is None:
+            exp_delta = timedelta(hours=1)
+
+        payload = {
+            "sub": user_id,
+            "roles": roles,
+            "organization_id": organization_id,
+            "type": token_type,
+            "exp": datetime.now(timezone.utc) + exp_delta,
+        }
+
+        encoded_jwt = jwt.encode(
+            payload,
+            settings.SECRET_KEY.get_secret_value(),
+            algorithm=settings.ALGORITHM,
+        )
+        return str(encoded_jwt)
+
+    def create_admin_jwt_token(self, user_id: str = "admin-user-123") -> str:
+        """Create test JWT token with admin privileges."""
+        return self.create_test_jwt_token(user_id=user_id, roles=["admin"])
 
     @pytest.fixture
     def mock_api_key(self) -> APIKey:
@@ -68,24 +103,26 @@ class TestAPIKeyEndpoints:
     @pytest.fixture
     def auth_headers(self) -> Dict[str, str]:
         """Create authentication headers."""
-        return {"Authorization": "Bearer test-token"}
+        token = self.create_test_jwt_token()
+        return {"Authorization": f"Bearer {token}"}
 
     @pytest.fixture
     def admin_headers(self) -> Dict[str, str]:
         """Create admin authentication headers."""
-        return {"Authorization": "Bearer admin-token"}
+        token = self.create_admin_jwt_token()
+        return {"Authorization": f"Bearer {token}"}
 
     @pytest.mark.asyncio
     async def test_list_api_keys(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test listing API keys with pagination."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.get(
-                "/api/v1/api-keys",
+            response = await async_client.get(
+                "/api/v1/api-keys/",
                 headers=auth_headers,
                 params={"page": 1, "per_page": 20},
             )
@@ -101,14 +138,14 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_get_api_key_by_id(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting an API key by ID."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/api-keys/{mock_api_key.id}",
                 headers=auth_headers,
             )
@@ -124,7 +161,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_create_api_key(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -145,7 +182,7 @@ class TestAPIKeyEndpoints:
             with patch("app.api.endpoints.api_keys.APIKeyCRUDRouter._generate_api_key") as mock_generate:
                 mock_generate.return_value = ("vutf_fullkey123", "vutf_full", "hash123")
 
-                response = await client.post(
+                response = await async_client.post(
                     "/api/v1/api-keys",
                     json=api_key_data,
                     headers=auth_headers,
@@ -161,7 +198,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_create_api_key_duplicate_name(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -173,7 +210,7 @@ class TestAPIKeyEndpoints:
         }
 
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/api-keys",
                 json=api_key_data,
                 headers=auth_headers,
@@ -185,7 +222,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_update_api_key(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -197,7 +234,7 @@ class TestAPIKeyEndpoints:
         }
 
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.put(
+            response = await async_client.put(
                 f"/api/v1/api-keys/{mock_api_key.id}",
                 json=update_data,
                 headers=auth_headers,
@@ -211,14 +248,14 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_delete_api_key(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test deleting an API key."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.delete(
+            response = await async_client.delete(
                 f"/api/v1/api-keys/{mock_api_key.id}",
                 headers=auth_headers,
             )
@@ -232,14 +269,14 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_get_my_api_keys(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting current user's API keys."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/api-keys/my-keys",
                 headers=auth_headers,
                 params={"include_revoked": False},
@@ -254,14 +291,14 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_revoke_api_key(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test revoking an API key."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/revoke",
                 headers=auth_headers,
             )
@@ -275,14 +312,14 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_validate_api_key(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test validating an API key."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/validate",
                 headers=auth_headers,
             )
@@ -295,11 +332,11 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_get_permission_templates(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting permission templates."""
-        response = await client.get(
+        response = await async_client.get(
             "/api/v1/api-keys/permission-templates",
             headers=auth_headers,
         )
@@ -319,13 +356,13 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_get_usage_statistics_admin_only(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting API key usage statistics (admin only)."""
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/api-keys/usage-stats",
                 headers=admin_headers,
             )
@@ -344,11 +381,11 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_usage_statistics_unauthorized(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test that usage statistics requires admin privileges."""
-        response = await client.get(
+        response = await async_client.get(
             "/api/v1/api-keys/usage-stats",
             headers=auth_headers,
         )
@@ -359,7 +396,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_permission_validation(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test permission validation in API key creation."""
@@ -378,7 +415,7 @@ class TestAPIKeyEndpoints:
                 "permissions": permissions,
             }
 
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/api-keys",
                 json=api_key_data,
                 headers=auth_headers,
@@ -389,7 +426,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_api_key_expiration(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -400,7 +437,7 @@ class TestAPIKeyEndpoints:
         mock_api_key.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
 
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/validate",
                 headers=auth_headers,
             )
@@ -413,7 +450,7 @@ class TestAPIKeyEndpoints:
     @pytest.mark.asyncio
     async def test_api_key_ownership_check(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_api_key: APIKey,
         mock_api_key_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -424,7 +461,7 @@ class TestAPIKeyEndpoints:
 
         with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
             # Try to revoke someone else's key
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/revoke",
                 headers=auth_headers,
             )

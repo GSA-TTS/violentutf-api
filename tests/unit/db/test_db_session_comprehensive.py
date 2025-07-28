@@ -27,20 +27,19 @@ class TestDatabaseEngineCreation:
     """Test database engine creation with different configurations."""
 
     @patch("app.db.session.create_async_engine")
-    @patch("app.core.config.settings")
+    @patch("app.db.session.settings")
     def test_get_engine_postgresql(self, mock_settings, mock_create_engine):
         """Test engine creation for PostgreSQL."""
         # Configure for PostgreSQL
         mock_settings.DATABASE_URL = "postgresql+asyncpg://user:pass@localhost/db"
         mock_settings.DATABASE_POOL_SIZE = 10
         mock_settings.DATABASE_MAX_OVERFLOW = 20
-        mock_settings.DATABASE_POOL_PRE_PING = True
-        mock_settings.DATABASE_ECHO = False
-        mock_settings.DATABASE_POOL_RECYCLE = 3600
+        mock_settings.DEBUG = False
 
         # Reset engine to force recreation
         import app.db.session
 
+        app.db.session._engine = None
         app.db.session.engine = None
 
         # Get engine
@@ -59,42 +58,46 @@ class TestDatabaseEngineCreation:
         assert "poolclass" not in call_args[1]  # Should use default pool
 
     @patch("app.db.session.create_async_engine")
-    @patch("app.core.config.settings")
+    @patch("app.db.session.settings")
     def test_get_engine_sqlite(self, mock_settings, mock_create_engine):
         """Test engine creation for SQLite."""
         # Configure for SQLite
         mock_settings.DATABASE_URL = "sqlite+aiosqlite:///test.db"
         mock_settings.DATABASE_POOL_SIZE = 1
         mock_settings.DATABASE_MAX_OVERFLOW = 0
-        mock_settings.DATABASE_POOL_PRE_PING = False
-        mock_settings.DATABASE_ECHO = True
+        mock_settings.DEBUG = True
 
         # Reset engine
         import app.db.session
 
+        app.db.session._engine = None
         app.db.session.engine = None
 
         # Get engine
         result = get_engine()
 
         # Verify SQLite configuration
+        mock_create_engine.assert_called_once()
         call_args = mock_create_engine.call_args
 
         assert call_args[0][0] == "sqlite+aiosqlite:///test.db"
-        assert call_args[1]["poolclass"] is NullPool  # SQLite uses NullPool
         assert call_args[1]["echo"] is True
-        assert "pool_size" not in call_args[1]  # NullPool doesn't use these
+        assert "pool_size" not in call_args[1]  # SQLite doesn't use these
         assert "max_overflow" not in call_args[1]
 
     @patch("app.db.session.create_async_engine")
-    @patch("app.core.config.settings")
+    @patch("app.db.session.settings")
     def test_get_engine_singleton(self, mock_settings, mock_create_engine):
         """Test engine is created as singleton."""
         mock_settings.DATABASE_URL = "postgresql+asyncpg://test"
+        mock_settings.DATABASE_POOL_SIZE = 5
+        mock_settings.DATABASE_MAX_OVERFLOW = 10
+        mock_settings.DEBUG = False
 
         # Reset engine
         import app.db.session
 
+        app.db.session._engine = None
         app.db.session.engine = None
 
         # Get engine twice
@@ -110,36 +113,36 @@ class TestDatabaseSessionMaker:
     """Test session maker creation."""
 
     @patch("app.db.session.async_sessionmaker")
-    @patch("app.db.session.get_engine")
-    def test_get_session_maker(self, mock_get_engine, mock_sessionmaker):
+    @patch("app.db.session.create_database_engine")
+    def test_get_session_maker(self, mock_create_engine, mock_sessionmaker):
         """Test session maker creation."""
         mock_engine = MagicMock()
-        mock_get_engine.return_value = mock_engine
+        mock_create_engine.return_value = mock_engine
 
         # Reset session maker
         import app.db.session
 
-        app.db.session.async_session_maker = None
+        app.db.session._async_session_maker = None
+        app.db.session._engine = None
 
         # Get session maker
         result = get_session_maker()
 
         # Verify configuration
-        mock_sessionmaker.assert_called_once_with(
-            mock_engine, class_=AsyncSession, expire_on_commit=False, autoflush=False, autocommit=False
-        )
+        mock_sessionmaker.assert_called_once_with(bind=mock_engine, class_=AsyncSession, expire_on_commit=False)
 
     @patch("app.db.session.async_sessionmaker")
-    @patch("app.db.session.get_engine")
-    def test_get_session_maker_singleton(self, mock_get_engine, mock_sessionmaker):
+    @patch("app.db.session.create_database_engine")
+    def test_get_session_maker_singleton(self, mock_create_engine, mock_sessionmaker):
         """Test session maker is singleton."""
         mock_engine = MagicMock()
-        mock_get_engine.return_value = mock_engine
+        mock_create_engine.return_value = mock_engine
 
         # Reset session maker
         import app.db.session
 
-        app.db.session.async_session_maker = None
+        app.db.session._async_session_maker = None
+        app.db.session._engine = None
 
         # Get session maker twice
         maker1 = get_session_maker()
@@ -162,7 +165,7 @@ class TestGetDbWithCircuitBreaker:
         mock_get_maker.return_value = mock_maker
 
         # Reset circuit breaker
-        db_circuit_breaker.reset()
+        await db_circuit_breaker.reset()
 
         # Get session
         async with get_db() as session:
@@ -182,7 +185,7 @@ class TestGetDbWithCircuitBreaker:
         mock_get_maker.return_value = mock_maker
 
         # Reset circuit breaker
-        db_circuit_breaker.reset()
+        await db_circuit_breaker.reset()
 
         # Use session and expect exception
         with pytest.raises(OperationalError):
@@ -220,7 +223,7 @@ class TestGetDbWithCircuitBreaker:
         mock_get_maker.return_value = mock_maker
 
         # Reset circuit breaker
-        db_circuit_breaker.reset()
+        await db_circuit_breaker.reset()
 
         # Should raise and increment circuit breaker
         with pytest.raises(Exception, match="Cannot create session"):

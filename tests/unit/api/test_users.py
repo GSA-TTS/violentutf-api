@@ -68,13 +68,13 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_list_users(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test listing users with pagination."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/users",
                 headers=auth_headers,
                 params={"page": 1, "per_page": 20},
@@ -92,14 +92,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_get_user_by_id(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting a user by ID."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/users/{mock_user.id}",
                 headers=auth_headers,
             )
@@ -114,7 +114,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_get_user_not_found(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
@@ -123,7 +123,7 @@ class TestUserEndpoints:
         user_id = uuid.uuid4()
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/users/{user_id}",
                 headers=auth_headers,
             )
@@ -134,7 +134,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_create_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -149,7 +149,7 @@ class TestUserEndpoints:
         }
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/users",
                 json=user_data,
                 headers=auth_headers,
@@ -165,7 +165,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_create_user_duplicate_username(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
@@ -179,7 +179,7 @@ class TestUserEndpoints:
         }
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/users",
                 json=user_data,
                 headers=auth_headers,
@@ -191,7 +191,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_update_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -203,7 +203,7 @@ class TestUserEndpoints:
         }
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.put(
+            response = await async_client.put(
                 f"/api/v1/users/{mock_user.id}",
                 json=update_data,
                 headers=auth_headers,
@@ -217,14 +217,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_delete_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test deleting a user (admin only)."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.delete(
+            response = await async_client.delete(
                 f"/api/v1/users/{mock_user.id}",
                 headers=admin_headers,
             )
@@ -238,7 +238,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_get_current_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -248,7 +248,7 @@ class TestUserEndpoints:
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
             with patch("app.api.endpoints.users.Request") as mock_request:
                 mock_request.state.user_id = mock_user.id
-                response = await client.get(
+                response = await async_client.get(
                     "/api/v1/users/me",
                     headers=auth_headers,
                 )
@@ -261,7 +261,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_update_current_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -270,7 +270,7 @@ class TestUserEndpoints:
         update_data = {"full_name": "My New Name"}
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.put(
+            response = await async_client.put(
                 "/api/v1/users/me",
                 json=update_data,
                 headers=auth_headers,
@@ -283,7 +283,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_change_password(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -295,7 +295,7 @@ class TestUserEndpoints:
         }
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/users/me/change-password",
                 json=password_data,
                 headers=auth_headers,
@@ -310,7 +310,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_change_password_incorrect_current(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -324,7 +324,7 @@ class TestUserEndpoints:
         }
 
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/users/me/change-password",
                 json=password_data,
                 headers=auth_headers,
@@ -336,14 +336,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_get_user_by_username(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting user by username."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/users/username/{mock_user.username}",
                 headers=auth_headers,
             )
@@ -356,14 +356,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_verify_user_email(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test verifying user email (admin only)."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/users/{mock_user.id}/verify",
                 headers=admin_headers,
             )
@@ -377,14 +377,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_activate_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test activating a user (admin only)."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/users/{mock_user.id}/activate",
                 headers=admin_headers,
             )
@@ -398,14 +398,14 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_deactivate_user(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         mock_user_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test deactivating a user (admin only)."""
         with patch("app.api.endpoints.users.UserRepository", return_value=mock_user_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/users/{mock_user.id}/deactivate",
                 headers=admin_headers,
             )
@@ -419,7 +419,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_admin_only_endpoints_unauthorized(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_user: User,
         auth_headers: Dict[str, str],
     ) -> None:
@@ -433,9 +433,9 @@ class TestUserEndpoints:
 
         for method, endpoint in endpoints:
             if method == "POST":
-                response = await client.post(endpoint, headers=auth_headers)
+                response = await async_client.post(endpoint, headers=auth_headers)
             else:
-                response = await client.delete(endpoint, headers=auth_headers)
+                response = await async_client.delete(endpoint, headers=auth_headers)
 
             assert response.status_code == status.HTTP_403_FORBIDDEN
             assert "Administrator privileges required" in response.json()["detail"]
@@ -443,7 +443,7 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_input_validation(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test input validation for user creation."""
@@ -459,7 +459,7 @@ class TestUserEndpoints:
         ]
 
         for data in invalid_data:
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/users",
                 json=data,
                 headers=auth_headers,

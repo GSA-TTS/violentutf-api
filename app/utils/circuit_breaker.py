@@ -53,6 +53,10 @@ class CircuitBreakerException(Exception):
         self.circuit_name = circuit_name
 
 
+# Alias for backward compatibility
+CircuitBreakerOpenError = CircuitBreakerException
+
+
 class CircuitBreaker:
     """
     Circuit breaker implementation for fault tolerance.

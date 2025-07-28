@@ -5,12 +5,7 @@ from typing import List
 
 import pytest
 
-from app.schemas.filtering import (
-    EnhancedFilter,
-    FieldFilter,
-    FilterOperator,
-    SortField,
-)
+from app.schemas.filtering import EnhancedFilter, FieldFilter, FilterOperator, SortField
 
 
 class TestFieldFilter:

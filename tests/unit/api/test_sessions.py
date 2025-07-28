@@ -92,13 +92,13 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_list_sessions(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test listing sessions with pagination."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/sessions",
                 headers=auth_headers,
                 params={"page": 1, "per_page": 20},
@@ -115,14 +115,14 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_get_session_by_id(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting a session by ID."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/sessions/{mock_session.id}",
                 headers=auth_headers,
             )
@@ -138,7 +138,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_create_session(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -159,7 +159,7 @@ class TestSessionEndpoints:
         mock_session_repo.get_by_token.return_value = None
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/sessions",
                 json=session_data,
                 headers=auth_headers,
@@ -174,7 +174,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_create_session_duplicate_token(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -187,7 +187,7 @@ class TestSessionEndpoints:
         }
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/sessions",
                 json=session_data,
                 headers=auth_headers,
@@ -199,7 +199,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_update_session(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -211,7 +211,7 @@ class TestSessionEndpoints:
         }
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.put(
+            response = await async_client.put(
                 f"/api/v1/sessions/{mock_session.id}",
                 json=update_data,
                 headers=auth_headers,
@@ -225,14 +225,14 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_delete_session(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test deleting a session."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.delete(
+            response = await async_client.delete(
                 f"/api/v1/sessions/{mock_session.id}",
                 headers=auth_headers,
             )
@@ -246,14 +246,14 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_get_my_sessions(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting current user's sessions."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/sessions/my-sessions",
                 headers=auth_headers,
                 params={"include_inactive": False},
@@ -268,7 +268,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_revoke_session(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -277,7 +277,7 @@ class TestSessionEndpoints:
         revoke_data = {"reason": "Security concern"}
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/sessions/{mock_session.id}/revoke",
                 json=revoke_data,
                 headers=auth_headers,
@@ -292,7 +292,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_revoke_all_user_sessions(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
@@ -300,7 +300,7 @@ class TestSessionEndpoints:
         revoke_data = {"reason": "Account security reset"}
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/sessions/revoke-all",
                 json=revoke_data,
                 headers=auth_headers,
@@ -315,7 +315,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_extend_session(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -324,7 +324,7 @@ class TestSessionEndpoints:
         extend_data = {"extension_minutes": 120}
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/sessions/{mock_session.id}/extend",
                 json=extend_data,
                 headers=auth_headers,
@@ -338,14 +338,14 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_get_active_sessions_admin_only(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting all active sessions (admin only)."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/sessions/active",
                 headers=admin_headers,
                 params={"limit": 50},
@@ -360,13 +360,13 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_get_session_statistics_admin_only(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting session statistics (admin only)."""
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/sessions/statistics",
                 headers=admin_headers,
             )
@@ -384,7 +384,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_admin_endpoints_unauthorized(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test that admin-only endpoints require admin privileges."""
@@ -394,14 +394,14 @@ class TestSessionEndpoints:
         ]
 
         for endpoint in endpoints:
-            response = await client.get(endpoint, headers=auth_headers)
+            response = await async_client.get(endpoint, headers=auth_headers)
             assert response.status_code == status.HTTP_403_FORBIDDEN
             assert "Administrator privileges required" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_session_ownership_check(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         mock_session_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -412,7 +412,7 @@ class TestSessionEndpoints:
 
         with patch("app.api.endpoints.sessions.SessionRepository", return_value=mock_session_repo):
             # Try to revoke someone else's session
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/sessions/{mock_session.id}/revoke",
                 json={"reason": "Test"},
                 headers=auth_headers,
@@ -424,7 +424,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_session_token_validation(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test session token validation."""
@@ -444,7 +444,7 @@ class TestSessionEndpoints:
         ]
 
         for data in invalid_tokens:
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/sessions",
                 json=data,
                 headers=auth_headers,
@@ -454,7 +454,7 @@ class TestSessionEndpoints:
     @pytest.mark.asyncio
     async def test_extend_session_validation(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_session: Session,
         auth_headers: Dict[str, str],
     ) -> None:
@@ -466,7 +466,7 @@ class TestSessionEndpoints:
         ]
 
         for data in invalid_extensions:
-            response = await client.post(
+            response = await async_client.post(
                 f"/api/v1/sessions/{mock_session.id}/extend",
                 json=data,
                 headers=auth_headers,

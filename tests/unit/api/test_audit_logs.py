@@ -90,13 +90,13 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_list_audit_logs_admin_only(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test listing audit logs with pagination (admin only)."""
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/audit-logs",
                 headers=admin_headers,
                 params={"page": 1, "per_page": 20},
@@ -114,13 +114,13 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_list_audit_logs_with_filters(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test listing audit logs with filters."""
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/audit-logs",
                 headers=admin_headers,
                 params={
@@ -141,14 +141,14 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_get_audit_log_by_id(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log: AuditLog,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting a specific audit log by ID."""
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/audit-logs/{mock_audit_log.id}",
                 headers=admin_headers,
             )
@@ -163,7 +163,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_get_user_audit_logs(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log: AuditLog,
         mock_audit_log_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -172,7 +172,7 @@ class TestAuditLogEndpoints:
         user_id = mock_audit_log.user_id
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/audit-logs/user/{user_id}",
                 headers=auth_headers,
                 params={"page": 1, "per_page": 20},
@@ -187,14 +187,14 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_get_resource_audit_logs(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log: AuditLog,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting audit logs for a specific resource."""
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/audit-logs/resource/{mock_audit_log.resource_type}/{mock_audit_log.resource_id}",
                 headers=admin_headers,
                 params={"page": 1, "per_page": 20},
@@ -210,13 +210,13 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_get_audit_log_statistics(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting audit log statistics."""
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/audit-logs/statistics",
                 headers=admin_headers,
             )
@@ -238,7 +238,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_get_resource_audit_summary(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
@@ -247,7 +247,7 @@ class TestAuditLogEndpoints:
         resource_id = str(uuid.uuid4())
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/audit-logs/summary/{resource_type}/{resource_id}",
                 headers=admin_headers,
             )
@@ -265,7 +265,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_export_audit_logs_csv(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
@@ -278,7 +278,7 @@ class TestAuditLogEndpoints:
         }
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/audit-logs/export",
                 json=export_data,
                 headers=admin_headers,
@@ -293,7 +293,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_export_audit_logs_json(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
@@ -306,7 +306,7 @@ class TestAuditLogEndpoints:
         }
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/audit-logs/export",
                 json=export_data,
                 headers=admin_headers,
@@ -321,7 +321,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_audit_logs_require_admin(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test that most audit log endpoints require admin privileges."""
@@ -336,9 +336,9 @@ class TestAuditLogEndpoints:
 
         for method, endpoint in endpoints:
             if method == "GET":
-                response = await client.get(endpoint, headers=auth_headers)
+                response = await async_client.get(endpoint, headers=auth_headers)
             else:
-                response = await client.post(
+                response = await async_client.post(
                     endpoint,
                     json={"format": "csv"},
                     headers=auth_headers,
@@ -350,7 +350,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_user_can_view_own_audit_logs(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log: AuditLog,
         mock_audit_log_repo: AsyncMock,
         auth_headers: Dict[str, str],
@@ -362,7 +362,7 @@ class TestAuditLogEndpoints:
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
             with patch("app.api.endpoints.audit_logs.Request") as mock_request:
                 mock_request.state.user_id = user_id
-                response = await client.get(
+                response = await async_client.get(
                     f"/api/v1/audit-logs/user/{user_id}",
                     headers=auth_headers,
                 )
@@ -372,7 +372,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_export_validation(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         admin_headers: Dict[str, str],
     ) -> None:
         """Test export request validation."""
@@ -384,7 +384,7 @@ class TestAuditLogEndpoints:
         ]
 
         for export_data in invalid_exports:
-            response = await client.post(
+            response = await async_client.post(
                 "/api/v1/audit-logs/export",
                 json=export_data,
                 headers=admin_headers,
@@ -394,7 +394,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_audit_log_not_found(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
@@ -403,7 +403,7 @@ class TestAuditLogEndpoints:
         log_id = uuid.uuid4()
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 f"/api/v1/audit-logs/{log_id}",
                 headers=admin_headers,
             )
@@ -414,7 +414,7 @@ class TestAuditLogEndpoints:
     @pytest.mark.asyncio
     async def test_resource_summary_not_found(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         mock_audit_log_repo: AsyncMock,
         admin_headers: Dict[str, str],
     ) -> None:
@@ -422,7 +422,7 @@ class TestAuditLogEndpoints:
         mock_audit_log_repo.get_resource_summary.return_value = None
 
         with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
-            response = await client.get(
+            response = await async_client.get(
                 "/api/v1/audit-logs/summary/user/nonexistent",
                 headers=admin_headers,
             )
