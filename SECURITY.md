@@ -128,7 +128,7 @@ detect-secrets scan --baseline .secrets.baseline
 
 The following patterns are configured for detection:
 - ViolentUTF API keys: `VUTF_API_[A-Z0-9]{32}`
-- JWT secrets: `jwt_secret_[a-zA-Z0-9]{64}`
+- JWT secrets: `jwt_secret_[a-zA-Z0-9]{64}` # pragma: allowlist secret
 - Database URLs with embedded credentials
 - Private keys (RSA, EC, SSH, etc.)
 

@@ -136,7 +136,7 @@ async def test_user_crud(
     # Create user
     response = await async_client.post(
         "/api/v1/users",
-        json={"username": "testuser", "email": "test@example.com", "password": "Pass123!"},
+        json={"username": "testuser", "email": "test@example.com", "password": "Pass123!"},  # pragma: allowlist secret
         headers=headers,
     )
     assert response.status_code == 201
@@ -201,7 +201,7 @@ CSRF_ENABLED=false  # Disable CSRF for tests
 ### Test Settings Override
 ```python
 Settings(
-    SECRET_KEY="test-secret-key-for-testing-only-32chars",
+    SECRET_KEY="test-secret-key-for-testing-only-32chars",  # pragma: allowlist secret
     ENVIRONMENT="development",
     DEBUG=True,
     DATABASE_URL=test_db_url,

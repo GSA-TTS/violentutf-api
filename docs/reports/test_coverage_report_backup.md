@@ -57,7 +57,7 @@
 ```python
 # Test expects this to work:
 response = await client.post("/api/v1/auth/login",
-                           json={"username": "testuser", "password": "TestPass123!"})
+                           json={"username": "testuser", "password": "TestPass123!"})  # pragma: allowlist secret
 token = response.json()["access_token"]
 
 # But fails because:

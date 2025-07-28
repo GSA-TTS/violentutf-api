@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "add_roles_field_rbac"
-down_revision = "41eb10f48a60"
+down_revision = "41eb10f48a60"  # pragma: allowlist secret
 branch_labels = None
 depends_on = None
 

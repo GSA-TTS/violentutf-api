@@ -314,7 +314,7 @@ All GitHub Issue #18 requirements have been fully implemented:
 # Login
 curl -X POST /api/v1/auth/login \\
   -H "Content-Type: application/json" \\
-  -d '{"username": "user", "password": "password"}'
+  -d '{"username": "user", "password": "password"}'  # pragma: allowlist secret
 
 # Use token
 curl -X GET /api/v1/users/me \\

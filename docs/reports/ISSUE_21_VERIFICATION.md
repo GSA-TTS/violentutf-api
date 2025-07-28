@@ -247,7 +247,7 @@ assert payload["type"] == "access"
 **Manual Testing Results:**
 ```python
 # Password hashing verified
-password = "TestPass123!"
+password = "TestPass123!"  # pragma: allowlist secret
 hashed = hash_password(password)
 print(f"Hash working: {verify_password(password, hashed)}")  # True
 print(f"Strength check: {validate_password_strength(password)}")  # (True, 'Password is strong')
