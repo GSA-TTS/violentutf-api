@@ -30,6 +30,7 @@ from app.models.user import User
 from app.repositories.api_key import APIKeyRepository
 from app.repositories.audit_log import AuditLogRepository
 from app.repositories.user import UserRepository
+from tests.test_database import TestDatabaseManager
 
 
 class BenchmarkResult:
@@ -162,7 +163,7 @@ class TestPerformanceBenchmarks:
     @pytest_asyncio.fixture
     async def db_manager(self):
         """Get database manager instance."""
-        manager = DatabaseManager()
+        manager = TestDatabaseManager()
         await manager.initialize()
         yield manager
         await manager.shutdown()
@@ -179,7 +180,7 @@ class TestPerformanceBenchmarks:
                 user = await user_repo.create(
                     username=f"bench_user_{i}",
                     email=f"bench{i}@example.com",
-                    password_hash=get_password_hash("password123"),
+                    password_hash=hash_password("password123"),
                     full_name=f"Benchmark User {i}",
                 )
                 users.append(user)
@@ -206,7 +207,7 @@ class TestPerformanceBenchmarks:
                     user_repo.create,
                     username=username,
                     email=email,
-                    password_hash=get_password_hash("password123"),
+                    password_hash=hash_password("password123"),
                 )
 
                 # Benchmark: Get by ID
@@ -311,7 +312,7 @@ class TestPerformanceBenchmarks:
                     {
                         "username": f"bulk_{bulk_size}_{i}_{generate_random_string()}",
                         "email": f"bulk_{bulk_size}_{i}@example.com",
-                        "password_hash": get_password_hash("password123"),
+                        "password_hash": hash_password("password123"),
                     }
                     for i in range(bulk_size)
                 ]
@@ -399,7 +400,7 @@ class TestPerformanceBenchmarks:
             user_repo = UserRepository(session)
             username = f"concurrent_{index}_{generate_random_string()}"
             return await user_repo.create(
-                username=username, email=f"{username}@example.com", password_hash=get_password_hash("password123")
+                username=username, email=f"{username}@example.com", password_hash=hash_password("password123")
             )
 
         # Create a test user for reads
@@ -408,7 +409,7 @@ class TestPerformanceBenchmarks:
             test_user = await user_repo.create(
                 username="concurrent_test_user",
                 email="concurrent@example.com",
-                password_hash=get_password_hash("password123"),
+                password_hash=hash_password("password123"),
             )
             await session.commit()
             test_user_id = test_user.id
@@ -484,7 +485,7 @@ class TestPerformanceBenchmarks:
                         user = await user_repo.create(
                             username=f"tx_{size}_{i}_{generate_random_string()}",
                             email=f"tx_{size}_{i}@example.com",
-                            password_hash=get_password_hash("password123"),
+                            password_hash=hash_password("password123"),
                         )
                         users.append(user)
 
@@ -522,7 +523,7 @@ class TestPerformanceBenchmarks:
                     user_repo.create,
                     username=f"summary_{generate_random_string()}",
                     email=f"summary_{i}@example.com",
-                    password_hash=get_password_hash("password123"),
+                    password_hash=hash_password("password123"),
                 )
 
         suite.finalize()

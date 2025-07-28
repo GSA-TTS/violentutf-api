@@ -27,6 +27,7 @@ from sqlalchemy.pool import Pool
 from app.db.session import get_db, get_session_maker
 from app.models.user import User
 from app.repositories.user import UserRepository
+from tests.test_database import TestDatabaseManager
 
 
 class SessionTracker:
@@ -116,7 +117,7 @@ class TestSessionLeakPrevention:
     @pytest_asyncio.fixture
     async def db_manager(self):
         """Get database manager instance."""
-        manager = DatabaseManager()
+        manager = TestDatabaseManager()
         await manager.initialize()
         yield manager
         await manager.shutdown()

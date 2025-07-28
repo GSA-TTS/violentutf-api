@@ -38,7 +38,7 @@ repos:
     hooks:
       - id: mypy
         args: ['--ignore-missing-imports', '--strict']
-        exclude: '^tests/'
+        exclude: '^(tests/|alembic/)'
         additional_dependencies:
           - types-requests
           - types-redis
@@ -50,6 +50,7 @@ repos:
           - starlette
           - redis
           - sqlalchemy
+          - alembic
 
   # Security scanning - PyCQA maintained
   - repo: https://github.com/PyCQA/bandit

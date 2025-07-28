@@ -25,6 +25,7 @@ SAFE_METHODS: Set[str] = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
 # Paths to exclude from CSRF protection
 CSRF_EXEMPT_PATHS: List[str] = [
+    "/api/v1/auth",
     "/api/v1/health",
     "/api/v1/ready",
     "/api/v1/live",

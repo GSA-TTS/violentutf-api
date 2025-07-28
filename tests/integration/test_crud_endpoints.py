@@ -19,68 +19,10 @@ from app.models.user import User
 class TestCRUDEndpointsIntegration:
     """Integration tests for complete CRUD endpoints flow."""
 
-    @pytest.fixture
-    async def test_user(self, db_session: AsyncSession) -> User:
-        """Create a test user in the database."""
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            password_hash=hash_password("TestPass123!"),
-            full_name="Test User",
-            is_active=True,
-            is_superuser=False,
-            is_verified=True,
-            created_by="system",
-            updated_by="system",
-        )
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-        return user
-
-    @pytest.fixture
-    async def admin_user(self, db_session: AsyncSession) -> User:
-        """Create an admin user in the database."""
-        admin = User(
-            username="admin",
-            email="admin@example.com",
-            password_hash=hash_password("AdminPass123!"),
-            full_name="Admin User",
-            is_active=True,
-            is_superuser=True,
-            is_verified=True,
-            created_by="system",
-            updated_by="system",
-        )
-        db_session.add(admin)
-        await db_session.commit()
-        await db_session.refresh(admin)
-        return admin
-
-    @pytest.fixture
-    async def auth_token(self, client: AsyncClient, test_user: User) -> str:
-        """Get authentication token for test user."""
-        response = await client.post(
-            "/api/v1/auth/login",
-            json={"username": test_user.username, "password": "TestPass123!"},
-        )
-        assert response.status_code == status.HTTP_200_OK
-        return response.json()["access_token"]
-
-    @pytest.fixture
-    async def admin_token(self, client: AsyncClient, admin_user: User) -> str:
-        """Get authentication token for admin user."""
-        response = await client.post(
-            "/api/v1/auth/login",
-            json={"username": admin_user.username, "password": "AdminPass123!"},
-        )
-        assert response.status_code == status.HTTP_200_OK
-        return response.json()["access_token"]
-
     @pytest.mark.asyncio
     async def test_complete_user_crud_flow(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         admin_token: str,
         db_session: AsyncSession,
     ) -> None:
@@ -96,7 +38,7 @@ class TestCRUDEndpointsIntegration:
             "is_superuser": False,
         }
 
-        create_response = await client.post(
+        create_response = await async_client.post(
             "/api/v1/users",
             json=user_data,
             headers=headers,
@@ -106,7 +48,7 @@ class TestCRUDEndpointsIntegration:
         user_id = created_user["id"]
 
         # 2. List users with pagination
-        list_response = await client.get(
+        list_response = await async_client.get(
             "/api/v1/users",
             params={"page": 1, "per_page": 10},
             headers=headers,
@@ -115,7 +57,7 @@ class TestCRUDEndpointsIntegration:
         assert any(u["id"] == user_id for u in list_response.json()["data"])
 
         # 3. Get user by ID
-        get_response = await client.get(
+        get_response = await async_client.get(
             f"/api/v1/users/{user_id}",
             headers=headers,
         )
@@ -124,7 +66,7 @@ class TestCRUDEndpointsIntegration:
 
         # 4. Update user
         update_data = {"full_name": "Updated User Name"}
-        update_response = await client.put(
+        update_response = await async_client.put(
             f"/api/v1/users/{user_id}",
             json=update_data,
             headers=headers,
@@ -132,14 +74,14 @@ class TestCRUDEndpointsIntegration:
         assert update_response.status_code == status.HTTP_200_OK
 
         # 5. Verify update
-        verify_response = await client.get(
+        verify_response = await async_client.get(
             f"/api/v1/users/{user_id}",
             headers=headers,
         )
         assert verify_response.json()["data"]["full_name"] == "Updated User Name"
 
         # 6. Delete user
-        delete_response = await client.delete(
+        delete_response = await async_client.delete(
             f"/api/v1/users/{user_id}",
             headers=headers,
         )
@@ -147,7 +89,7 @@ class TestCRUDEndpointsIntegration:
         assert delete_response.json()["data"]["success"] is True
 
         # 7. Verify deletion (soft delete)
-        final_response = await client.get(
+        final_response = await async_client.get(
             f"/api/v1/users/{user_id}",
             headers=headers,
         )
@@ -156,7 +98,7 @@ class TestCRUDEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_api_key_lifecycle(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         test_user: User,
         auth_token: str,
         db_session: AsyncSession,
@@ -172,7 +114,7 @@ class TestCRUDEndpointsIntegration:
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
         }
 
-        create_response = await client.post(
+        create_response = await async_client.post(
             "/api/v1/api-keys",
             json=key_data,
             headers=headers,
@@ -183,7 +125,7 @@ class TestCRUDEndpointsIntegration:
         full_key = created_key["key"]  # Save for later validation
 
         # 2. List my API keys
-        list_response = await client.get(
+        list_response = await async_client.get(
             "/api/v1/api-keys/my-keys",
             headers=headers,
         )
@@ -191,7 +133,7 @@ class TestCRUDEndpointsIntegration:
         assert any(k["id"] == key_id for k in list_response.json()["data"])
 
         # 3. Validate API key
-        validate_response = await client.post(
+        validate_response = await async_client.post(
             f"/api/v1/api-keys/{key_id}/validate",
             headers=headers,
         )
@@ -203,7 +145,7 @@ class TestCRUDEndpointsIntegration:
             "name": "Updated API Key",
             "permissions": {"read": True, "write": True},
         }
-        update_response = await client.put(
+        update_response = await async_client.put(
             f"/api/v1/api-keys/{key_id}",
             json=update_data,
             headers=headers,
@@ -211,14 +153,14 @@ class TestCRUDEndpointsIntegration:
         assert update_response.status_code == status.HTTP_200_OK
 
         # 5. Revoke API key
-        revoke_response = await client.post(
+        revoke_response = await async_client.post(
             f"/api/v1/api-keys/{key_id}/revoke",
             headers=headers,
         )
         assert revoke_response.status_code == status.HTTP_200_OK
 
         # 6. Validate revoked key
-        validate_revoked = await client.post(
+        validate_revoked = await async_client.post(
             f"/api/v1/api-keys/{key_id}/validate",
             headers=headers,
         )
@@ -228,7 +170,7 @@ class TestCRUDEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_session_management_flow(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         test_user: User,
         auth_token: str,
         db_session: AsyncSession,
@@ -245,7 +187,7 @@ class TestCRUDEndpointsIntegration:
             "expires_at": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
         }
 
-        create_response = await client.post(
+        create_response = await async_client.post(
             "/api/v1/sessions",
             json=session_data,
             headers=headers,
@@ -254,7 +196,7 @@ class TestCRUDEndpointsIntegration:
         session_id = create_response.json()["data"]["id"]
 
         # 2. Get my sessions
-        my_sessions = await client.get(
+        my_sessions = await async_client.get(
             "/api/v1/sessions/my-sessions",
             headers=headers,
         )
@@ -262,7 +204,7 @@ class TestCRUDEndpointsIntegration:
         assert any(s["id"] == session_id for s in my_sessions.json()["data"])
 
         # 3. Extend session
-        extend_response = await client.post(
+        extend_response = await async_client.post(
             f"/api/v1/sessions/{session_id}/extend",
             json={"extension_minutes": 60},
             headers=headers,
@@ -270,7 +212,7 @@ class TestCRUDEndpointsIntegration:
         assert extend_response.status_code == status.HTTP_200_OK
 
         # 4. Revoke specific session
-        revoke_response = await client.post(
+        revoke_response = await async_client.post(
             f"/api/v1/sessions/{session_id}/revoke",
             json={"reason": "Test revocation"},
             headers=headers,
@@ -278,7 +220,7 @@ class TestCRUDEndpointsIntegration:
         assert revoke_response.status_code == status.HTTP_200_OK
 
         # 5. Verify session is revoked
-        get_response = await client.get(
+        get_response = await async_client.get(
             f"/api/v1/sessions/{session_id}",
             headers=headers,
         )
@@ -288,7 +230,7 @@ class TestCRUDEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_audit_log_tracking(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         admin_user: User,
         admin_token: str,
         db_session: AsyncSession,
@@ -303,7 +245,7 @@ class TestCRUDEndpointsIntegration:
             "email": "audit@example.com",
             "password": "AuditPass123!",
         }
-        user_response = await client.post(
+        user_response = await async_client.post(
             "/api/v1/users",
             json=user_data,
             headers=headers,
@@ -312,7 +254,7 @@ class TestCRUDEndpointsIntegration:
         user_id = user_response.json()["data"]["id"]
 
         # Update the user
-        await client.put(
+        await async_client.put(
             f"/api/v1/users/{user_id}",
             json={"full_name": "Audit Test User"},
             headers=headers,
@@ -325,7 +267,7 @@ class TestCRUDEndpointsIntegration:
         await asyncio.sleep(0.5)
 
         # Get audit logs for the user
-        logs_response = await client.get(
+        logs_response = await async_client.get(
             f"/api/v1/audit-logs/resource/user/{user_id}",
             headers=headers,
         )
@@ -338,7 +280,7 @@ class TestCRUDEndpointsIntegration:
         assert "user.update" in actions
 
         # 3. Get audit statistics
-        stats_response = await client.get(
+        stats_response = await async_client.get(
             "/api/v1/audit-logs/statistics",
             headers=headers,
         )
@@ -347,7 +289,7 @@ class TestCRUDEndpointsIntegration:
         assert stats["total_logs"] > 0
 
         # 4. Test export functionality
-        export_response = await client.post(
+        export_response = await async_client.post(
             "/api/v1/audit-logs/export",
             json={
                 "format": "json",
@@ -362,7 +304,7 @@ class TestCRUDEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_idempotency_middleware(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         auth_token: str,
     ) -> None:
         """Test idempotency middleware with repeated requests."""
@@ -377,7 +319,7 @@ class TestCRUDEndpointsIntegration:
             "permissions": {"read": True},
         }
 
-        first_response = await client.post(
+        first_response = await async_client.post(
             "/api/v1/api-keys",
             json=key_data,
             headers=headers,
@@ -386,7 +328,7 @@ class TestCRUDEndpointsIntegration:
         first_data = first_response.json()
 
         # Second request with same idempotency key
-        second_response = await client.post(
+        second_response = await async_client.post(
             "/api/v1/api-keys",
             json=key_data,
             headers=headers,
@@ -399,7 +341,7 @@ class TestCRUDEndpointsIntegration:
 
         # Different idempotency key should create new resource
         headers["Idempotency-Key"] = f"test-key-{uuid.uuid4()}"
-        third_response = await client.post(
+        third_response = await async_client.post(
             "/api/v1/api-keys",
             json={**key_data, "name": "Another Key"},
             headers=headers,
@@ -410,7 +352,7 @@ class TestCRUDEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_permission_boundaries(
         self,
-        client: AsyncClient,
+        async_client: AsyncClient,
         test_user: User,
         auth_token: str,
         admin_user: User,
@@ -430,27 +372,27 @@ class TestCRUDEndpointsIntegration:
 
         for method, endpoint in admin_only_endpoints:
             if method == "GET":
-                response = await client.get(endpoint, headers=user_headers)
+                response = await async_client.get(endpoint, headers=user_headers)
             else:
-                response = await client.post(endpoint, headers=user_headers)
+                response = await async_client.post(endpoint, headers=user_headers)
             assert response.status_code == status.HTTP_403_FORBIDDEN
 
         # 2. Users can only modify their own resources
         # Try to delete another user's data
-        delete_response = await client.delete(
+        delete_response = await async_client.delete(
             f"/api/v1/users/{admin_user.id}",
             headers=user_headers,
         )
         assert delete_response.status_code == status.HTTP_403_FORBIDDEN
 
         # 3. Admin can access everything
-        admin_list = await client.get(
+        admin_list = await async_client.get(
             "/api/v1/users",
             headers=admin_headers,
         )
         assert admin_list.status_code == status.HTTP_200_OK
 
-        stats = await client.get(
+        stats = await async_client.get(
             "/api/v1/sessions/statistics",
             headers=admin_headers,
         )

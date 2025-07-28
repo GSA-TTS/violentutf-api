@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from sqlalchemy import Boolean, DateTime, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
@@ -82,6 +82,14 @@ class User(Base, BaseModelMixin):
         String(45),  # IPv6 max length is 39, plus some margin
         nullable=True,
         comment="IP address of the user's last successful login",
+    )
+
+    roles: Mapped[List[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=lambda: ["viewer"],
+        server_default='["viewer"]',
+        comment="User roles for RBAC authorization (viewer, tester, admin)",
     )
 
     # Relationships
@@ -175,6 +183,28 @@ class User(Base, BaseModelMixin):
 
         return value
 
+    @validates("roles")
+    def validate_roles(self: "User", key: str, value: List[str]) -> List[str]:
+        """Validate user roles according to ADR-003 specifications."""
+        if not value:
+            raise ValueError("User must have at least one role")
+
+        # Valid roles according to ADR-003
+        valid_roles = {"viewer", "tester", "admin"}
+
+        # Ensure all roles are valid
+        for role in value:
+            if role not in valid_roles:
+                raise ValueError(f"Invalid role '{role}'. Valid roles are: {', '.join(valid_roles)}")
+
+        # Remove duplicates and maintain order
+        unique_roles = []
+        for role in value:
+            if role not in unique_roles:
+                unique_roles.append(role)
+
+        return unique_roles
+
     def __str__(self: "User") -> str:
         """Return human-readable string representation of user."""
         status = "active" if self.is_active else "inactive"
@@ -196,6 +226,8 @@ class User(Base, BaseModelMixin):
             "full_name": self.full_name,
             "is_active": self.is_active,
             "is_superuser": self.is_superuser,
+            "roles": self.roles,
+            "organization_id": str(self.organization_id) if self.organization_id else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

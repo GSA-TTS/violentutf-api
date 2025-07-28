@@ -17,6 +17,7 @@ from .api.routes import api_router
 from .core.config import settings
 from .core.errors import setup_error_handlers
 from .core.logging import setup_logging
+from .middleware.authentication import JWTAuthenticationMiddleware
 from .middleware.csrf import CSRFProtectionMiddleware
 from .middleware.idempotency import IdempotencyMiddleware
 from .middleware.input_sanitization import InputSanitizationMiddleware
@@ -159,13 +160,15 @@ def create_application() -> FastAPI:
     app.add_middleware(SessionMiddleware)
     # 5. CSRF Protection (after sessions)
     app.add_middleware(CSRFProtectionMiddleware)
-    # 6. Idempotency support (before input sanitization)
+    # 6. JWT Authentication (after CSRF, before other processing)
+    app.add_middleware(JWTAuthenticationMiddleware)
+    # 7. Idempotency support (before input sanitization)
     app.add_middleware(IdempotencyMiddleware)
-    # 7. Input sanitization (before request processing)
+    # 8. Input sanitization (before request processing)
     app.add_middleware(InputSanitizationMiddleware)
-    # 8. Request signing (for high-security endpoints)
+    # 9. Request signing (for high-security endpoints)
     app.add_middleware(RequestSigningMiddleware)
-    # 9. CORS
+    # 10. CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
@@ -174,10 +177,10 @@ def create_application() -> FastAPI:
         allow_headers=settings.ALLOWED_HEADERS,
     )
 
-    # 10. GZip compression
+    # 11. GZip compression
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # 11. Security headers (should be near the end)
+    # 12. Security headers (should be near the end)
     setup_security_middleware(app)
 
     # Include API routes

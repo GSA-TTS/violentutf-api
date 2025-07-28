@@ -1,19 +1,15 @@
 # ADR-F1.2: Server-Side Orchestration for Multi-Turn Attacks
 
 ## Status
-
 Accepted
 
 ## Authors
-
 Tam Nguyen (Cybonto)
 
 ## Date
-
 2025-07-27
 
 ## Stakeholders
-
   * API Development Team
   * Security Researchers and Red Teamers (Primary Users)
   * Platform Operations Team

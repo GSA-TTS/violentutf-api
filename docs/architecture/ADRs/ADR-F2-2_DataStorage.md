@@ -5,10 +5,10 @@ Of course. Here is the next Architecture Decision Record in the feature series, 
 # ADR-F2.2: Polyglot Persistence Strategy for Session Evidence
 
 ## Status
-Tam Nguyen (Cybonto)
+Proposed
 
 ## Authors
-ViolentUTF API Team
+Tam Nguyen (Cybonto)
 
 ## Date
 2025-07-27

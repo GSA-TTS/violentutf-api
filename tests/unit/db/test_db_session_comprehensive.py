@@ -15,7 +15,9 @@ from app.db.session import (
     db_circuit_breaker,
     get_connection_pool_stats,
     get_db,
+    get_engine,
     get_session_maker,
+    recreate_database_pool,
     reset_circuit_breaker,
 )
 from app.utils.circuit_breaker import CircuitState

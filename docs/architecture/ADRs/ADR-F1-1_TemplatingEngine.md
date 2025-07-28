@@ -1,11 +1,9 @@
 # ADR-F1.1: Sandboxed Templating Engine for Attack Payloads
 
 ## Status
-
 Accepted
 
 ## Authors
-
 Tam Nguyen (Cybonto)
 
 ## Date

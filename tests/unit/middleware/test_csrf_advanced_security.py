@@ -18,12 +18,7 @@ from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from starlette.datastructures import Headers, MutableHeaders
 
-from app.middleware.csrf import (
-    CSRF_COOKIE_NAME,
-    CSRF_HEADER_NAME,
-    CSRF_TOKEN_LENGTH,
-    CSRFProtectionMiddleware,
-)
+from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRF_TOKEN_LENGTH, CSRFProtectionMiddleware
 
 
 @pytest.fixture

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
         async def delete(self, key: str) -> int: ...
 
-        async def close(self) -> None: ...
+        async def aclose(self) -> None: ...
 
     RedisClient = RedisProtocol
 else:
@@ -190,6 +190,6 @@ async def close_cache_connections() -> None:
 
     if cache_client is not None:
         logger.info("Closing cache connections")
-        await cache_client.close()
+        await cache_client.aclose()  # Use aclose() instead of deprecated close()
         cache_client = None
         logger.info("Cache connections closed")

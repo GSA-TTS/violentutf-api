@@ -1,11 +1,9 @@
 # ADR-F1.3: Extensible Plugin Architecture for Target AI Integration
 
 ## Status
-
 Accepted
 
 ## Authors
-
 Tam Nguyen (Cybonto)
 
 ## Date

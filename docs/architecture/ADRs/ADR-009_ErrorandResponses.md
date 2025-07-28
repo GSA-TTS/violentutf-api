@@ -7,7 +7,6 @@ Accepted
 Tam Nguyen (Cybonto)
 
 ## Date
-
 2025-07-27
 
 ## Stakeholders

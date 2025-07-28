@@ -13,12 +13,7 @@ from httpx import AsyncClient
 
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
-from app.schemas.api_key import (
-    APIKeyCreate,
-    APIKeyPermissionTemplate,
-    APIKeyResponse,
-    APIKeyUpdate,
-)
+from app.schemas.api_key import APIKeyCreate, APIKeyPermissionTemplate, APIKeyResponse, APIKeyUpdate
 
 
 class TestAPIKeyEndpoints:

@@ -42,7 +42,6 @@ crud_error_responses: Dict[int | str, Dict[str, Any]] = {
 # Include Users CRUD endpoints
 api_router.include_router(
     users.router,
-    prefix="/api/v1",
     tags=["Users"],
     responses=crud_error_responses,
 )
@@ -50,7 +49,6 @@ api_router.include_router(
 # Include API Keys CRUD endpoints
 api_router.include_router(
     api_keys.router,
-    prefix="/api/v1",
     tags=["API Keys"],
     responses=crud_error_responses,
 )
@@ -58,7 +56,6 @@ api_router.include_router(
 # Include Sessions CRUD endpoints
 api_router.include_router(
     sessions.router,
-    prefix="/api/v1",
     tags=["Sessions"],
     responses=crud_error_responses,
 )
@@ -66,7 +63,6 @@ api_router.include_router(
 # Include Audit Logs read-only endpoints
 api_router.include_router(
     audit_logs.router,
-    prefix="/api/v1",
     tags=["Audit Logs"],
     responses=crud_error_responses,
 )

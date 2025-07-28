@@ -316,7 +316,7 @@ class TestUserCreate:
             UserCreate(username="validuser", email="invalid-email", password="ValidP@ss1")
 
         # Full name XSS validation
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             UserCreate(
                 username="validuser",
                 email="test@example.com",

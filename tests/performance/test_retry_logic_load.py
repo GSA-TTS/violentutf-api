@@ -26,6 +26,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.utils.circuit_breaker import CircuitBreaker, CircuitState
+from tests.test_database import TestDatabaseManager
 
 
 class FailureSimulator:
@@ -124,7 +125,7 @@ class TestRetryLogicLoad:
     @pytest_asyncio.fixture
     async def db_manager(self):
         """Get database manager with retry logic."""
-        manager = DatabaseManager()
+        manager = TestDatabaseManager()
         await manager.initialize()
         yield manager
         await manager.shutdown()

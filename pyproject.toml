@@ -68,6 +68,10 @@ module = "tests.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "validate_extraction"
 ignore_errors = true
 
