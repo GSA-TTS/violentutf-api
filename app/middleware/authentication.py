@@ -93,6 +93,15 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
             request.state.user_id = payload.get("sub")
             request.state.token_payload = payload
 
+            # For testing or when user lookup is not needed, create a minimal user object
+            # In production, this should fetch the actual user from database
+            from types import SimpleNamespace
+
+            user_roles = payload.get("roles", ["viewer"])
+            request.state.user = SimpleNamespace(
+                id=payload.get("sub"), is_superuser="admin" in user_roles, roles=user_roles
+            )
+
             logger.debug(
                 "auth_success",
                 user_id=payload.get("sub"),

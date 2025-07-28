@@ -50,6 +50,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
     # Security headers
     SECURE_COOKIES: bool = Field(default=True)
     CSRF_PROTECTION: bool = Field(default=True)
+    REQUEST_SIGNING_ENABLED: bool = Field(default=True)
     HSTS_MAX_AGE: int = Field(default=31536000)  # 1 year
     CSP_POLICY: Optional[str] = Field(default="default-src 'self'")
 
@@ -295,6 +296,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
             "debug": self.DEBUG,
             "secure_cookies": self.SECURE_COOKIES,
             "csrf_protection": self.CSRF_PROTECTION,
+            "request_signing_enabled": self.REQUEST_SIGNING_ENABLED,
             "hsts_max_age": self.HSTS_MAX_AGE,
             "csp_policy": self.CSP_POLICY,
             "rate_limit_enabled": self.RATE_LIMIT_ENABLED,

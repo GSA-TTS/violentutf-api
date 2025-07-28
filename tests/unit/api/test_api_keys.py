@@ -12,6 +12,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
+from app.api.endpoints.api_keys import api_key_crud_router
 from app.core.config import settings
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
@@ -58,6 +59,7 @@ class TestAPIKeyEndpoints:
     def mock_api_key(self) -> APIKey:
         """Create a mock API key for testing."""
         api_key = MagicMock(spec=APIKey)
+        # Primary attributes
         api_key.id = uuid.uuid4()
         api_key.name = "Test API Key"
         api_key.description = "Test API key for unit tests"
@@ -66,8 +68,6 @@ class TestAPIKeyEndpoints:
         api_key.permissions = {"read": True, "write": False}
         api_key.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
         api_key.user_id = uuid.uuid4()
-        api_key.is_active = MagicMock(return_value=True)
-        api_key.mask_key = MagicMock(return_value="vutf_test...123")
         api_key.usage_count = 42
         api_key.last_used_at = datetime.now(timezone.utc)
         api_key.last_used_ip = "192.168.1.1"
@@ -77,6 +77,20 @@ class TestAPIKeyEndpoints:
         api_key.created_by = str(api_key.user_id)
         api_key.updated_by = str(api_key.user_id)
         api_key.version = 1
+
+        # Method mocks
+        api_key.is_active = MagicMock(return_value=True)
+        api_key.mask_key = MagicMock(return_value="vutf_test...123")
+
+        # Direct attributes that APIKeyResponse schema expects
+        api_key.masked_key = "vutf_test...123"  # This is what model_validate looks for
+
+        # Configure the mock to return attribute value when called as method
+        def is_active_side_effect():
+            return True  # Same as the attribute
+
+        api_key.is_active.side_effect = is_active_side_effect
+
         return api_key
 
     @pytest.fixture
@@ -120,17 +134,23 @@ class TestAPIKeyEndpoints:
         auth_headers: Dict[str, str],
     ) -> None:
         """Test listing API keys with pagination."""
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Patch the repository class attribute on the router
+        original_repo = api_key_crud_router.repository
+        api_key_crud_router.repository = lambda session: mock_api_key_repo
+        try:
             response = await async_client.get(
                 "/api/v1/api-keys/",
                 headers=auth_headers,
                 params={"page": 1, "per_page": 20},
             )
+        finally:
+            # Restore original repository
+            api_key_crud_router.repository = original_repo
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "data" in data
-        assert "total" in data
+        assert "total_count" in data
         assert len(data["data"]) == 1
         assert data["data"][0]["name"] == "Test API Key"
         mock_api_key_repo.list_paginated.assert_called_once()

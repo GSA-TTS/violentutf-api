@@ -44,8 +44,9 @@ def test_settings() -> Settings:
     # Set environment variable for test database
     os.environ["DATABASE_URL"] = test_db_url
     os.environ["TESTING"] = "true"
-    # Disable CSRF for tests
-    os.environ["CSRF_ENABLED"] = "false"
+    # Disable security middleware for unit tests
+    os.environ["CSRF_PROTECTION"] = "false"
+    os.environ["REQUEST_SIGNING_ENABLED"] = "false"
 
     return Settings(
         SECRET_KEY="test-secret-key-for-testing-only-32chars",  # pragma: allowlist secret
@@ -57,6 +58,8 @@ def test_settings() -> Settings:
         LOG_FORMAT="text",
         RATE_LIMIT_ENABLED=False,
         ENABLE_METRICS=False,
+        CSRF_PROTECTION=False,  # Disable CSRF for unit tests
+        REQUEST_SIGNING_ENABLED=False,  # Disable request signing for unit tests
         _env_file=None,  # Disable .env file loading for tests
     )
 
@@ -78,7 +81,7 @@ def app(test_settings: Settings, test_db_manager: TestDatabaseManager) -> FastAP
         finally:
             await session.close()
 
-    app = create_application()
+    app = create_application(custom_settings=test_settings)
     app.dependency_overrides[get_settings] = get_settings_override
     app.dependency_overrides[get_db] = get_test_db
     return app

@@ -1,7 +1,7 @@
 """Enhanced FastAPI application with security and monitoring."""
 
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Union
+from typing import Any, AsyncGenerator, Optional, Union
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +14,7 @@ from slowapi.util import get_remote_address
 from structlog.stdlib import get_logger
 
 from .api.routes import api_router
-from .core.config import settings
+from .core.config import Settings, settings
 from .core.errors import setup_error_handlers
 from .core.logging import setup_logging
 from .middleware.authentication import JWTAuthenticationMiddleware
@@ -124,15 +124,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await _shutdown_cache()
 
 
-def create_application() -> FastAPI:
+def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
     """Create and configure FastAPI application."""
+    # Use custom settings if provided (for testing), otherwise use default
+    app_settings = custom_settings or settings
     app = FastAPI(
-        title=settings.PROJECT_NAME,
-        description=settings.DESCRIPTION,
-        version=settings.VERSION,
-        openapi_url=f"{settings.API_V1_STR}/openapi.json" if not settings.is_production else None,
-        docs_url=f"{settings.API_V1_STR}/docs" if not settings.is_production else None,
-        redoc_url=f"{settings.API_V1_STR}/redoc" if not settings.is_production else None,
+        title=app_settings.PROJECT_NAME,
+        description=app_settings.DESCRIPTION,
+        version=app_settings.VERSION,
+        openapi_url=f"{app_settings.API_V1_STR}/openapi.json" if not app_settings.is_production else None,
+        docs_url=f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
+        redoc_url=f"{app_settings.API_V1_STR}/redoc" if not app_settings.is_production else None,
         lifespan=lifespan,
     )
 
@@ -140,7 +142,7 @@ def create_application() -> FastAPI:
     app.state.limiter = limiter
 
     # Setup error handlers
-    setup_error_handlers(app, development_mode=settings.is_development)
+    setup_error_handlers(app, development_mode=app_settings.is_development)
 
     # Add exception handler for rate limiting
     app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
@@ -153,28 +155,30 @@ def create_application() -> FastAPI:
     app.add_middleware(LoggingMiddleware)
 
     # 3. Metrics
-    if settings.ENABLE_METRICS:
+    if app_settings.ENABLE_METRICS:
         app.add_middleware(MetricsMiddleware)
 
     # 4. Session management (before CSRF)
     app.add_middleware(SessionMiddleware)
-    # 5. CSRF Protection (after sessions)
-    app.add_middleware(CSRFProtectionMiddleware)
+    # 5. CSRF Protection (after sessions) - configurable
+    if app_settings.CSRF_PROTECTION:
+        app.add_middleware(CSRFProtectionMiddleware)
     # 6. JWT Authentication (after CSRF, before other processing)
     app.add_middleware(JWTAuthenticationMiddleware)
     # 7. Idempotency support (before input sanitization)
     app.add_middleware(IdempotencyMiddleware)
     # 8. Input sanitization (before request processing)
     app.add_middleware(InputSanitizationMiddleware)
-    # 9. Request signing (for high-security endpoints)
-    app.add_middleware(RequestSigningMiddleware)
+    # 9. Request signing (for high-security endpoints) - configurable
+    if app_settings.REQUEST_SIGNING_ENABLED:
+        app.add_middleware(RequestSigningMiddleware)
     # 10. CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,
-        allow_credentials=settings.ALLOW_CREDENTIALS,
-        allow_methods=settings.ALLOWED_METHODS,
-        allow_headers=settings.ALLOWED_HEADERS,
+        allow_origins=app_settings.ALLOWED_ORIGINS,
+        allow_credentials=app_settings.ALLOW_CREDENTIALS,
+        allow_methods=app_settings.ALLOWED_METHODS,
+        allow_headers=app_settings.ALLOWED_HEADERS,
     )
 
     # 11. GZip compression
@@ -184,10 +188,10 @@ def create_application() -> FastAPI:
     setup_security_middleware(app)
 
     # Include API routes
-    app.include_router(api_router, prefix=settings.API_V1_STR)
+    app.include_router(api_router, prefix=app_settings.API_V1_STR)
 
     # Mount metrics endpoint
-    if settings.ENABLE_METRICS:
+    if app_settings.ENABLE_METRICS:
         metrics_app = make_asgi_app()
         app.mount("/metrics", metrics_app)
 
@@ -196,10 +200,10 @@ def create_application() -> FastAPI:
     async def root() -> dict[str, Any]:
         """Root endpoint."""
         return {
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
+            "service": app_settings.PROJECT_NAME,
+            "version": app_settings.VERSION,
             "status": "operational",
-            "docs": f"{settings.API_V1_STR}/docs" if not settings.is_production else None,
+            "docs": f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
         }
 
     return app
