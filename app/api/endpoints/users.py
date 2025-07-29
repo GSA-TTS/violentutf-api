@@ -49,9 +49,6 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             require_admin=False,  # Users can view their own profile
         )
 
-        # Add custom user endpoints
-        self._add_custom_endpoints()
-
     def _check_admin_permission(self, request: Request) -> None:
         """Check if user has admin permissions."""
         current_user = getattr(request.state, "user", None)
@@ -113,6 +110,108 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             update_data.pop("is_active", None)
 
         return update_data
+
+    def _register_endpoints(self) -> None:
+        """Register CRUD endpoints, excluding create endpoint (custom implementation)."""
+        # Register custom endpoints first to avoid routing conflicts
+        self._add_custom_endpoints()
+
+        import uuid
+
+        from fastapi import Depends
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        from app.db.session import get_db
+        from app.schemas.base import PaginatedResponse
+
+        # List endpoint (from base router)
+        @self.router.get(
+            "/",
+            response_model=PaginatedResponse[UserResponse],
+            summary=f"List {self.model.__name__}s",
+            description=f"Retrieve a paginated list of {self.model.__name__} objects with optional filtering and sorting.",
+        )
+        async def list_items(
+            request: Request,
+            filters: UserFilter = Depends(UserFilter),
+            session: AsyncSession = Depends(get_db),
+        ) -> PaginatedResponse[UserResponse]:
+            return await self._list_items(request, filters, session)
+
+        # Get by ID endpoint (from base router)
+        @self.router.get(
+            "/{item_id}",
+            response_model=BaseResponse[UserResponse],
+            summary=f"Get {self.model.__name__}",
+            description=f"Retrieve a specific {self.model.__name__} by ID.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+            },
+        )
+        async def get_item(
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+        ) -> BaseResponse[UserResponse]:
+            return await self._get_item(request, item_id, session)
+
+        # Skip create endpoint - using custom implementation
+
+        # Update endpoint (from base router)
+        @self.router.put(
+            "/{item_id}",
+            response_model=BaseResponse[UserResponse],
+            summary=f"Update {self.model.__name__}",
+            description=f"Update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def update_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: UserUpdate,
+            session: AsyncSession = Depends(get_db),
+        ) -> BaseResponse[UserResponse]:
+            return await self._update_item(request, item_id, item_data, session)
+
+        # Patch endpoint (from base router)
+        @self.router.patch(
+            "/{item_id}",
+            response_model=BaseResponse[UserResponse],
+            summary=f"Partially update {self.model.__name__}",
+            description=f"Partially update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def patch_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: UserUpdate,
+            session: AsyncSession = Depends(get_db),
+        ) -> BaseResponse[UserResponse]:
+            return await self._patch_item(request, item_id, item_data, session)
+
+        # Delete endpoint (custom implementation with admin requirement)
+        @self.router.delete(
+            "/{item_id}",
+            response_model=BaseResponse[OperationResult],
+            summary=f"Delete {self.model.__name__}",
+            description=f"Delete a specific {self.model.__name__} (admin only).",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                403: {"description": "Administrator privileges required"},
+            },
+        )
+        async def delete_item(
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+        ) -> BaseResponse[OperationResult]:
+            # Check admin permission before proceeding
+            self._check_admin_permission(request)
+            return await self._delete_item(request, item_id, False, session)
 
     def _add_custom_endpoints(self) -> None:
         """Add user-specific endpoints."""

@@ -83,6 +83,17 @@ class APIKey(Base, BaseModelMixin):
         back_populates="api_keys",
     )
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize APIKey with proper defaults for in-memory instances."""
+        # Set defaults for fields that should have default values
+        if "permissions" not in kwargs:
+            kwargs["permissions"] = {}
+        if "usage_count" not in kwargs:
+            kwargs["usage_count"] = 0
+
+        # Call parent constructor
+        super().__init__(**kwargs)
+
     # Model-specific constraints (will be combined by AuditMixin)
     _model_constraints = (
         UniqueConstraint("name", "user_id", "is_deleted", name="uq_apikey_name_user"),
@@ -229,8 +240,11 @@ class APIKey(Base, BaseModelMixin):
     def record_usage(self: "APIKey", ip_address: Optional[str] = None) -> None:
         """Record usage of the API key."""
         self.last_used_at = datetime.now(timezone.utc)
-        # Increment usage count
-        self.usage_count += 1
+        # Increment usage count (defensive programming for None values)
+        if self.usage_count is None:
+            self.usage_count = 1  # type: ignore[unreachable]
+        else:
+            self.usage_count += 1
         if ip_address:
             self.last_used_ip = ip_address
 
@@ -298,20 +312,18 @@ class APIKey(Base, BaseModelMixin):
         Convert API key to dictionary for serialization.
 
         Args:
-            include_sensitive: Whether to include sensitive data like full key.
+            include_sensitive: Whether to include sensitive data like full key and IP.
 
         Returns:
             Dictionary representation of the API key.
         """
-        return {
+        result = {
             "id": str(self.id),
             "name": self.name,
             "description": self.description,
             "key_prefix": self.key_prefix,
-            "masked_key": self.mask_key() if not include_sensitive else None,
             "permissions": self.permissions,
             "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
-            "last_used_ip": self.last_used_ip,
             "usage_count": self.usage_count,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "is_active": self.is_active(),
@@ -319,6 +331,15 @@ class APIKey(Base, BaseModelMixin):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
         }
+
+        # Only include sensitive fields when explicitly requested
+        if include_sensitive:
+            result["last_used_ip"] = self.last_used_ip
+        else:
+            # Include masked key for non-sensitive view
+            result["masked_key"] = self.mask_key()
+
+        return result
 
     def get_display_name(self: "APIKey") -> str:
         """Get display-friendly name for the API key."""

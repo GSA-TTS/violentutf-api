@@ -542,6 +542,7 @@ class TestValidateSession:
 
         with patch("app.core.session.settings") as mock_settings:
             mock_settings.CSRF_PROTECTION = True
+            mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Default value from config
 
             # Test with matching IP
             result = await session_manager.validate_session("test_session", ip_address="192.168.1.1")

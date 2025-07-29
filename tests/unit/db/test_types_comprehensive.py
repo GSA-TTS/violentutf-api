@@ -44,12 +44,17 @@ class TestGUIDType:
         # Mock a generic dialect
         dialect = Mock()
         dialect.name = "mysql"
+        # Mock type_descriptor to return a String(36) when called
+        string_type = String(36)
+        dialect.type_descriptor.return_value = string_type
 
         impl = guid_type.load_dialect_impl(dialect)
 
         # Other databases should use String(36)
         assert isinstance(impl, String)
         assert impl.length == 36
+        # Verify type_descriptor was called with String(36)
+        dialect.type_descriptor.assert_called_once()
 
     def test_guid_process_bind_param_uuid_postgresql(self):
         """Test GUID processes UUID for PostgreSQL."""
@@ -142,10 +147,9 @@ class TestGUIDType:
         guid_type = GUID()
         dialect = sqlite.dialect()
 
-        result = guid_type.process_result_value("", dialect)
-
-        # Empty string should be returned as-is
-        assert result == ""
+        # Empty string should raise ValueError as it's not a valid UUID
+        with pytest.raises(ValueError, match="Invalid UUID string from database"):
+            guid_type.process_result_value("", dialect)
 
     def test_guid_cache_ok(self):
         """Test GUID type is cacheable."""
@@ -184,11 +188,16 @@ class TestJSONType:
         # Mock a generic dialect
         dialect = Mock()
         dialect.name = "mysql"
+        # Mock type_descriptor to return a Text when called
+        text_type = Text()
+        dialect.type_descriptor.return_value = text_type
 
         impl = json_type.load_dialect_impl(dialect)
 
         # Other databases should use Text
         assert isinstance(impl, Text)
+        # Verify type_descriptor was called with Text()
+        dialect.type_descriptor.assert_called_once()
 
     def test_json_process_bind_param_dict(self):
         """Test JSON processes dictionary."""
@@ -281,10 +290,18 @@ class TestJSONType:
         json_type = JSONType()
         dialect = sqlite.dialect()
 
-        # datetime is not JSON serializable by default
-        test_data = {"date": datetime.now()}
+        # Use a truly non-serializable object (like a function or complex object)
+        # datetime is actually handled by CustomJSONEncoder
+        class NonSerializable:
+            def __init__(self):
+                self.value = "test"
 
-        # Should raise TypeError
+            # No __dict__ and not handled by CustomJSONEncoder
+            __slots__ = ["value"]
+
+        test_data = {"obj": NonSerializable()}
+
+        # Should raise TypeError for truly non-serializable objects
         with pytest.raises(TypeError):
             json_type.process_bind_param(test_data, dialect)
 
@@ -351,18 +368,17 @@ class TestJSONType:
         json_type = JSONType()
         dialect = sqlite.dialect()
 
-        result = json_type.process_result_value("", dialect)
-
-        # Empty string is not valid JSON, should return as-is
-        assert result == ""
+        # Empty string is not valid JSON, should raise ValueError
+        with pytest.raises(ValueError, match="Invalid JSON in database"):
+            json_type.process_result_value("", dialect)
 
     def test_json_process_result_value_invalid_json(self):
         """Test JSON handles invalid JSON string."""
         json_type = JSONType()
         dialect = sqlite.dialect()
 
-        # Invalid JSON should raise error
-        with pytest.raises(json.JSONDecodeError):
+        # Invalid JSON should raise ValueError (wrapped by implementation)
+        with pytest.raises(ValueError, match="Invalid JSON in database"):
             json_type.process_result_value("invalid json", dialect)
 
     def test_json_process_result_value_whitespace_only(self):
@@ -370,34 +386,34 @@ class TestJSONType:
         json_type = JSONType()
         dialect = sqlite.dialect()
 
-        result = json_type.process_result_value("   ", dialect)
-
-        # Whitespace-only should return as-is
-        assert result == "   "
+        # Whitespace-only is not valid JSON, should raise ValueError
+        with pytest.raises(ValueError, match="Invalid JSON in database"):
+            json_type.process_result_value("   ", dialect)
 
     def test_json_process_result_value_numbers(self):
         """Test JSON handles numeric values."""
         json_type = JSONType()
         dialect = sqlite.dialect()
 
-        # Test integer
-        result = json_type.process_result_value("42", dialect)
-        assert result == 42
+        # The implementation only accepts dict or list, not primitive JSON values
+        # Test integer - should raise ValueError as it's not dict/list
+        with pytest.raises(ValueError, match="Expected dict or list from JSON"):
+            json_type.process_result_value("42", dialect)
 
-        # Test float
-        result = json_type.process_result_value("3.14", dialect)
-        assert result == 3.14
+        # Test float - should raise ValueError as it's not dict/list
+        with pytest.raises(ValueError, match="Expected dict or list from JSON"):
+            json_type.process_result_value("3.14", dialect)
 
-        # Test boolean
-        result = json_type.process_result_value("true", dialect)
-        assert result is True
+        # Test boolean - should raise ValueError as it's not dict/list
+        with pytest.raises(ValueError, match="Expected dict or list from JSON"):
+            json_type.process_result_value("true", dialect)
 
-        result = json_type.process_result_value("false", dialect)
-        assert result is False
+        with pytest.raises(ValueError, match="Expected dict or list from JSON"):
+            json_type.process_result_value("false", dialect)
 
-        # Test null
-        result = json_type.process_result_value("null", dialect)
-        assert result is None
+        # Test null - should raise ValueError as it's not dict/list
+        with pytest.raises(ValueError, match="Expected dict or list from JSON"):
+            json_type.process_result_value("null", dialect)
 
     def test_json_cache_ok(self):
         """Test JSON type is cacheable."""

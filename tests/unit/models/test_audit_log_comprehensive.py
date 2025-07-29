@@ -398,7 +398,7 @@ class TestAuditLogClassMethods:
             action="api_key.revoke",
             resource_type="api_key",
             resource_id="key-789",
-            user_id="user-456",
+            user_id="456e4567-e89b-12d3-a456-426614174000",
             user_email="user@example.com",
             ip_address="172.16.0.1",
             user_agent="WebApp/1.0",

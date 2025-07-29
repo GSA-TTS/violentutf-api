@@ -288,6 +288,16 @@ class SessionManager:
         # Recommend rotation after half the session lifetime
         if age_minutes > (settings.ACCESS_TOKEN_EXPIRE_MINUTES / 2):
             session_data["rotation_recommended"] = True
+            # Save updated session data to cache
+            if self.cache:
+                try:
+                    await self.cache.set(
+                        f"{SESSION_KEY_PREFIX}{session_id}",
+                        json.dumps(session_data),
+                        ex=self.session_ttl,
+                    )
+                except Exception as e:
+                    logger.error("session_rotation_flag_save_failed", session_id=session_id[:8] + "...", error=str(e))
 
         return True
 

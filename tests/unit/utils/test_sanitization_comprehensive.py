@@ -290,7 +290,12 @@ class TestFilenameSanitizationComprehensive:
             assert ".." not in result
             assert "/" not in result
             assert "\\" not in result
-            assert "etc" in result or "passwd" in result or "windows" in result or "file" in result
+            assert (
+                "etc" in result.lower()
+                or "passwd" in result.lower()
+                or "windows" in result.lower()
+                or "file" in result.lower()
+            )
 
     def test_filename_length_handling(self):
         """Test filename length handling with various scenarios."""

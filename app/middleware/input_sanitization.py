@@ -13,6 +13,7 @@ from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..utils.sanitization import sanitize_dict, sanitize_string
+from .body_cache import get_cached_body, has_cached_body
 
 logger = get_logger(__name__)
 
@@ -84,8 +85,11 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
             # Handle body sanitization
             content_type = request.headers.get("content-type", "").split(";")[0].strip()
             if self._should_sanitize_body(request, content_type):
-                # Store original body
-                body = await request.body()
+                # Store original body - use cached body if available to avoid ASGI conflicts
+                if has_cached_body(request):
+                    body = get_cached_body(request)
+                else:
+                    body = await request.body()
 
                 # Check body size
                 if len(body) > MAX_BODY_SIZE:
@@ -110,18 +114,25 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                 # Store sanitized body in request state
                 request.state.sanitized_body = sanitized_body
 
-                # Create a new scope with updated body
-                scope = dict(request.scope)
+                # Monkey-patch the request's json method to use sanitized body
+                original_json = request.json
 
-                # Create receive function that returns sanitized body
-                async def receive() -> Dict[str, Any]:
-                    return {
-                        "type": "http.request",
-                        "body": sanitized_body,
-                    }
+                async def sanitized_json() -> Any:
+                    """Return parsed JSON from sanitized body."""
+                    try:
+                        return json.loads(sanitized_body.decode("utf-8"))
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        # Fallback to original method if sanitized body is invalid
+                        return await original_json()
 
-                # Create new request with sanitized body
-                request = Request(scope, receive=receive)
+                request.json = sanitized_json  # type: ignore[method-assign]
+
+                # Also monkey-patch body method for consistency
+                async def sanitized_body_method() -> bytes:
+                    """Return sanitized body."""
+                    return sanitized_body
+
+                request.body = sanitized_body_method  # type: ignore[method-assign]
 
         except Exception as e:
             logger.error("input_sanitization_error", error=str(e))
@@ -150,9 +161,9 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                 decoded_key = unquote(key)
                 decoded_value = unquote(value)
 
-                # Sanitize
-                clean_key = sanitize_string(decoded_key, max_length=100)
-                clean_value = sanitize_string(decoded_value, max_length=1000)
+                # Use aggressive JS filtering for enhanced security
+                clean_key = sanitize_string(decoded_key, max_length=100, strip_js=True)
+                clean_value = sanitize_string(decoded_value, max_length=1000, strip_js=True)
 
                 sanitized[clean_key] = clean_value
 
@@ -263,8 +274,8 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
             Sanitized value
         """
         if isinstance(value, str):
-            # Sanitize string
-            return sanitize_string(value, max_length=10000)
+            # Use aggressive JS filtering for enhanced security in advanced contexts
+            return sanitize_string(value, max_length=10000, strip_js=True)
         elif isinstance(value, dict):
             # Sanitize dictionary
             return {str(k): self._sanitize_json_value(v) for k, v in value.items()}
@@ -295,9 +306,9 @@ class InputSanitizationMiddleware(BaseHTTPMiddleware):
                     key = unquote(key)
                     value = unquote(value)
 
-                    # Sanitize
-                    clean_key = sanitize_string(key, max_length=100)
-                    clean_value = sanitize_string(value, max_length=10000)
+                    # Sanitize with basic escaping for form data
+                    clean_key = sanitize_string(key, max_length=100, strip_js=False)
+                    clean_value = sanitize_string(value, max_length=10000, strip_js=False)
 
                     if clean_key and clean_value is not None:
                         params[clean_key] = clean_value

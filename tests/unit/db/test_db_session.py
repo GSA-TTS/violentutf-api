@@ -15,6 +15,24 @@ from app.db.session import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_db_globals():
+    """Reset database global state before each test."""
+    import app.db.session
+
+    # Reset all global variables to clean state
+    app.db.session._engine = None
+    app.db.session._async_session_maker = None
+    app.db.session.engine = None
+
+    yield
+
+    # Clean up after test
+    app.db.session._engine = None
+    app.db.session._async_session_maker = None
+    app.db.session.engine = None
+
+
 class TestDatabaseEngine:
     """Test database engine creation."""
 
@@ -242,10 +260,7 @@ class TestDatabaseShutdown:
     @pytest.mark.asyncio
     async def test_close_database_connections_no_engine(self) -> None:
         """Test closing connections when no engine exists."""
-        import app.db.session
-
-        app.db.session.engine = None
-
+        # autouse fixture already resets globals to None
         # Should not raise exception
         await close_database_connections()
 
@@ -254,7 +269,7 @@ class TestDatabaseShutdown:
         """Test successful connection closure."""
         mock_engine = AsyncMock()
 
-        with patch("app.db.session.engine", mock_engine):
+        with patch("app.db.session._engine", mock_engine):
             await close_database_connections()
 
             mock_engine.dispose.assert_called_once()
@@ -265,8 +280,9 @@ class TestDatabaseShutdown:
         import app.db.session
 
         mock_engine = AsyncMock()
-        app.db.session.engine = mock_engine
+        app.db.session._engine = mock_engine
 
         await close_database_connections()
 
+        assert app.db.session._engine is None
         assert app.db.session.engine is None

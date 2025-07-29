@@ -97,6 +97,15 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="sessions", foreign_keys=[user_id], lazy="select")
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Session with proper defaults for in-memory instances."""
+        # Set defaults for fields that should have default values
+        if "is_active" not in kwargs:
+            kwargs["is_active"] = True
+
+        # Call parent constructor (BaseModelMixin will handle its own defaults)
+        super().__init__(**kwargs)
+
     # Table configuration
     __tablename__ = "session"
 

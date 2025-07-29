@@ -14,6 +14,7 @@ from structlog.stdlib import get_logger
 
 from ..core.config import settings
 from ..utils.cache import get_cache_client
+from .body_cache import get_cached_body, has_cached_body
 
 logger = get_logger(__name__)
 
@@ -128,8 +129,11 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Invalid API key"},
             )
 
-        # Read request body for signing
-        body = await request.body()
+        # Read request body for signing - use cached body if available to avoid ASGI conflicts
+        if has_cached_body(request):
+            body = get_cached_body(request)
+        else:
+            body = await request.body()
 
         # Verify signature
         if not await self._verify_signature(
@@ -161,15 +165,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
         request.state.api_key = api_key
         request.state.signature_verified = True
 
-        # Recreate request body stream since we consumed it
-        async def receive() -> Dict[str, Any]:
-            return {
-                "type": "http.request",
-                "body": body,
-                "more_body": False,
-            }
-
-        request._receive = receive
+        # Note: No need to recreate request body stream when using body caching middleware
 
         # Process request
         response = await call_next(request)

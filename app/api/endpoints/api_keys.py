@@ -3,7 +3,7 @@
 import hashlib
 import secrets
 import uuid
-from typing import Any, Dict, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,7 @@ from app.schemas.api_key import (
     APIKeyUpdate,
     APIKeyUsageStats,
 )
-from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult
+from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult, PaginatedResponse
 
 logger = get_logger(__name__)
 
@@ -48,8 +48,191 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             require_admin=False,  # Users can manage their own API keys
         )
 
-        # Add custom API key endpoints
+        # Note: custom endpoints are now registered in _register_endpoints() to control routing order
+
+    def _register_endpoints(self) -> None:
+        """Override base endpoint registration to customize create endpoint."""
+
+        # Register custom endpoints first to avoid routing conflicts
         self._add_custom_endpoints()
+
+        # List endpoint
+        @self.router.get(
+            "/",
+            response_model=PaginatedResponse[APIKeyResponse],
+            summary=f"List {self.model.__name__}s",
+            description=f"Retrieve a paginated list of {self.model.__name__} objects with optional filtering and sorting.",
+        )
+        async def list_items(
+            request: Request,
+            filters: APIKeyFilter = Depends(APIKeyFilter),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
+        ) -> PaginatedResponse[APIKeyResponse]:
+            return await self._list_items(request, filters, session)
+
+        # Get by ID endpoint
+        @self.router.get(
+            "/{item_id}",
+            response_model=BaseResponse[APIKeyResponse],
+            summary=f"Get {self.model.__name__}",
+            description=f"Retrieve a specific {self.model.__name__} by ID.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+            },
+        )
+        async def get_item(
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+        ) -> BaseResponse[APIKeyResponse]:
+            return await self._get_item(request, item_id, session)
+
+        # Custom Create endpoint for API Keys
+        @self.router.post(
+            "/",
+            response_model=BaseResponse[APIKeyCreateResponse],
+            status_code=status.HTTP_201_CREATED,
+            summary="Create API Key",
+            description="Create a new API key with specified permissions.",
+            responses={
+                409: {"description": "API key name already exists for user"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def create_item(
+            request: Request, item_data: APIKeyCreate, session: AsyncSession = Depends(get_db)  # noqa: B008
+        ) -> BaseResponse[APIKeyCreateResponse]:
+            return await self._create_item(request, item_data, session)
+
+        # Update endpoint
+        @self.router.put(
+            "/{item_id}",
+            response_model=BaseResponse[APIKeyResponse],
+            summary=f"Update {self.model.__name__}",
+            description=f"Update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def update_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: APIKeyUpdate,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
+        ) -> BaseResponse[APIKeyResponse]:
+            return await self._update_item(request, item_id, item_data, session)
+
+        # Patch endpoint
+        @self.router.patch(
+            "/{item_id}",
+            response_model=BaseResponse[APIKeyResponse],
+            summary=f"Partially update {self.model.__name__}",
+            description=f"Partially update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def patch_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: APIKeyUpdate,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
+        ) -> BaseResponse[APIKeyResponse]:
+            return await self._patch_item(request, item_id, item_data, session)
+
+        # Delete endpoint
+        @self.router.delete(
+            "/{item_id}",
+            response_model=BaseResponse[OperationResult],
+            summary=f"Delete {self.model.__name__}",
+            description=f"Soft delete a {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+            },
+        )
+        async def delete_item(
+            request: Request,
+            item_id: uuid.UUID,
+            permanent: bool = Query(False, description="Whether to permanently delete the item"),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
+        ) -> BaseResponse[OperationResult]:
+            return await self._delete_item(request, item_id, permanent, session)
+
+    async def _create_item(
+        self,
+        request: Request,
+        item_data: APIKeyCreate,
+        session: AsyncSession,
+    ) -> BaseResponse[Any]:  # Using Any to allow APIKeyCreateResponse override
+        """Override base create to implement custom API key creation logic."""
+        try:
+            repo = APIKeyRepository(session)
+
+            # Get current user
+            current_user_id = self._get_current_user_id(request)
+
+            # Validate key name availability
+            await self._validate_key_name_availability(repo, item_data.name, current_user_id)
+
+            # Generate API key
+            full_key, key_prefix, key_hash = self._generate_api_key()
+
+            # Prepare API key data with proper typing
+            api_key_data: Dict[str, Any] = {
+                "name": item_data.name,
+                "description": item_data.description,
+                "key_hash": key_hash,
+                "key_prefix": key_prefix,
+                "permissions": item_data.permissions,
+                "expires_at": item_data.expires_at,
+                "user_id": current_user_id,
+                "created_by": current_user_id,
+                "updated_by": current_user_id,
+            }
+
+            # Create API key
+            api_key = await repo.create(api_key_data)
+            await session.commit()
+
+            # Create response with full key (only time it's shown)
+            response_key = APIKeyCreateResponse(
+                id=api_key.id,
+                name=api_key.name,
+                description=api_key.description,
+                key=full_key,  # Full key only shown once
+                key_prefix=api_key.key_prefix,
+                permissions=api_key.permissions,
+                expires_at=api_key.expires_at,
+                user_id=api_key.user_id,
+                created_at=api_key.created_at,
+                updated_at=api_key.updated_at,
+                created_by=api_key.created_by,
+                updated_by=api_key.updated_by,
+                version=api_key.version,
+            )
+
+            logger.info(
+                "api_key_created",
+                api_key_id=str(api_key.id),
+                name=api_key.name,
+                user_id=current_user_id,
+                permissions=list(item_data.permissions.keys()),
+            )
+
+            return self._build_base_response(response_key, "API key created successfully", request)
+
+        except Exception as e:
+            if not isinstance(e, (ConflictError, ValidationError)):
+                logger.error(
+                    "api_key_creation_error",
+                    error=str(e),
+                    name=item_data.name,
+                    user_id=self._get_current_user_id(request),
+                    exc_info=True,
+                )
+            raise
 
     def _generate_api_key(self) -> tuple[str, str, str]:
         """
@@ -142,99 +325,12 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
 
     def _add_custom_endpoints(self) -> None:
         """Add API key-specific endpoints."""
-        self._register_create_endpoint()
         self._register_my_keys_endpoint()
         self._register_revoke_endpoint()
         self._register_validate_endpoint()
         self._register_permission_templates_endpoint()
         self._register_usage_stats_endpoint()
         self._register_record_usage_endpoint()
-
-    def _register_create_endpoint(self) -> None:
-        """Register the create API key endpoint."""
-
-        @self.router.post(
-            "/",
-            response_model=BaseResponse[APIKeyCreateResponse],
-            status_code=status.HTTP_201_CREATED,
-            summary="Create API Key",
-            description="Create a new API key with specified permissions.",
-            responses={
-                409: {"description": "API key name already exists for user"},
-                422: {"description": "Validation error"},
-            },
-        )
-        async def create_api_key_endpoint(
-            request: Request, key_data: APIKeyCreate, session: AsyncSession = Depends(get_db)  # noqa: B008
-        ) -> BaseResponse[APIKeyCreateResponse]:
-            """Create a new API key."""
-            try:
-                repo = APIKeyRepository(session)
-
-                # Get current user
-                current_user_id = self._get_current_user_id(request)
-
-                # Validate key name availability
-                await self._validate_key_name_availability(repo, key_data.name, current_user_id)
-
-                # Generate API key
-                full_key, key_prefix, key_hash = self._generate_api_key()
-
-                # Prepare API key data with proper typing
-                api_key_data: Dict[str, Any] = {
-                    "name": key_data.name,
-                    "description": key_data.description,
-                    "key_hash": key_hash,
-                    "key_prefix": key_prefix,
-                    "permissions": key_data.permissions,
-                    "expires_at": key_data.expires_at,
-                    "user_id": current_user_id,
-                    "created_by": current_user_id,
-                    "updated_by": current_user_id,
-                }
-
-                # Create API key
-                api_key = await repo.create(api_key_data)
-                await session.commit()
-
-                # Create response with full key (only time it's shown)
-                response_key = APIKeyCreateResponse(
-                    id=api_key.id,
-                    name=api_key.name,
-                    description=api_key.description,
-                    key=full_key,  # Full key only shown once
-                    key_prefix=api_key.key_prefix,
-                    permissions=api_key.permissions,
-                    expires_at=api_key.expires_at,
-                    user_id=api_key.user_id,
-                    created_at=api_key.created_at,
-                    updated_at=api_key.updated_at,
-                    created_by=api_key.created_by,
-                    updated_by=api_key.updated_by,
-                    version=api_key.version,
-                )
-
-                logger.info(
-                    "api_key_created",
-                    api_key_id=str(api_key.id),
-                    name=api_key.name,
-                    user_id=current_user_id,
-                    permissions=list(key_data.permissions.keys()),
-                )
-
-                return self._build_base_response(response_key, "API key created successfully", request)
-
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (ConflictError, ValidationError)):
-                    logger.error(
-                        "api_key_creation_error",
-                        error=str(e),
-                        name=key_data.name,
-                        user_id=current_user_id,
-                        exc_info=True,
-                    )
-                raise
 
     def _register_my_keys_endpoint(self) -> None:
         """Register the get my API keys endpoint."""

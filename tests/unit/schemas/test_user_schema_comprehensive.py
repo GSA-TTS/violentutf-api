@@ -278,21 +278,40 @@ class TestUserCreate:
             user = UserCreate(**base_data, password=password)
             assert user.password == password
 
-        # Invalid passwords
-        invalid_passwords = [
-            ("Short1!", "Password must be at least 8 characters long"),
-            ("lowercase1!", "Password must contain at least one uppercase letter"),
-            ("UPPERCASE1!", "Password must contain at least one lowercase letter"),
-            ("NoNumbers!", "Password must contain at least one digit"),
-            ("NoSpecial1", "Password must contain at least one special character"),
-            ("", "Password must be at least 8 characters long"),
-            ("A" * 129, "ensure this value has at most 128 characters"),
-        ]
+        # Test short password
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="Short1!")
+        assert "at least 8 characters" in str(exc_info.value)
 
-        for password, expected_error in invalid_passwords:
-            with pytest.raises(ValidationError) as exc_info:
-                UserCreate(**base_data, password=password)
-            assert expected_error in str(exc_info.value)
+        # Test password without uppercase
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="lowercase1!")
+        assert "uppercase letter" in str(exc_info.value)
+
+        # Test password without lowercase
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="UPPERCASE1!")
+        assert "lowercase letter" in str(exc_info.value)
+
+        # Test password without digit
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="NoNumbers!")
+        assert "digit" in str(exc_info.value)
+
+        # Test password without special character
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="NoSpecial1")
+        assert "special character" in str(exc_info.value)
+
+        # Test empty password
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="")
+        assert "at least 8 characters" in str(exc_info.value)
+
+        # Test password too long
+        with pytest.raises(ValidationError) as exc_info:
+            UserCreate(**base_data, password="A" * 129)
+        assert "at most 128 characters" in str(exc_info.value)
 
     def test_password_special_characters(self):
         """Test various special characters in password."""
@@ -475,17 +494,19 @@ class TestUserUpdatePassword:
 
         # Invalid new passwords
         invalid_passwords = [
-            ("weak", "Password must be at least 8 characters long"),
-            ("weakpass", "Password must contain at least one uppercase letter"),
-            ("WEAKPASS", "Password must contain at least one lowercase letter"),
-            ("Weakpass", "Password must contain at least one digit"),
-            ("Weakpass1", "Password must contain at least one special character"),
+            ("weak", ["at least 8 characters", "string_too_short"]),  # Pydantic v2 returns different error
+            ("weakpass", ["uppercase letter"]),
+            ("WEAKPASS", ["lowercase letter"]),
+            ("Weakpass", ["digit"]),
+            ("Weakpass1", ["special character"]),
         ]
 
-        for password, expected_error in invalid_passwords:
+        for password, expected_errors in invalid_passwords:
             with pytest.raises(ValidationError) as exc_info:
                 UserUpdatePassword(**base_data, new_password=password)
-            assert expected_error in str(exc_info.value)
+            error_str = str(exc_info.value)
+            # Check if any of the expected error messages appear
+            assert any(expected in error_str for expected in expected_errors)
 
     def test_current_password_no_validation(self):
         """Test that current password has no strength validation."""
@@ -801,8 +822,8 @@ class TestUserSchemaEdgeCases:
     def test_email_normalization(self):
         """Test email normalization."""
         user = UserBase(username="testuser", email="TEST@EXAMPLE.COM")
-        # Pydantic normalizes emails to lowercase
-        assert user.email == "test@example.com"
+        # Pydantic v2 EmailStr only normalizes the domain part to lowercase
+        assert user.email == "TEST@example.com"
 
     def test_field_aliasing(self):
         """Test that fields don't have aliases."""

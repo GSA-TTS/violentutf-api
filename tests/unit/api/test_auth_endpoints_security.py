@@ -296,6 +296,11 @@ class TestAuthEndpointsSecurity:
     @pytest.mark.asyncio
     async def test_registration_duplicate_prevention(self, async_client: AsyncClient) -> None:
         """Test prevention of duplicate username/email registration."""
+        from unittest.mock import AsyncMock, patch
+
+        from app.models.user import User
+        from app.repositories.user import UserRepository
+
         unique_id = str(uuid.uuid4())
         registration_data = {
             "username": f"testuser_{unique_id}",
@@ -304,15 +309,62 @@ class TestAuthEndpointsSecurity:
             "full_name": "Test User",
         }
 
-        # First registration
-        response1 = await async_client.post("/api/v1/auth/register", json=registration_data)
+        # Create a mock user object to simulate an existing user
+        mock_existing_user = AsyncMock(spec=User)
+        mock_existing_user.id = uuid.uuid4()
+        mock_existing_user.username = registration_data["username"]
+        mock_existing_user.email = registration_data["email"]
 
-        # Second registration with same data
-        response2 = await async_client.post("/api/v1/auth/register", json=registration_data)
+        # Test scenario: First registration succeeds, second fails due to duplicate username
+        with (
+            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
+            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
+            patch.object(UserRepository, "create_user") as mock_create_user,
+        ):
 
-        # If first succeeded, second should fail
-        if response1.status_code == 201:
-            assert response2.status_code in [400, 409, 422]  # Conflict or validation error
+            # First registration: no existing user found
+            mock_get_by_username.return_value = None
+            mock_get_by_email.return_value = None
+            mock_create_user.return_value = mock_existing_user
+
+            response1 = await async_client.post("/api/v1/auth/register", json=registration_data)
+
+            # Second registration: simulate finding the existing user by username
+            mock_get_by_username.return_value = mock_existing_user  # Found existing user
+            mock_get_by_email.return_value = None  # Email check happens after username
+
+            response2 = await async_client.post("/api/v1/auth/register", json=registration_data)
+
+            # Verify the expected behavior
+            assert response1.status_code == 201, f"First registration should succeed, got {response1.status_code}"
+            assert (
+                response2.status_code == 409
+            ), f"Second registration should fail with 409 Conflict, got {response2.status_code}"
+
+            # Verify the error message for duplicate username
+            assert "Username already exists" in response2.json().get("detail", "")
+
+        # Test scenario: duplicate email detection
+        with (
+            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
+            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
+        ):
+
+            # Different username, but same email
+            email_duplicate_data = registration_data.copy()
+            email_duplicate_data["username"] = f"different_user_{unique_id}"
+
+            # Simulate no username conflict but email conflict
+            mock_get_by_username.return_value = None
+            mock_get_by_email.return_value = mock_existing_user  # Found existing user by email
+
+            response3 = await async_client.post("/api/v1/auth/register", json=email_duplicate_data)
+
+            # Verify email duplicate prevention
+            assert (
+                response3.status_code == 409
+            ), f"Email duplicate should fail with 409 Conflict, got {response3.status_code}"
+            assert "Email already exists" in response3.json().get("detail", "")
 
     @pytest.mark.asyncio
     async def test_registration_assigns_default_roles(self, async_client: AsyncClient) -> None:
@@ -530,14 +582,17 @@ class TestAuthEndpointsSecurity:
     @pytest.mark.asyncio
     async def test_auth_endpoints_request_size_limits(self, async_client: AsyncClient) -> None:
         """Test request size limits for auth endpoints."""
-        # Create very large request
-        large_data = {"username": "test", "password": "test", "extra_data": "x" * 10000}  # Large payload
+        # Create request that exceeds the 10MB limit (InputSanitizationMiddleware MAX_BODY_SIZE)
+        # 11MB payload should trigger 413 Request Entity Too Large
+        large_data = {"username": "test", "password": "test", "extra_data": "x" * (11 * 1024 * 1024)}
 
         response = await async_client.post("/api/v1/auth/login", json=large_data)
 
-        # Should handle large requests gracefully
-        # Include 500 for database session robustness
-        assert response.status_code in [400, 413, 422, 500]  # Bad request, payload too large, or db session issues
+        # Should reject large requests before authentication
+        # 413 = Request Entity Too Large (from InputSanitizationMiddleware)
+        # 400 = Bad Request (malformed data)
+        # 422 = Validation Error (schema validation)
+        assert response.status_code in [400, 413, 422]
 
     @pytest.mark.asyncio
     async def test_auth_endpoints_security_headers(self, async_client: AsyncClient) -> None:
@@ -667,13 +722,22 @@ class TestJWTSecurityValidation:
     @pytest.mark.asyncio
     async def test_jwt_token_substitution_attack_prevention(self, async_client: AsyncClient) -> None:
         """Test prevention of JWT token substitution attacks."""
-        # Create tokens for different users
-        user1_token = self.create_test_jwt_with_custom_claims(sub="user-1", roles=["viewer"])
-        user2_token = self.create_test_jwt_with_custom_claims(sub="user-2", roles=["admin"])
+        import uuid
+
+        # Create valid UUIDs for users
+        user1_id = str(uuid.uuid4())
+        user2_id = str(uuid.uuid4())
+
+        # Create tokens for different users with valid UUIDs
+        user1_token = self.create_test_jwt_with_custom_claims(sub=user1_id, roles=["viewer"])
+        user2_token = self.create_test_jwt_with_custom_claims(sub=user2_id, roles=["admin"])
 
         # Use user1 token to access user2's resources
         headers = {"Authorization": f"Bearer {user1_token}"}
-        response = await async_client.get("/api/v1/users/user-2", headers=headers)
+        response = await async_client.get(f"/api/v1/users/{user2_id}", headers=headers)
 
-        # Should not allow access to other user's resources (403 or 404)
+        # Should not allow access to other user's resources
+        # 403 = Forbidden (proper authorization check)
+        # 404 = Not Found (user doesn't exist, which is also valid security behavior)
+        # 401 = Unauthorized (token validation issues)
         assert response.status_code in [403, 404, 401]

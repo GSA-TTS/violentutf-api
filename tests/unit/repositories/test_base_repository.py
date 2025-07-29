@@ -41,7 +41,7 @@ class TestBaseRepository:
         mock_session.flush = AsyncMock()
 
         # Create the entity directly
-        result = await user_repository.create(username="test", email="test@example.com")
+        result = await user_repository.create({"username": "test", "email": "test@example.com"})
 
         # Verify UUID was generated
         assert result.id is not None
@@ -63,7 +63,7 @@ class TestBaseRepository:
         mock_session.flush = AsyncMock()
 
         # Create the entity with provided ID
-        result = await user_repository.create(id=test_id, username="test", email="test@example.com")
+        result = await user_repository.create({"id": test_id, "username": "test", "email": "test@example.com"})
 
         # Verify the provided ID was used
         assert result.id == test_id

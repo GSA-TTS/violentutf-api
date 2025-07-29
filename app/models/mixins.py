@@ -132,6 +132,26 @@ class AuditMixin:
         else:
             return all_constraints
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize AuditMixin with proper defaults for in-memory instances."""
+        # Set defaults for audit fields
+        now = datetime.now(timezone.utc)
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = now
+        if "created_by" not in kwargs:
+            kwargs["created_by"] = "system"
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = now
+        if "updated_by" not in kwargs:
+            kwargs["updated_by"] = "system"
+        if "version" not in kwargs:
+            kwargs["version"] = 1
+
+        # Call parent constructor
+        super().__init__(**kwargs)
+
 
 class SoftDeleteMixin:
     """Mixin for soft delete functionality."""
@@ -168,6 +188,15 @@ class SoftDeleteMixin:
         self.deleted_by = None
 
     # Soft delete index will be handled by the main __table_args__ in AuditMixin
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize SoftDeleteMixin with proper defaults for in-memory instances."""
+        # Set defaults for soft delete fields
+        if "is_deleted" not in kwargs:
+            kwargs["is_deleted"] = False
+
+        # Call parent constructor
+        super().__init__(**kwargs)
 
 
 class SecurityValidationMixin:
@@ -284,6 +313,15 @@ class RowLevelSecurityMixin:
     )
 
     # RLS indexes will be handled by the main __table_args__ in AuditMixin
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize RowLevelSecurityMixin with proper defaults for in-memory instances."""
+        # Set defaults for RLS fields
+        if "access_level" not in kwargs:
+            kwargs["access_level"] = "private"
+
+        # Call parent constructor
+        super().__init__(**kwargs)
 
 
 class BaseModelMixin(

@@ -108,6 +108,15 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
         "User", back_populates="audit_logs", foreign_keys=[user_id], lazy="select"
     )
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize AuditLog with proper defaults for in-memory instances."""
+        # Set defaults for fields that should have default values
+        if "status" not in kwargs:
+            kwargs["status"] = "success"
+
+        # Call parent constructor (AuditMixin will handle its own defaults)
+        super().__init__(**kwargs)
+
     @validates("action")
     def validate_action(self: "AuditLog", key: str, value: str) -> str:
         """Validate action format."""
@@ -211,6 +220,7 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
             error_message=error_message,
             duration_ms=duration_ms,
             created_by=created_by,
+            updated_by=created_by,  # Set updated_by same as created_by for consistency
         )
 
     @classmethod
@@ -231,7 +241,7 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
     ) -> "AuditLog":
         """Log an action with proper formatting. Alias for create_log with additional parameters."""
         # Combine request_id and metadata into action_metadata
-        action_metadata = metadata or {}
+        action_metadata = metadata.copy() if metadata else {}
         if request_id:
             action_metadata["request_id"] = request_id
 
@@ -243,7 +253,7 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
             user_email=user_email,
             ip_address=ip_address,
             user_agent=user_agent,
-            action_metadata=action_metadata,
+            action_metadata=action_metadata if action_metadata else None,
             status=status,
             error_message=error_message,
             duration_ms=duration_ms,

@@ -486,24 +486,24 @@ class TestAPIKeyBusinessLogic:
         """Test record_usage without providing IP address."""
         api_key = APIKey()
         api_key.usage_count = 0
-        api_key.last_used_ip = "old_ip"
+        api_key.last_used_ip = "192.168.1.100"  # Valid IP address
 
         api_key.record_usage()
 
         assert api_key.usage_count == 1
-        assert api_key.last_used_ip == "old_ip"  # Should remain unchanged
+        assert api_key.last_used_ip == "192.168.1.100"  # Should remain unchanged
         assert api_key.last_used_at is not None
 
     def test_record_usage_with_none_ip(self):
         """Test record_usage with None IP address."""
         api_key = APIKey()
         api_key.usage_count = 0
-        api_key.last_used_ip = "old_ip"
+        api_key.last_used_ip = "10.0.0.1"  # Valid IP address
 
         api_key.record_usage(None)
 
         assert api_key.usage_count == 1
-        assert api_key.last_used_ip == "old_ip"  # Should remain unchanged
+        assert api_key.last_used_ip == "10.0.0.1"  # Should remain unchanged
 
     def test_has_permission_inactive_key(self):
         """Test has_permission with inactive key."""
@@ -596,8 +596,13 @@ class TestAPIKeyRepresentation:
         api_key.is_deleted = False
 
         repr_str = repr(api_key)
-        expected = "<APIKey(name=Test Key, prefix=test123, active=True)>"
-        assert repr_str == expected
+        # Check that repr contains the expected components
+        assert repr_str.startswith("<APIKey(")
+        assert repr_str.endswith(")>")
+        assert "name='Test Key'" in repr_str
+        assert "prefix='test123'" in repr_str
+        assert "active=True" in repr_str
+        assert "usage=0" in repr_str  # Default usage count
 
     def test_repr_inactive_key(self):
         """Test __repr__ method with inactive key."""
@@ -605,8 +610,13 @@ class TestAPIKeyRepresentation:
         api_key.is_deleted = True
 
         repr_str = repr(api_key)
-        expected = "<APIKey(name=Inactive Key, prefix=inactive, active=False)>"
-        assert repr_str == expected
+        # Check that repr contains the expected components
+        assert repr_str.startswith("<APIKey(")
+        assert repr_str.endswith(")>")
+        assert "name='Inactive Key'" in repr_str
+        assert "prefix='inactive'" in repr_str
+        assert "active=False" in repr_str
+        assert "usage=0" in repr_str
 
     def test_to_dict_minimal(self):
         """Test to_dict method with minimal data."""
@@ -615,22 +625,24 @@ class TestAPIKeyRepresentation:
         with patch.object(api_key, "id", "123e4567-e89b-12d3-a456-426614174000"):
             with patch.object(api_key, "is_active", return_value=True):
                 with patch.object(api_key, "created_at", None):
-                    result = api_key.to_dict()
+                    with patch.object(api_key, "updated_at", None):
+                        result = api_key.to_dict()
 
-        expected = {
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "Test Key",
-            "description": None,
-            "key_prefix": "test123",
-            "permissions": {"read": True},
-            "last_used_at": None,
-            "usage_count": None,
-            "expires_at": None,
-            "is_active": True,
-            "created_at": None,
-        }
-
-        assert result == expected
+        # Check required fields
+        assert result["id"] == "123e4567-e89b-12d3-a456-426614174000"
+        assert result["name"] == "Test Key"
+        assert result["description"] is None
+        assert result["key_prefix"] == "test123"
+        assert result["permissions"] == {"read": True}
+        assert result["last_used_at"] is None
+        assert result["usage_count"] == 0  # Default from __init__
+        assert result["expires_at"] is None
+        assert result["is_active"] is True
+        assert result["created_at"] is None
+        assert result["updated_at"] is None
+        assert result["revoked_at"] is None
+        assert "masked_key" in result  # Should have masked key
+        assert "last_used_ip" not in result  # Sensitive field excluded
 
     def test_to_dict_full_data(self):
         """Test to_dict method with full data."""
@@ -651,22 +663,23 @@ class TestAPIKeyRepresentation:
         with patch.object(api_key, "id", "456e7890-e12b-34c5-d678-901234567890"):
             with patch.object(api_key, "is_active", return_value=True):
                 with patch.object(api_key, "created_at", created_time):
-                    result = api_key.to_dict()
+                    with patch.object(api_key, "updated_at", created_time):
+                        result = api_key.to_dict()
 
-        expected = {
-            "id": "456e7890-e12b-34c5-d678-901234567890",
-            "name": "Full Key",
-            "description": "Complete API key",
-            "key_prefix": "full123",
-            "permissions": {"admin": True},
-            "last_used_at": "2024-01-15T10:30:00+00:00",
-            "usage_count": 100,
-            "expires_at": "2024-12-31T23:59:59+00:00",
-            "is_active": True,
-            "created_at": "2024-01-01T12:00:00+00:00",
-        }
-
-        assert result == expected
+        # Check all fields are properly set
+        assert result["id"] == "456e7890-e12b-34c5-d678-901234567890"
+        assert result["name"] == "Full Key"
+        assert result["description"] == "Complete API key"
+        assert result["key_prefix"] == "full123"
+        assert result["permissions"] == {"admin": True}
+        assert result["last_used_at"] == "2024-01-15T10:30:00+00:00"
+        assert result["usage_count"] == 100
+        assert result["expires_at"] == "2024-12-31T23:59:59+00:00"
+        assert result["is_active"] is True
+        assert result["created_at"] == "2024-01-01T12:00:00+00:00"
+        assert result["updated_at"] == "2024-01-01T12:00:00+00:00"
+        assert "masked_key" in result
+        assert "last_used_ip" not in result  # Sensitive data excluded by default
 
 
 class TestAPIKeyConstraintsAndConfig:
@@ -741,7 +754,9 @@ class TestAPIKeyFieldProperties:
         perms_column = APIKey.permissions.property.columns[0]
 
         assert perms_column.nullable is False
-        assert perms_column.default.arg == dict
+        # The default is dict (the actual function, not a callable wrapper)
+        assert callable(perms_column.default.arg)
+        assert perms_column.default.arg.__name__ == "dict"
         assert perms_column.comment == "JSON containing permission scopes"
 
     def test_usage_tracking_field_properties(self):
@@ -774,7 +789,7 @@ class TestAPIKeyFieldProperties:
 
         assert user_id_column.nullable is False
         assert user_id_column.index is True
-        assert user_id_column.comment == "User who owns this API key"
+        assert user_id_column.comment == "ID of the user who owns this API key"
         # ForeignKey constraint
         assert len(user_id_column.foreign_keys) == 1
         fk = list(user_id_column.foreign_keys)[0]

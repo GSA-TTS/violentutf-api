@@ -9,6 +9,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.middleware.body_cache import BodyCachingMiddleware
 from app.middleware.request_signing import (
     API_KEY_HEADER,
     NONCE_HEADER,
@@ -276,8 +277,9 @@ class TestRequestSigner:
         assert lines[0] == "POST"  # Method
         assert lines[1] == "/api/v1/test"  # Path
         assert lines[2] == "a=1&b=2"  # Sorted query params
-        assert "content-type:application/json" in lines[3]  # Headers
-        assert "host:example.com" in lines[3]
+        # Headers are on separate lines, sorted alphabetically
+        assert lines[3] == "content-type:application/json"  # First header (sorted)
+        assert lines[4] == "host:example.com"  # Second header (sorted)
 
         # Should contain timestamp and nonce
         assert "1234567890" in canonical

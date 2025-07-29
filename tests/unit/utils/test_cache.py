@@ -336,7 +336,7 @@ class TestCacheShutdown:
         with patch("app.utils.cache.cache_client", mock_client):
             await close_cache_connections()
 
-            mock_client.close.assert_called_once()
+            mock_client.aclose.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_close_cache_connections_resets_global(self) -> None:

@@ -80,7 +80,8 @@ class TestUserValidations:
         for username in valid_usernames:
             with patch.object(user, "validate_string_security", return_value=None):
                 result = user.validate_username("username", username)
-                assert result == username
+                # Username validation converts to lowercase
+                assert result == username.lower()
 
     def test_validate_username_empty(self):
         """Test username validation with empty value."""
@@ -275,9 +276,11 @@ class TestUserRepresentation:
             is_active=True,
         )
 
-        repr_str = repr(user)
-        expected = "<User(username=testuser, email=test@example.com, active=True)>"
-        assert repr_str == expected
+        # Mock the id since it's None before saving to DB
+        with patch.object(user, "id", "12345678-1234-5678-1234-567812345678"):
+            repr_str = repr(user)
+            expected = "<User(id=12345678, username='testuser', email='test@example.com', active=True)>"
+            assert repr_str == expected
 
     def test_repr_inactive_user(self):
         """Test __repr__ method with inactive user."""
@@ -288,9 +291,11 @@ class TestUserRepresentation:
             is_active=False,
         )
 
-        repr_str = repr(user)
-        expected = "<User(username=inactive, email=inactive@example.com, active=False)>"
-        assert repr_str == expected
+        # Mock the id since it's None before saving to DB
+        with patch.object(user, "id", "87654321-4321-8765-4321-876543218765"):
+            repr_str = repr(user)
+            expected = "<User(id=87654321, username='inactive', email='inactive@example.com', active=False)>"
+            assert repr_str == expected
 
     def test_to_dict_minimal(self):
         """Test to_dict method with minimal user data."""
@@ -300,7 +305,8 @@ class TestUserRepresentation:
         with patch.object(user, "id", "123e4567-e89b-12d3-a456-426614174000"):
             with patch.object(user, "created_at", None):
                 with patch.object(user, "updated_at", None):
-                    result = user.to_dict()
+                    with patch.object(user, "organization_id", None):
+                        result = user.to_dict()
 
         expected = {
             "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -309,6 +315,8 @@ class TestUserRepresentation:
             "full_name": None,
             "is_active": True,
             "is_superuser": False,
+            "roles": ["viewer"],  # Default role
+            "organization_id": None,
             "created_at": None,
             "updated_at": None,
         }
@@ -319,6 +327,7 @@ class TestUserRepresentation:
         """Test to_dict method with full user data."""
         created_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         updated_time = datetime(2024, 1, 2, 12, 0, 0, tzinfo=timezone.utc)
+        org_id = "456e4567-e89b-12d3-a456-426614174001"
 
         user = User(
             username="fulluser",
@@ -332,7 +341,9 @@ class TestUserRepresentation:
         with patch.object(user, "id", "123e4567-e89b-12d3-a456-426614174000"):
             with patch.object(user, "created_at", created_time):
                 with patch.object(user, "updated_at", updated_time):
-                    result = user.to_dict()
+                    with patch.object(user, "roles", ["admin", "tester"]):
+                        with patch.object(user, "organization_id", org_id):
+                            result = user.to_dict()
 
         expected = {
             "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -341,6 +352,8 @@ class TestUserRepresentation:
             "full_name": "Full Name",
             "is_active": True,
             "is_superuser": True,
+            "roles": ["admin", "tester"],
+            "organization_id": org_id,
             "created_at": "2024-01-01T12:00:00+00:00",
             "updated_at": "2024-01-02T12:00:00+00:00",
         }

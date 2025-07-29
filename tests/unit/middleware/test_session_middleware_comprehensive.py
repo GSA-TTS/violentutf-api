@@ -449,6 +449,9 @@ class TestSessionMiddlewareIntegration:
             return mock_response
 
         mock_response.set_cookie.reset_mock()
+        # Clear state from previous request to avoid state contamination
+        if hasattr(mock_request.state, "new_session_id"):
+            delattr(mock_request.state, "new_session_id")
         await session_middleware.dispatch(mock_request, use_session_handler)
         assert not mock_response.set_cookie.called
 

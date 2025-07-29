@@ -98,6 +98,10 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
             from types import SimpleNamespace
 
             user_roles = payload.get("roles", ["viewer"])
+            # Handle cases where roles might not be a list
+            if not isinstance(user_roles, list):
+                user_roles = ["viewer"]  # Default fallback for invalid role types
+
             request.state.user = SimpleNamespace(
                 id=payload.get("sub"), is_superuser="admin" in user_roles, roles=user_roles
             )

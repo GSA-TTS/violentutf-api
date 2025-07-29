@@ -171,7 +171,15 @@ class TestEnhancedJWTClaims:
         assert response.json()["token_payload"]["type"] == "access"
 
         # Invalid refresh token (should be rejected)
-        refresh_token = self.create_enhanced_jwt_token(token_type="refresh")
+        # Use create_refresh_token to properly create a refresh token
+        from app.core.security import create_refresh_token
+
+        refresh_payload = {
+            "sub": "user-123",
+            "roles": ["viewer"],
+            "organization_id": None,
+        }
+        refresh_token = create_refresh_token(data=refresh_payload)
         headers = {"Authorization": f"Bearer {refresh_token}"}
 
         response = client.get("/api/v1/users/claims", headers=headers)
@@ -248,7 +256,8 @@ class TestEnhancedJWTClaims:
         # Missing claims should be None or default values
         assert payload.get("roles") is None
         assert payload.get("organization_id") is None
-        assert payload.get("type") is None
+        # Type is automatically added by create_access_token, so it will be "access"
+        assert payload.get("type") == "access"
 
     # Claims Data Type Validation Tests
 

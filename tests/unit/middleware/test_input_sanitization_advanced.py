@@ -31,8 +31,16 @@ def app():
 
     @app.post("/json")
     async def json_endpoint(request: Request):
-        body = await request.body()
-        return {"received": json.loads(body)}
+        # Try to get sanitized body first
+        from app.middleware.input_sanitization import get_sanitized_body
+
+        sanitized_body = get_sanitized_body(request)
+        if sanitized_body:
+            return {"received": json.loads(sanitized_body.decode("utf-8"))}
+        else:
+            # Fallback to original method
+            body = await request.body()
+            return {"received": json.loads(body)}
 
     @app.post("/form")
     async def form_endpoint(request: Request):

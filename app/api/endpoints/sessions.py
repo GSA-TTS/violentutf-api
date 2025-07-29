@@ -44,9 +44,6 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             require_admin=False,  # Users can manage their own sessions
         )
 
-        # Add custom session endpoints
-        self._add_custom_endpoints()
-
     def _check_admin_permission(self, request: Request) -> None:
         """Check if user has admin permissions."""
         current_user = getattr(request.state, "user", None)
@@ -486,6 +483,105 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                     exc_info=True,
                 )
                 raise
+
+    def _register_endpoints(self) -> None:
+        """Register CRUD endpoints, excluding create endpoint (custom implementation)."""
+        # Register custom endpoints first to avoid routing conflicts
+        self._add_custom_endpoints()
+
+        import uuid
+
+        from fastapi import Depends
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        from app.db.session import get_db
+        from app.schemas.base import PaginatedResponse
+
+        # List endpoint (from base router)
+        @self.router.get(
+            "/",
+            response_model=PaginatedResponse[SessionResponse],
+            summary=f"List {self.model.__name__}s",
+            description=f"Retrieve a paginated list of {self.model.__name__} objects with optional filtering and sorting.",
+        )
+        async def list_items(
+            request: Request,
+            filters: SessionFilter = Depends(SessionFilter),
+            session: AsyncSession = Depends(get_db),
+        ) -> PaginatedResponse[SessionResponse]:
+            return await self._list_items(request, filters, session)
+
+        # Get by ID endpoint (from base router)
+        @self.router.get(
+            "/{item_id}",
+            response_model=BaseResponse[SessionResponse],
+            summary=f"Get {self.model.__name__}",
+            description=f"Retrieve a specific {self.model.__name__} by ID.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+            },
+        )
+        async def get_item(
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+        ) -> BaseResponse[SessionResponse]:
+            return await self._get_item(request, item_id, session)
+
+        # Skip create endpoint - using custom implementation
+
+        # Update endpoint (from base router)
+        @self.router.put(
+            "/{item_id}",
+            response_model=BaseResponse[SessionResponse],
+            summary=f"Update {self.model.__name__}",
+            description=f"Update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def update_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: SessionUpdate,
+            session: AsyncSession = Depends(get_db),
+        ) -> BaseResponse[SessionResponse]:
+            return await self._update_item(request, item_id, item_data, session)
+
+        # Patch endpoint (from base router)
+        @self.router.patch(
+            "/{item_id}",
+            response_model=BaseResponse[SessionResponse],
+            summary=f"Partially update {self.model.__name__}",
+            description=f"Partially update an existing {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+                409: {"description": "Version conflict (optimistic locking)"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def patch_item(
+            request: Request,
+            item_id: uuid.UUID,
+            item_data: SessionUpdate,
+            session: AsyncSession = Depends(get_db),
+        ) -> BaseResponse[SessionResponse]:
+            return await self._patch_item(request, item_id, item_data, session)
+
+        # Delete endpoint (from base router)
+        @self.router.delete(
+            "/{item_id}",
+            response_model=BaseResponse[OperationResult],
+            summary=f"Delete {self.model.__name__}",
+            description=f"Delete a specific {self.model.__name__}.",
+            responses={
+                404: {"description": f"{self.model.__name__} not found"},
+            },
+        )
+        async def delete_item(
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+        ) -> BaseResponse[OperationResult]:
+            return await self._delete_item(request, item_id, False, session)
 
     def _add_custom_endpoints(self) -> None:
         """Add session-specific endpoints."""

@@ -184,14 +184,16 @@ class AuditLogRouter:
 
     def _add_endpoints(self) -> None:
         """Add audit log endpoints."""
+        # Register specific endpoints first to avoid routing conflicts
         self._register_list_endpoint()
-        self._register_get_endpoint()
         self._register_user_endpoint()
         self._register_resource_endpoint()
         self._register_search_endpoint()
         self._register_statistics_endpoint()
         self._register_summary_endpoint()
         self._register_export_endpoint()
+        # Register generic endpoints last to prevent conflicts
+        self._register_get_endpoint()
 
     def _register_list_endpoint(self) -> None:
         """Register the list audit logs endpoint."""

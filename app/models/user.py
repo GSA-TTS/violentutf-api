@@ -111,6 +111,21 @@ class User(Base, BaseModelMixin):
         lazy="dynamic",
     )
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize User with proper defaults for in-memory instances."""
+        # Set defaults for fields that should have default values
+        if "is_active" not in kwargs:
+            kwargs["is_active"] = True
+        if "is_superuser" not in kwargs:
+            kwargs["is_superuser"] = False
+        if "is_verified" not in kwargs:
+            kwargs["is_verified"] = False
+        if "roles" not in kwargs:
+            kwargs["roles"] = ["viewer"]
+
+        # Call parent constructor (BaseModelMixin will handle its own defaults)
+        super().__init__(**kwargs)
+
     # Model-specific constraints (will be combined by AuditMixin)
     _model_constraints = (
         UniqueConstraint("username", "is_deleted", name="uq_user_username_active"),
