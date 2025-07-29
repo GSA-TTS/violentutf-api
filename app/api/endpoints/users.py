@@ -10,6 +10,7 @@ from structlog.stdlib import get_logger
 from app.api.base import BaseCRUDRouter
 from app.core.config import settings
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.rate_limiting import rate_limit
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.user import User

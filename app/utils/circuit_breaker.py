@@ -29,7 +29,7 @@ class CircuitBreakerConfig:
     recovery_timeout: float = 60.0  # Time to wait before trying half-open
     success_threshold: int = 3  # Successes needed in half-open to close
     timeout: float = 30.0  # Timeout for individual calls
-    expected_exception: type = Exception  # Exception type that counts as failure
+    expected_exception: Union[type, tuple[type, ...]] = Exception  # Exception type(s) that count as failure
 
 
 @dataclass

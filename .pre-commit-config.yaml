@@ -39,7 +39,7 @@ repos:
     hooks:
       - id: mypy
         args: ['--ignore-missing-imports', '--strict']
-        exclude: '^(tests/|alembic/)'
+        exclude: '^(tests/|alembic/|backups/|docs/)'
         additional_dependencies:
           - types-requests
           - types-redis

@@ -4,7 +4,15 @@ from typing import Any, Dict
 
 from fastapi import APIRouter
 
-from .endpoints import api_keys, audit_logs, auth, health, sessions, users
+from .endpoints import (
+    api_keys,
+    audit_logs,
+    auth,
+    health,
+    sessions,
+    upload,
+    users,
+)
 
 api_router = APIRouter()
 
@@ -65,4 +73,15 @@ api_router.include_router(
     audit_logs.router,
     tags=["Audit Logs"],
     responses=crud_error_responses,
+)
+
+# Include Upload endpoints
+api_router.include_router(
+    upload.router,
+    tags=["Upload"],
+    responses={
+        400: {"description": "Bad request"},
+        413: {"description": "Request entity too large"},
+        422: {"description": "Validation error"},
+    },
 )

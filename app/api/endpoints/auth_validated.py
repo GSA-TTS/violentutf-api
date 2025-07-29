@@ -1,4 +1,7 @@
-"""Authentication endpoints with real database authentication."""
+"""Example authentication endpoints with comprehensive input validation.
+
+This demonstrates how to integrate the input validation framework with API endpoints.
+"""
 
 from typing import Dict, Optional
 
@@ -16,6 +19,7 @@ from ...core.input_validation import (
     ValidationConfig,
     ValidationLevel,
     validate_input,
+    validate_request_data,
 )
 from ...core.rate_limiting import rate_limit
 from ...core.security import create_access_token, create_refresh_token, validate_password_strength
@@ -114,10 +118,13 @@ AUTH_VALIDATION_CONFIG = ValidationConfig(
 async def login(
     request: LoginRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_db),  # noqa: B008
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
-    """Authenticate user and return JWT tokens."""
+    """Authenticate user and return JWT tokens with comprehensive input validation."""
     try:
+        # Input has already been validated by decorator
+        # Additional manual validation can be done here if needed
+
         # Get client IP address for logging
         client_ip = http_request.client.host if http_request.client else None
 
@@ -201,11 +208,12 @@ async def login(
 )
 async def register(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db),  # noqa: B008
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
-    """Register a new user account."""
+    """Register a new user account with comprehensive input validation."""
     try:
-        # Validate password strength
+        # Input has already been validated by decorator
+        # Additional password strength validation
         is_strong, message = validate_password_strength(user_data.password)
         if not is_strong:
             raise HTTPException(
@@ -282,12 +290,13 @@ async def register(
 )
 async def refresh_token(
     request: TokenRefreshRequest,
-    db: AsyncSession = Depends(get_db),  # noqa: B008
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
-    """Refresh access token using refresh token."""
+    """Refresh access token using refresh token with comprehensive validation."""
     try:
         from ...core.security import decode_token
 
+        # Input has already been validated by decorator
         # Decode and validate refresh token
         try:
             payload = decode_token(request.refresh_token)

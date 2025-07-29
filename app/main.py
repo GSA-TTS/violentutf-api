@@ -8,23 +8,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
-from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from structlog.stdlib import get_logger
 
 from .api.routes import api_router
 from .core.config import Settings, settings
 from .core.errors import setup_error_handlers
 from .core.logging import setup_logging
+from .core.rate_limiting import limiter
 from .middleware.authentication import JWTAuthenticationMiddleware
 from .middleware.csrf import CSRFProtectionMiddleware
 from .middleware.idempotency import IdempotencyMiddleware
 from .middleware.input_sanitization import InputSanitizationMiddleware
 from .middleware.logging import LoggingMiddleware
 from .middleware.metrics import MetricsMiddleware
+from .middleware.rate_limiting import RateLimitingMiddleware
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.request_signing import RequestSigningMiddleware
+from .middleware.request_size import RequestSizeLimitMiddleware
 from .middleware.security import setup_security_middleware
 from .middleware.session import SessionMiddleware
 
@@ -32,22 +33,21 @@ from .middleware.session import SessionMiddleware
 setup_logging()
 logger = get_logger(__name__)
 
-# Create rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """Handle rate limit exceptions with enhanced logging."""
+    logger.warning(
+        "rate_limit_exceeded",
+        path=request.url.path,
+        client_ip=request.client.host if request.client else "unknown",
+        rate_limit_detail=exc.detail,
+    )
 
-async def rate_limit_handler(request: Request, exc: Exception) -> Response:
-    """Handle rate limit exceptions with FastAPI signature."""
-    if isinstance(exc, RateLimitExceeded):
-        response = _rate_limit_exceeded_handler(request, exc)
-        # Convert starlette Response to FastAPI JSONResponse
-        return JSONResponse(
-            status_code=response.status_code,
-            content={"detail": f"Rate limit exceeded: {exc.detail}"},
-            headers=dict(response.headers),
-        )
-    # Fallback for other exceptions (shouldn't happen with this handler)
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}", "type": "rate_limit_exceeded"},
+        headers={"Retry-After": "60"},  # Default retry after 60 seconds
+    )
 
 
 async def _initialize_database() -> None:
@@ -158,21 +158,27 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
     if app_settings.ENABLE_METRICS:
         app.add_middleware(MetricsMiddleware)
 
-    # 4. Session management (before CSRF)
+    # 4. Rate limiting (early in the chain to prevent resource usage)
+    app.add_middleware(RateLimitingMiddleware)
+
+    # 5. Request size limits (prevent resource exhaustion)
+    app.add_middleware(RequestSizeLimitMiddleware)
+
+    # 6. Session management (before CSRF)
     app.add_middleware(SessionMiddleware)
-    # 5. CSRF Protection (after sessions) - configurable
+    # 7. CSRF Protection (after sessions) - configurable
     if app_settings.CSRF_PROTECTION:
         app.add_middleware(CSRFProtectionMiddleware)
-    # 6. JWT Authentication (after CSRF, before other processing)
+    # 8. JWT Authentication (after CSRF, before other processing)
     app.add_middleware(JWTAuthenticationMiddleware)
-    # 7. Idempotency support (before input sanitization)
+    # 9. Idempotency support (before input sanitization)
     app.add_middleware(IdempotencyMiddleware)
-    # 8. Input sanitization (before request processing)
+    # 10. Input sanitization (before request processing)
     app.add_middleware(InputSanitizationMiddleware)
-    # 9. Request signing (for high-security endpoints) - configurable
+    # 11. Request signing (for high-security endpoints) - configurable
     if app_settings.REQUEST_SIGNING_ENABLED:
         app.add_middleware(RequestSigningMiddleware)
-    # 10. CORS
+    # 12. CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.ALLOWED_ORIGINS,
@@ -181,10 +187,10 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
         allow_headers=app_settings.ALLOWED_HEADERS,
     )
 
-    # 11. GZip compression
+    # 13. GZip compression
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # 12. Security headers (should be near the end)
+    # 14. Security headers (should be near the end)
     setup_security_middleware(app)
 
     # Include API routes
@@ -222,4 +228,7 @@ if __name__ == "__main__":
         port=settings.SERVER_PORT,
         reload=settings.is_development,
         log_config=None,  # Use our custom logging
+        limit_max_requests=1000,  # Restart workers after 1000 requests
+        limit_concurrency=1000,  # Max concurrent connections
+        h11_max_incomplete_event_size=settings.MAX_REQUEST_LINE_SIZE,
     )
