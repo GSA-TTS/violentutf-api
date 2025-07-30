@@ -4,6 +4,8 @@ Here is the expanded and enriched guide for ADR Compliance Audit and Resolution,
 
 ## ADR Compliance Audit and Resolution: An Operational Playbook
 
+Version: 30JUL25
+
 ### Introduction
 
 This document provides a comprehensive, operational framework for auditing a codebase against its Architectural Decision Records (ADRs). In complex, evolving software systems, it is critical to ensure that the implemented architecture aligns with the documented decisions that guide it. Deviations, or "architectural drift," can lead to increased technical debt, security vulnerabilities, and maintenance overhead.
