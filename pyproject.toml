@@ -48,7 +48,7 @@ exclude = [
 "tests/*" = ["S101", "S105", "S106"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -88,7 +88,7 @@ exclude_dirs = ["tests", "venv", ".venv"]
 skips = ["B101", "B601"]
 
 [tool.pytest.ini_options]
-minversion = "7.0"
+minversion = "8.0"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -124,7 +124,7 @@ skip_covered = true
 
 [tool.black]
 line-length = 120
-target-version = ["py311"]
+target-version = ["py312"]
 
 [tool.isort]
 profile = "black"

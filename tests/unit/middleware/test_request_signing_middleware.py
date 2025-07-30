@@ -30,7 +30,16 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-def app():
+def mock_cache():
+    """Mock cache client."""
+    with patch("app.middleware.request_signing.get_cache_client") as mock:
+        cache = AsyncMock()
+        mock.return_value = cache
+        yield cache
+
+
+@pytest.fixture
+def app(mock_cache):
     """Create test FastAPI app with request signing middleware."""
     app = FastAPI()
     app.add_middleware(RequestSigningMiddleware)
@@ -58,15 +67,6 @@ def client(app) -> Generator[TestClient, None, None]:
 
     with SafeTestClient(app) as test_client:
         yield test_client
-
-
-@pytest.fixture
-def mock_cache():
-    """Mock cache client."""
-    with patch("app.middleware.request_signing.get_cache_client") as mock:
-        cache = AsyncMock()
-        mock.return_value = cache
-        yield cache
 
 
 class TestRequestSigningMiddleware:
@@ -165,21 +165,29 @@ class TestRequestSigningMiddleware:
         mock_cache.get.return_value = None  # Nonce not replayed
         mock_cache.set.return_value = None  # Nonce storage succeeds
 
-        # Create valid signature
+        # Create valid signature - use exact same data that will be sent
         api_key = "test_api_key"
         api_secret = "test_secret"
         signer = RequestSigner(api_key, api_secret)
 
-        # Sign the request
+        # Create request body exactly as it will be sent
+        import json
+
+        request_data = {"test": "data"}
+        body = json.dumps(request_data, separators=(",", ":")).encode()
+
+        # Sign the request with exact body and headers
         signed_headers = signer.sign_request(
             method="POST",
             path="/api/v1/admin/secret",
             headers={"content-type": "application/json", "host": "testserver"},
-            body=b'{"test": "data"}',
+            body=body,
         )
 
-        # Make request with signed headers
-        response = client.post("/api/v1/admin/secret", json={"test": "data"}, headers=signed_headers)
+        # Make request with signed headers - use content to control body exactly
+        response = client.post(
+            "/api/v1/admin/secret", content=body, headers={**signed_headers, "content-type": "application/json"}
+        )
 
         assert response.status_code == 200
         assert response.json() == {"message": "admin_secret"}

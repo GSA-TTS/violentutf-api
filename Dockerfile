@@ -39,14 +39,14 @@ FROM base as development
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 USER root
-RUN pip install --no-cache-dir "uvicorn[standard]>=0.23.0,<0.24.0"
+RUN pip install --no-cache-dir "uvicorn[standard]>=0.27.0,<0.31.0"
 USER appuser
 CMD ["uvicorn", "violentutf_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Test stage
 FROM base as test
 USER root
-RUN pip install --no-cache-dir pytest==7.4.0 pytest-cov==4.1.0
+RUN pip install --no-cache-dir pytest==8.3.5 pytest-cov==6.2.1
 USER appuser
 CMD ["pytest", "-v"]
 
