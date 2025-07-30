@@ -234,24 +234,29 @@ class TestCustomRateLimitException:
 class TestRateLimitIntegration:
     """Integration tests for rate limiting components."""
 
+    @pytest.mark.asyncio
     @patch("app.core.rate_limiting.settings")
     @patch("app.core.rate_limiting.limiter")
     async def test_rate_limit_decorator_exception_handling(self, mock_limiter, mock_settings):
         """Test rate limit decorator handles exceptions correctly."""
         mock_settings.RATE_LIMIT_ENABLED = True
 
+        # Create a custom exception for testing
+        class TestRateLimitExceeded(Exception):
+            pass
+
         # Create a mock function that raises an exception
         async def mock_endpoint():
-            raise RateLimitExceeded("Rate limit exceeded")
+            raise TestRateLimitExceeded("Rate limit exceeded")
 
-        mock_limited_func = AsyncMock(side_effect=RateLimitExceeded("Rate limit exceeded"))
+        mock_limited_func = AsyncMock(side_effect=TestRateLimitExceeded("Rate limit exceeded"))
         mock_limiter.limit.return_value = lambda func: mock_limited_func
 
         # Apply rate limit decorator
         decorated = rate_limit("auth_login")(mock_endpoint)
 
         # Should raise the rate limit exception
-        with pytest.raises(RateLimitExceeded):
+        with pytest.raises(TestRateLimitExceeded):
             await decorated()
 
     def test_rate_limit_configuration_completeness(self):

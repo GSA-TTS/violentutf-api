@@ -3,7 +3,7 @@
 import pytest
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.middleware.request_size import RequestSizeLimitMiddleware
 
@@ -40,7 +40,8 @@ def test_app():
 @pytest.mark.asyncio
 async def test_request_within_limit(test_app):
     """Test request within size limit is processed normally."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send small request (500 bytes)
         data = "x" * 500
         response = await client.post("/test", content=data, headers={"Content-Type": "text/plain"})
@@ -52,7 +53,8 @@ async def test_request_within_limit(test_app):
 @pytest.mark.asyncio
 async def test_request_exceeds_limit(test_app):
     """Test request exceeding size limit is rejected."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send large request (1500 bytes, exceeds 1KB limit)
         data = "x" * 1500
         response = await client.post("/test", content=data, headers={"Content-Type": "text/plain"})
@@ -64,7 +66,8 @@ async def test_request_exceeds_limit(test_app):
 @pytest.mark.asyncio
 async def test_upload_within_limit(test_app):
     """Test upload within size limit is processed normally."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send upload within limit (1500 bytes, under 2KB upload limit)
         data = "x" * 1500
         response = await client.post("/upload/file", content=data, headers={"Content-Type": "application/octet-stream"})
@@ -76,7 +79,8 @@ async def test_upload_within_limit(test_app):
 @pytest.mark.asyncio
 async def test_upload_exceeds_limit(test_app):
     """Test upload exceeding size limit is rejected."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send large upload (3000 bytes, exceeds 2KB upload limit)
         data = "x" * 3000
         response = await client.post("/upload/file", content=data, headers={"Content-Type": "application/octet-stream"})
@@ -88,7 +92,8 @@ async def test_upload_exceeds_limit(test_app):
 @pytest.mark.asyncio
 async def test_get_request_not_limited(test_app):
     """Test GET requests are not subject to size limits."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
@@ -97,7 +102,8 @@ async def test_get_request_not_limited(test_app):
 @pytest.mark.asyncio
 async def test_response_headers(test_app):
     """Test response includes size limit headers."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/test", content="test")
 
         assert response.status_code == 200
@@ -113,7 +119,8 @@ async def test_response_headers(test_app):
 @pytest.mark.asyncio
 async def test_missing_content_length_header(test_app):
     """Test handling of requests without content-length header."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Manually create request without content-length
         # This would trigger streaming validation
         response = await client.post("/test", content="small data", headers={"Content-Type": "text/plain"})
@@ -124,7 +131,8 @@ async def test_missing_content_length_header(test_app):
 @pytest.mark.asyncio
 async def test_invalid_content_length_header(test_app):
     """Test handling of invalid content-length header."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
             "/test", content="test", headers={"Content-Type": "text/plain", "Content-Length": "invalid"}
         )
@@ -200,7 +208,8 @@ class TestRequestSizeLimitMiddleware:
 @pytest.mark.asyncio
 async def test_large_request_warning(test_app, caplog):
     """Test warning logged for large requests near limit."""
-    async with AsyncClient(app=test_app, base_url="http://test") as client:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send request at 90% of limit (900 bytes out of 1024)
         data = "x" * 900
         response = await client.post("/test", content=data, headers={"Content-Type": "text/plain"})

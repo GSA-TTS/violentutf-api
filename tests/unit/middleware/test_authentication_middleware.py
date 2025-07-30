@@ -163,14 +163,13 @@ class TestJWTAuthenticationMiddleware:
         async def register() -> Dict[str, str]:
             return {"register": "success"}
 
-        client = TestClient(app)
+        with TestClient(app) as client:
+            # Both should be exempt (startswith "/api/v1/auth")
+            response = client.get("/api/v1/auth/login")
+            assert response.status_code == 200
 
-        # Both should be exempt (startswith "/api/v1/auth")
-        response = client.get("/api/v1/auth/login")
-        assert response.status_code == 200
-
-        response = client.get("/api/v1/auth/register")
-        assert response.status_code == 200
+            response = client.get("/api/v1/auth/register")
+            assert response.status_code == 200
 
     def test_protected_paths_require_authentication(self, client: TestClient) -> None:
         """Test that protected paths require authentication."""
@@ -446,7 +445,8 @@ class TestJWTAuthenticationMiddleware:
                 "user_id": getattr(request.state, "user_id", None),
             }
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             token = self.create_test_jwt_token()
             headers = {"Authorization": f"Bearer {token}"}
 
@@ -497,14 +497,13 @@ class TestJWTAuthenticationMiddleware:
         async def users_public() -> Dict[str, str]:
             return {"data": "protected"}
 
-        client = TestClient(app)
+        with TestClient(app) as client:
+            # Should require authentication (not exactly matching exempt/protected paths)
+            response = client.get("/api/v1/auth-similar")
+            assert response.status_code == 401
 
-        # Should require authentication (not exactly matching exempt/protected paths)
-        response = client.get("/api/v1/auth-similar")
-        assert response.status_code == 401
-
-        response = client.get("/api/v1/users-public")
-        assert response.status_code == 401
+            response = client.get("/api/v1/users-public")
+            assert response.status_code == 401
 
 
 class TestUtilityFunctions:

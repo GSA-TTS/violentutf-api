@@ -1,5 +1,6 @@
 """Tests for session manager core functionality."""
 
+import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
@@ -27,6 +28,7 @@ def session_manager(mock_cache):
 class TestSessionManager:
     """Test session manager functionality."""
 
+    @pytest.mark.asyncio
     async def test_create_session_success(self, session_manager, mock_cache):
         """Test successful session creation."""
         mock_cache.set.return_value = None
@@ -47,8 +49,9 @@ class TestSessionManager:
         assert session_key.startswith("session:")
         assert session_id in session_key
 
-        # Check session data
-        session_data = call_args[0][1]
+        # Check session data (it's JSON-encoded)
+        session_data_json = call_args[0][1]
+        session_data = json.loads(session_data_json)
         assert session_data["user_id"] == "user_123"
         assert session_data["role"] == "admin"
         assert session_data["ip_address"] == "192.168.1.1"
@@ -56,6 +59,7 @@ class TestSessionManager:
         assert "created_at" in session_data
         assert "last_accessed" in session_data
 
+    @pytest.mark.asyncio
     async def test_create_session_without_cache(self):
         """Test session creation when cache is unavailable."""
         with patch("app.core.session.get_cache_client", return_value=None):
@@ -66,6 +70,7 @@ class TestSessionManager:
             # Should still return session ID even without cache
             assert session_id is not None
 
+    @pytest.mark.asyncio
     async def test_get_session_success(self, session_manager, mock_cache):
         """Test successful session retrieval."""
         # Mock cache return value
@@ -76,7 +81,7 @@ class TestSessionManager:
             "created_at": "2024-01-01T00:00:00Z",
             "last_accessed": "2024-01-01T00:05:00Z",
         }
-        mock_cache.get.return_value = session_data
+        mock_cache.get.return_value = json.dumps(session_data)
         mock_cache.set.return_value = None  # For updating last_accessed
 
         result = await session_manager.get_session("test_session_123")
@@ -88,6 +93,7 @@ class TestSessionManager:
         # Verify cache was updated with new last_accessed time
         mock_cache.set.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_get_session_not_found(self, session_manager, mock_cache):
         """Test session retrieval when session doesn't exist."""
         mock_cache.get.return_value = None
@@ -96,6 +102,7 @@ class TestSessionManager:
 
         assert result is None
 
+    @pytest.mark.asyncio
     async def test_get_session_without_cache(self):
         """Test session retrieval without cache."""
         with patch("app.core.session.get_cache_client", return_value=None):
@@ -105,6 +112,7 @@ class TestSessionManager:
 
             assert result is None
 
+    @pytest.mark.asyncio
     async def test_rotate_session_success(self, session_manager, mock_cache):
         """Test successful session rotation."""
         # Mock existing session
@@ -115,7 +123,7 @@ class TestSessionManager:
             "created_at": "2024-01-01T00:00:00Z",
             "last_accessed": "2024-01-01T00:05:00Z",
         }
-        mock_cache.get.return_value = old_session_data
+        mock_cache.get.return_value = json.dumps(old_session_data)
         mock_cache.set.return_value = None
         mock_cache.delete.return_value = True
 
@@ -132,6 +140,7 @@ class TestSessionManager:
         # Verify new session was created
         assert mock_cache.set.call_count >= 1  # At least one call for new session
 
+    @pytest.mark.asyncio
     async def test_rotate_session_not_found(self, session_manager, mock_cache):
         """Test session rotation when original session doesn't exist."""
         mock_cache.get.return_value = None
@@ -140,6 +149,7 @@ class TestSessionManager:
 
         assert result is None
 
+    @pytest.mark.asyncio
     async def test_delete_session_success(self, session_manager, mock_cache):
         """Test successful session deletion."""
         mock_cache.delete.return_value = True
@@ -149,6 +159,7 @@ class TestSessionManager:
         assert result is True
         mock_cache.delete.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_delete_session_not_found(self, session_manager, mock_cache):
         """Test session deletion when session doesn't exist."""
         mock_cache.delete.return_value = False
@@ -157,11 +168,12 @@ class TestSessionManager:
 
         assert result is False
 
+    @pytest.mark.asyncio
     async def test_extend_session_success(self, session_manager, mock_cache):
         """Test successful session extension."""
         # Mock existing session
         session_data = {"session_id": "test_session_123", "user_id": "user_456", "created_at": "2024-01-01T00:00:00Z"}
-        mock_cache.get.return_value = session_data
+        mock_cache.get.return_value = json.dumps(session_data)
         mock_cache.set.return_value = None
 
         result = await session_manager.extend_session("test_session_123", 60)
@@ -173,10 +185,11 @@ class TestSessionManager:
         call_args = mock_cache.set.call_args
 
         # Check that expire parameter was set
-        assert "expire" in call_args[1]
-        expire_time = call_args[1]["expire"]
+        assert "ex" in call_args[1]
+        expire_time = call_args[1]["ex"]
         assert expire_time > session_manager.session_ttl
 
+    @pytest.mark.asyncio
     async def test_extend_session_not_found(self, session_manager, mock_cache):
         """Test session extension when session doesn't exist."""
         mock_cache.get.return_value = None
@@ -185,6 +198,7 @@ class TestSessionManager:
 
         assert result is False
 
+    @pytest.mark.asyncio
     async def test_validate_session_success(self, session_manager, mock_cache):
         """Test successful session validation."""
         session_data = {
@@ -193,13 +207,14 @@ class TestSessionManager:
             "ip_address": "192.168.1.1",
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        mock_cache.get.return_value = session_data
+        mock_cache.get.return_value = json.dumps(session_data)
         mock_cache.set.return_value = None
 
         result = await session_manager.validate_session("test_session_123", ip_address="192.168.1.1")
 
         assert result is True
 
+    @pytest.mark.asyncio
     async def test_validate_session_not_found(self, session_manager, mock_cache):
         """Test session validation when session doesn't exist."""
         mock_cache.get.return_value = None
@@ -208,6 +223,7 @@ class TestSessionManager:
 
         assert result is False
 
+    @pytest.mark.asyncio
     async def test_validate_session_ip_mismatch(self, session_manager, mock_cache):
         """Test session validation with IP address mismatch."""
         session_data = {
@@ -216,7 +232,7 @@ class TestSessionManager:
             "ip_address": "192.168.1.1",
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        mock_cache.get.return_value = session_data
+        mock_cache.get.return_value = json.dumps(session_data)
         mock_cache.set.return_value = None
 
         # Different IP address
@@ -225,6 +241,7 @@ class TestSessionManager:
         # Should still return True but log warning
         assert result is True
 
+    @pytest.mark.asyncio
     async def test_cleanup_expired_sessions(self, session_manager):
         """Test cleanup of expired sessions."""
         # This is mostly a placeholder method
@@ -232,6 +249,7 @@ class TestSessionManager:
 
         # No assertions needed as Redis handles TTL automatically
 
+    @pytest.mark.asyncio
     async def test_session_manager_cache_error_handling(self, session_manager, mock_cache):
         """Test error handling when cache operations fail."""
         # Mock cache to raise exception
@@ -241,6 +259,7 @@ class TestSessionManager:
         with pytest.raises(ConnectionError):
             await session_manager.create_session("user_123", {})
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "method_name,args",
         [

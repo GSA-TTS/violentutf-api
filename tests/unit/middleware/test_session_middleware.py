@@ -12,7 +12,16 @@ from app.middleware.session import SessionMiddleware
 
 
 @pytest.fixture
-def app():
+def mock_session_manager():
+    """Mock session manager."""
+    with patch("app.middleware.session.get_session_manager") as mock:
+        manager = AsyncMock(spec=SessionManager)
+        mock.return_value = manager
+        yield manager
+
+
+@pytest.fixture
+def app(mock_session_manager):
     """Create test FastAPI app with session middleware."""
     app = FastAPI()
     app.add_middleware(SessionMiddleware)
@@ -47,18 +56,10 @@ def client(app) -> Generator[TestClient, None, None]:
         yield test_client
 
 
-@pytest.fixture
-def mock_session_manager():
-    """Mock session manager."""
-    with patch("app.middleware.session.get_session_manager") as mock:
-        manager = AsyncMock(spec=SessionManager)
-        mock.return_value = manager
-        yield manager
-
-
 class TestSessionMiddleware:
     """Test session middleware functionality."""
 
+    @pytest.mark.asyncio
     async def test_no_session_cookie(self, client, mock_session_manager):
         """Test request without session cookie."""
         response = client.get("/test")
@@ -69,6 +70,7 @@ class TestSessionMiddleware:
         assert data["session_id"] is None
         assert data["user_id"] is None
 
+    @pytest.mark.asyncio
     async def test_valid_session_cookie(self, client, mock_session_manager):
         """Test request with valid session cookie."""
         # Mock session validation and retrieval
@@ -92,6 +94,7 @@ class TestSessionMiddleware:
         mock_session_manager.validate_session.assert_called_once()
         mock_session_manager.get_session.assert_called_once_with("test_session_123")
 
+    @pytest.mark.asyncio
     async def test_invalid_session_cookie(self, client, mock_session_manager):
         """Test request with invalid session cookie."""
         # Mock invalid session
@@ -103,6 +106,7 @@ class TestSessionMiddleware:
         data = response.json()
         assert data["has_session"] is False
 
+    @pytest.mark.asyncio
     async def test_session_creation(self, client, mock_session_manager):
         """Test session creation during login."""
         response = client.post("/login")
@@ -114,10 +118,10 @@ class TestSessionMiddleware:
         cookie_value = response.cookies[SESSION_COOKIE_NAME]
         assert cookie_value == "test_session_123"
 
-        # Verify cookie attributes
-        cookie = response.cookies.get_dict()[SESSION_COOKIE_NAME]
         # Note: TestClient doesn't preserve all cookie attributes
+        # Just verify the cookie was set with the right value
 
+    @pytest.mark.asyncio
     async def test_session_deletion(self, client, mock_session_manager):
         """Test session deletion during logout."""
         response = client.post("/logout")
@@ -127,6 +131,7 @@ class TestSessionMiddleware:
         # TestClient doesn't handle cookie deletion well, so we check the logic
         # In a real test, you'd verify the cookie was cleared
 
+    @pytest.mark.asyncio
     async def test_session_rotation_recommendation(self, client, mock_session_manager):
         """Test session rotation when recommended."""
         # Mock session with rotation recommendation
@@ -143,6 +148,7 @@ class TestSessionMiddleware:
 
         assert response.status_code == 200
 
+    @pytest.mark.asyncio
     async def test_session_loading_error(self, client, mock_session_manager):
         """Test handling of session loading errors."""
         # Mock session manager to raise exception
@@ -155,6 +161,7 @@ class TestSessionMiddleware:
         data = response.json()
         assert data["has_session"] is False
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "cookie_attributes",
         [
