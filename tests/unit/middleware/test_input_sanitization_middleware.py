@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from app.middleware.input_sanitization import InputSanitizationMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture
@@ -56,9 +57,9 @@ def app():
 def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
-    from fastapi.testclient import TestClient as FastAPITestClient
+    from tests.utils.testclient import SafeTestClient
 
-    with FastAPITestClient(app) as test_client:
+    with SafeTestClient(app) as test_client:
         yield test_client
 
 

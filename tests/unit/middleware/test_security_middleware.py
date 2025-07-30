@@ -9,6 +9,7 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.middleware.security import SecurityHeadersMiddleware, setup_security_middleware
+from tests.utils.testclient import SafeTestClient
 
 
 class TestSecurityHeadersMiddleware:
@@ -33,9 +34,9 @@ class TestSecurityHeadersMiddleware:
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_security_headers_present(self, client: TestClient) -> None:
@@ -133,9 +134,9 @@ class TestSecurityHeadersMiddleware:
         monkeypatch.setattr("app.core.config.settings.ENVIRONMENT", "development")
         setup_security_middleware(app_dev)
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client_dev = FastAPITestClient(app_dev)
+        client_dev = SafeTestClient(app_dev)
         response_dev = client_dev.get("/test")
 
         # In development, CSP might allow unsafe-inline for scripts
@@ -218,9 +219,9 @@ class TestSecurityHeadersMiddleware:
         # For now, this test documents the possibility
         setup_security_middleware(app)
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client = FastAPITestClient(app)
+        client = SafeTestClient(app)
         response = client.get("/test")
 
         # Regular CSP header should be present
@@ -242,9 +243,9 @@ class TestTrustedHostMiddleware:
 
         setup_security_middleware(app)
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client = FastAPITestClient(app)
+        client = SafeTestClient(app)
 
         # Basic test that the middleware doesn't break normal requests
         response = client.get("/test")

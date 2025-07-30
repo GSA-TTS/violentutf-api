@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from starlette.datastructures import Headers, MutableHeaders
 
 from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRF_TOKEN_LENGTH, CSRFProtectionMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture
@@ -47,9 +48,9 @@ def app():
 def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
-    from fastapi.testclient import TestClient as FastAPITestClient
+    from tests.utils.testclient import SafeTestClient
 
-    with FastAPITestClient(app) as test_client:
+    with SafeTestClient(app) as test_client:
         yield test_client
 
 

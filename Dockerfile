@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for ViolentUTF API
 
 # Build stage - uses full image with gcc pre-installed
-FROM python:3.11 as builder
+FROM python:3.12 as builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Runtime base stage - uses slim image for security
-FROM python:3.11-slim as base
+FROM python:3.12-slim as base
 
 WORKDIR /app
 

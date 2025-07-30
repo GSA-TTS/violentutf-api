@@ -18,6 +18,7 @@ from app.core.errors import ValidationError as APIValidationError
 from app.core.errors import (
     setup_error_handlers,
 )
+from tests.utils.testclient import SafeTestClient
 
 
 class TestModel(BaseModel):
@@ -90,7 +91,7 @@ class TestErrorHandling:
 
     def test_api_error(self, error_app: FastAPI) -> None:
         """Test custom API error handling."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/api-error")
 
         assert response.status_code == 418
@@ -102,7 +103,7 @@ class TestErrorHandling:
 
     def test_bad_request_error(self, error_app: FastAPI) -> None:
         """Test bad request error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/bad-request")
 
         assert response.status_code == 400
@@ -112,7 +113,7 @@ class TestErrorHandling:
 
     def test_unauthorized_error(self, error_app: FastAPI) -> None:
         """Test unauthorized error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/unauthorized")
 
         assert response.status_code == 401
@@ -123,7 +124,7 @@ class TestErrorHandling:
 
     def test_forbidden_error(self, error_app: FastAPI) -> None:
         """Test forbidden error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/forbidden")
 
         assert response.status_code == 403
@@ -133,7 +134,7 @@ class TestErrorHandling:
 
     def test_not_found_error(self, error_app: FastAPI) -> None:
         """Test not found error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/not-found")
 
         assert response.status_code == 404
@@ -143,7 +144,7 @@ class TestErrorHandling:
 
     def test_conflict_error(self, error_app: FastAPI) -> None:
         """Test conflict error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/conflict")
 
         assert response.status_code == 409
@@ -153,7 +154,7 @@ class TestErrorHandling:
 
     def test_validation_error(self, error_app: FastAPI) -> None:
         """Test API validation error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/validation-error")
 
         assert response.status_code == 422
@@ -163,7 +164,7 @@ class TestErrorHandling:
 
     def test_internal_server_error(self, error_app: FastAPI) -> None:
         """Test internal server error."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.get("/test/internal-error")
 
         assert response.status_code == 500
@@ -173,7 +174,7 @@ class TestErrorHandling:
 
     def test_pydantic_validation_error(self, error_app: FastAPI) -> None:
         """Test Pydantic validation error handling."""
-        client = TestClient(error_app)
+        client = SafeTestClient(error_app)
         response = client.post("/test/pydantic-validation", json={"name": "John", "age": "not-a-number"})
 
         assert response.status_code == 422
@@ -191,7 +192,7 @@ class TestErrorHandling:
 
     def test_unhandled_exception(self, error_app: FastAPI) -> None:
         """Test unhandled exception handling."""
-        client = TestClient(error_app, raise_server_exceptions=False)
+        client = SafeTestClient(error_app, raise_server_exceptions=False)
         response = client.get("/test/unhandled")
 
         assert response.status_code == 500
@@ -209,7 +210,7 @@ class TestErrorHandling:
         async def raise_error() -> None:
             raise RuntimeError("Secret internal error")
 
-        client = TestClient(app, raise_server_exceptions=False)
+        client = SafeTestClient(app, raise_server_exceptions=False)
         response = client.get("/test/error")
 
         assert response.status_code == 500

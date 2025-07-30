@@ -11,6 +11,7 @@ from prometheus_client import REGISTRY
 
 from app.core.config import settings
 from app.middleware.metrics import ACTIVE_REQUESTS, REQUEST_COUNT, REQUEST_DURATION, MetricsMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 class TestMetricsMiddleware:
@@ -60,9 +61,9 @@ class TestMetricsMiddleware:
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     @pytest.fixture(autouse=True)
@@ -86,9 +87,9 @@ class TestMetricsMiddleware:
             return {"message": "test"}
 
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client = FastAPITestClient(app)
+        client = SafeTestClient(app)
 
         # Make request
         response = client.get("/test")
@@ -251,9 +252,9 @@ class TestMetricsMiddleware:
 
         def make_request(path: str) -> int:
             # Import TestClient locally to ensure correct resolution
-            from fastapi.testclient import TestClient as FastAPITestClient
+            from tests.utils.testclient import SafeTestClient
 
-            client = FastAPITestClient(app)
+            client = SafeTestClient(app)
             response = client.get(path)
             return response.status_code
 

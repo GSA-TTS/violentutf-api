@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.core.session import SESSION_COOKIE_NAME, SessionManager
 from app.middleware.session import SessionMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture
@@ -53,9 +54,9 @@ def app(mock_session_manager):
 def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
-    from fastapi.testclient import TestClient as FastAPITestClient
+    from tests.utils.testclient import SafeTestClient
 
-    with FastAPITestClient(app) as test_client:
+    with SafeTestClient(app) as test_client:
         yield test_client
 
 

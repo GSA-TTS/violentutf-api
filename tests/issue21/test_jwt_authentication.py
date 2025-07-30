@@ -28,6 +28,7 @@ from app.core.security import (
     verify_password,
 )
 from app.main import app
+from tests.utils.testclient import SafeTestClient
 
 
 class TestIssue21JWTAuthentication:
@@ -37,9 +38,9 @@ class TestIssue21JWTAuthentication:
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_jwt_token_generation(self):
@@ -292,9 +293,9 @@ class TestIssue21IntegrationScenarios:
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_complete_authentication_flow_simulation(self):

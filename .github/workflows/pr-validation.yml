@@ -28,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install all quality tools
@@ -71,7 +71,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ['3.10', '3.11']
+        python: ['3.11', '3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
           python scripts/run_tests_windows.py --test-dir tests/unit
 
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.xml
@@ -117,7 +117,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install API test deps
         run: |

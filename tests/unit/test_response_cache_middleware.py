@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
 from app.middleware.response_cache import ResponseCacheMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture
@@ -375,9 +376,9 @@ class TestResponseCacheIntegration:
         app.add_middleware(ResponseCacheMiddleware, default_ttl=300, cache_patterns={"/api/v1/users": 600})
 
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as client:
+        with SafeTestClient(app) as client:
             response = client.get("/api/v1/users")
 
             # Basic assertions - the endpoint should work
@@ -403,9 +404,9 @@ class TestResponseCacheIntegration:
             mock_settings.ENABLE_RESPONSE_CACHE = True
 
             # Import TestClient locally to ensure correct resolution
-            from fastapi.testclient import TestClient as FastAPITestClient
+            from tests.utils.testclient import SafeTestClient
 
-            with FastAPITestClient(app) as client:
+            with SafeTestClient(app) as client:
                 response = client.get("/api/v1/users")
 
                 # Should return cached response
@@ -422,9 +423,9 @@ class TestResponseCacheIntegration:
         with patch.object(cache_middleware, "_invalidate_cache_pattern") as mock_invalidate:
 
             # Import TestClient locally to ensure correct resolution
-            from fastapi.testclient import TestClient as FastAPITestClient
+            from tests.utils.testclient import SafeTestClient
 
-            with FastAPITestClient(app) as client:
+            with SafeTestClient(app) as client:
                 # POST request should trigger invalidation
                 response = client.post("/api/v1/users")
 

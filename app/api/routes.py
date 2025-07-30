@@ -4,15 +4,7 @@ from typing import Any, Dict
 
 from fastapi import APIRouter
 
-from .endpoints import (
-    api_keys,
-    audit_logs,
-    auth,
-    health,
-    sessions,
-    upload,
-    users,
-)
+from .endpoints import api_keys, audit_logs, auth, health, sessions, upload, users
 
 api_router = APIRouter()
 

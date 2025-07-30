@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from structlog.testing import capture_logs
 
 from app.middleware.request_id import RequestIDMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 class TestRequestIDMiddleware:
@@ -45,9 +46,9 @@ class TestRequestIDMiddleware:
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_request_id_generated(self, client: TestClient) -> None:
@@ -114,9 +115,9 @@ class TestRequestIDMiddleware:
             await asyncio.sleep(0.1)
             return {"message": "slow"}
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client = FastAPITestClient(app)
+        client = SafeTestClient(app)
 
         with capture_logs() as cap_logs:
             start_time = time.time()
@@ -175,9 +176,9 @@ class TestRequestIDMiddleware:
             context = get_request_context()
             return {"request_id": getattr(request.state, "request_id", None), "context": context}
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        client = FastAPITestClient(app)
+        client = SafeTestClient(app)
         response = client.get("/context-test")
 
         assert response.status_code == 200
@@ -205,9 +206,9 @@ class TestRequestIDMiddleware:
         results = []
 
         def make_request(custom_id: str) -> str:
-            from fastapi.testclient import TestClient as FastAPITestClient
+            from tests.utils.testclient import SafeTestClient
 
-            client = FastAPITestClient(app)
+            client = SafeTestClient(app)
             response = client.get("/test", headers={"X-Request-ID": custom_id})
             return response.headers["X-Request-ID"]
 

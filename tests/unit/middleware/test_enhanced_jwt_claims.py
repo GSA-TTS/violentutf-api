@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from app.core.security import create_access_token, decode_token
 from app.middleware.authentication import JWTAuthenticationMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 class TestEnhancedJWTClaims:
@@ -42,9 +43,9 @@ class TestEnhancedJWTClaims:
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def create_enhanced_jwt_token(

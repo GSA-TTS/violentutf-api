@@ -30,6 +30,7 @@ from app.middleware.authentication import (
     get_current_user_id,
     require_auth,
 )
+from tests.utils.testclient import SafeTestClient
 
 
 class TestJWTAuthenticationMiddleware:
@@ -77,10 +78,10 @@ class TestJWTAuthenticationMiddleware:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        # Use SafeTestClient to avoid pytest-httpx conflicts
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     @pytest_asyncio.fixture
@@ -166,7 +167,7 @@ class TestJWTAuthenticationMiddleware:
         async def register() -> Dict[str, str]:
             return {"register": "success"}
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient as FastAPITestClient
 
         with FastAPITestClient(app) as client:
             # Both should be exempt (startswith "/api/v1/auth")
@@ -502,7 +503,7 @@ class TestJWTAuthenticationMiddleware:
         async def users_public() -> Dict[str, str]:
             return {"data": "protected"}
 
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient as FastAPITestClient
 
         with FastAPITestClient(app) as client:
             # Should require authentication (not exactly matching exempt/protected paths)
@@ -638,10 +639,10 @@ class TestSecurityLogging:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        # Use SafeTestClient to avoid pytest-httpx conflicts
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     @patch("app.middleware.authentication.logger")

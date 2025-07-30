@@ -18,6 +18,7 @@ from app.middleware.csrf import (
     exempt_from_csrf,
     get_csrf_token,
 )
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture

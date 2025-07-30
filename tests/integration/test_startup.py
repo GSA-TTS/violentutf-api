@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
+from tests.utils.testclient import SafeTestClient
+
 
 class TestApplicationStartup:
     """Test application startup and basic integration."""
@@ -43,9 +45,9 @@ class TestApplicationStartup:
         from app.main import create_application
 
         app = create_application()
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as client:
+        with SafeTestClient(app) as client:
             # OpenAPI endpoints should return 404
             response = client.get("/api/v1/openapi.json")
             assert response.status_code == 404

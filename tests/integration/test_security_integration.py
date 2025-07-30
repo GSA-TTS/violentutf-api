@@ -12,6 +12,7 @@ from app.middleware.csrf import CSRFProtectionMiddleware
 from app.middleware.input_sanitization import InputSanitizationMiddleware
 from app.middleware.request_signing import RequestSigner, RequestSigningMiddleware
 from app.middleware.session import SessionMiddleware
+from tests.utils.testclient import SafeTestClient
 
 
 @pytest.fixture

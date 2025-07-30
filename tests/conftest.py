@@ -26,21 +26,16 @@ from tests.test_fixtures import (  # noqa
     test_user,
 )
 
+# Import our safe TestClient
+from tests.utils.testclient import SafeTestClient
+
 
 @pytest.fixture(autouse=True)
-def ensure_testclient_import():
-    """Ensure TestClient is properly imported to avoid httpx Client confusion."""
-    # This forces the correct import early to avoid any confusion
-    from fastapi.testclient import TestClient as _TestClient
-
-    assert _TestClient.__module__ == "starlette.testclient"
-    yield
-
-
-@pytest.fixture
 def non_mocked_hosts():
-    """Configure pytest-httpx to not intercept local test requests."""
-    return ["test", "testserver", "localhost", "127.0.0.1", "app"]
+    """Configure pytest-httpx to not intercept TestClient requests."""
+    # This is critical - it tells pytest-httpx to NOT mock these hosts
+    # TestClient uses "testserver" as its default host
+    return ["test", "testserver", "localhost", "127.0.0.1", "app", "http://test", "http://testserver"]
 
 
 @pytest.fixture(scope="session")
@@ -144,10 +139,8 @@ def app(test_settings: Settings, test_db_manager: TestDatabaseManager) -> FastAP
 @pytest.fixture(scope="function")
 def client(app: FastAPI) -> Generator[TestClient, None, None]:
     """Create test client."""
-    # Import TestClient locally to ensure correct resolution
-    from fastapi.testclient import TestClient as FastAPITestClient
-
-    with FastAPITestClient(app) as test_client:
+    # Use SafeTestClient to avoid pytest-httpx conflicts
+    with SafeTestClient(app) as test_client:
         yield test_client
 
 

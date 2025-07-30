@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_application
+from tests.utils.testclient import SafeTestClient
 
 
 class TestEnhancedHealthEndpoints:
@@ -17,10 +18,10 @@ class TestEnhancedHealthEndpoints:
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client with enhanced health endpoints."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
         app = create_application()
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_health_check_basic(self, client: TestClient) -> None:
@@ -314,10 +315,10 @@ class TestHealthCheckTracking:
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
         app = create_application()
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     @patch("app.utils.monitoring.health_check_total")
@@ -375,10 +376,10 @@ class TestHealthEndpointIntegration:
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         # Import TestClient locally to ensure correct resolution
-        from fastapi.testclient import TestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
         app = create_application()
-        with FastAPITestClient(app) as test_client:
+        with SafeTestClient(app) as test_client:
             yield test_client
 
     def test_all_health_endpoints_accessible(self, client: TestClient) -> None:
