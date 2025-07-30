@@ -84,12 +84,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-timeout pytest-xdist
+          pip install -r requirements-test.txt
+          pip install pytest-xdist  # Additional dependency for parallel testing
 
       - name: Run tests (Unix)
         if: runner.os != 'Windows'
         run: |
-          pytest tests/unit/ -v --cov=violentutf_api \
+          pytest tests/unit/ -v --cov=app \
             --cov-report=xml --timeout=300 -n auto
 
       - name: Run tests (Windows)
@@ -119,7 +120,8 @@ jobs:
 
       - name: Install API test deps
         run: |
-          pip install pytest httpx pydantic
+          pip install -r requirements-test.txt
+          pip install httpx pydantic
           pip install jsonschema openapi-spec-validator
 
       - name: Run contract tests
