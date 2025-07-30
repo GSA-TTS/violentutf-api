@@ -93,7 +93,8 @@ class CircuitBreaker:
         """Check and perform state transitions."""
         if self.state == CircuitState.CLOSED:
             if (
-                self.stats.failure_count >= self.config.failure_threshold
+                self.config.failure_threshold > 0
+                and self.stats.failure_count >= self.config.failure_threshold
                 and self.stats.last_failure_time
                 and time.time() - self.stats.last_failure_time < self.config.recovery_timeout
             ):
@@ -187,7 +188,11 @@ class CircuitBreaker:
 
             if self.state == CircuitState.HALF_OPEN:
                 await self._open_circuit()
-            elif self.state == CircuitState.CLOSED and self.stats.failure_count >= self.config.failure_threshold:
+            elif (
+                self.state == CircuitState.CLOSED
+                and self.config.failure_threshold > 0
+                and self.stats.failure_count >= self.config.failure_threshold
+            ):
                 await self._open_circuit()
 
             logger.warning(

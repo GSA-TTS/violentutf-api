@@ -82,6 +82,14 @@ class TestJWTAuthenticationMiddleware:
 
         return app
 
+    @pytest.fixture
+    def client(self, app: FastAPI) -> Generator["TestClient", None, None]:
+        """Create test client with authentication middleware."""
+        from tests.utils.testclient import SafeTestClient
+
+        with SafeTestClient(app) as test_client:
+            yield test_client
+
     @pytest_asyncio.fixture
     async def async_client(self, app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
         """Create async test client."""
