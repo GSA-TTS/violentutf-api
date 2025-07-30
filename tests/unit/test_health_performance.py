@@ -113,13 +113,13 @@ class TestHealthEndpointPerformance:
 
             # First request should use cache
             transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            start_time = time.time()
-            response = await client.get("/api/v1/ready")
-            duration = (time.time() - start_time) * 1000
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                start_time = time.time()
+                response = await client.get("/api/v1/ready")
+                duration = (time.time() - start_time) * 1000
 
-            assert response.status_code == 200
-            assert duration < 200, f"Cached readiness check took {duration:.2f}ms"
+                assert response.status_code == 200
+                assert duration < 200, f"Cached readiness check took {duration:.2f}ms"
 
     @pytest.mark.asyncio
     async def test_parallel_health_checks_performance(self) -> None:

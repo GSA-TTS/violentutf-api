@@ -1,15 +1,21 @@
 """Tests for security headers middleware."""
 
-from typing import Any, Dict, Generator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict, Generator
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from starlette.responses import Response
 
 from app.core.config import settings
 from app.middleware.security import SecurityHeadersMiddleware, setup_security_middleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestSecurityHeadersMiddleware:
@@ -29,15 +35,6 @@ class TestSecurityHeadersMiddleware:
         setup_security_middleware(app)
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     def test_security_headers_present(self, client: TestClient) -> None:
         """Test that security headers are added to responses."""

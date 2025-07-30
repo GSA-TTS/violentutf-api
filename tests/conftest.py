@@ -1,14 +1,18 @@
 """Pytest configuration and fixtures."""
 
+from __future__ import annotations
+
 import asyncio
 import os
-from typing import AsyncGenerator, Generator
+from typing import TYPE_CHECKING, AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 from app.core.config import Settings, get_settings
 from app.main import create_application

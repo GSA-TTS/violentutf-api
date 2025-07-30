@@ -20,7 +20,7 @@ from app.middleware.session import (
 @pytest.fixture
 def mock_request():
     """Create mock request."""
-    request = MagicMock(spec=Request)
+    request = Mock(spec=Request)
     request.state = State()
     request.cookies = {}
     request.headers = Headers({})

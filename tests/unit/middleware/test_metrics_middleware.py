@@ -1,17 +1,23 @@
 """Tests for metrics collection middleware."""
 
+from __future__ import annotations
+
 import asyncio
-from typing import Any, Dict, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator
 from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from prometheus_client import REGISTRY
 
 from app.core.config import settings
 from app.middleware.metrics import ACTIVE_REQUESTS, REQUEST_COUNT, REQUEST_DURATION, MetricsMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestMetricsMiddleware:
@@ -57,15 +63,6 @@ class TestMetricsMiddleware:
 
         return app
 
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
-
     @pytest.fixture(autouse=True)
     def reset_metrics(self) -> None:
         """Reset metrics before each test."""
@@ -98,7 +95,7 @@ class TestMetricsMiddleware:
         # Metrics should not be collected
         # This is hard to test directly, but the middleware should return early
 
-    def test_request_count_metric(self, client: TestClient) -> None:
+    def test_request_count_metric(self, client: "TestClient") -> None:
         """Test that request count is tracked."""
         # Make several requests
         client.get("/test")
@@ -122,7 +119,7 @@ class TestMetricsMiddleware:
         ]
         assert any(s.value == 2 for s in get_200_samples)
 
-    def test_request_duration_metric(self, client: TestClient) -> None:
+    def test_request_duration_metric(self, client: "TestClient") -> None:
         """Test that request duration is tracked."""
         # Make a request
         client.get("/test")
@@ -150,7 +147,7 @@ class TestMetricsMiddleware:
         ACTIVE_REQUESTS.dec()
         assert ACTIVE_REQUESTS._value.get() == initial_value
 
-    def test_endpoint_normalization(self, client: TestClient) -> None:
+    def test_endpoint_normalization(self, client: "TestClient") -> None:
         """Test that endpoints with IDs are normalized."""
         # Make requests with different IDs
         client.get("/test/123")
@@ -167,7 +164,7 @@ class TestMetricsMiddleware:
         # Should have total count of 3
         assert any(s.value == 3 for s in test_id_samples)
 
-    def test_metrics_endpoint_excluded(self, client: TestClient) -> None:
+    def test_metrics_endpoint_excluded(self, client: "TestClient") -> None:
         """Test that /metrics endpoint itself is not tracked."""
         # Make request to metrics endpoint
         client.get("/metrics")
@@ -180,7 +177,7 @@ class TestMetricsMiddleware:
 
         assert len(metrics_samples) == 0
 
-    def test_error_requests_tracked(self, client: TestClient) -> None:
+    def test_error_requests_tracked(self, client: "TestClient") -> None:
         """Test that failed requests are tracked with 500 status."""
         # Make request that will error
         with pytest.raises(ValueError):
@@ -195,7 +192,7 @@ class TestMetricsMiddleware:
         assert len(error_samples) > 0
         assert any(s.value == 1 for s in error_samples)
 
-    def test_http_exception_tracked(self, client: TestClient) -> None:
+    def test_http_exception_tracked(self, client: "TestClient") -> None:
         """Test that HTTP exceptions are tracked with correct status."""
         # Make request that raises HTTPException
         response = client.get("/http-error")
@@ -208,7 +205,7 @@ class TestMetricsMiddleware:
         # Note: HTTPException might not be caught by middleware
         # It depends on the order of middleware and exception handlers
 
-    def test_different_methods_tracked(self, client: TestClient) -> None:
+    def test_different_methods_tracked(self, client: "TestClient") -> None:
         """Test that different HTTP methods are tracked separately."""
         # Make requests with different methods
         client.get("/test")
@@ -226,7 +223,7 @@ class TestMetricsMiddleware:
         post_samples = [s for s in samples if s.labels.get("method") == "POST" and s.labels.get("endpoint") == "/test"]
         assert any(s.value == 1 for s in post_samples)
 
-    def test_slow_request_duration(self, client: TestClient) -> None:
+    def test_slow_request_duration(self, client: "TestClient") -> None:
         """Test that slow requests have accurate duration."""
         # Make slow request
         client.get("/slow")
@@ -274,7 +271,7 @@ class TestMetricsMiddleware:
         # Should have total of 10 requests
         assert any(s.value == 10 for s in test_samples)
 
-    def test_path_parameter_variations(self, client: TestClient) -> None:
+    def test_path_parameter_variations(self, client: "TestClient") -> None:
         """Test various path parameter formats are normalized."""
         # Test different ID formats
         paths_and_ids = [
@@ -294,7 +291,7 @@ class TestMetricsMiddleware:
         # Should have count equal to number of requests
         assert any(s.value == len(paths_and_ids) for s in normalized_samples)
 
-    def test_metric_labels(self, client: TestClient) -> None:
+    def test_metric_labels(self, client: "TestClient") -> None:
         """Test that metrics have correct labels."""
         client.get("/test")
 

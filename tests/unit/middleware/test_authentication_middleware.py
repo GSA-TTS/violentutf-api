@@ -5,17 +5,20 @@ addressing the critical security gap identified in test coverage analysis.
 Tests follow security-first design principles with comprehensive boundary testing.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, Generator, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Generator, Optional
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
+
+# TestClient is imported from conftest via fixture
 from httpx import ASGITransport, AsyncClient
 from starlette.responses import Response
 
@@ -30,6 +33,10 @@ from app.middleware.authentication import (
     get_current_user_id,
     require_auth,
 )
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
 from tests.utils.testclient import SafeTestClient
 
 
@@ -74,15 +81,6 @@ class TestJWTAuthenticationMiddleware:
             }
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Use SafeTestClient to avoid pytest-httpx conflicts
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     @pytest_asyncio.fixture
     async def async_client(self, app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
@@ -167,9 +165,9 @@ class TestJWTAuthenticationMiddleware:
         async def register() -> Dict[str, str]:
             return {"register": "success"}
 
-        from tests.utils.testclient import SafeTestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as client:
+        with SafeTestClient(app) as client:
             # Both should be exempt (startswith "/api/v1/auth")
             response = client.get("/api/v1/auth/login")
             assert response.status_code == 200
@@ -503,9 +501,9 @@ class TestJWTAuthenticationMiddleware:
         async def users_public() -> Dict[str, str]:
             return {"data": "protected"}
 
-        from tests.utils.testclient import SafeTestClient as FastAPITestClient
+        from tests.utils.testclient import SafeTestClient
 
-        with FastAPITestClient(app) as client:
+        with SafeTestClient(app) as client:
             # Should require authentication (not exactly matching exempt/protected paths)
             response = client.get("/api/v1/auth-similar")
             assert response.status_code == 401
@@ -585,6 +583,7 @@ class TestMiddlewareConfiguration:
     def test_exempt_paths_configuration(self) -> None:
         """Test that exempt paths are properly configured."""
         expected_paths = [
+            "/",  # Root endpoint
             "/api/v1/auth",
             "/api/v1/health",
             "/api/v1/ready",
@@ -635,15 +634,6 @@ class TestSecurityLogging:
             }
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Use SafeTestClient to avoid pytest-httpx conflicts
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     @patch("app.middleware.authentication.logger")
     def test_missing_token_logged(self, mock_logger, client: TestClient) -> None:

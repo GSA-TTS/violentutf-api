@@ -4,16 +4,17 @@ This module tests the interaction between all security middleware components
 to ensure they work correctly together and don't interfere with each other.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import time
-from typing import Dict, Generator, List
+from typing import TYPE_CHECKING, Dict, Generator, List
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
 
 from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRFProtectionMiddleware
 from app.middleware.input_sanitization import InputSanitizationMiddleware
@@ -23,6 +24,11 @@ from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.request_signing import RequestSigningMiddleware
 from app.middleware.session import SessionMiddleware
 from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -70,7 +76,7 @@ def app():
 
 
 @pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
+def client(app) -> Generator["TestClient", None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
     from tests.utils.testclient import SafeTestClient

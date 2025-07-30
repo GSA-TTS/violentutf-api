@@ -1,14 +1,20 @@
 """Tests for CSRF protection middleware."""
 
-from typing import Generator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generator
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRFProtectionMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 @pytest.fixture
@@ -33,7 +39,7 @@ def app():
 
 
 @pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
+def client(app) -> Generator["TestClient", None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
     from tests.utils.testclient import SafeTestClient

@@ -528,6 +528,9 @@ class NonceCache:
 # Global nonce cache
 nonce_cache = NonceCache()
 
+# Global signature key store
+signature_key_store = SignatureKeyStore()
+
 
 def get_request_info(
     method: str,

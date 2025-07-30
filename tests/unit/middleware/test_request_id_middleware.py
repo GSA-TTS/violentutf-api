@@ -1,18 +1,24 @@
 """Tests for request ID middleware."""
 
+from __future__ import annotations
+
 import asyncio
 import re
 import time
-from typing import Any, Dict, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator
 from unittest.mock import Mock, patch
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from fastapi import FastAPI, Request
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from structlog.testing import capture_logs
 
 from app.middleware.request_id import RequestIDMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestRequestIDMiddleware:
@@ -41,15 +47,6 @@ class TestRequestIDMiddleware:
             raise ValueError("Test error")
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     def test_request_id_generated(self, client: TestClient) -> None:
         """Test that request ID is generated when not provided."""
@@ -166,8 +163,6 @@ class TestRequestIDMiddleware:
 
     def test_logging_context_set(self, app: FastAPI) -> None:
         """Test that logging context is set correctly."""
-        from fastapi import Request
-
         from app.core.logging import get_request_context
 
         # Create a test endpoint that checks the logging context
@@ -225,7 +220,6 @@ class TestRequestIDMiddleware:
 
     def test_request_state_accessible(self, app: FastAPI, client: TestClient) -> None:
         """Test that request ID is accessible via request.state."""
-        from fastapi import Request
 
         @app.get("/check-state")
         async def check_state(request: Request) -> Dict[str, str]:

@@ -1,14 +1,15 @@
 """Tests for request signing middleware."""
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 import time
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from app.middleware.body_cache import BodyCachingMiddleware
 from app.middleware.request_signing import (
@@ -20,6 +21,12 @@ from app.middleware.request_signing import (
     RequestSigningMiddleware,
 )
 from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
+
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 @pytest.fixture

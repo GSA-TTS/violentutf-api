@@ -27,6 +27,7 @@ PROTECTED_PATHS: List[str] = [
 
 # Paths that don't require authentication
 EXEMPT_PATHS: List[str] = [
+    "/",  # Root endpoint
     "/api/v1/auth",
     "/api/v1/health",
     "/api/v1/ready",

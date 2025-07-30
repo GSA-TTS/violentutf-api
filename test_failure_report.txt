@@ -1,0 +1,176 @@
+COMPREHENSIVE TEST FAILURE ANALYSIS
+================================================================================
+
+Summary: 90/146 tests passing (61.6%)
+Failed: 28, Errors: 28
+
+FAILURES BY ERROR TYPE
+--------------------------------------------------------------------------------
+
+Other (14 failures):
+  - tests/security/test_input_validation.py::TestValidationDecorators::test_validate_auth_request_decorator
+  - tests/security/test_input_validation.py::TestValidationDecorators::test_validate_ai_request_decorator
+  - tests/security/test_input_validation.py::TestValidationDecorators::test_prevent_sql_injection_decorator
+
+AttributeError (7 failures):
+  - tests/security/test_input_validation.py::TestValidationConfiguration::test_validation_config_defaults
+    Missing: 'ValidationConfig' object has no attribute 'check_sql_injection'
+  - tests/security/test_input_validation.py::TestValidationConfiguration::test_custom_validation_config
+    Missing: 'ValidationConfig' object has no attribute 'check_sql_injection'
+  - tests/security/test_input_validation_enhanced.py::TestValidationConfig::test_default_config
+    Missing: 'ValidationConfig' object has no attribute 'check_sql_injection'
+
+ValidationError (1 failures):
+  - tests/security/test_input_validation_enhanced.py::TestValidationConfig::test_config_with_custom_validators
+
+TypeError (1 failures):
+  - tests/security/test_input_validation_enhanced.py::TestValidationDecorators::test_validate_request_data_field_configs
+
+AssertionError (5 failures):
+  - tests/security/test_input_validation_enhanced.py::TestValidationDecorators::test_prevent_sql_injection_path_params
+  - tests/security/test_input_validation_enhanced.py::TestValidationUtilities::test_check_sql_injection_patterns
+  - tests/security/test_input_validation_enhanced.py::TestValidationUtilities::test_validate_email_formats
+
+
+SETUP ERRORS
+--------------------------------------------------------------------------------
+
+Setup (28 errors):
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_request_body_sanitization
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_query_param_sanitization
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_header_sanitization
+
+
+SPECIFIC PATTERNS TO FIX
+--------------------------------------------------------------------------------
+
+missing_attribute (5 issues):
+  - tests/security/test_input_validation.py::TestValidationConfiguration::test_validation_config_defaults
+    Missing: check_sql_injection
+  - tests/security/test_input_validation.py::TestValidationConfiguration::test_custom_validation_config
+    Missing: check_sql_injection
+  - tests/security/test_input_validation_enhanced.py::TestValidationConfig::test_default_config
+    Missing: check_sql_injection
+  - tests/security/test_input_validation_enhanced.py::TestValidationConfig::test_custom_config
+    Missing: check_sql_injection
+  - tests/security/test_security_integration.py::TestSecurityMonitoring::test_security_events_logged
+    Missing: validation
+
+assertion_failed (13 issues):
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_header_sanitization
+  - tests/security/test_input_validation.py::TestValidationIntegration::test_auth_endpoint_validation
+  - tests/security/test_input_validation.py::TestValidationIntegration::test_request_size_limits
+  - tests/security/test_input_validation.py::TestValidationPerformance::test_large_payload_validation
+  - tests/security/test_input_validation_enhanced.py::TestValidationDecorators::test_prevent_sql_injection_path_params
+
+fixture_error (2 issues):
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_request_body_sanitization
+  - tests/security/test_input_validation.py::TestInputSanitizationMiddleware::test_query_param_sanitization
+
+
+FAILURES BY TEST CLASS
+--------------------------------------------------------------------------------
+
+tests/security/test_input_validation.py::TestInputSanitizationMiddleware (3 failures):
+  - test_request_body_sanitization [error]
+  - test_query_param_sanitization [error]
+  - test_header_sanitization [error]
+
+tests/security/test_input_validation.py::TestValidationConfiguration (2 failures):
+  - test_validation_config_defaults [failed]
+  - test_custom_validation_config [failed]
+
+tests/security/test_input_validation.py::TestValidationDecorators (3 failures):
+  - test_validate_auth_request_decorator [failed]
+  - test_validate_ai_request_decorator [failed]
+  - test_prevent_sql_injection_decorator [failed]
+
+tests/security/test_input_validation.py::TestValidationIntegration (2 failures):
+  - test_auth_endpoint_validation [error]
+  - test_request_size_limits [error]
+
+tests/security/test_input_validation.py::TestValidationPerformance (1 failures):
+  - test_large_payload_validation [failed]
+
+tests/security/test_input_validation_enhanced.py::TestSecureFieldTypes (2 failures):
+  - test_secure_string_field_type_validation [failed]
+  - test_secure_url_field_invalid [failed]
+
+tests/security/test_input_validation_enhanced.py::TestValidationConfig (3 failures):
+  - test_default_config [failed]
+  - test_custom_config [failed]
+  - test_config_with_custom_validators [failed]
+
+tests/security/test_input_validation_enhanced.py::TestValidationDecorators (5 failures):
+  - test_validate_request_data_field_configs [failed]
+  - test_validate_auth_request_decorator [failed]
+  - test_validate_ai_request_decorator [failed]
+  - test_prevent_sql_injection_decorator [failed]
+  - test_prevent_sql_injection_path_params [failed]
+
+tests/security/test_input_validation_enhanced.py::TestValidationEdgeCases (1 failures):
+  - test_empty_input_validation [failed]
+
+tests/security/test_input_validation_enhanced.py::TestValidationIntegration (1 failures):
+  - test_validation_in_request_pipeline [failed]
+
+tests/security/test_input_validation_enhanced.py::TestValidationUtilities (7 failures):
+  - test_check_sql_injection_patterns [failed]
+  - test_check_xss_injection_patterns [failed]
+  - test_check_prompt_injection_patterns [failed]
+  - test_validate_email_formats [failed]
+  - test_validate_input_length [failed]
+  - test_validate_json_payload [failed]
+  - test_comprehensive_input_validation [failed]
+
+tests/security/test_security_integration.py::TestEndToEndSecurityScenarios (1 failures):
+  - test_legitimate_user_scenario [failed]
+
+tests/security/test_security_integration.py::TestSecurityConfiguration (1 failures):
+  - test_validation_configuration [failed]
+
+tests/security/test_security_integration.py::TestSecurityMonitoring (1 failures):
+  - test_security_events_logged [failed]
+
+tests/security/test_security_integration_enhanced.py::TestAuthenticationFlowIntegration (3 failures):
+  - test_login_with_rate_limiting_and_validation [error]
+  - test_xss_prevention_in_login [error]
+  - test_input_size_limits [error]
+
+tests/security/test_security_integration_enhanced.py::TestCircuitBreakerIntegration (2 failures):
+  - test_circuit_breaker_with_external_api [error]
+  - test_circuit_breaker_recovery [error]
+
+tests/security/test_security_integration_enhanced.py::TestComplianceAndStandards (2 failures):
+  - test_owasp_top_10_coverage [error]
+  - test_api_security_best_practices [error]
+
+tests/security/test_security_integration_enhanced.py::TestPerformanceWithSecurity (2 failures):
+  - test_request_latency_with_security [error]
+  - test_concurrent_request_handling [error]
+
+tests/security/test_security_integration_enhanced.py::TestSearchEndpointIntegration (3 failures):
+  - test_search_sql_injection_prevention [error]
+  - test_search_with_complex_filters [error]
+  - test_search_rate_limiting [error]
+
+tests/security/test_security_integration_enhanced.py::TestSecurityFailureScenarios (2 failures):
+  - test_rate_limiting_redis_failure [error]
+  - test_input_sanitization_edge_cases [error]
+
+tests/security/test_security_integration_enhanced.py::TestSecurityHeadersIntegration (2 failures):
+  - test_security_headers_present [error]
+  - test_cors_headers_configuration [error]
+
+tests/security/test_security_integration_enhanced.py::TestSecurityIntegrationBasic (2 failures):
+  - test_all_middleware_loaded [error]
+  - test_health_endpoint_no_security [error]
+
+tests/security/test_security_integration_enhanced.py::TestSecurityMonitoring (2 failures):
+  - test_security_event_logging [error]
+  - test_security_metrics_collection [error]
+
+tests/security/test_security_integration_enhanced.py::TestUserCreationIntegration (3 failures):
+  - test_user_creation_requires_signing [error]
+  - test_user_creation_input_validation [error]
+  - test_user_creation_rate_limiting [error]

@@ -1,8 +1,13 @@
 """Test error handling."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from pydantic import BaseModel
 
 from app.core.errors import (
@@ -19,6 +24,9 @@ from app.core.errors import (
     setup_error_handlers,
 )
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestModel(BaseModel):

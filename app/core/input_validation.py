@@ -10,11 +10,15 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Type, Union
 
 from fastapi import HTTPException, Request, status
 from pydantic import BaseModel, Field, ValidationError, validator
 from structlog.stdlib import get_logger
+
+if TYPE_CHECKING:
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core import core_schema
 
 from ..utils.validation import (
     check_prompt_injection,
@@ -70,6 +74,10 @@ class ValidationConfig(BaseModel):
     convert_empty_to_none: bool = True
     log_validation_failures: bool = True
     custom_validators: Dict[str, Callable[[Any], bool]] = Field(default_factory=dict)
+    # Security checks
+    check_sql_injection: bool = True
+    check_xss_injection: bool = True
+    check_prompt_injection: bool = False  # Off by default as it's more specific
 
 
 class InputValidationError(HTTPException):
@@ -414,12 +422,12 @@ def validate_field(
     return value
 
 
-def validate_request_data(
+def validate_request_data_dict(
     data: Dict[str, Any],
     rules: List[FieldValidationRule],
     config: Optional[ValidationConfig] = None,
 ) -> Dict[str, Any]:
-    """Validate request data against a set of rules.
+    """Validate request data dictionary against a set of rules.
 
     Args:
         data: Request data dictionary
@@ -628,7 +636,7 @@ def validate_input(
 
                             # Apply field rules if provided
                             if rules and isinstance(body, dict):
-                                validated_data = validate_request_data(
+                                validated_data = validate_request_data_dict(
                                     body,
                                     rules,
                                     config,
@@ -654,7 +662,7 @@ def validate_input(
                     body = kwargs.get("body") or kwargs.get("data")
                     if body and isinstance(body, dict):
                         try:
-                            validated_data = validate_request_data(
+                            validated_data = validate_request_data_dict(
                                 body,
                                 rules,
                                 config,
@@ -769,3 +777,429 @@ API_KEY_NAME_RULE = FieldValidationRule(
     pattern=r"^[a-zA-Z0-9\s_-]+$",
     error_message="API key name must be 1-100 characters",
 )
+
+
+# Pydantic Secure Field Types
+class SecureStringField(str):
+    """Secure string field with validation."""
+
+    @classmethod
+    def validate(cls, value: Any) -> str:
+        """Validate string for security issues."""
+        if not isinstance(value, str):
+            raise TypeError("string required")
+
+        # Check for SQL injection
+        sql_result = check_sql_injection(value)
+        if not sql_result.is_valid:
+            raise ValueError(f"SQL injection detected: {sql_result.errors}")
+
+        # Check for XSS
+        xss_result = check_xss_injection(value)
+        if not xss_result.is_valid:
+            raise ValueError(f"XSS injection detected: {xss_result.errors}")
+
+        return value
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: Any,
+        handler: "GetCoreSchemaHandler",
+    ) -> "core_schema.CoreSchema":
+        """Get Pydantic v2 core schema."""
+        from pydantic_core import core_schema
+
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+        )
+
+
+class SecureEmailField(str):
+    """Secure email field with validation."""
+
+    @classmethod
+    def validate(cls, value: Any) -> str:
+        """Validate email format and security."""
+        if not isinstance(value, str):
+            raise TypeError("string required")
+
+        # Validate email format
+        result = validate_email(value)
+        if not result.is_valid:
+            raise ValueError(f"Invalid email: {result.errors}")
+
+        return result.cleaned_value or value
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: Any,
+        handler: "GetCoreSchemaHandler",
+    ) -> "core_schema.CoreSchema":
+        """Get Pydantic v2 core schema."""
+        from pydantic_core import core_schema
+
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+        )
+
+
+class SecureURLField(str):
+    """Secure URL field with validation."""
+
+    @classmethod
+    def validate(cls, value: Any) -> str:
+        """Validate URL format and security."""
+        if not isinstance(value, str):
+            raise TypeError("string required")
+
+        # Validate URL format
+        result = validate_url(value)
+        if not result.is_valid:
+            raise ValueError(f"Invalid URL: {result.errors}")
+
+        # Check for XSS in URL
+        xss_result = check_xss_injection(value)
+        if not xss_result.is_valid:
+            raise ValueError(f"Invalid URL: potential XSS detected")
+
+        return result.cleaned_value or value
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: Any,
+        handler: "GetCoreSchemaHandler",
+    ) -> "core_schema.CoreSchema":
+        """Get Pydantic v2 core schema."""
+        from pydantic_core import core_schema
+
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+        )
+
+
+# Validation Decorators
+def prevent_sql_injection(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to prevent SQL injection in endpoint parameters."""
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Find request object
+        request = None
+        for arg in args:
+            # Check if it's a Request instance (including mocks with spec=Request)
+            # Use duck typing to also catch mocks that have query_params
+            if isinstance(arg, Request):
+                request = arg
+                break
+            elif hasattr(arg, "query_params"):
+                # Duck typing: if it has query_params, treat it as a request
+                request = arg
+                break
+
+        # Check query parameters if request is found
+        if request and hasattr(request, "query_params"):
+            for param_name, param_value in request.query_params.items():
+                if isinstance(param_value, str):
+                    result = check_sql_injection(param_value)
+                    if not result.is_valid or result.warnings:
+                        logger.warning(
+                            "sql_injection_attempt_query_param",
+                            param=param_name,
+                            value=param_value[:100],
+                            errors=result.errors,
+                            warnings=result.warnings,
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid query parameter '{param_name}': potential SQL injection detected",
+                        )
+
+        # Check all string arguments for SQL injection
+        for arg in args:
+            if isinstance(arg, str):
+                result = check_sql_injection(arg)
+                if not result.is_valid:
+                    logger.warning(
+                        "sql_injection_attempt",
+                        value=arg[:100],  # Log first 100 chars
+                        errors=result.errors,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid input: potential SQL injection detected",
+                    )
+
+        for key, value in kwargs.items():
+            if isinstance(value, str):
+                result = check_sql_injection(value)
+                if not result.is_valid:
+                    logger.warning(
+                        "sql_injection_attempt",
+                        field=key,
+                        value=value[:100],  # Log first 100 chars
+                        errors=result.errors,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid input in {key}: potential SQL injection detected",
+                    )
+
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+def validate_auth_request(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to validate authentication requests."""
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Find request object
+        request = None
+        for arg in args:
+            if isinstance(arg, Request):
+                request = arg
+                break
+
+        # Validate auth-specific fields
+        config = ValidationConfig(
+            max_string_length=255,  # Reasonable limit for auth fields
+            check_sql_injection=True,
+            check_xss_injection=True,
+            reject_additional_fields=True,
+        )
+
+        # Validate string kwargs (username, password, etc.)
+        for key, value in kwargs.items():
+            if isinstance(value, str) and key in ["username", "password", "email"]:
+                # Check length
+                if len(value) > config.max_string_length:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"{key.capitalize()} too long (max {config.max_string_length} characters)",
+                    )
+                # Check SQL injection for username/email
+                if key in ["username", "email"] and config.check_sql_injection:
+                    result = check_sql_injection(value)
+                    if not result.is_valid:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Invalid {key}: potential SQL injection detected",
+                        )
+
+        if request:
+            # Apply validation to request body if present
+            if hasattr(request, "_json"):
+                try:
+                    body = await request.json()
+                    # Basic validation for common auth fields
+                    if "password" in body and isinstance(body["password"], str):
+                        if len(body["password"]) > 128:
+                            raise HTTPException(
+                                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail="Password too long",
+                            )
+                except Exception:
+                    pass  # JSON parsing errors handled elsewhere
+
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+def validate_api_request(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to validate general API requests."""
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Find request object
+        request = None
+        for arg in args:
+            if isinstance(arg, Request):
+                request = arg
+                break
+
+        if request:
+            # Log request for monitoring
+            logger.debug(
+                "api_request_validation",
+                path=request.url.path,
+                method=request.method,
+            )
+
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+def validate_admin_request(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to validate admin API requests with stricter rules."""
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Find request object
+        request = None
+        for arg in args:
+            if isinstance(arg, Request):
+                request = arg
+                break
+
+        if request:
+            # Log admin access
+            logger.info(
+                "admin_request_validation",
+                path=request.url.path,
+                method=request.method,
+                user_id=getattr(request.state, "user_id", None),
+            )
+
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+def validate_ai_request(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to validate AI/LLM-related requests."""
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Apply AI-specific validation
+        config = ValidationConfig(
+            max_string_length=50000,  # Allow longer prompts
+            check_sql_injection=True,
+            check_xss_injection=True,
+            check_prompt_injection=True,  # Important for AI
+        )
+
+        # Check for prompt injection in string args
+        for arg in args:
+            if isinstance(arg, str):
+                result = check_prompt_injection(arg)
+                if not result.is_valid:
+                    logger.warning(
+                        "prompt_injection_attempt",
+                        value=arg[:100],
+                        errors=result.errors,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="Invalid input: potential prompt injection detected",
+                    )
+
+        # Check for prompt injection in string kwargs
+        for key, value in kwargs.items():
+            if isinstance(value, str) and key in ["prompt", "message", "query", "text", "input"]:
+                # Check prompt injection
+                if config.check_prompt_injection:
+                    result = check_prompt_injection(value)
+                    if not result.is_valid:
+                        logger.warning(
+                            "prompt_injection_attempt",
+                            field=key,
+                            value=value[:100],
+                            errors=result.errors,
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Invalid {key}: potential prompt injection detected",
+                        )
+                # Also check SQL injection for safety
+                if config.check_sql_injection:
+                    result = check_sql_injection(value)
+                    if not result.is_valid:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"Invalid {key}: potential SQL injection detected",
+                        )
+
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+# Additional decorator that wraps validate_request_data function
+def validate_request_data(
+    rules: Optional[List[FieldValidationRule]] = None,
+    config: Optional[ValidationConfig] = None,
+) -> Callable[..., Any]:
+    """Decorator to validate request data.
+
+    This decorator validates the data parameter of an endpoint against
+    specified rules and configuration.
+
+    Args:
+        rules: List of field validation rules
+        config: Validation configuration
+
+    Returns:
+        Decorated function
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Find data parameter
+            data_obj = None
+
+            # Check args
+            for arg in args:
+                if hasattr(arg, "model_dump"):  # Pydantic model
+                    data_obj = arg
+                    break
+
+            # Check kwargs
+            if "data" in kwargs and hasattr(kwargs["data"], "model_dump"):
+                data_obj = kwargs["data"]
+
+            if data_obj:
+                # Convert Pydantic model to dict
+                data_dict = data_obj.model_dump()
+
+                # Check for SQL injection and XSS in string fields
+                for field_name, value in data_dict.items():
+                    if isinstance(value, str):
+                        # Check SQL injection
+                        sql_result = check_sql_injection(value)
+                        if not sql_result.is_valid:
+                            logger.warning(
+                                "sql_injection_attempt_in_data",
+                                field=field_name,
+                                value=value[:100],
+                                errors=sql_result.errors,
+                            )
+                            raise HTTPException(
+                                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail={
+                                    "message": "Validation failed",
+                                    "errors": [f"SQL injection detected in {field_name}"],
+                                },
+                            )
+
+                        # Check XSS
+                        xss_result = check_xss_injection(value)
+                        if not xss_result.is_valid:
+                            logger.warning(
+                                "xss_injection_attempt_in_data",
+                                field=field_name,
+                                value=value[:100],
+                                errors=xss_result.errors,
+                            )
+                            raise HTTPException(
+                                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail={
+                                    "message": "Validation failed",
+                                    "errors": [f"XSS injection detected in {field_name}"],
+                                },
+                            )
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 import pytest
-from fastapi import status
+from fastapi import Request, status
 from httpx import AsyncClient
 
 from app.core.security import create_access_token, hash_password

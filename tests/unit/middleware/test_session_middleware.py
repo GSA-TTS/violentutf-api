@@ -1,15 +1,21 @@
 """Tests for session middleware."""
 
-from typing import Generator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.core.session import SESSION_COOKIE_NAME, SessionManager
 from app.middleware.session import SessionMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 @pytest.fixture
@@ -51,7 +57,7 @@ def app(mock_session_manager):
 
 
 @pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
+def client(app) -> Generator["TestClient", None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
     from tests.utils.testclient import SafeTestClient

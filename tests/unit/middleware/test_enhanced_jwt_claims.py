@@ -5,19 +5,25 @@ that now includes complete user context: sub, roles[], organization_id, type.
 Tests validate RBAC/ABAC foundations and security claim processing.
 """
 
+from __future__ import annotations
+
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.core.security import create_access_token, decode_token
 from app.middleware.authentication import JWTAuthenticationMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 class TestEnhancedJWTClaims:
@@ -38,15 +44,6 @@ class TestEnhancedJWTClaims:
             }
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     def create_enhanced_jwt_token(
         self,
@@ -81,7 +78,7 @@ class TestEnhancedJWTClaims:
 
     # Core Claims Structure Tests
 
-    def test_complete_claims_structure_validation(self, client: TestClient) -> None:
+    def test_complete_claims_structure_validation(self, client: "TestClient") -> None:
         """Test that complete enhanced claims structure is properly validated."""
         token = self.create_enhanced_jwt_token(
             user_id="user-456", roles=["viewer", "tester"], organization_id="org-789", token_type="access"
@@ -101,7 +98,7 @@ class TestEnhancedJWTClaims:
         assert payload["type"] == "access"
         assert "exp" in payload
 
-    def test_subject_claim_processing(self, client: TestClient) -> None:
+    def test_subject_claim_processing(self, client: "TestClient") -> None:
         """Test subject (sub) claim processing and injection."""
         test_cases = [
             "user-123",
@@ -122,7 +119,7 @@ class TestEnhancedJWTClaims:
             assert data["user_id"] == user_id
             assert data["token_payload"]["sub"] == user_id
 
-    def test_roles_array_processing_for_rbac(self, client: TestClient) -> None:
+    def test_roles_array_processing_for_rbac(self, client: "TestClient") -> None:
         """Test roles array processing for RBAC implementation."""
         role_test_cases = [
             ["viewer"],
@@ -145,7 +142,7 @@ class TestEnhancedJWTClaims:
             assert payload["roles"] == roles
             assert isinstance(payload["roles"], list)
 
-    def test_organization_id_processing_for_abac(self, client: TestClient) -> None:
+    def test_organization_id_processing_for_abac(self, client: "TestClient") -> None:
         """Test organization_id processing for ABAC implementation."""
         org_test_cases = [
             "org-123",
@@ -165,7 +162,7 @@ class TestEnhancedJWTClaims:
             payload = response.json()["token_payload"]
             assert payload["organization_id"] == org_id
 
-    def test_token_type_validation(self, client: TestClient) -> None:
+    def test_token_type_validation(self, client: "TestClient") -> None:
         """Test token type validation for access vs refresh tokens."""
         # Valid access token
         access_token = self.create_enhanced_jwt_token(token_type="access")
@@ -193,7 +190,7 @@ class TestEnhancedJWTClaims:
 
     # Claims Security Tests
 
-    def test_claims_injection_attack_prevention(self, client: TestClient) -> None:
+    def test_claims_injection_attack_prevention(self, client: "TestClient") -> None:
         """Test prevention of claims injection attacks."""
         # Attempt to inject malicious claims
         malicious_claims = {
@@ -220,7 +217,7 @@ class TestEnhancedJWTClaims:
         assert payload["admin"] is True
         assert payload["superuser"] is True
 
-    def test_claims_tampering_detection(self, client: TestClient) -> None:
+    def test_claims_tampering_detection(self, client: "TestClient") -> None:
         """Test detection of claims tampering attempts."""
         # Create valid token
         token = self.create_enhanced_jwt_token(roles=["viewer"])
@@ -241,7 +238,7 @@ class TestEnhancedJWTClaims:
             assert response.status_code == 401
             assert response.json()["detail"] == "Invalid authentication token"
 
-    def test_missing_required_claims_handling(self, client: TestClient) -> None:
+    def test_missing_required_claims_handling(self, client: "TestClient") -> None:
         """Test handling of tokens missing required claims."""
         # Create token with minimal payload (missing enhanced claims)
         minimal_payload = {
@@ -266,7 +263,7 @@ class TestEnhancedJWTClaims:
 
     # Claims Data Type Validation Tests
 
-    def test_roles_array_type_validation(self, client: TestClient) -> None:
+    def test_roles_array_type_validation(self, client: "TestClient") -> None:
         """Test that roles claim must be an array."""
         # Test with various invalid role types
         invalid_roles_payloads = [
@@ -285,7 +282,7 @@ class TestEnhancedJWTClaims:
             assert response.status_code == 200
             # Application logic should handle type validation appropriately
 
-    def test_organization_id_string_validation(self, client: TestClient) -> None:
+    def test_organization_id_string_validation(self, client: "TestClient") -> None:
         """Test that organization_id is properly handled as string or null."""
         org_id_test_cases = [
             "valid-org-123",
@@ -303,7 +300,7 @@ class TestEnhancedJWTClaims:
             payload = response.json()["token_payload"]
             assert payload["organization_id"] == org_id
 
-    def test_subject_claim_string_validation(self, client: TestClient) -> None:
+    def test_subject_claim_string_validation(self, client: "TestClient") -> None:
         """Test that subject claim is properly validated as string."""
         # Test various subject formats
         subject_test_cases = [
@@ -327,7 +324,7 @@ class TestEnhancedJWTClaims:
 
     # Multi-tenant Security Tests
 
-    def test_organization_isolation_context(self, client: TestClient) -> None:
+    def test_organization_isolation_context(self, client: "TestClient") -> None:
         """Test organization context for multi-tenant isolation."""
         # Test different organization contexts
         organizations = [
@@ -350,7 +347,7 @@ class TestEnhancedJWTClaims:
             assert payload["organization_id"] == org_id
             assert payload["sub"] == f"user-in-{org_id}"
 
-    def test_cross_organization_token_boundaries(self, client: TestClient) -> None:
+    def test_cross_organization_token_boundaries(self, client: "TestClient") -> None:
         """Test that organization boundaries are maintained in tokens."""
         # Create tokens for different organizations
         org_a_token = self.create_enhanced_jwt_token(user_id="user-a", roles=["admin"], organization_id="org-a")
@@ -377,7 +374,7 @@ class TestEnhancedJWTClaims:
 
     # Role-Based Access Control (RBAC) Foundation Tests
 
-    def test_rbac_role_hierarchies_in_claims(self, client: TestClient) -> None:
+    def test_rbac_role_hierarchies_in_claims(self, client: "TestClient") -> None:
         """Test RBAC role hierarchies are preserved in JWT claims."""
         role_hierarchies = [
             ["viewer"],  # Basic access
@@ -402,7 +399,7 @@ class TestEnhancedJWTClaims:
             for i, role in enumerate(roles):
                 assert payload["roles"][i] == role
 
-    def test_rbac_role_validation_patterns(self, client: TestClient) -> None:
+    def test_rbac_role_validation_patterns(self, client: "TestClient") -> None:
         """Test various role validation patterns for RBAC."""
         # Test valid role patterns
         valid_role_patterns = [
@@ -427,7 +424,7 @@ class TestEnhancedJWTClaims:
 
     # Attribute-Based Access Control (ABAC) Foundation Tests
 
-    def test_abac_attribute_context_preservation(self, client: TestClient) -> None:
+    def test_abac_attribute_context_preservation(self, client: "TestClient") -> None:
         """Test that ABAC attributes are preserved in JWT context."""
         abac_contexts = [
             {
@@ -463,7 +460,7 @@ class TestEnhancedJWTClaims:
 
     # Performance and Scale Tests
 
-    def test_large_roles_array_processing(self, client: TestClient) -> None:
+    def test_large_roles_array_processing(self, client: "TestClient") -> None:
         """Test processing of large roles arrays."""
         # Create large roles array
         large_roles = [f"role_{i}" for i in range(50)]
@@ -479,7 +476,7 @@ class TestEnhancedJWTClaims:
         assert payload["roles"][0] == "role_0"
         assert payload["roles"][-1] == "role_49"
 
-    def test_complex_organization_identifiers(self, client: TestClient) -> None:
+    def test_complex_organization_identifiers(self, client: "TestClient") -> None:
         """Test complex organization identifier formats."""
         complex_org_ids = [
             "org-123-456-789",
@@ -501,7 +498,7 @@ class TestEnhancedJWTClaims:
 
     # Integration with Existing JWT Infrastructure
 
-    def test_backwards_compatibility_with_legacy_claims(self, client: TestClient) -> None:
+    def test_backwards_compatibility_with_legacy_claims(self, client: "TestClient") -> None:
         """Test backwards compatibility with pre-enhancement JWT claims."""
         # Create token with minimal legacy claims
         legacy_payload = {
@@ -526,7 +523,7 @@ class TestEnhancedJWTClaims:
         assert payload.get("roles") is None
         assert payload.get("organization_id") is None
 
-    def test_enhanced_claims_with_additional_custom_fields(self, client: TestClient) -> None:
+    def test_enhanced_claims_with_additional_custom_fields(self, client: "TestClient") -> None:
         """Test enhanced claims structure with additional custom fields."""
         custom_claims = {
             "department": "cybersecurity",

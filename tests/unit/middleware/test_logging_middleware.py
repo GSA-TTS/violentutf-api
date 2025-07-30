@@ -1,17 +1,23 @@
 """Tests for logging middleware."""
 
+from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any, Dict, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator
 from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from structlog.testing import capture_logs
 
 from app.middleware.logging import LoggingMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestLoggingMiddleware:
@@ -57,16 +63,7 @@ class TestLoggingMiddleware:
 
         return app
 
-    @pytest.fixture
-    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
-
-    def test_request_logged(self, client: TestClient) -> None:
+    def test_request_logged(self, client: "TestClient") -> None:
         """Test that requests are logged."""
         with capture_logs() as cap_logs:
             response = client.get("/test")
@@ -85,7 +82,7 @@ class TestLoggingMiddleware:
         assert "query_params" in log
         assert "content_length" in log
 
-    def test_response_logged(self, client: TestClient) -> None:
+    def test_response_logged(self, client: "TestClient") -> None:
         """Test that responses are logged with timing."""
         with capture_logs() as cap_logs:
             response = client.get("/test")
@@ -106,7 +103,7 @@ class TestLoggingMiddleware:
         assert isinstance(log["duration_ms"], (int, float))
         assert log["duration_ms"] >= 0
 
-    def test_health_endpoints_not_logged(self, client: TestClient) -> None:
+    def test_health_endpoints_not_logged(self, client: "TestClient") -> None:
         """Test that health check endpoints are not logged."""
         with capture_logs() as cap_logs:
             # Make requests to health endpoints
@@ -116,7 +113,7 @@ class TestLoggingMiddleware:
         # Should not have any logs for these endpoints
         assert len(cap_logs) == 0
 
-    def test_query_params_logged(self, client: TestClient) -> None:
+    def test_query_params_logged(self, client: "TestClient") -> None:
         """Test that query parameters are logged."""
         with capture_logs() as cap_logs:
             response = client.get("/test?param1=value1&param2=value2")
@@ -130,7 +127,7 @@ class TestLoggingMiddleware:
 
         assert log["query_params"] == {"param1": "value1", "param2": "value2"}
 
-    def test_post_request_logged(self, client: TestClient) -> None:
+    def test_post_request_logged(self, client: "TestClient") -> None:
         """Test POST request logging with content length."""
         test_data = {"key": "value", "number": 42}
 
@@ -148,7 +145,7 @@ class TestLoggingMiddleware:
         # Content length should be greater than 0 for POST with data
         assert int(log["content_length"]) > 0
 
-    def test_response_time_header(self, client: TestClient) -> None:
+    def test_response_time_header(self, client: "TestClient") -> None:
         """Test that X-Response-Time header is added."""
         response = client.get("/test")
 
@@ -163,7 +160,7 @@ class TestLoggingMiddleware:
         time_value = float(time_header[:-2])
         assert time_value >= 0
 
-    def test_slow_request_timing(self, client: TestClient) -> None:
+    def test_slow_request_timing(self, client: "TestClient") -> None:
         """Test timing accuracy for slow requests."""
         with capture_logs() as cap_logs:
             response = client.get("/slow")
@@ -183,7 +180,7 @@ class TestLoggingMiddleware:
         assert len(complete_logs) == 1
         assert complete_logs[0]["duration_ms"] >= 100
 
-    def test_error_request_logged(self, client: TestClient) -> None:
+    def test_error_request_logged(self, client: "TestClient") -> None:
         """Test that errors are logged properly."""
         with capture_logs() as cap_logs:
             with pytest.raises(ValueError):
@@ -203,7 +200,7 @@ class TestLoggingMiddleware:
         assert "duration_ms" in log
         assert log["duration_ms"] >= 0
 
-    def test_http_exception_logged(self, client: TestClient) -> None:
+    def test_http_exception_logged(self, client: "TestClient") -> None:
         """Test that HTTP exceptions are logged."""
         with capture_logs() as cap_logs:
             response = client.get("/http-error")
@@ -219,7 +216,7 @@ class TestLoggingMiddleware:
         assert log["status_code"] == 404
         assert log["path"] == "/http-error"
 
-    def test_multiple_requests_logged_separately(self, client: TestClient) -> None:
+    def test_multiple_requests_logged_separately(self, client: "TestClient") -> None:
         """Test that multiple requests are logged separately."""
         with capture_logs() as cap_logs:
             # Make multiple requests
@@ -241,7 +238,7 @@ class TestLoggingMiddleware:
         assert "GET" in methods
         assert "POST" in methods
 
-    def test_empty_content_length(self, client: TestClient) -> None:
+    def test_empty_content_length(self, client: "TestClient") -> None:
         """Test handling of missing content-length header."""
         # GET requests typically don't have content-length
         with capture_logs() as cap_logs:
@@ -255,7 +252,7 @@ class TestLoggingMiddleware:
         # Should default to 0 when not present
         assert start_logs[0]["content_length"] == 0
 
-    def test_log_levels(self, client: TestClient) -> None:
+    def test_log_levels(self, client: "TestClient") -> None:
         """Test appropriate log levels are used."""
         with capture_logs() as cap_logs:
             # Successful request - should use INFO
@@ -302,7 +299,7 @@ class TestLoggingMiddleware:
         # All requests should succeed
         assert all(status == 200 for status in results)
 
-    def test_unicode_handling(self, client: TestClient) -> None:
+    def test_unicode_handling(self, client: "TestClient") -> None:
         """Test logging of unicode characters in paths and params."""
         with capture_logs() as cap_logs:
             response = client.get("/test?name=测试&emoji=🚀")

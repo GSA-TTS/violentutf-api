@@ -25,7 +25,7 @@ from app.core.input_validation import (
     validate_json_input,
     validate_numeric_field,
     validate_query_params,
-    validate_request_data,
+    validate_request_data_dict,
     validate_string_field,
     validate_url_field,
 )
@@ -406,7 +406,7 @@ class TestValidateRequestData:
             "email": "john@example.com",
         }
 
-        result = validate_request_data(data, rules, config)
+        result = validate_request_data_dict(data, rules, config)
         assert result == data
 
     def test_validate_request_data_missing_required_field(self):
@@ -420,7 +420,7 @@ class TestValidateRequestData:
         data = {"username": "john_doe"}  # Missing email
 
         with pytest.raises(InputValidationError) as exc_info:
-            validate_request_data(data, rules, config)
+            validate_request_data_dict(data, rules, config)
 
         assert "Required field" in str(exc_info.value.detail)
 
@@ -437,7 +437,7 @@ class TestValidateRequestData:
         }
 
         with pytest.raises(InputValidationError) as exc_info:
-            validate_request_data(data, rules, config)
+            validate_request_data_dict(data, rules, config)
 
         assert "Unexpected fields" in str(exc_info.value.detail)
 
@@ -453,7 +453,7 @@ class TestValidateRequestData:
             "extra_field": "allowed",
         }
 
-        result = validate_request_data(data, rules, config)
+        result = validate_request_data_dict(data, rules, config)
         assert result == {"username": "john_doe"}  # Extra field not included
 
 

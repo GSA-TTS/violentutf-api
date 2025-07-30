@@ -1,15 +1,19 @@
 """Tests for response caching middleware."""
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
 
 from app.middleware.response_cache import ResponseCacheMiddleware
 from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 @pytest.fixture

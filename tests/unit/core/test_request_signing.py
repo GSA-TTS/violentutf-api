@@ -727,7 +727,7 @@ class TestRequestSigningDecorators:
             return {"sync": True}
 
         # Create mock request
-        request = MagicMock(spec=Request)
+        request = Mock(spec=Request)
 
         # Should raise NotImplementedError
         with pytest.raises(NotImplementedError, match="only supports async"):

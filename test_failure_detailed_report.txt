@@ -1,0 +1,50 @@
+DETAILED TEST FAILURE ANALYSIS
+================================================================================
+
+
+### Module: app.core.input_validation
+Classes: ValidationLevel, FieldValidationRule, ValidationConfig, InputValidationError, SecureStringField, SecureEmailField, SecureURLField
+Functions: validate_string_field, validate_numeric_field, validate_array_field, validate_field, validate_request_data_dict, validate_json_input, validate_query_params, validate_input, validate_email_field, validate_url_field, validate_ip_field, prevent_sql_injection, validate_auth_request, validate_api_request, validate_admin_request, validate_ai_request, validate_request_data, decorator, validate, validate, validate, decorator
+Constants: USERNAME_RULE, PASSWORD_RULE, EMAIL_RULE, API_KEY_NAME_RULE, STRICT, MODERATE, LENIENT
+
+### Module: app.core.rate_limiting
+Classes: RateLimitExceeded
+Functions: get_rate_limit_key, get_rate_limit, rate_limit, ip_rate_limit, add_rate_limit_headers, get_rate_limit_status, decorator, disabled_decorator, disabled_decorator
+Constants: RATE_LIMITS
+
+### Module: app.middleware.request_signing
+Classes: RequestSigningMiddleware, RequestSigner
+Functions: get_request_signer, sign_request
+Constants: SIGNATURE_HEADER, TIMESTAMP_HEADER, API_KEY_HEADER, NONCE_HEADER, SIGNATURE_ALGORITHM, MAX_REQUEST_AGE
+
+### Module: app.utils.validation
+Classes: ValidationResult
+Functions: validate_email, validate_url, validate_ip_address, check_sql_injection, check_xss_injection, check_prompt_injection, validate_json_payload, validate_input_length, comprehensive_input_validation
+Constants: EMAIL_PATTERN, URL_PATTERN, IPV4_PATTERN, UUID_PATTERN, SQL_INJECTION_PATTERNS, XSS_PATTERNS, PROMPT_INJECTION_PATTERNS
+
+### Module: app.utils.circuit_breaker
+Classes: CircuitState, CircuitBreakerConfig, CircuitBreakerStats, CircuitBreakerException, CircuitBreaker
+Functions: get_circuit_breaker, with_circuit_breaker, get_stats, is_closed, is_open, is_half_open, decorator
+Constants: T, CLOSED, OPEN, HALF_OPEN
+
+
+### Test Expectations Summary
+================================================================================
+
+test_input_validation.py:
+  Purpose: Validate secure input fields (email, string, URL) and SQL injection prevention
+
+test_input_validation_enhanced.py:
+  Purpose: Enhanced validation with decorators and comprehensive field validation
+
+test_security_integration.py:
+  Purpose: Integration of all security features (rate limiting, validation, request signing)
+
+test_security_integration_enhanced.py:
+  Purpose: Advanced security integration scenarios with circuit breakers
+
+test_rate_limiting.py:
+  Purpose: Rate limiting functionality with user-aware limits
+
+test_request_signing.py:
+  Purpose: Request signature validation for API security

@@ -1,13 +1,19 @@
 """Test application startup and integration."""
 
-from typing import Any, AsyncGenerator, Generator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Generator
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from httpx import ASGITransport, AsyncClient
 
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestApplicationStartup:

@@ -1,0 +1,100 @@
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-8.3.5, pluggy-1.5.0 -- /Library/Frameworks/Python.framework/Versions/3.12/bin/python3
+cachedir: .pytest_cache
+metadata: {'Python': '3.12.9', 'Platform': 'macOS-15.5-arm64-arm-64bit', 'Packages': {'pytest': '8.3.5', 'pluggy': '1.5.0'}, 'Plugins': {'xdist': '3.7.0', 'anyio': '4.9.0', 'env': '1.1.5', 'json-report': '1.5.0', 'httpx': '0.35.0', 'timeout': '2.4.0', 'metadata': '3.1.1', 'cov': '6.2.1', 'Faker': '37.3.0', 'mock': '3.14.1', 'asyncio': '1.0.0'}}
+rootdir: /Users/tamnguyen/Documents/GitHub/violentutf-api
+configfile: pytest.ini
+plugins: xdist-3.7.0, anyio-4.9.0, env-1.1.5, json-report-1.5.0, httpx-0.35.0, timeout-2.4.0, metadata-3.1.1, cov-6.2.1, Faker-37.3.0, mock-3.14.1, asyncio-1.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 48 items
+
+tests/unit/core/test_input_validation.py::TestFieldValidationRule::test_field_validation_rule_creation PASSED [  2%]
+tests/unit/core/test_input_validation.py::TestFieldValidationRule::test_field_validation_rule_with_custom_validator PASSED [  4%]
+tests/unit/core/test_input_validation.py::TestValidationConfig::test_default_validation_config PASSED [  6%]
+tests/unit/core/test_input_validation.py::TestValidationConfig::test_custom_validation_config PASSED [  8%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_success PASSED [ 10%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_strips_whitespace PASSED [ 12%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_too_short PASSED [ 14%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_too_long PASSED [ 16%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_pattern_match PASSED [ 18%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_sql_injection_strict PASSED [ 20%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_sql_injection_moderate PASSED [ 22%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_xss_strict PASSED [ 25%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_required PASSED [ 27%]
+tests/unit/core/test_input_validation.py::TestStringFieldValidation::test_validate_string_field_optional PASSED [ 29%]
+tests/unit/core/test_input_validation.py::TestNumericFieldValidation::test_validate_numeric_field_int PASSED [ 31%]
+tests/unit/core/test_input_validation.py::TestNumericFieldValidation::test_validate_numeric_field_float PASSED [ 33%]
+tests/unit/core/test_input_validation.py::TestNumericFieldValidation::test_validate_numeric_field_decimal PASSED [ 35%]
+tests/unit/core/test_input_validation.py::TestNumericFieldValidation::test_validate_numeric_field_range_validation PASSED [ 37%]
+tests/unit/core/test_input_validation.py::TestNumericFieldValidation::test_validate_numeric_field_allowed_values PASSED [ 39%]
+tests/unit/core/test_input_validation.py::TestValidateField::test_validate_field_with_custom_validator PASSED [ 41%]
+tests/unit/core/test_input_validation.py::TestValidateField::test_validate_field_boolean PASSED [ 43%]
+tests/unit/core/test_input_validation.py::TestValidateField::test_validate_field_datetime PASSED [ 45%]
+tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_success FAILED [ 47%]
+tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_missing_required_field FAILED [ 50%]
+tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_extra_fields_rejected FAILED [ 52%]
+tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_extra_fields_allowed FAILED [ 54%]
+tests/unit/core/test_input_validation.py::TestValidateJsonInput::test_validate_json_input_success PASSED [ 56%]
+tests/unit/core/test_input_validation.py::TestValidateJsonInput::test_validate_json_input_too_deep PASSED [ 58%]
+tests/unit/core/test_input_validation.py::TestValidateJsonInput::test_validate_json_input_too_many_keys PASSED [ 60%]
+tests/unit/core/test_input_validation.py::TestValidateQueryParams::test_validate_query_params_success PASSED [ 62%]
+tests/unit/core/test_input_validation.py::TestValidateQueryParams::test_validate_query_params_unexpected_rejected PASSED [ 64%]
+tests/unit/core/test_input_validation.py::TestValidateQueryParams::test_validate_query_params_sql_injection_check PASSED [ 66%]
+tests/unit/core/test_input_validation.py::TestValidationDecorator::test_validate_input_decorator_query_params PASSED [ 68%]
+tests/unit/core/test_input_validation.py::TestValidationDecorator::test_validate_input_decorator_json_body PASSED [ 70%]
+tests/unit/core/test_input_validation.py::TestValidationDecorator::test_validate_input_decorator_validation_failure SKIPPED [ 72%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_email_field_success PASSED [ 75%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_email_field_invalid PASSED [ 77%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_url_field_success PASSED [ 79%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_url_field_invalid_scheme PASSED [ 81%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_ip_field_success PASSED [ 83%]
+tests/unit/core/test_input_validation.py::TestSpecificFieldValidators::test_validate_ip_field_invalid PASSED [ 85%]
+tests/unit/core/test_input_validation.py::TestCommonValidationRules::test_username_rule PASSED [ 87%]
+tests/unit/core/test_input_validation.py::TestCommonValidationRules::test_password_rule PASSED [ 89%]
+tests/unit/core/test_input_validation.py::TestCommonValidationRules::test_email_rule PASSED [ 91%]
+tests/unit/core/test_input_validation.py::TestCommonValidationRules::test_api_key_name_rule PASSED [ 93%]
+tests/unit/core/test_input_validation.py::TestValidationLevels::test_strict_level_rejects_on_warnings PASSED [ 95%]
+tests/unit/core/test_input_validation.py::TestValidationLevels::test_moderate_level_logs_warnings PASSED [ 97%]
+tests/unit/core/test_input_validation.py::TestValidationLevels::test_lenient_level_skips_security_checks PASSED [100%]
+
+=================================== FAILURES ===================================
+__________ TestValidateRequestData.test_validate_request_data_success __________
+tests/unit/core/test_input_validation.py:409: in test_validate_request_data_success
+    result = validate_request_data(data, rules, config)
+E   TypeError: validate_request_data() takes from 0 to 2 positional arguments but 3 were given
+__ TestValidateRequestData.test_validate_request_data_missing_required_field ___
+tests/unit/core/test_input_validation.py:423: in test_validate_request_data_missing_required_field
+    validate_request_data(data, rules, config)
+E   TypeError: validate_request_data() takes from 0 to 2 positional arguments but 3 were given
+___ TestValidateRequestData.test_validate_request_data_extra_fields_rejected ___
+tests/unit/core/test_input_validation.py:440: in test_validate_request_data_extra_fields_rejected
+    validate_request_data(data, rules, config)
+E   TypeError: validate_request_data() takes from 0 to 2 positional arguments but 3 were given
+___ TestValidateRequestData.test_validate_request_data_extra_fields_allowed ____
+tests/unit/core/test_input_validation.py:456: in test_validate_request_data_extra_fields_allowed
+    result = validate_request_data(data, rules, config)
+E   TypeError: validate_request_data() takes from 0 to 2 positional arguments but 3 were given
+=============================== warnings summary ===============================
+../../../../../Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/starlette/formparsers.py:12
+  /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+../../../../../Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+../../../../../Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/pydantic/_internal/_config.py:291
+  /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/pydantic/_internal/_config.py:291: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.9/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_success
+FAILED tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_missing_required_field
+FAILED tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_extra_fields_rejected
+FAILED tests/unit/core/test_input_validation.py::TestValidateRequestData::test_validate_request_data_extra_fields_allowed
+============= 4 failed, 43 passed, 1 skipped, 3 warnings in 0.24s ==============

@@ -1,12 +1,14 @@
 """Comprehensive tests for CSRF protection middleware to achieve 95%+ coverage."""
 
+from __future__ import annotations
+
 import hmac
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
 
 from app.middleware.csrf import (
     CSRF_COOKIE_NAME,
@@ -19,6 +21,12 @@ from app.middleware.csrf import (
     get_csrf_token,
 )
 from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
+
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -60,7 +68,7 @@ def csrf_app(app):
 @pytest.fixture
 def client(csrf_app):
     """Create test client."""
-    return TestClient(csrf_app)
+    return SafeTestClient(csrf_app)
 
 
 @pytest.fixture

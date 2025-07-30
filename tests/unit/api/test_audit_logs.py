@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import jwt
 import pytest
-from fastapi import status
+from fastapi import Request, status
 from httpx import AsyncClient
 
 from app.core.config import settings

@@ -7,20 +7,26 @@ This module tests critical security scenarios that were missing from the basic t
 - Token storage security
 """
 
+from __future__ import annotations
+
 import asyncio
 import time
 from datetime import datetime, timedelta
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from starlette.datastructures import Headers, MutableHeaders
 
 from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRF_TOKEN_LENGTH, CSRFProtectionMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -45,7 +51,7 @@ def app():
 
 
 @pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
+def client(app) -> Generator["TestClient", None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
     from tests.utils.testclient import SafeTestClient

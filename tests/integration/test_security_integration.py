@@ -1,18 +1,22 @@
 """Integration tests for security middleware stack."""
 
+from __future__ import annotations
+
 import json
 import time
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from app.middleware.csrf import CSRFProtectionMiddleware
 from app.middleware.input_sanitization import InputSanitizationMiddleware
 from app.middleware.request_signing import RequestSigner, RequestSigningMiddleware
 from app.middleware.session import SessionMiddleware
 from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 @pytest.fixture
@@ -44,7 +48,7 @@ def security_app():
 @pytest.fixture
 def client(security_app):
     """Create test client with security app."""
-    return TestClient(security_app)
+    return SafeTestClient(security_app)
 
 
 class TestSecurityIntegration:

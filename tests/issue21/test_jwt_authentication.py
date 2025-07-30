@@ -13,11 +13,12 @@ These tests focus on the core functionality rather than edge cases,
 ensuring Issue #21 requirements are properly implemented and working.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.core.security import (
     create_access_token,
@@ -30,18 +31,11 @@ from app.core.security import (
 from app.main import app
 from tests.utils.testclient import SafeTestClient
 
+# TestClient imported via TYPE_CHECKING for type hints only
+
 
 class TestIssue21JWTAuthentication:
     """Test suite for Issue #21 JWT authentication requirements."""
-
-    @pytest.fixture
-    def client(self) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     def test_jwt_token_generation(self):
         """Test JWT token generation as required by Issue #21 Task 3."""
@@ -288,15 +282,6 @@ class TestIssue21JWTAuthentication:
 
 class TestIssue21IntegrationScenarios:
     """Integration test scenarios for Issue #21 requirements."""
-
-    @pytest.fixture
-    def client(self) -> Generator[TestClient, None, None]:
-        """Create test client."""
-        # Import TestClient locally to ensure correct resolution
-        from tests.utils.testclient import SafeTestClient
-
-        with SafeTestClient(app) as test_client:
-            yield test_client
 
     def test_complete_authentication_flow_simulation(self):
         """Test complete authentication flow simulating Issue #21 requirements."""

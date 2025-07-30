@@ -10,18 +10,24 @@ This module tests sophisticated attack vectors that were missing from basic test
 - Encoding attack vectors
 """
 
+from __future__ import annotations
+
 import json
 import time
-from typing import Any, Dict, Generator
+from typing import TYPE_CHECKING, Any, Dict, Generator
 from unittest.mock import MagicMock, patch
 from urllib.parse import quote, quote_plus
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.middleware.input_sanitization import InputSanitizationMiddleware
 from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 @pytest.fixture
@@ -63,7 +69,7 @@ def app():
 
 
 @pytest.fixture
-def client(app) -> Generator[TestClient, None, None]:
+def client(app) -> Generator["TestClient", None, None]:
     """Create test client."""
     # Import TestClient locally to ensure correct resolution
     from tests.utils.testclient import SafeTestClient
