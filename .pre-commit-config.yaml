@@ -46,6 +46,7 @@ repos:
           - types-passlib
           - types-bleach
           - types-psutil
+          - types-PyYAML
           - pydantic
           - fastapi
           - starlette
@@ -153,3 +154,11 @@ repos:
         entry: python3 -c "import re, sys; patterns = [r'verify\s*=\s*False', r'debug\s*=\s*True', r'@app\.route.*methods\s*=\s*\[.*\*.*\]']; content = sys.stdin.read(); violations = []; [violations.extend(re.finditer(p, content, re.MULTILINE)) for p in patterns]; sys.exit(1 if violations else 0)"
         language: system
         types: [python]
+
+      - id: ban-test-masking
+        name: 🚨 Ban Dangerous Test Masking (|| true, etc.)
+        entry: .github/scripts/ban-test-masking.py
+        language: system
+        files: '\.(yml|yaml|sh|bash|Makefile)$|^\.github/workflows/|^scripts/'
+        args: ['--strict']
+        pass_filenames: true

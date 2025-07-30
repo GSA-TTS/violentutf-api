@@ -71,7 +71,7 @@ jobs:
         run: |
           pytest tests/unit/ -v --tb=short --maxfail=5 \
             -m "not slow and not integration and not docker" \
-            --timeout=60 || true
+            --timeout=60
 
   syntax-check:
     name: Config Validation
