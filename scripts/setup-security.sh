@@ -27,7 +27,7 @@ detect-secrets scan > .secrets.baseline
 
 # Run initial pre-commit on all files
 echo "🏃 Running initial pre-commit checks..."
-pre-commit run --all-files || true
+pre-commit run --all-files || true  # JUSTIFIED: Initial setup may have formatting issues, continue setup
 
 # Create security directory
 mkdir -p security
@@ -50,7 +50,7 @@ bandit -r . -f json -o security/bandit-report.json \
 
 # Safety (paid tool with free tier)
 echo "→ Running Safety..."
-safety check --json --output security/safety-report.json || true
+safety check --json --output security/safety-report.json || true  # JUSTIFIED: Safety API has rate limits and paid tiers, allow optional scan
 
 # pip-audit (Google/PyPA maintained, free)
 echo "→ Running pip-audit..."

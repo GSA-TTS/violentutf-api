@@ -38,7 +38,7 @@ fi
 echo ""
 echo "Type checking..."
 if command -v mypy &> /dev/null; then
-    mypy app/ --ignore-missing-imports --no-strict-optional || true
+    mypy app/ --ignore-missing-imports --no-strict-optional || true  # JUSTIFIED: Type checking is informational, continue with other security checks
 else
     echo "MyPy not installed. Install with: pip install mypy"
 fi

@@ -156,7 +156,7 @@ repos:
         types: [python]
 
       - id: ban-test-masking
-        name: 🚨 Ban Dangerous Test Masking (|| true, etc.)
+        name: 🚨 Ban Dangerous Test Masking (|| true, etc.)  # ALLOW_MASK: Hook name reference
         entry: .github/scripts/ban-test-masking.py
         language: system
         files: '\.(yml|yaml|sh|bash|Makefile)$|^\.github/workflows/|^scripts/'

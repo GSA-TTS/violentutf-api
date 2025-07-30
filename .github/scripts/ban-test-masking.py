@@ -196,7 +196,8 @@ def main() -> int:
     print(f"📁 Checking {len(files_to_check)} files")
 
     for file_path in files_to_check:
-        if should_check_file(file_path):
+        # Always check explicitly provided files, otherwise use the filter
+        if args.files or should_check_file(file_path):
             violations = check_file_for_patterns(file_path)
 
             if violations:
