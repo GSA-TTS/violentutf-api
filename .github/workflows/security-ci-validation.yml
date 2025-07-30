@@ -255,7 +255,7 @@ jobs:
               runs-on: ubuntu-latest
               steps:
                 - name: Bad test
-                  run: pytest tests/ || true  # ALLOW_MASK: Test example for scanner validation - should be detected
+                  run: pytest tests/ || true  # ALLOW_MASK: Test pattern for security scanner validation
           EOF
 
           # Test that the scanner detects the violation

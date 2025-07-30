@@ -69,7 +69,7 @@ jobs:
 
       - name: Run fast unit tests
         run: |
-          pytest tests/unit/ -v --tb=short --maxfail=5 \
+          pytest tests/unit/ -v --tb=short --maxfail=50 \
             -m "not slow and not integration and not docker" \
             --timeout=60
 

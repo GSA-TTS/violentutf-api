@@ -112,7 +112,7 @@ repos:
         name: Core Unit Tests (stricter than CI)
         entry: python3 -m pytest
         language: system
-        args: ['tests/unit/', '-v', '--tb=short', '--maxfail=5', '-m', 'not slow and not integration and not docker', '--timeout=60']
+        args: ['tests/unit/', '-v', '--tb=short', '--maxfail=50', '-m', 'not slow and not integration and not docker', '--timeout=60']
         files: '\.(py)$'
         require_serial: true
         pass_filenames: false
