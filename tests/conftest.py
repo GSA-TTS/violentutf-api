@@ -18,7 +18,7 @@ from app.core.config import Settings, get_settings
 from app.main import create_application
 
 # Import test fixtures - this makes them available to all tests
-from tests.test_database import TestDatabaseManager, clean_db_session, db_session, test_db_manager  # noqa
+from tests.test_database import DatabaseTestManager, clean_db_session, db_session, test_db_manager  # noqa
 from tests.test_fixtures import (  # noqa
     admin_token,
     admin_user,
@@ -80,7 +80,7 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture(scope="session")
-def app(test_settings: Settings, test_db_manager: TestDatabaseManager) -> FastAPI:
+def app(test_settings: Settings, test_db_manager: DatabaseTestManager) -> FastAPI:
     """Create application for testing."""
     from app.db.session import get_db
 
@@ -98,41 +98,16 @@ def app(test_settings: Settings, test_db_manager: TestDatabaseManager) -> FastAP
         """Test database dependency that yields a session directly."""
         session = await test_db_manager.get_session()
 
-        # For unit tests that require commit/rollback mocking, create a mock wrapper
-        if hasattr(session, "_is_mocked"):
-            # Already a mock, yield as-is
+        # For integration tests, we need to use real sessions with real commits
+        # to ensure proper transaction isolation and visibility
+        try:
             yield session
-        else:
-            # Create a session wrapper that handles commit/rollback properly
-            # but preserves the real session for repository operations
-            session_wrapper = AsyncMock(spec=AsyncSession)
-            session_wrapper.commit = AsyncMock()
-            session_wrapper.rollback = AsyncMock()
-            session_wrapper.flush = AsyncMock()
-            session_wrapper.close = AsyncMock()
-
-            # Delegate actual database operations to the real session
-            session_wrapper.execute = session.execute
-            session_wrapper.get = session.get
-            session_wrapper.add = session.add
-            session_wrapper.merge = session.merge
-            session_wrapper.delete = session.delete
-            session_wrapper.query = getattr(session, "query", None)
-            session_wrapper.scalar = session.scalar
-            session_wrapper.scalars = session.scalars
-            session_wrapper.refresh = session.refresh
-
-            # Mark as mocked
-            session_wrapper._is_mocked = True
-
-            try:
-                yield session_wrapper
-            except Exception:
-                # Use real session rollback for actual errors
-                await session.rollback()
-                raise
-            finally:
-                await session.close()
+            await session.commit()  # Commit changes for integration tests
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
     app = create_application(custom_settings=test_settings)
     app.dependency_overrides[get_settings] = get_settings_override
@@ -175,6 +150,16 @@ def reset_dependency_overrides(app: FastAPI) -> None:
     for dependency, override in preserved_overrides.items():
         if override is not None:
             app.dependency_overrides[dependency] = override
+
+
+@pytest_asyncio.fixture
+async def clean_database(test_db_manager: "DatabaseTestManager") -> None:
+    """Clean database before each test for proper isolation."""
+    # Clean the database before the test
+    await test_db_manager.reset_database()
+    yield
+    # Optionally clean after test too, but not strictly necessary
+    # since we clean before each test
 
 
 # Set pytest markers for better test organization

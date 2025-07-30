@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Tuple
 
 import pytest
 from fastapi import status
-from httpx import AsyncClient
+from fastapi.testclient import TestClient
 
 from app.core.security import create_access_token
 
@@ -164,9 +164,8 @@ class TestSystematicEndpointAuthentication:
 
     # Systematic Authentication Requirement Tests
 
-    @pytest.mark.asyncio
-    async def test_protected_endpoints_require_authentication(
-        self, client: AsyncClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+    def test_protected_endpoints_require_authentication(
+        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
     ) -> None:
         """Test that all protected endpoints require authentication."""
         failures = []
@@ -174,15 +173,15 @@ class TestSystematicEndpointAuthentication:
         for method, endpoint, payload in protected_endpoints:
             try:
                 if method == "GET":
-                    response = await client.get(endpoint)
+                    response = client.get(endpoint)
                 elif method == "POST":
-                    response = await client.post(endpoint, json=payload)
+                    response = client.post(endpoint, json=payload)
                 elif method == "PUT":
-                    response = await client.put(endpoint, json=payload)
+                    response = client.put(endpoint, json=payload)
                 elif method == "PATCH":
-                    response = await client.patch(endpoint, json=payload)
+                    response = client.patch(endpoint, json=payload)
                 elif method == "DELETE":
-                    response = await client.delete(endpoint)
+                    response = client.delete(endpoint)
                 else:
                     failures.append(f"Unsupported method {method} for {endpoint}")
                     continue
@@ -205,9 +204,8 @@ class TestSystematicEndpointAuthentication:
         if failures:
             pytest.fail(f"Authentication requirement failures:\n" + "\n".join(failures))
 
-    @pytest.mark.asyncio
-    async def test_exempt_endpoints_allow_anonymous_access(
-        self, client: AsyncClient, exempt_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+    def test_exempt_endpoints_allow_anonymous_access(
+        self, client: TestClient, exempt_endpoints: List[Tuple[str, str, Dict[str, Any]]]
     ) -> None:
         """Test that exempt endpoints allow anonymous access."""
         unexpected_auth_required = []
@@ -215,13 +213,13 @@ class TestSystematicEndpointAuthentication:
         for method, endpoint, payload in exempt_endpoints:
             try:
                 if method == "GET":
-                    response = await client.get(endpoint)
+                    response = client.get(endpoint)
                 elif method == "POST":
-                    response = await client.post(endpoint, json=payload)
+                    response = client.post(endpoint, json=payload)
                 elif method == "PUT":
-                    response = await client.put(endpoint, json=payload)
+                    response = client.put(endpoint, json=payload)
                 elif method == "DELETE":
-                    response = await client.delete(endpoint)
+                    response = client.delete(endpoint)
                 else:
                     continue
 
@@ -242,9 +240,8 @@ class TestSystematicEndpointAuthentication:
         if unexpected_auth_required:
             pytest.fail(f"Endpoints unexpectedly requiring authentication:\n" + "\n".join(unexpected_auth_required))
 
-    @pytest.mark.asyncio
-    async def test_protected_endpoints_accept_valid_authentication(
-        self, client: AsyncClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+    def test_protected_endpoints_accept_valid_authentication(
+        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
     ) -> None:
         """Test that protected endpoints accept valid authentication tokens."""
         token = self.create_test_jwt_token()
@@ -255,15 +252,15 @@ class TestSystematicEndpointAuthentication:
         for method, endpoint, payload in protected_endpoints:
             try:
                 if method == "GET":
-                    response = await client.get(endpoint, headers=headers)
+                    response = client.get(endpoint, headers=headers)
                 elif method == "POST":
-                    response = await client.post(endpoint, json=payload, headers=headers)
+                    response = client.post(endpoint, json=payload, headers=headers)
                 elif method == "PUT":
-                    response = await client.put(endpoint, json=payload, headers=headers)
+                    response = client.put(endpoint, json=payload, headers=headers)
                 elif method == "PATCH":
-                    response = await client.patch(endpoint, json=payload, headers=headers)
+                    response = client.patch(endpoint, json=payload, headers=headers)
                 elif method == "DELETE":
-                    response = await client.delete(endpoint, headers=headers)
+                    response = client.delete(endpoint, headers=headers)
                 else:
                     continue
 
@@ -283,9 +280,8 @@ class TestSystematicEndpointAuthentication:
         if auth_failures:
             pytest.fail(f"Valid authentication failures:\n" + "\n".join(auth_failures))
 
-    @pytest.mark.asyncio
-    async def test_protected_endpoints_reject_invalid_tokens(
-        self, client: AsyncClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+    def test_protected_endpoints_reject_invalid_tokens(
+        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
     ) -> None:
         """Test that protected endpoints reject invalid authentication tokens."""
         invalid_headers = [
@@ -304,9 +300,9 @@ class TestSystematicEndpointAuthentication:
             for method, endpoint, payload in sample_endpoints:
                 try:
                     if method == "GET":
-                        response = await client.get(endpoint, headers=headers)
+                        response = client.get(endpoint, headers=headers)
                     elif method == "POST":
-                        response = await client.post(endpoint, json=payload, headers=headers)
+                        response = client.post(endpoint, json=payload, headers=headers)
                     else:
                         continue
 
@@ -324,8 +320,7 @@ class TestSystematicEndpointAuthentication:
 
     # Method-Based Protection Tests
 
-    @pytest.mark.asyncio
-    async def test_write_methods_always_require_authentication(self, client: AsyncClient) -> None:
+    def test_write_methods_always_require_authentication(self, client: TestClient) -> None:
         """Test that write methods (POST, PUT, PATCH, DELETE) always require authentication."""
         write_methods = ["POST", "PUT", "PATCH", "DELETE"]
 
@@ -346,13 +341,13 @@ class TestSystematicEndpointAuthentication:
             for method in write_methods:
                 try:
                     if method == "POST":
-                        response = await client.post(path, json={})
+                        response = client.post(path, json={})
                     elif method == "PUT":
-                        response = await client.put(f"{path}/123", json={})
+                        response = client.put(f"{path}/123", json={})
                     elif method == "PATCH":
-                        response = await client.patch(f"{path}/123", json={})
+                        response = client.patch(f"{path}/123", json={})
                     elif method == "DELETE":
-                        response = await client.delete(f"{path}/123")
+                        response = client.delete(f"{path}/123")
 
                     if response.status_code != 401:
                         write_protection_failures.append(
@@ -368,8 +363,7 @@ class TestSystematicEndpointAuthentication:
 
     # Authorization Level Tests
 
-    @pytest.mark.asyncio
-    async def test_admin_only_endpoints_reject_regular_users(self, client: AsyncClient) -> None:
+    def test_admin_only_endpoints_reject_regular_users(self, client: TestClient) -> None:
         """Test that admin-only endpoints reject regular user tokens."""
         regular_user_token = self.create_test_jwt_token(roles=["viewer"])
         headers = {"Authorization": f"Bearer {regular_user_token}"}
@@ -390,11 +384,11 @@ class TestSystematicEndpointAuthentication:
         for method, endpoint in admin_endpoints:
             try:
                 if method == "GET":
-                    response = await client.get(endpoint, headers=headers)
+                    response = client.get(endpoint, headers=headers)
                 elif method == "POST":
-                    response = await client.post(endpoint, json={}, headers=headers)
+                    response = client.post(endpoint, json={}, headers=headers)
                 elif method == "DELETE":
-                    response = await client.delete(endpoint, headers=headers)
+                    response = client.delete(endpoint, headers=headers)
 
                 # Should return 403 (Forbidden) for insufficient permissions
                 # or 401 if endpoint has additional auth requirements
@@ -410,8 +404,7 @@ class TestSystematicEndpointAuthentication:
         if authorization_failures:
             pytest.fail(f"Authorization failures for regular users:\n" + "\n".join(authorization_failures))
 
-    @pytest.mark.asyncio
-    async def test_admin_endpoints_accept_admin_tokens(self, client: AsyncClient) -> None:
+    def test_admin_endpoints_accept_admin_tokens(self, client: TestClient) -> None:
         """Test that admin endpoints accept admin tokens."""
         admin_token = self.create_admin_jwt_token()
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -428,7 +421,7 @@ class TestSystematicEndpointAuthentication:
         for method, endpoint in admin_endpoints:
             try:
                 if method == "GET":
-                    response = await client.get(endpoint, headers=headers)
+                    response = client.get(endpoint, headers=headers)
 
                 # Should not be rejected for authentication/authorization
                 if response.status_code in [401, 403]:
@@ -445,8 +438,7 @@ class TestSystematicEndpointAuthentication:
 
     # Edge Case and Security Tests
 
-    @pytest.mark.asyncio
-    async def test_case_insensitive_bearer_scheme_rejection(self, client: AsyncClient) -> None:
+    def test_case_insensitive_bearer_scheme_rejection(self, client: TestClient) -> None:
         """Test that non-standard Bearer scheme cases are rejected."""
         token = self.create_test_jwt_token()
 
@@ -458,19 +450,18 @@ class TestSystematicEndpointAuthentication:
         ]
 
         for headers in case_variations:
-            response = await client.get("/api/v1/users", headers=headers)
+            response = client.get("/api/v1/users", headers=headers)
             # Most should be rejected (only "Bearer " with single space is valid)
             if "Bearer " not in headers["Authorization"]:
                 assert response.status_code == 401
 
-    @pytest.mark.asyncio
-    async def test_multiple_authorization_headers_handling(self, client: AsyncClient) -> None:
+    def test_multiple_authorization_headers_handling(self, client: TestClient) -> None:
         """Test handling of multiple Authorization headers."""
         token = self.create_test_jwt_token()
 
         # Test with multiple headers (if framework allows)
         # Most HTTP implementations take the first or last value
-        response = await client.get(
+        response = client.get(
             "/api/v1/users",
             headers=[
                 ("Authorization", f"Bearer {token}"),
@@ -481,21 +472,19 @@ class TestSystematicEndpointAuthentication:
         # Behavior may vary by implementation, but should be consistent
         assert response.status_code in [200, 401, 404, 403]  # Should not crash
 
-    @pytest.mark.asyncio
-    async def test_very_long_bearer_tokens_handling(self, client: AsyncClient) -> None:
+    def test_very_long_bearer_tokens_handling(self, client: TestClient) -> None:
         """Test handling of very long Bearer tokens."""
         # Create extremely long token
         long_token = "x" * 10000
         headers = {"Authorization": f"Bearer {long_token}"}
 
-        response = await client.get("/api/v1/users", headers=headers)
+        response = client.get("/api/v1/users", headers=headers)
 
         # Should handle gracefully (reject as invalid, not crash)
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid authentication token"
 
-    @pytest.mark.asyncio
-    async def test_empty_bearer_token_handling(self, client: AsyncClient) -> None:
+    def test_empty_bearer_token_handling(self, client: TestClient) -> None:
         """Test handling of empty Bearer tokens."""
         empty_token_headers = [
             {"Authorization": "Bearer "},
@@ -505,6 +494,6 @@ class TestSystematicEndpointAuthentication:
         ]
 
         for headers in empty_token_headers:
-            response = await client.get("/api/v1/users", headers=headers)
+            response = client.get("/api/v1/users", headers=headers)
             assert response.status_code == 401
             assert response.json()["detail"] == "Missing authentication token"

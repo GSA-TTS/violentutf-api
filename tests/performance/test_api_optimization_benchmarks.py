@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.repositories.enhanced import EnhancedRepository
 from app.schemas.filtering import EnhancedFilter, FieldFilter, FilterOperator, SortField
-from tests.test_database import TestDatabaseManager
+from tests.test_database import DatabaseTestManager
 
 
 class PerformanceBenchmark:
@@ -92,7 +92,7 @@ async def benchmark():
 @pytest.fixture
 async def test_db_manager():
     """Create test database manager."""
-    return TestDatabaseManager()
+    return DatabaseTestManager()
 
 
 @pytest.fixture
@@ -553,11 +553,11 @@ if __name__ == "__main__":
     import asyncio
 
     async def main():
-        from tests.test_database import TestDatabaseManager
+        from tests.test_database import DatabaseTestManager
 
         # Setup
         benchmark = PerformanceBenchmark()
-        db_manager = TestDatabaseManager()
+        db_manager = DatabaseTestManager()
 
         # Populate database
         print("Setting up test database with 1000 users...")

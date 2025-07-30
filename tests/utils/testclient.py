@@ -33,8 +33,9 @@ class SafeTestClient(StarletteTestClient):
         calling the Starlette TestClient constructor with all expected parameters.
         """
         # Call parent __init__ with only the parameters it expects
+        # app must be passed as positional argument, not keyword
         super().__init__(
-            app=app,
+            app,
             base_url=base_url,
             raise_server_exceptions=raise_server_exceptions,
             root_path=root_path,

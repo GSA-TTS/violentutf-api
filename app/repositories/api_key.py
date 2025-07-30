@@ -378,9 +378,31 @@ class APIKeyRepository(BaseRepository[APIKey]):
             True if expiration was updated, False if key not found
         """
         try:
-            updated_key = await self.update(api_key_id, expires_at=new_expires_at, updated_by=updated_by)
+            # Special handling for setting expires_at to None (remove expiration)
+            # We can't use the base update method because it filters out None values
+            if new_expires_at is None:
+                from sqlalchemy import update
+                from sqlalchemy.sql import func
 
-            success = updated_key is not None
+                update_query = (
+                    update(self.model)
+                    .where(self.model.id == api_key_id)
+                    .values(expires_at=None, updated_by=updated_by, updated_at=func.now())
+                )
+
+                result = await self.session.execute(update_query)
+                success = result.rowcount > 0
+
+                if success:
+                    self.logger.info(
+                        "API key expiration removed",
+                        api_key_id="***REDACTED***",
+                        updated_by=updated_by,
+                    )
+            else:
+                # For non-None values, use the regular update method
+                updated_key = await self.update(api_key_id, expires_at=new_expires_at, updated_by=updated_by)
+                success = updated_key is not None
 
             if success:
                 self.logger.info(

@@ -24,8 +24,8 @@ class UserBase(BaseModel):
     full_name: Optional[str] = Field(None, max_length=255, description="User's full display name")
     is_active: bool = Field(True, description="Whether the user account is active")
     is_superuser: bool = Field(False, description="Whether the user has superuser privileges")
-    email_verified: bool = Field(False, description="Whether the email is verified")
-    totp_enabled: bool = Field(False, description="Whether TOTP 2FA is enabled")
+    email_verified: bool = Field(False, description="Whether the user's email has been verified")
+    totp_enabled: bool = Field(False, description="Whether TOTP 2FA is enabled for the user")
 
     @field_validator("full_name")
     @classmethod
@@ -105,8 +105,8 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, max_length=255, description="User's full display name")
     is_active: Optional[bool] = Field(None, description="Whether the user account is active")
     is_superuser: Optional[bool] = Field(None, description="Whether the user has superuser privileges")
-    email_verified: Optional[bool] = Field(None, description="Whether the email is verified")
-    totp_enabled: Optional[bool] = Field(None, description="Whether TOTP 2FA is enabled")
+    email_verified: Optional[bool] = Field(None, description="Whether the user's email has been verified")
+    totp_enabled: Optional[bool] = Field(None, description="Whether TOTP 2FA is enabled for the user")
 
     @field_validator("full_name")
     @classmethod

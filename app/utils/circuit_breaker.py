@@ -1,3 +1,5 @@
+import functools
+
 """Circuit breaker pattern implementation for resilient service calls."""
 
 import asyncio
@@ -321,6 +323,7 @@ def with_circuit_breaker(
     def decorator(func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
         circuit_breaker = get_circuit_breaker(name, config)
 
+        @functools.wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> T:
             return await circuit_breaker.call(func, *args, **kwargs)
 

@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.db.base import Base
 
 
-class TestDatabaseManager:
+class DatabaseTestManager:
     """Manages test database lifecycle and operations."""
 
     def __init__(self) -> None:
@@ -27,11 +27,19 @@ class TestDatabaseManager:
             database_url = "sqlite+aiosqlite:///./test_violentutf.db"
 
         # Create async engine for testing
+        # For SQLite, we need special handling to ensure transaction visibility
+        connect_args = {}
+        if "sqlite" in database_url:
+            connect_args = {
+                "check_same_thread": False,
+                "isolation_level": None,  # Use autocommit mode for SQLite
+            }
+
         self.engine = create_async_engine(
             database_url,
             echo=False,  # Reduce noise in tests
             pool_pre_ping=True,
-            connect_args=({"check_same_thread": False} if "sqlite" in database_url else {}),
+            connect_args=connect_args,
         )
 
         # Create session maker
@@ -39,6 +47,8 @@ class TestDatabaseManager:
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
+            autoflush=True,
+            autocommit=False,
         )
 
         # Create all tables
@@ -97,15 +107,15 @@ class TestDatabaseManager:
 
 
 # Global test database manager
-_test_db_manager: TestDatabaseManager | None = None
+_test_db_manager: DatabaseTestManager | None = None
 
 
-async def get_test_db_manager() -> TestDatabaseManager:
+async def get_test_db_manager() -> DatabaseTestManager:
     """Get or create test database manager."""
     global _test_db_manager
 
     if _test_db_manager is None:
-        _test_db_manager = TestDatabaseManager()
+        _test_db_manager = DatabaseTestManager()
         await _test_db_manager.initialize()
 
     return _test_db_manager
@@ -121,7 +131,7 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="session")
-async def test_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
+async def test_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
     """Provide test database manager for the entire test session."""
     manager = await get_test_db_manager()
     yield manager
@@ -129,7 +139,7 @@ async def test_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session(test_db_manager: TestDatabaseManager) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide database session with transaction rollback for test isolation.
 
@@ -149,7 +159,7 @@ async def db_session(test_db_manager: TestDatabaseManager) -> AsyncGenerator[Asy
 
 
 @pytest_asyncio.fixture
-async def clean_db_session(test_db_manager: TestDatabaseManager) -> AsyncGenerator[AsyncSession, None]:
+async def clean_db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide database session that commits changes (for setup fixtures).
 

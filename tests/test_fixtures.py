@@ -6,11 +6,12 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models.user import User
-from tests.test_database import TestDatabaseManager
+from tests.test_database import DatabaseTestManager
 
 
 class UserFactory:
@@ -55,7 +56,14 @@ class UserFactory:
 
     @staticmethod
     async def create_admin_user(session: AsyncSession) -> User:
-        """Create an admin user for testing."""
+        """Create an admin user for testing, or return existing one."""
+        # Check if admin user already exists
+        result = await session.execute(select(User).where(User.email == "admin@testexample.com"))
+        existing_user = result.scalars().first()
+
+        if existing_user:
+            return existing_user
+
         return await UserFactory.create_user(
             session=session,
             username="testadmin",
@@ -69,7 +77,14 @@ class UserFactory:
 
     @staticmethod
     async def create_regular_user(session: AsyncSession) -> User:
-        """Create a regular user for testing."""
+        """Create a regular user for testing, or return existing one."""
+        # Check if regular user already exists
+        result = await session.execute(select(User).where(User.email == "user@testexample.com"))
+        existing_user = result.scalars().first()
+
+        if existing_user:
+            return existing_user
+
         return await UserFactory.create_user(
             session=session,
             username="testuser",
@@ -88,7 +103,7 @@ _cached_test_user: User | None = None
 
 
 @pytest_asyncio.fixture(scope="session")
-async def admin_user(test_db_manager: TestDatabaseManager) -> User:
+async def admin_user(test_db_manager: DatabaseTestManager) -> User:
     """Create admin user for the entire test session."""
     global _cached_admin_user
 
@@ -109,7 +124,7 @@ async def admin_user(test_db_manager: TestDatabaseManager) -> User:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def test_user(test_db_manager: TestDatabaseManager) -> User:
+async def test_user(test_db_manager: DatabaseTestManager) -> User:
     """Create regular test user for the entire test session."""
     global _cached_test_user
 

@@ -132,9 +132,17 @@ class BaseRepository(Generic[T]):
             # Remove ID from update data to prevent accidental changes
             kwargs.pop("id", None)
 
+            # Filter out None values to avoid overwriting with NULL
+            kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
             # Set audit fields
             if "updated_by" not in kwargs:
                 kwargs["updated_by"] = "system"
+
+            # Ensure we have something to update
+            if not kwargs or (len(kwargs) == 1 and "updated_by" in kwargs):
+                self.logger.warning("No fields to update", entity_id=entity_id_str)
+                return await self.get_by_id(entity_id_str)
 
             # Increment version for optimistic locking
             if hasattr(self.model, "version"):
@@ -470,6 +478,13 @@ class BaseRepository(Generic[T]):
             data["created_by"] = "system"
         if "updated_by" not in data:
             data["updated_by"] = data.get("created_by", "system")
+
+        # Set timestamps if model has them and they're not provided
+        now = datetime.now(timezone.utc)
+        if hasattr(self.model, "created_at") and "created_at" not in data:
+            data["created_at"] = now
+        if hasattr(self.model, "updated_at") and "updated_at" not in data:
+            data["updated_at"] = now
 
         entity = self.model(**data)
         self.session.add(entity)

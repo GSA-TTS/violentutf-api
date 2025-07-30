@@ -30,7 +30,7 @@ from app.models.user import User
 from app.repositories.api_key import APIKeyRepository
 from app.repositories.audit_log import AuditLogRepository
 from app.repositories.user import UserRepository
-from tests.test_database import TestDatabaseManager
+from tests.test_database import DatabaseTestManager
 
 
 class BenchmarkResult:
@@ -163,7 +163,7 @@ class TestPerformanceBenchmarks:
     @pytest_asyncio.fixture
     async def db_manager(self):
         """Get database manager instance."""
-        manager = TestDatabaseManager()
+        manager = DatabaseTestManager()
         await manager.initialize()
         yield manager
         await manager.shutdown()

@@ -413,7 +413,8 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             if partial:
                 update_data = item_data.model_dump(exclude_unset=True)
             else:
-                update_data = item_data.model_dump()
+                # For PUT, also exclude unset to avoid overwriting with None
+                update_data = item_data.model_dump(exclude_unset=True)
 
             # Add audit fields
             user_id = getattr(request.state, "user_id", None)
