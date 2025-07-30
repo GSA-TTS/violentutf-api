@@ -59,7 +59,10 @@ class TestMetricsMiddleware:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     @pytest.fixture(autouse=True)
@@ -82,7 +85,10 @@ class TestMetricsMiddleware:
         async def test_endpoint() -> Dict[str, str]:
             return {"message": "test"}
 
-        client = TestClient(app)
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client = FastAPITestClient(app)
 
         # Make request
         response = client.get("/test")
@@ -244,7 +250,10 @@ class TestMetricsMiddleware:
         from concurrent.futures import ThreadPoolExecutor
 
         def make_request(path: str) -> int:
-            client = TestClient(app)
+            # Import TestClient locally to ensure correct resolution
+            from fastapi.testclient import TestClient as FastAPITestClient
+
+            client = FastAPITestClient(app)
             response = client.get(path)
             return response.status_code
 

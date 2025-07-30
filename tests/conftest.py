@@ -27,6 +27,22 @@ from tests.test_fixtures import (  # noqa
 )
 
 
+@pytest.fixture(autouse=True)
+def ensure_testclient_import():
+    """Ensure TestClient is properly imported to avoid httpx Client confusion."""
+    # This forces the correct import early to avoid any confusion
+    from fastapi.testclient import TestClient as _TestClient
+
+    assert _TestClient.__module__ == "starlette.testclient"
+    yield
+
+
+@pytest.fixture
+def non_mocked_hosts():
+    """Configure pytest-httpx to not intercept local test requests."""
+    return ["test", "testserver", "localhost", "127.0.0.1", "app"]
+
+
 @pytest.fixture(scope="session")
 def event_loop() -> asyncio.AbstractEventLoop:
     """Create an instance of the default event loop for the test session."""
@@ -128,7 +144,10 @@ def app(test_settings: Settings, test_db_manager: TestDatabaseManager) -> FastAP
 @pytest.fixture(scope="function")
 def client(app: FastAPI) -> Generator[TestClient, None, None]:
     """Create test client."""
-    with TestClient(app) as test_client:
+    # Import TestClient locally to ensure correct resolution
+    from fastapi.testclient import TestClient as FastAPITestClient
+
+    with FastAPITestClient(app) as test_client:
         yield test_client
 
 

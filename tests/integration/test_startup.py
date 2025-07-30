@@ -43,7 +43,9 @@ class TestApplicationStartup:
         from app.main import create_application
 
         app = create_application()
-        with TestClient(app) as client:
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as client:
             # OpenAPI endpoints should return 404
             response = client.get("/api/v1/openapi.json")
             assert response.status_code == 404

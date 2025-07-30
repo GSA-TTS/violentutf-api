@@ -44,7 +44,10 @@ class TestRequestIDMiddleware:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     def test_request_id_generated(self, client: TestClient) -> None:
@@ -111,7 +114,9 @@ class TestRequestIDMiddleware:
             await asyncio.sleep(0.1)
             return {"message": "slow"}
 
-        client = TestClient(app)
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client = FastAPITestClient(app)
 
         with capture_logs() as cap_logs:
             start_time = time.time()
@@ -170,7 +175,9 @@ class TestRequestIDMiddleware:
             context = get_request_context()
             return {"request_id": getattr(request.state, "request_id", None), "context": context}
 
-        client = TestClient(app)
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client = FastAPITestClient(app)
         response = client.get("/context-test")
 
         assert response.status_code == 200
@@ -198,7 +205,9 @@ class TestRequestIDMiddleware:
         results = []
 
         def make_request(custom_id: str) -> str:
-            client = TestClient(app)
+            from fastapi.testclient import TestClient as FastAPITestClient
+
+            client = FastAPITestClient(app)
             response = client.get("/test", headers={"X-Request-ID": custom_id})
             return response.headers["X-Request-ID"]
 

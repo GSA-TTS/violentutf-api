@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from starlette.testclient import TestClient
+from fastapi.testclient import TestClient
 
 from app.middleware.response_cache import ResponseCacheMiddleware
 
@@ -374,7 +374,10 @@ class TestResponseCacheIntegration:
         # doesn't affect the middleware instance. We'll test the basic flow instead.
         app.add_middleware(ResponseCacheMiddleware, default_ttl=300, cache_patterns={"/api/v1/users": 600})
 
-        with TestClient(app) as client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as client:
             response = client.get("/api/v1/users")
 
             # Basic assertions - the endpoint should work
@@ -399,7 +402,10 @@ class TestResponseCacheIntegration:
             # Enable response caching
             mock_settings.ENABLE_RESPONSE_CACHE = True
 
-            with TestClient(app) as client:
+            # Import TestClient locally to ensure correct resolution
+            from fastapi.testclient import TestClient as FastAPITestClient
+
+            with FastAPITestClient(app) as client:
                 response = client.get("/api/v1/users")
 
                 # Should return cached response
@@ -415,7 +421,10 @@ class TestResponseCacheIntegration:
 
         with patch.object(cache_middleware, "_invalidate_cache_pattern") as mock_invalidate:
 
-            with TestClient(app) as client:
+            # Import TestClient locally to ensure correct resolution
+            from fastapi.testclient import TestClient as FastAPITestClient
+
+            with FastAPITestClient(app) as client:
                 # POST request should trigger invalidation
                 response = client.post("/api/v1/users")
 

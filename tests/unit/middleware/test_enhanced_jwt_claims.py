@@ -41,7 +41,10 @@ class TestEnhancedJWTClaims:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     def create_enhanced_jwt_token(

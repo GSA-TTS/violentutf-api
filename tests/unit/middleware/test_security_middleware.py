@@ -32,7 +32,10 @@ class TestSecurityHeadersMiddleware:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     def test_security_headers_present(self, client: TestClient) -> None:
@@ -130,7 +133,9 @@ class TestSecurityHeadersMiddleware:
         monkeypatch.setattr("app.core.config.settings.ENVIRONMENT", "development")
         setup_security_middleware(app_dev)
 
-        client_dev = TestClient(app_dev)
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client_dev = FastAPITestClient(app_dev)
         response_dev = client_dev.get("/test")
 
         # In development, CSP might allow unsafe-inline for scripts
@@ -213,7 +218,9 @@ class TestSecurityHeadersMiddleware:
         # For now, this test documents the possibility
         setup_security_middleware(app)
 
-        client = TestClient(app)
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client = FastAPITestClient(app)
         response = client.get("/test")
 
         # Regular CSP header should be present
@@ -235,7 +242,9 @@ class TestTrustedHostMiddleware:
 
         setup_security_middleware(app)
 
-        client = TestClient(app)
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        client = FastAPITestClient(app)
 
         # Basic test that the middleware doesn't break normal requests
         response = client.get("/test")

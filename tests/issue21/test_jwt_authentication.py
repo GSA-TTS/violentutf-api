@@ -36,7 +36,10 @@ class TestIssue21JWTAuthentication:
     @pytest.fixture
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     def test_jwt_token_generation(self):
@@ -288,7 +291,10 @@ class TestIssue21IntegrationScenarios:
     @pytest.fixture
     def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     def test_complete_authentication_flow_simulation(self):

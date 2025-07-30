@@ -77,7 +77,10 @@ class TestJWTAuthenticationMiddleware:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     @pytest_asyncio.fixture
@@ -163,7 +166,9 @@ class TestJWTAuthenticationMiddleware:
         async def register() -> Dict[str, str]:
             return {"register": "success"}
 
-        with TestClient(app) as client:
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as client:
             # Both should be exempt (startswith "/api/v1/auth")
             response = client.get("/api/v1/auth/login")
             assert response.status_code == 200
@@ -497,7 +502,9 @@ class TestJWTAuthenticationMiddleware:
         async def users_public() -> Dict[str, str]:
             return {"data": "protected"}
 
-        with TestClient(app) as client:
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as client:
             # Should require authentication (not exactly matching exempt/protected paths)
             response = client.get("/api/v1/auth-similar")
             assert response.status_code == 401
@@ -631,7 +638,10 @@ class TestSecurityLogging:
     @pytest.fixture
     def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        with TestClient(app) as test_client:
+        # Import TestClient locally to ensure correct resolution
+        from fastapi.testclient import TestClient as FastAPITestClient
+
+        with FastAPITestClient(app) as test_client:
             yield test_client
 
     @patch("app.middleware.authentication.logger")
