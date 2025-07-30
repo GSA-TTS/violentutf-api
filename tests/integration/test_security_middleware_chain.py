@@ -7,7 +7,7 @@ to ensure they work correctly together and don't interfere with each other.
 import asyncio
 import json
 import time
-from typing import Dict, List
+from typing import Dict, Generator, List
 from unittest.mock import patch
 
 import pytest
@@ -69,9 +69,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture

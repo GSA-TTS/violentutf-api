@@ -3,7 +3,7 @@
 import asyncio
 import re
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -42,9 +42,10 @@ class TestRequestIDMiddleware:
         return app
 
     @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
+    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def test_request_id_generated(self, client: TestClient) -> None:
         """Test that request ID is generated when not provided."""

@@ -8,7 +8,7 @@ Tests validate RBAC/ABAC foundations and security claim processing.
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import patch
 
 import pytest
@@ -39,9 +39,10 @@ class TestEnhancedJWTClaims:
         return app
 
     @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
+    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def create_enhanced_jwt_token(
         self,

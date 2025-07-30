@@ -10,6 +10,7 @@ This module tests critical security scenarios that were missing from the basic t
 import asyncio
 import time
 from datetime import datetime, timedelta
+from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,9 +44,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture

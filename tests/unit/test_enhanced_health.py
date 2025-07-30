@@ -1,7 +1,7 @@
 """Test enhanced health check endpoints with real database and cache connectivity."""
 
 import asyncio
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -14,10 +14,11 @@ class TestEnhancedHealthEndpoints:
     """Test enhanced health check endpoints."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator[TestClient, None, None]:
         """Create test client with enhanced health endpoints."""
         app = create_application()
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def test_health_check_basic(self, client: TestClient) -> None:
         """Test basic health check endpoint."""
@@ -307,10 +308,11 @@ class TestHealthCheckTracking:
     """Test that health check endpoints use monitoring decorators."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         app = create_application()
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     @patch("app.utils.monitoring.health_check_total")
     @patch("app.utils.monitoring.health_check_duration")
@@ -364,10 +366,11 @@ class TestHealthEndpointIntegration:
     """Test health endpoints with real integration scenarios."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
         app = create_application()
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def test_all_health_endpoints_accessible(self, client: TestClient) -> None:
         """Test that all health endpoints are accessible and return expected structure."""

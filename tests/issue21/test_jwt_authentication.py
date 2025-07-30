@@ -14,6 +14,7 @@ ensuring Issue #21 requirements are properly implemented and working.
 """
 
 from datetime import datetime, timedelta, timezone
+from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -33,9 +34,10 @@ class TestIssue21JWTAuthentication:
     """Test suite for Issue #21 JWT authentication requirements."""
 
     @pytest.fixture
-    def client(self):
+    def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def test_jwt_token_generation(self):
         """Test JWT token generation as required by Issue #21 Task 3."""
@@ -284,9 +286,10 @@ class TestIssue21IntegrationScenarios:
     """Integration test scenarios for Issue #21 requirements."""
 
     @pytest.fixture
-    def client(self):
+    def client(self) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     def test_complete_authentication_flow_simulation(self):
         """Test complete authentication flow simulating Issue #21 requirements."""

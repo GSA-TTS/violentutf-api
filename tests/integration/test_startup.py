@@ -1,11 +1,11 @@
 """Test application startup and integration."""
 
-from typing import Any
+from typing import Any, AsyncGenerator, Generator
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 class TestApplicationStartup:
@@ -43,17 +43,16 @@ class TestApplicationStartup:
         from app.main import create_application
 
         app = create_application()
-        client = TestClient(app)
+        with TestClient(app) as client:
+            # OpenAPI endpoints should return 404
+            response = client.get("/api/v1/openapi.json")
+            assert response.status_code == 404
 
-        # OpenAPI endpoints should return 404
-        response = client.get("/api/v1/openapi.json")
-        assert response.status_code == 404
+            response = client.get("/api/v1/docs")
+            assert response.status_code == 404
 
-        response = client.get("/api/v1/docs")
-        assert response.status_code == 404
-
-        response = client.get("/api/v1/redoc")
-        assert response.status_code == 404
+            response = client.get("/api/v1/redoc")
+            assert response.status_code == 404
 
     def test_middleware_chain(self, client: TestClient) -> None:
         """Test that middleware chain is working correctly."""
@@ -93,7 +92,8 @@ class TestApplicationStartup:
     @pytest.mark.asyncio
     async def test_async_client(self, app: FastAPI) -> None:
         """Test with async client."""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
             response = await ac.get("/api/v1/health")
             assert response.status_code == 200
 

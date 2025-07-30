@@ -5,7 +5,7 @@ import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.main import create_application
 
@@ -18,7 +18,8 @@ class TestHealthEndpointPerformance:
         """Test that basic health check completes within 200ms."""
         app = create_application()
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             start_time = time.time()
             response = await client.get("/api/v1/health")
             duration = (time.time() - start_time) * 1000  # Convert to milliseconds
@@ -36,7 +37,8 @@ class TestHealthEndpointPerformance:
         """Test that liveness check completes within 200ms."""
         app = create_application()
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             start_time = time.time()
             response = await client.get("/api/v1/live")
             duration = (time.time() - start_time) * 1000  # Convert to milliseconds
@@ -67,7 +69,8 @@ class TestHealthEndpointPerformance:
 
             app = create_application()
 
-            async with AsyncClient(app=app, base_url="http://test") as client:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
                 start_time = time.time()
                 response = await client.get("/api/v1/ready")
                 duration = (time.time() - start_time) * 1000  # Convert to milliseconds
@@ -109,13 +112,14 @@ class TestHealthEndpointPerformance:
             app = create_application()
 
             # First request should use cache
-            async with AsyncClient(app=app, base_url="http://test") as client:
-                start_time = time.time()
-                response = await client.get("/api/v1/ready")
-                duration = (time.time() - start_time) * 1000
+            transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            start_time = time.time()
+            response = await client.get("/api/v1/ready")
+            duration = (time.time() - start_time) * 1000
 
-                assert response.status_code == 200
-                assert duration < 200, f"Cached readiness check took {duration:.2f}ms"
+            assert response.status_code == 200
+            assert duration < 200, f"Cached readiness check took {duration:.2f}ms"
 
     @pytest.mark.asyncio
     async def test_parallel_health_checks_performance(self) -> None:
@@ -129,7 +133,8 @@ class TestHealthEndpointPerformance:
             assert response.status_code == 200
             return (time.time() - start) * 1000
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Run 10 concurrent health checks
             tasks = [make_health_request(client) for _ in range(10)]
             durations = await asyncio.gather(*tasks)
@@ -166,7 +171,8 @@ class TestHealthEndpointPerformance:
 
             app = create_application()
 
-            async with AsyncClient(app=app, base_url="http://test") as client:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
                 # Clear cache first
                 clear_health_check_cache()
 

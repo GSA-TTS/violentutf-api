@@ -9,14 +9,14 @@ import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, Generator, Optional
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from starlette.responses import Response
 
 from app.core.config import settings
@@ -75,14 +75,16 @@ class TestJWTAuthenticationMiddleware:
         return app
 
     @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
+    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     @pytest_asyncio.fixture
-    async def async_client(self, app: FastAPI) -> AsyncClient:
+    async def async_client(self, app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
         """Create async test client."""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
             yield ac
 
     # Test Data Generation Utilities
@@ -628,9 +630,10 @@ class TestSecurityLogging:
         return app
 
     @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
+    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     @patch("app.middleware.authentication.logger")
     def test_missing_token_logged(self, mock_logger, client: TestClient) -> None:

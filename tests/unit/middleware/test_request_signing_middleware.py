@@ -3,6 +3,7 @@
 import hashlib
 import hmac
 import time
+from typing import Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -42,9 +43,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture
@@ -110,22 +112,24 @@ class TestRequestSigningMiddleware:
         assert response.status_code == 400
         assert "Invalid timestamp" in response.json()["detail"]
 
-    def test_nonce_replay_detection(self, client, mock_cache):
+    def test_nonce_replay_detection(self, client):
         """Test nonce replay attack detection."""
-        # Mock nonce already exists
-        mock_cache.get.return_value = "used"
+        # Patch the middleware's _is_nonce_replayed method directly
+        with patch("app.middleware.request_signing.RequestSigningMiddleware._is_nonce_replayed") as mock_nonce_check:
+            # Mock nonce already exists
+            mock_nonce_check.return_value = True
 
-        current_time = str(int(time.time()))
-        headers = {
-            API_KEY_HEADER: "test_api_key",
-            SIGNATURE_HEADER: "dummy_signature",
-            TIMESTAMP_HEADER: current_time,
-            NONCE_HEADER: "replayed_nonce",
-        }
+            current_time = str(int(time.time()))
+            headers = {
+                API_KEY_HEADER: "test_api_key",
+                SIGNATURE_HEADER: "dummy_signature",
+                TIMESTAMP_HEADER: current_time,
+                NONCE_HEADER: "replayed_nonce",
+            }
 
-        response = client.post("/api/v1/admin/secret", headers=headers)
-        assert response.status_code == 401
-        assert "Nonce replay detected" in response.json()["detail"]
+            response = client.post("/api/v1/admin/secret", headers=headers)
+            assert response.status_code == 401
+            assert "Nonce replay detected" in response.json()["detail"]
 
     def test_invalid_api_key(self, client, mock_cache):
         """Test rejection of invalid API key."""

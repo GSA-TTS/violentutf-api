@@ -1,7 +1,7 @@
 """Tests for metrics collection middleware."""
 
 import asyncio
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -57,9 +57,10 @@ class TestMetricsMiddleware:
         return app
 
     @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
+    def client(self, app: FastAPI) -> Generator[TestClient, None, None]:
         """Create test client."""
-        return TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
     @pytest.fixture(autouse=True)
     def reset_metrics(self) -> None:

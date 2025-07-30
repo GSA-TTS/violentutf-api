@@ -1,5 +1,6 @@
 """Tests for session middleware."""
 
+from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -40,9 +41,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture

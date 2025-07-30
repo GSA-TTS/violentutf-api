@@ -12,7 +12,7 @@ This module tests sophisticated attack vectors that were missing from basic test
 
 import json
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 from unittest.mock import MagicMock, patch
 from urllib.parse import quote, quote_plus
 
@@ -62,9 +62,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 class TestUnicodeAttacks:

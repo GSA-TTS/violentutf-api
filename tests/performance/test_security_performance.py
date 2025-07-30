@@ -11,7 +11,7 @@ import random
 import string
 import time
 from statistics import mean, stdev
-from typing import Dict, List, Tuple
+from typing import Dict, Generator, List, Tuple
 from unittest.mock import patch
 
 import pytest
@@ -51,9 +51,10 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app) -> Generator[TestClient, None, None]:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 class TestSanitizationPerformance:
