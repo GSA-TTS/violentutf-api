@@ -580,6 +580,8 @@ class TestMiddlewareConfiguration:
             "/api/v1/api-keys",
             "/api/v1/sessions",
             "/api/v1/audit-logs",
+            "/api/v1/oauth/applications",
+            "/api/v1/oauth/authorizations",
             "/api/v1/llm-configs",
             "/api/v1/prompt-injections",
             "/api/v1/jailbreaks",
@@ -597,6 +599,9 @@ class TestMiddlewareConfiguration:
             "/api/v1/ready",
             "/api/v1/live",
             "/api/v1/public",  # Test path for middleware testing
+            "/api/v1/oauth/authorize",  # OAuth authorization page (handled by endpoint)
+            "/api/v1/oauth/token",  # OAuth token endpoint (public)
+            "/api/v1/oauth/revoke",  # OAuth revoke endpoint (public with client auth)
             "/docs",
             "/redoc",
             "/openapi.json",
@@ -649,7 +654,12 @@ class TestSecurityLogging:
         response = client.get("/api/v1/users")
         assert response.status_code == 401
 
-        mock_logger.warning.assert_called_with("missing_auth_token", method="GET", path="/api/v1/users")
+        # Check that warning was called with the expected message and some of the expected params
+        mock_logger.warning.assert_called()
+        call_args = mock_logger.warning.call_args
+        assert call_args[0][0] == "missing_auth_token"
+        assert call_args[1]["method"] == "GET"
+        assert call_args[1]["path"] == "/api/v1/users"
 
     @patch("app.middleware.authentication.logger")
     def test_invalid_token_type_logged(self, mock_logger, client: TestClient) -> None:

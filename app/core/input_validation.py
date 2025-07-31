@@ -135,7 +135,7 @@ def validate_string_field(
         if rule.required and value is None:
             raise InputValidationError(f"Required field", field=rule.field_name)
         if value is None:
-            return None  # type: ignore[return-value]
+            return None
 
     if not isinstance(value, str):
         raise InputValidationError(
@@ -217,7 +217,7 @@ def validate_string_field(
                     warnings=prompt_result.warnings,
                 )
 
-    return value  # type: ignore[no-any-return]
+    return value
 
 
 def validate_numeric_field(
@@ -280,7 +280,7 @@ def validate_numeric_field(
             field=rule.field_name,
         )
 
-    return value  # type: ignore[no-any-return]
+    return value
 
 
 def validate_array_field(

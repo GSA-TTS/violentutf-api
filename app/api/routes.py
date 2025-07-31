@@ -4,7 +4,19 @@ from typing import Any, Dict
 
 from fastapi import APIRouter
 
-from .endpoints import api_keys, audit_logs, auth, health, sessions, upload, users
+from .endpoints import (
+    api_keys,
+    audit_logs,
+    auth,
+    health,
+    health_auth,
+    mfa,
+    mfa_policies,
+    oauth,
+    sessions,
+    upload,
+    users,
+)
 
 api_router = APIRouter()
 
@@ -76,4 +88,32 @@ api_router.include_router(
         413: {"description": "Request entity too large"},
         422: {"description": "Validation error"},
     },
+)
+
+# Include OAuth2 endpoints
+api_router.include_router(
+    oauth.router,
+    tags=["OAuth2"],
+    responses=crud_error_responses,
+)
+
+# Include MFA endpoints
+api_router.include_router(
+    mfa.router,
+    tags=["MFA"],
+    responses=crud_error_responses,
+)
+
+# Include MFA Policy endpoints
+api_router.include_router(
+    mfa_policies.router,
+    tags=["MFA Policies"],
+    responses=crud_error_responses,
+)
+
+# Include Auth Health endpoints
+api_router.include_router(
+    health_auth.router,
+    tags=["Auth Health"],
+    responses=crud_error_responses,
 )

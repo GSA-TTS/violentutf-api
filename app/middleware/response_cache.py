@@ -84,7 +84,7 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
         if not self._should_cache_request(request):
             response = await call_next(request)
             await self._handle_cache_invalidation(request)
-            return response  # type: ignore[no-any-return]
+            return response
 
         # Generate cache key
         cache_key = self._generate_cache_key(request)
@@ -106,7 +106,7 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
         # Handle cache invalidation for write operations
         await self._handle_cache_invalidation(request)
 
-        return response  # type: ignore[no-any-return]
+        return response
 
     def _should_cache_request(self, request: Request) -> bool:
         """Determine if request should be cached."""

@@ -24,6 +24,9 @@ from app.schemas.session import (
     SessionUpdate,
 )
 
+# Import test fixtures
+from tests.test_fixtures import admin_token, auth_token  # noqa: F401
+
 
 class TestSessionEndpoints:
     """Test suite for Session CRUD endpoints."""
@@ -50,10 +53,11 @@ class TestSessionEndpoints:
             "exp": datetime.now(timezone.utc) + exp_delta,
         }
 
+        # Use the test SECRET_KEY directly
         encoded_jwt = jwt.encode(
             payload,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithm=settings.ALGORITHM,
+            "test-secret-key-for-testing-only-32chars",
+            algorithm="HS256",
         )
         return str(encoded_jwt)
 
@@ -130,16 +134,14 @@ class TestSessionEndpoints:
         return repo
 
     @pytest.fixture
-    def auth_headers(self) -> Dict[str, str]:
-        """Create authentication headers."""
-        token = self.create_test_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def auth_headers(self, auth_token: str) -> Dict[str, str]:
+        """Create authentication headers using test fixture token."""
+        return {"Authorization": f"Bearer {auth_token}"}
 
     @pytest.fixture
-    def admin_headers(self) -> Dict[str, str]:
-        """Create admin authentication headers."""
-        token = self.create_admin_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def admin_headers(self, admin_token: str) -> Dict[str, str]:
+        """Create admin authentication headers using test fixture token."""
+        return {"Authorization": f"Bearer {admin_token}"}
 
     @pytest.mark.asyncio
     async def test_list_sessions(

@@ -43,9 +43,9 @@ def sanitize_sensitive_data(
             if any(sensitive in lower_key for sensitive in sensitive_keys):
                 sanitized[key] = "***REDACTED***"
             elif isinstance(value, dict):
-                sanitized[key] = _sanitize_dict(value)  # type: ignore[assignment]
+                sanitized[key] = _sanitize_dict(value)
             elif isinstance(value, list):
-                sanitized[key] = [_sanitize_dict(item) if isinstance(item, dict) else item for item in value]  # type: ignore[assignment]
+                sanitized[key] = [_sanitize_dict(item) if isinstance(item, dict) else item for item in value]
             else:
                 sanitized[key] = value
         return sanitized

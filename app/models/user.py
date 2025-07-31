@@ -13,7 +13,10 @@ from app.models.mixins import BaseModelMixin
 if TYPE_CHECKING:
     from app.models.api_key import APIKey
     from app.models.audit_log import AuditLog
+    from app.models.mfa import MFABackupCode, MFAChallenge, MFADevice, MFAEvent
+    from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken
     from app.models.session import Session
+    from app.models.user_role import UserRole
 
 
 class User(Base, BaseModelMixin):
@@ -106,6 +109,71 @@ class User(Base, BaseModelMixin):
 
     sessions: Mapped[List["Session"]] = relationship(
         "Session",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    user_roles: Mapped[List["UserRole"]] = relationship(
+        "UserRole",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    # OAuth relationships
+    oauth_applications: Mapped[List["OAuthApplication"]] = relationship(
+        "OAuthApplication",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    oauth_access_tokens: Mapped[List["OAuthAccessToken"]] = relationship(
+        "OAuthAccessToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    oauth_refresh_tokens: Mapped[List["OAuthRefreshToken"]] = relationship(
+        "OAuthRefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    oauth_authorization_codes: Mapped[List["OAuthAuthorizationCode"]] = relationship(
+        "OAuthAuthorizationCode",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    # MFA relationships
+    mfa_devices: Mapped[List["MFADevice"]] = relationship(
+        "MFADevice",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    mfa_backup_codes: Mapped[List["MFABackupCode"]] = relationship(
+        "MFABackupCode",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    mfa_challenges: Mapped[List["MFAChallenge"]] = relationship(
+        "MFAChallenge",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    mfa_events: Mapped[List["MFAEvent"]] = relationship(
+        "MFAEvent",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="dynamic",

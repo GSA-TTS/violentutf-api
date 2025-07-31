@@ -16,12 +16,15 @@ from .core.config import Settings, settings
 from .core.errors import setup_error_handlers
 from .core.logging import setup_logging
 from .core.rate_limiting import limiter
+from .core.startup import on_shutdown, on_startup
+from .middleware.audit import audit_middleware
 from .middleware.authentication import JWTAuthenticationMiddleware
 from .middleware.csrf import CSRFProtectionMiddleware
 from .middleware.idempotency import IdempotencyMiddleware
 from .middleware.input_sanitization import InputSanitizationMiddleware
 from .middleware.logging import LoggingMiddleware
 from .middleware.metrics import MetricsMiddleware
+from .middleware.permissions import permission_checker
 from .middleware.rate_limiting import RateLimitingMiddleware
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.request_signing import RequestSigningMiddleware
@@ -114,12 +117,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("initializing_application_dependencies")
     await _initialize_database()
     await _initialize_cache()
+
+    # Run startup handler for auth services
+    await on_startup()
+
     logger.info("application_startup_complete")
 
     yield
 
     # Shutdown tasks
     logger.info("shutting_down_application")
+
+    # Run shutdown handler for auth services
+    await on_shutdown()
+
     await _shutdown_database()
     await _shutdown_cache()
 
@@ -169,16 +180,24 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
     # 7. CSRF Protection (after sessions) - configurable
     if app_settings.CSRF_PROTECTION:
         app.add_middleware(CSRFProtectionMiddleware)
-    # 8. JWT Authentication (after CSRF, before other processing)
+
+    # 8. Audit logging (log all requests for security)
+    app.middleware("http")(audit_middleware)
+
+    # 9. Permission checking (needs authenticated user)
+    app.middleware("http")(permission_checker)
+
+    # 10. JWT Authentication (must run AFTER permission/audit due to middleware ordering)
+    # Note: app.add_middleware() runs in reverse order, so this runs BEFORE permission checker
     app.add_middleware(JWTAuthenticationMiddleware)
-    # 9. Idempotency support (before input sanitization)
+    # 11. Idempotency support (before input sanitization)
     app.add_middleware(IdempotencyMiddleware)
-    # 10. Input sanitization (before request processing)
+    # 12. Input sanitization (before request processing)
     app.add_middleware(InputSanitizationMiddleware)
-    # 11. Request signing (for high-security endpoints) - configurable
+    # 13. Request signing (for high-security endpoints) - configurable
     if app_settings.REQUEST_SIGNING_ENABLED:
         app.add_middleware(RequestSigningMiddleware)
-    # 12. CORS
+    # 14. CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.ALLOWED_ORIGINS,
@@ -187,10 +206,10 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
         allow_headers=app_settings.ALLOWED_HEADERS,
     )
 
-    # 13. GZip compression
+    # 15. GZip compression
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # 14. Security headers (should be near the end)
+    # 16. Security headers (should be near the end)
     setup_security_middleware(app)
 
     # Include API routes

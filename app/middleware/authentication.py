@@ -8,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
-from ..core.config import settings
+from ..core.config import get_settings
 from ..core.security import decode_token
 
 logger = get_logger(__name__)
@@ -19,6 +19,8 @@ PROTECTED_PATHS: List[str] = [
     "/api/v1/api-keys",
     "/api/v1/sessions",
     "/api/v1/audit-logs",
+    "/api/v1/oauth/applications",
+    "/api/v1/oauth/authorizations",
     "/api/v1/llm-configs",
     "/api/v1/prompt-injections",
     "/api/v1/jailbreaks",
@@ -33,6 +35,9 @@ EXEMPT_PATHS: List[str] = [
     "/api/v1/ready",
     "/api/v1/live",
     "/api/v1/public",  # Test path for middleware testing
+    "/api/v1/oauth/authorize",  # OAuth authorization page (handled by endpoint)
+    "/api/v1/oauth/token",  # OAuth token endpoint (public)
+    "/api/v1/oauth/revoke",  # OAuth revoke endpoint (public with client auth)
     "/docs",
     "/redoc",
     "/openapi.json",
@@ -64,6 +69,14 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
         if self._is_path_exempt(request.url.path):
             return await call_next(request)
 
+        # Debug log
+        logger.info(
+            "jwt_auth_checking_path",
+            path=request.url.path,
+            method=request.method,
+            has_auth_header="authorization" in request.headers,
+        )
+
         # All non-exempt paths require authentication by default
         # This is more secure than requiring explicit protection
 
@@ -74,11 +87,18 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                 "missing_auth_token",
                 method=request.method,
                 path=request.url.path,
+                headers=list(request.headers.keys()),
+                auth_header=request.headers.get("authorization"),
             )
             return self._unauthorized_response("Missing authentication token")
 
         # Validate JWT token
         try:
+            logger.debug(
+                "validating_token",
+                token_prefix=token[:20] if token else None,
+                path=request.url.path,
+            )
             payload = decode_token(token)
 
             # Validate token type
@@ -118,13 +138,16 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                 "auth_token_invalid",
                 error=str(e),
                 path=request.url.path,
+                token_prefix=token[:20] if token else None,
             )
             return self._unauthorized_response("Invalid authentication token")
         except Exception as e:
             logger.error(
                 "auth_error",
                 error=str(e),
+                error_type=type(e).__name__,
                 path=request.url.path,
+                token_prefix=token[:20] if token else None,
             )
             return self._unauthorized_response("Authentication error")
 
@@ -244,5 +267,5 @@ def require_auth(func: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Decorated function
     """
-    func._requires_auth = True  # type: ignore
+    func._requires_auth = True
     return func

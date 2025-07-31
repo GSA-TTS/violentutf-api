@@ -36,9 +36,11 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     """Login response model."""
 
-    access_token: str
-    refresh_token: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
+    mfa_required: bool = False
+    mfa_challenge_id: Optional[str] = None
 
 
 class UserCreate(BaseModel):
@@ -157,7 +159,31 @@ async def login(
                 detail="Account is inactive or not verified",
             )
 
-        # Create JWT tokens with complete claims per ADR-003
+        # Check if MFA is required
+        from app.services.mfa_service import MFAService
+
+        mfa_service = MFAService(db)
+
+        if await mfa_service.check_mfa_required(user):
+            # Create MFA challenge instead of returning tokens
+            challenge_id = await mfa_service.create_mfa_challenge(user)
+
+            logger.info(
+                "mfa_challenge_created",
+                username=user.username,
+                user_id=str(user.id),
+                ip_address=client_ip,
+            )
+
+            # Return a response indicating MFA is required
+            return LoginResponse(
+                access_token=None,
+                refresh_token=None,
+                mfa_required=True,
+                mfa_challenge_id=challenge_id,
+            )
+
+        # No MFA required, create JWT tokens with complete claims per ADR-003
         token_data = {
             "sub": str(user.id),
             "roles": user.roles,
@@ -176,6 +202,7 @@ async def login(
         return LoginResponse(
             access_token=access_token,
             refresh_token=refresh_token,
+            mfa_required=False,
         )
 
     except HTTPException:

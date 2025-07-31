@@ -214,5 +214,5 @@ def exempt_from_csrf(func: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Decorated function
     """
-    func._csrf_exempt = True  # type: ignore
+    func._csrf_exempt = True
     return func

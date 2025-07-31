@@ -110,9 +110,8 @@ repos:
     hooks:
       - id: unit-tests
         name: Core Unit Tests (stricter than CI)
-        entry: python3 -m pytest
+        entry: python3 .pre-commit-pytest-runner.py
         language: system
-        args: ['tests/unit/', '-v', '--tb=short', '--maxfail=50', '-m', 'not slow and not integration and not docker', '--timeout=60']
         files: '\.(py)$'
         require_serial: true
         pass_filenames: false

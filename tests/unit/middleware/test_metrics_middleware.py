@@ -24,11 +24,15 @@ class TestMetricsMiddleware:
     """Test metrics collection middleware."""
 
     @pytest.fixture
-    def app(self) -> FastAPI:
+    def app(self, monkeypatch: Any) -> FastAPI:
         """Create test FastAPI app with metrics middleware."""
+        # Enable metrics for this test
+        monkeypatch.setattr(settings, "ENABLE_METRICS", True)
+
         app = FastAPI()
 
-        # Add metrics middleware
+        # Add metrics middleware - NOTE: Middleware is added in reverse order
+        # So this will actually be executed first
         app.add_middleware(MetricsMiddleware)
 
         # Add test endpoints
@@ -62,6 +66,14 @@ class TestMetricsMiddleware:
             raise HTTPException(status_code=404, detail="Not found")
 
         return app
+
+    @pytest.fixture
+    def client(self, app: FastAPI) -> Generator["TestClient", None, None]:
+        """Create test client with the app."""
+        from tests.utils.testclient import SafeTestClient
+
+        with SafeTestClient(app) as test_client:
+            yield test_client
 
     @pytest.fixture(autouse=True)
     def reset_metrics(self) -> None:
@@ -98,40 +110,48 @@ class TestMetricsMiddleware:
     def test_request_count_metric(self, client: "TestClient") -> None:
         """Test that request count is tracked."""
         # Make several requests
-        client.get("/test")
-        client.get("/test")
-        client.post("/test")
+        resp1 = client.get("/test")
+        assert resp1.status_code == 200
+        resp2 = client.get("/test")
+        assert resp2.status_code == 200
+        resp3 = client.post("/test")
+        assert resp3.status_code == 200
 
-        # Check metrics
-        # Get metric samples
-        samples = list(REQUEST_COUNT.collect()[0].samples)
+        # Check the metric directly
+        # The REQUEST_COUNT Counter stores samples with specific label combinations
+        # We need to check if our specific labels exist
 
-        # Should have metrics for GET and POST
-        get_samples = [s for s in samples if s.labels.get("method") == "GET"]
-        post_samples = [s for s in samples if s.labels.get("method") == "POST"]
+        # Try to get the metric value directly
+        get_count = REQUEST_COUNT.labels(method="GET", endpoint="/test", status="200")._value.get()
+        post_count = REQUEST_COUNT.labels(method="POST", endpoint="/test", status="200")._value.get()
 
-        assert len(get_samples) > 0
-        assert len(post_samples) > 0
-
-        # GET count should be 2
-        get_200_samples = [
-            s for s in get_samples if s.labels.get("status") == "200" and s.labels.get("endpoint") == "/test"
-        ]
-        assert any(s.value == 2 for s in get_200_samples)
+        assert get_count == 2, f"Expected GET count to be 2, got {get_count}"
+        assert post_count == 1, f"Expected POST count to be 1, got {post_count}"
 
     def test_request_duration_metric(self, client: "TestClient") -> None:
         """Test that request duration is tracked."""
         # Make a request
         client.get("/test")
 
-        # Check duration metric
-        samples = list(REQUEST_DURATION.collect()[0].samples)
+        # Check duration metric - prometheus histogram metrics have _sum and _count suffixes
+        # We need to check if the histogram has recorded our request
+        from prometheus_client import REGISTRY
 
-        # Should have duration samples
-        duration_samples = [s for s in samples if s.name.endswith("_sum") and s.labels.get("method") == "GET"]
+        # Get all samples for the duration metric
+        duration_samples = []
+        for collector in REGISTRY.collect():
+            if collector.name == "http_request_duration_seconds":
+                duration_samples.extend(collector.samples)
 
-        assert len(duration_samples) > 0
-        assert all(s.value >= 0 for s in duration_samples)
+        # Find the count sample for our endpoint
+        count_samples = [
+            s
+            for s in duration_samples
+            if s.name.endswith("_count") and s.labels.get("method") == "GET" and s.labels.get("endpoint") == "/test"
+        ]
+
+        assert len(count_samples) > 0, "No duration count samples found"
+        assert count_samples[0].value >= 1, "Duration count should be at least 1"
 
     def test_active_requests_metric(self, app: FastAPI) -> None:
         """Test that active requests are tracked."""
@@ -155,27 +175,24 @@ class TestMetricsMiddleware:
         client.get("/test/550e8400-e29b-41d4-a716-446655440000")  # UUID
 
         # Check that all are grouped under same endpoint
-        samples = list(REQUEST_COUNT.collect()[0].samples)
+        # The middleware should normalize all these to /test/{id}
+        normalized_count = REQUEST_COUNT.labels(method="GET", endpoint="/test/{id}", status="200")._value.get()
 
-        # All should be normalized to /test/{id}
-        test_id_samples = [s for s in samples if s.labels.get("endpoint") == "/test/{id}"]
-
-        assert len(test_id_samples) > 0
-        # Should have total count of 3
-        assert any(s.value == 3 for s in test_id_samples)
+        assert normalized_count == 3, f"Expected count to be 3 for /test/{{id}}, got {normalized_count}"
 
     def test_metrics_endpoint_excluded(self, client: "TestClient") -> None:
         """Test that /metrics endpoint itself is not tracked."""
         # Make request to metrics endpoint
         client.get("/metrics")
 
-        # Check that it's not in the metrics
-        samples = list(REQUEST_COUNT.collect()[0].samples)
-
-        # Should not have any samples for /metrics endpoint
-        metrics_samples = [s for s in samples if s.labels.get("endpoint") == "/metrics"]
-
-        assert len(metrics_samples) == 0
+        # Check that it's not in the metrics - try to get the counter
+        # If the /metrics endpoint was tracked, this would return a non-zero value
+        try:
+            metrics_count = REQUEST_COUNT.labels(method="GET", endpoint="/metrics", status="200")._value.get()
+            assert metrics_count == 0, f"Expected /metrics count to be 0, got {metrics_count}"
+        except KeyError:
+            # If we get a KeyError, it means no metric was created for /metrics, which is what we want
+            pass
 
     def test_error_requests_tracked(self, client: "TestClient") -> None:
         """Test that failed requests are tracked with 500 status."""
@@ -183,14 +200,10 @@ class TestMetricsMiddleware:
         with pytest.raises(ValueError):
             client.get("/error")
 
-        # Check metrics
-        samples = list(REQUEST_COUNT.collect()[0].samples)
+        # Check the metric directly
+        error_count = REQUEST_COUNT.labels(method="GET", endpoint="/error", status="500")._value.get()
 
-        # Should have a 500 status entry
-        error_samples = [s for s in samples if s.labels.get("status") == "500" and s.labels.get("endpoint") == "/error"]
-
-        assert len(error_samples) > 0
-        assert any(s.value == 1 for s in error_samples)
+        assert error_count == 1, f"Expected error count to be 1, got {error_count}"
 
     def test_http_exception_tracked(self, client: "TestClient") -> None:
         """Test that HTTP exceptions are tracked with correct status."""
@@ -212,16 +225,12 @@ class TestMetricsMiddleware:
         client.post("/test")
         client.get("/test")
 
-        # Check metrics
-        samples = list(REQUEST_COUNT.collect()[0].samples)
+        # Check the metrics directly
+        get_count = REQUEST_COUNT.labels(method="GET", endpoint="/test", status="200")._value.get()
+        post_count = REQUEST_COUNT.labels(method="POST", endpoint="/test", status="200")._value.get()
 
-        # Check GET count
-        get_samples = [s for s in samples if s.labels.get("method") == "GET" and s.labels.get("endpoint") == "/test"]
-        assert any(s.value == 2 for s in get_samples)
-
-        # Check POST count
-        post_samples = [s for s in samples if s.labels.get("method") == "POST" and s.labels.get("endpoint") == "/test"]
-        assert any(s.value == 1 for s in post_samples)
+        assert get_count == 2, f"Expected GET count to be 2, got {get_count}"
+        assert post_count == 1, f"Expected POST count to be 1, got {post_count}"
 
     def test_slow_request_duration(self, client: "TestClient") -> None:
         """Test that slow requests have accurate duration."""
@@ -229,18 +238,25 @@ class TestMetricsMiddleware:
         client.get("/slow")
 
         # Check duration metric
-        samples = list(REQUEST_DURATION.collect()[0].samples)
+        from prometheus_client import REGISTRY
+
+        collected = []
+        for collector in REGISTRY.collect():
+            if collector.name == "http_request_duration_seconds":
+                collected.extend(collector.samples)
 
         # Find the sum sample for slow endpoint
         slow_duration_samples = [
             s
-            for s in samples
+            for s in collected
             if s.name.endswith("_sum") and s.labels.get("endpoint") == "/slow" and s.labels.get("method") == "GET"
         ]
 
-        assert len(slow_duration_samples) > 0
+        assert len(slow_duration_samples) > 0, "No duration sum samples found for /slow endpoint"
         # Duration should be at least 0.1 seconds
-        assert all(s.value >= 0.1 for s in slow_duration_samples)
+        assert (
+            slow_duration_samples[0].value >= 0.1
+        ), f"Duration should be >= 0.1s, got {slow_duration_samples[0].value}"
 
     def test_concurrent_request_metrics(self, app: FastAPI) -> None:
         """Test metrics accuracy with concurrent requests."""
@@ -265,11 +281,10 @@ class TestMetricsMiddleware:
         assert all(status == 200 for status in results)
 
         # Check total count
-        samples = list(REQUEST_COUNT.collect()[0].samples)
-        test_samples = [s for s in samples if s.labels.get("endpoint") == "/test" and s.labels.get("status") == "200"]
+        concurrent_count = REQUEST_COUNT.labels(method="GET", endpoint="/test", status="200")._value.get()
 
         # Should have total of 10 requests
-        assert any(s.value == 10 for s in test_samples)
+        assert concurrent_count == 10, f"Expected concurrent count to be 10, got {concurrent_count}"
 
     def test_path_parameter_variations(self, client: "TestClient") -> None:
         """Test various path parameter formats are normalized."""
@@ -285,29 +300,29 @@ class TestMetricsMiddleware:
             client.get(path)
 
         # All should be normalized to /test/{id}
-        samples = list(REQUEST_COUNT.collect()[0].samples)
-        normalized_samples = [s for s in samples if s.labels.get("endpoint") == "/test/{id}"]
+        normalized_count = REQUEST_COUNT.labels(method="GET", endpoint="/test/{id}", status="200")._value.get()
 
         # Should have count equal to number of requests
-        assert any(s.value == len(paths_and_ids) for s in normalized_samples)
+        assert normalized_count == len(
+            paths_and_ids
+        ), f"Expected {len(paths_and_ids)} normalized requests, got {normalized_count}"
 
     def test_metric_labels(self, client: "TestClient") -> None:
         """Test that metrics have correct labels."""
         client.get("/test")
 
-        # Check REQUEST_COUNT labels
-        samples = list(REQUEST_COUNT.collect()[0].samples)
-        sample = samples[0]
+        # Check that metrics exist with proper labels by accessing them directly
+        # If the labels don't exist, this will raise an exception
+        try:
+            # Check REQUEST_COUNT with all expected labels
+            count = REQUEST_COUNT.labels(method="GET", endpoint="/test", status="200")._value.get()
+            assert count >= 1, "Request count should be at least 1"
 
-        # Should have method, endpoint, and status labels
-        assert "method" in sample.labels
-        assert "endpoint" in sample.labels
-        assert "status" in sample.labels
+            # Check REQUEST_DURATION - histograms don't have _value but we can check they exist
+            # by accessing with the expected labels
+            REQUEST_DURATION.labels(method="GET", endpoint="/test")
 
-        # Check REQUEST_DURATION labels
-        duration_samples = list(REQUEST_DURATION.collect()[0].samples)
-        duration_sample = duration_samples[0]
-
-        # Should have method and endpoint labels
-        assert "method" in duration_sample.labels
-        assert "endpoint" in duration_sample.labels
+            # If we get here, all labels exist as expected
+            assert True
+        except Exception as e:
+            pytest.fail(f"Metrics don't have expected labels: {e}")

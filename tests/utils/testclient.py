@@ -63,3 +63,14 @@ class SafeTestClient(StarletteTestClient):
             headers=headers,
             follow_redirects=follow_redirects,
         )
+
+
+def get_test_client() -> SafeTestClient:
+    """Get a test client instance for testing.
+
+    Returns:
+        SafeTestClient instance
+    """
+    from app.main import app
+
+    return SafeTestClient(app)

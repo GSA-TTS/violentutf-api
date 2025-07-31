@@ -97,9 +97,7 @@ def protect_with_circuit_breaker(
             loop = asyncio.new_event_loop()
             try:
                 # Cast to Any to avoid type issues
-                result: Any = loop.run_until_complete(
-                    circuit_breaker.call(_async_func, *args, **kwargs)  # type: ignore[arg-type]
-                )
+                result: Any = loop.run_until_complete(circuit_breaker.call(_async_func, *args, **kwargs))
                 return cast(T, result)
             except CircuitBreakerException as e:
                 if log_errors:

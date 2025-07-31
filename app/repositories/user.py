@@ -109,13 +109,21 @@ class UserRepository(BaseRepository[User]):
             if not user:
                 user = await self.get_by_email(username)
 
+            # Always run password verification to prevent timing attacks
+            # Use a dummy hash if user not found
             if not user:
                 self.logger.debug("User not found for authentication", username=username)
+                # Use a consistent dummy hash to prevent timing attacks
+                # This hash is for "dummy_password_for_timing_attack_prevention"
+                dummy_hash = "$2b$12$7qK8hQgzR3V3XgZLddQJyOWPZPL1GQ3nPGhcQd3cZkYFRZeG.0a.a"
+                verify_password(password, dummy_hash)  # Run verification anyway
                 return None
 
             # Check if user is active
             if not user.is_active:
                 self.logger.warning("Inactive user attempted login", username=username, user_id=user.id)
+                # Still verify password to maintain consistent timing
+                verify_password(password, user.password_hash)
                 return None
 
             # Verify password

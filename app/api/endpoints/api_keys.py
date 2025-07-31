@@ -24,6 +24,7 @@ from app.schemas.api_key import (
     APIKeyUsageStats,
 )
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult, PaginatedResponse
+from app.services.api_key_service import APIKeyService
 
 logger = get_logger(__name__)
 
@@ -52,7 +53,6 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
 
     def _register_endpoints(self) -> None:
         """Override base endpoint registration to customize create endpoint."""
-
         # Register custom endpoints first to avoid routing conflicts
         self._add_custom_endpoints()
 
@@ -168,32 +168,12 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
     ) -> BaseResponse[Any]:  # Using Any to allow APIKeyCreateResponse override
         """Override base create to implement custom API key creation logic."""
         try:
-            repo = APIKeyRepository(session)
-
             # Get current user
             current_user_id = self._get_current_user_id(request)
 
-            # Validate key name availability
-            await self._validate_key_name_availability(repo, item_data.name, current_user_id)
-
-            # Generate API key
-            full_key, key_prefix, key_hash = self._generate_api_key()
-
-            # Prepare API key data with proper typing
-            api_key_data: Dict[str, Any] = {
-                "name": item_data.name,
-                "description": item_data.description,
-                "key_hash": key_hash,
-                "key_prefix": key_prefix,
-                "permissions": item_data.permissions,
-                "expires_at": item_data.expires_at,
-                "user_id": current_user_id,
-                "created_by": current_user_id,
-                "updated_by": current_user_id,
-            }
-
-            # Create API key
-            api_key = await repo.create(api_key_data)
+            # Use enhanced service layer
+            api_key_service = APIKeyService(session)
+            api_key, full_key = await api_key_service.create_api_key(current_user_id, item_data)
             await session.commit()
 
             # Create response with full key (only time it's shown)
@@ -211,14 +191,6 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
                 created_by=api_key.created_by,
                 updated_by=api_key.updated_by,
                 version=api_key.version,
-            )
-
-            logger.info(
-                "api_key_created",
-                api_key_id=str(api_key.id),
-                name=api_key.name,
-                user_id=current_user_id,
-                permissions=list(item_data.permissions.keys()),
             )
 
             return self._build_base_response(response_key, "API key created successfully", request)
@@ -327,7 +299,9 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         """Add API key-specific endpoints."""
         self._register_my_keys_endpoint()
         self._register_revoke_endpoint()
+        self._register_rotate_endpoint()
         self._register_validate_endpoint()
+        self._register_analytics_endpoint()
         self._register_permission_templates_endpoint()
         self._register_usage_stats_endpoint()
         self._register_record_usage_endpoint()
@@ -416,6 +390,57 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
                     )
                 raise
 
+    def _register_rotate_endpoint(self) -> None:
+        """Register the rotate API key endpoint."""
+
+        @self.router.post(
+            "/{key_id}/rotate",
+            response_model=BaseResponse[APIKeyCreateResponse],
+            summary="Rotate API Key",
+            description="Generate a new key value for an existing API key.",
+        )
+        async def rotate_api_key(
+            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+        ) -> BaseResponse[APIKeyCreateResponse]:
+            """Rotate an API key to generate a new key value."""
+            try:
+                current_user_id = self._get_current_user_id(request)
+
+                # Use enhanced service layer
+                api_key_service = APIKeyService(session)
+                api_key, new_full_key = await api_key_service.rotate_api_key(str(key_id), current_user_id)
+                await session.commit()
+
+                # Create response with new full key (only time it's shown)
+                response_key = APIKeyCreateResponse(
+                    id=api_key.id,
+                    name=api_key.name,
+                    description=api_key.description,
+                    key=new_full_key,  # New full key only shown once
+                    key_prefix=api_key.key_prefix,
+                    permissions=api_key.permissions,
+                    expires_at=api_key.expires_at,
+                    user_id=api_key.user_id,
+                    created_at=api_key.created_at,
+                    updated_at=api_key.updated_at,
+                    created_by=api_key.created_by,
+                    updated_by=api_key.updated_by,
+                    version=api_key.version,
+                )
+
+                return self._build_base_response(response_key, "API key rotated successfully", request)
+
+            except Exception as e:
+                await session.rollback()
+                if not isinstance(e, (NotFoundError, ValidationError, ForbiddenError)):
+                    logger.error(
+                        "api_key_rotation_error",
+                        api_key_id=str(key_id),
+                        error=str(e),
+                        exc_info=True,
+                    )
+                raise
+
     def _register_validate_endpoint(self) -> None:
         """Register the validate API key endpoint."""
 
@@ -441,6 +466,37 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             message = f"API key is {'valid' if is_valid else 'invalid'}"
 
             return self._build_operation_result(is_valid, message, request, affected_rows=0)
+
+    def _register_analytics_endpoint(self) -> None:
+        """Register the analytics endpoint."""
+
+        @self.router.get(
+            "/my-analytics",
+            response_model=BaseResponse[Dict[str, Any]],
+            summary="Get My API Key Analytics",
+            description="Get analytics and usage statistics for current user's API keys.",
+        )
+        async def get_my_analytics(
+            request: Request, session: AsyncSession = Depends(get_db)  # noqa: B008
+        ) -> BaseResponse[Dict[str, Any]]:
+            """Get analytics for current user's API keys."""
+            try:
+                current_user_id = self._get_current_user_id(request)
+
+                # Use enhanced service layer
+                api_key_service = APIKeyService(session)
+                analytics = await api_key_service.get_key_analytics(current_user_id)
+
+                return self._build_base_response(analytics, "Analytics retrieved successfully", request)
+
+            except Exception as e:
+                logger.error(
+                    "api_key_analytics_error",
+                    user_id=self._get_current_user_id(request),
+                    error=str(e),
+                    exc_info=True,
+                )
+                raise
 
     def _register_permission_templates_endpoint(self) -> None:
         """Register the permission templates endpoint."""

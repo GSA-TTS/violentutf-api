@@ -4,7 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from typing import TYPE_CHECKING, AsyncGenerator, Generator
+
+# Clear any cached modules BEFORE importing anything from app
+modules_to_remove = []
+for module_name in list(sys.modules.keys()):
+    if module_name.startswith("app."):
+        modules_to_remove.append(module_name)
+
+for module_name in modules_to_remove:
+    del sys.modules[module_name]
 
 import pytest
 import pytest_asyncio
@@ -53,6 +63,11 @@ def event_loop() -> asyncio.AbstractEventLoop:
 @pytest.fixture(scope="session")
 def test_settings() -> Settings:
     """Override settings for testing."""
+    # Clear the settings cache to ensure test settings are used
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+
     # Use separate test database to avoid conflicts
     test_db_url = "sqlite+aiosqlite:///./test_violentutf.db"
 

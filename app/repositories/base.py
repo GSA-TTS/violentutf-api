@@ -721,7 +721,7 @@ class BaseRepository(Generic[T]):
 
         # Handle simple comparison operators
         if operator in simple_operators:
-            return simple_operators[operator](field, value)  # type: ignore[no-untyped-call,no-any-return]
+            return simple_operators[operator](field, value)  # type: ignore[no-untyped-call]
 
         # Handle special operators with type checking
         return self._build_special_filter_condition(field, operator, value)

@@ -524,6 +524,12 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
 
         # Get user from request state (set by auth middleware)
         user = getattr(request.state, "user", None)
+        logger.debug(
+            "check_permissions",
+            has_user=user is not None,
+            user_id=getattr(request.state, "user_id", None),
+            request_state_attrs=list(vars(request.state).keys()) if hasattr(request, "state") else None,
+        )
         if not user:
             raise ForbiddenError(message="Authentication required")
 

@@ -63,7 +63,7 @@ def get_rate_limit_key(request: Request) -> str:
     """
     # Check if request has state attribute
     if not hasattr(request, "state"):
-        return get_remote_address(request)  # type: ignore[no-any-return]
+        return get_remote_address(request)
 
     # Check if user is authenticated with JWT
     user_id = getattr(request.state, "user_id", None)
@@ -83,7 +83,7 @@ def get_rate_limit_key(request: Request) -> str:
         return f"api_key:{api_key[:8]}"
 
     # Fall back to IP address for unauthenticated requests
-    return get_remote_address(request)  # type: ignore[no-any-return]
+    return get_remote_address(request)
 
 
 def get_rate_limit(endpoint_type: str) -> str:
@@ -189,7 +189,7 @@ def ip_rate_limit(rate_limit_str: str) -> Callable[..., Any]:
 
         return disabled_decorator
 
-    return ip_limiter.limit(rate_limit_str)  # type: ignore[no-any-return]
+    return ip_limiter.limit(rate_limit_str)
 
 
 def add_rate_limit_headers(request: Request, response: Any) -> None:

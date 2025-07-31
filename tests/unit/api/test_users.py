@@ -18,6 +18,9 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
 
+# Import test fixtures
+from tests.test_fixtures import admin_token, auth_token  # noqa: F401
+
 
 class TestUserEndpoints:
     """Test suite for User CRUD endpoints."""
@@ -44,10 +47,11 @@ class TestUserEndpoints:
             "exp": datetime.now(timezone.utc) + exp_delta,
         }
 
+        # Use the test SECRET_KEY directly
         encoded_jwt = jwt.encode(
             payload,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithm=settings.ALGORITHM,
+            "test-secret-key-for-testing-only-32chars",
+            algorithm="HS256",
         )
         return str(encoded_jwt)
 
@@ -94,16 +98,14 @@ class TestUserEndpoints:
         return repo
 
     @pytest.fixture
-    def auth_headers(self) -> Dict[str, str]:
-        """Create authentication headers."""
-        token = self.create_test_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def auth_headers(self, auth_token: str) -> Dict[str, str]:
+        """Create authentication headers using test fixture token."""
+        return {"Authorization": f"Bearer {auth_token}"}
 
     @pytest.fixture
-    def admin_headers(self) -> Dict[str, str]:
-        """Create admin authentication headers."""
-        token = self.create_admin_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def admin_headers(self, admin_token: str) -> Dict[str, str]:
+        """Create admin authentication headers using test fixture token."""
+        return {"Authorization": f"Bearer {admin_token}"}
 
     @pytest.mark.asyncio
     async def test_list_users(

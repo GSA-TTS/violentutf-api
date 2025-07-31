@@ -91,15 +91,25 @@ class TestConfiguration:
 
     def test_default_values(self) -> None:
         """Test default configuration values."""
-        settings = Settings(SECRET_KEY=TEST_SECRET_KEY, _env_file=None)  # pragma: allowlist secret
+        import os
 
-        assert settings.PROJECT_NAME == "ViolentUTF API"
-        assert settings.VERSION == "1.0.0"
-        assert settings.API_V1_STR == "/api/v1"
-        assert settings.ENVIRONMENT == "development"
-        assert settings.DEBUG is False
-        assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 30
-        assert settings.RATE_LIMIT_PER_MINUTE == 60
+        # Save current DEBUG value if it exists
+        old_debug = os.environ.pop("DEBUG", None)
+        try:
+            # Test without DEBUG env var to get true default
+            settings = Settings(SECRET_KEY=TEST_SECRET_KEY, _env_file=None)  # pragma: allowlist secret
+
+            assert settings.PROJECT_NAME == "ViolentUTF API"
+            assert settings.VERSION == "1.0.0"
+            assert settings.API_V1_STR == "/api/v1"
+            assert settings.ENVIRONMENT == "development"
+            assert settings.DEBUG is False
+            assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 30
+            assert settings.RATE_LIMIT_PER_MINUTE == 60
+        finally:
+            # Restore DEBUG if it existed
+            if old_debug is not None:
+                os.environ["DEBUG"] = old_debug
 
     def test_is_production_property(self) -> None:
         """Test is_production property."""

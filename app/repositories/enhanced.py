@@ -221,16 +221,13 @@ class EnhancedRepository(BaseRepository[T]):
         """Build operator-specific condition."""
         # Equality operators
         if operator in (FilterOperator.EQ, FilterOperator.NE):
-            return self._build_equality_condition(field, operator, value)  # type: ignore[arg-type]
-
+            return self._build_equality_condition(field, operator, value)
         # Comparison operators
         if operator in (FilterOperator.GT, FilterOperator.GTE, FilterOperator.LT, FilterOperator.LTE):
-            return self._build_comparison_condition(field, operator, value)  # type: ignore[arg-type]
-
+            return self._build_comparison_condition(field, operator, value)
         # Collection operators
         if operator in (FilterOperator.IN, FilterOperator.NIN):
-            return self._build_collection_condition(field, operator, value)  # type: ignore[arg-type]
-
+            return self._build_collection_condition(field, operator, value)
         # String operators
         if operator in (
             FilterOperator.CONTAINS,
@@ -240,16 +237,13 @@ class EnhancedRepository(BaseRepository[T]):
             FilterOperator.ENDSWITH,
             FilterOperator.IENDSWITH,
         ):
-            return self._build_string_condition(field, operator, value, case_sensitive)  # type: ignore[arg-type]
-
+            return self._build_string_condition(field, operator, value, case_sensitive)
         # Regex operators
         if operator in (FilterOperator.REGEX, FilterOperator.IREGEX):
-            return self._build_regex_condition(field, operator, value)  # type: ignore[arg-type]
-
+            return self._build_regex_condition(field, operator, value)
         # Null operators
         if operator in (FilterOperator.ISNULL, FilterOperator.ISNOTNULL):
-            return self._build_null_condition(field, operator, value)  # type: ignore[arg-type]
-
+            return self._build_null_condition(field, operator, value)
         # Boolean operators
         if operator in (FilterOperator.ISTRUE, FilterOperator.ISFALSE):
             return self._build_boolean_condition(field, operator)
@@ -261,26 +255,26 @@ class EnhancedRepository(BaseRepository[T]):
         self, field: Union[str, object], operator: FilterOperator, value: Union[str, int, float, bool, None]
     ) -> ColumnElement[bool]:
         """Build equality condition."""
-        return field == value if operator == FilterOperator.EQ else field != value  # type: ignore[return-value]
+        return field == value if operator == FilterOperator.EQ else field != value
 
     def _build_comparison_condition(
         self, field: Union[str, object], operator: FilterOperator, value: Union[str, int, float]
     ) -> ColumnElement[bool]:
         """Build comparison condition."""
         if operator == FilterOperator.GT:
-            return field > value  # type: ignore[return-value,operator]
+            return field > value
         elif operator == FilterOperator.GTE:
-            return field >= value  # type: ignore[return-value,operator]
+            return field >= value
         elif operator == FilterOperator.LT:
-            return field < value  # type: ignore[return-value,operator]
+            return field < value
         else:  # LTE
-            return field <= value  # type: ignore[return-value,operator]
+            return field <= value
 
     def _build_collection_condition(
         self, field: Union[str, object], operator: FilterOperator, value: List[Union[str, int, float]]
     ) -> ColumnElement[bool]:
         """Build collection condition."""
-        return field.in_(value) if operator == FilterOperator.IN else ~field.in_(value)  # type: ignore[no-any-return,union-attr]
+        return field.in_(value) if operator == FilterOperator.IN else ~field.in_(value)
 
     def _build_string_condition(
         self, field: Union[str, object], operator: FilterOperator, value: str, case_sensitive: bool
@@ -291,9 +285,8 @@ class EnhancedRepository(BaseRepository[T]):
             field_expr = func.lower(field)
             value_expr = func.lower(value)
         else:
-            field_expr = field  # type: ignore[assignment]
-            value_expr = value  # type: ignore[assignment]
-
+            field_expr = field
+            value_expr = value
         if operator in (FilterOperator.CONTAINS, FilterOperator.ICONTAINS):
             return field_expr.contains(value_expr)
         elif operator in (FilterOperator.STARTSWITH, FilterOperator.ISTARTSWITH):
@@ -306,20 +299,20 @@ class EnhancedRepository(BaseRepository[T]):
     ) -> ColumnElement[bool]:
         """Build regex condition."""
         op_symbol = "~*" if operator == FilterOperator.IREGEX else "~"
-        return field.op(op_symbol)(value)  # type: ignore[no-any-return,union-attr]
+        return field.op(op_symbol)(value)
 
     def _build_null_condition(
         self, field: Union[str, object], operator: FilterOperator, value: Union[bool, None]
     ) -> ColumnElement[bool]:
         """Build null condition."""
         if operator == FilterOperator.ISNULL:
-            return field.is_(None) if value else field.isnot(None)  # type: ignore[no-any-return,union-attr]
+            return field.is_(None) if value else field.isnot(None)
         else:  # ISNOTNULL
-            return field.isnot(None) if value else field.is_(None)  # type: ignore[no-any-return,union-attr]
+            return field.isnot(None) if value else field.is_(None)
 
     def _build_boolean_condition(self, field: Union[str, object], operator: FilterOperator) -> ColumnElement[bool]:
         """Build boolean condition."""
-        return field == True if operator == FilterOperator.ISTRUE else field == False  # type: ignore[return-value] # noqa: E712
+        return field == True if operator == FilterOperator.ISTRUE else field == False  # noqa: E712
 
     def _build_search_condition(self, search_query: str, search_fields: List[str]) -> Optional[ColumnElement[Any]]:
         """Build full-text search condition."""
@@ -355,7 +348,7 @@ class EnhancedRepository(BaseRepository[T]):
         if not sort_expressions:
             sort_expressions = self._build_default_sort()
 
-        return query.order_by(*sort_expressions)  # type: ignore[arg-type]
+        return query.order_by(*sort_expressions)
 
     def _build_multi_field_sort(self, sort_fields: List[SortField]) -> List[object]:
         """Build multi-field sort expressions."""
@@ -388,14 +381,14 @@ class EnhancedRepository(BaseRepository[T]):
         """Build individual sort expression with null handling."""
         if nulls == "first":
             if direction == "desc":
-                return desc(field).nulls_first()  # type: ignore[arg-type]
+                return desc(field).nulls_first()
             else:
-                return asc(field).nulls_first()  # type: ignore[arg-type]
+                return asc(field).nulls_first()
         else:  # nulls last
             if direction == "desc":
-                return desc(field).nulls_last()  # type: ignore[arg-type]
+                return desc(field).nulls_last()
             else:
-                return asc(field).nulls_last()  # type: ignore[arg-type]
+                return asc(field).nulls_last()
 
     async def _execute_offset_query(self, query: Select[tuple[T]], filters: EnhancedFilter) -> Page[T]:
         """Execute query using offset-based pagination."""

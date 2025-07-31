@@ -3,9 +3,9 @@
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, validates
 from sqlalchemy.orm.attributes import get_history
 from structlog.stdlib import get_logger
@@ -115,13 +115,16 @@ class AuditMixin:
             )
 
         # Add RLS indexes if RowLevelSecurityMixin is present
-        if hasattr(cls, "owner_id"):
+        if hasattr(cls, "owner_id") and hasattr(cls, "organization_id"):
             indexes.extend(
                 [
                     Index(f"idx_{cls.__tablename__}_owner", "owner_id", "organization_id"),
                     Index(f"idx_{cls.__tablename__}_access", "access_level", "owner_id"),
                 ]
             )
+        elif hasattr(cls, "owner_id"):
+            # Only owner_id without organization_id (e.g., OAuth models)
+            indexes.append(Index(f"idx_{cls.__tablename__}_owner", "owner_id"))
 
         # Combine all constraints
         all_constraints = tuple(indexes) + model_constraints
@@ -321,6 +324,34 @@ class RowLevelSecurityMixin:
             kwargs["access_level"] = "private"
 
         # Call parent constructor
+        super().__init__(**kwargs)
+
+
+class VersionedMixin:
+    """Mixin for API versioning support."""
+
+    api_version: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="v1",
+        server_default="v1",
+        comment="API version for this record",
+    )
+
+    supported_versions: Mapped[List[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=lambda: ["v1"],
+        server_default='["v1"]',
+        comment="List of supported API versions",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize VersionedMixin with proper defaults."""
+        if "api_version" not in kwargs:
+            kwargs["api_version"] = "v1"
+        if "supported_versions" not in kwargs:
+            kwargs["supported_versions"] = ["v1"]
         super().__init__(**kwargs)
 
 

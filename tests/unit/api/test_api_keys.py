@@ -18,6 +18,9 @@ from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
 from app.schemas.api_key import APIKeyCreate, APIKeyPermissionTemplate, APIKeyResponse, APIKeyUpdate
 
+# Import test fixtures
+from tests.test_fixtures import admin_token, auth_token  # noqa: F401
+
 
 class TestAPIKeyEndpoints:
     """Test suite for API Key CRUD endpoints."""
@@ -44,10 +47,11 @@ class TestAPIKeyEndpoints:
             "exp": datetime.now(timezone.utc) + exp_delta,
         }
 
+        # Use the test SECRET_KEY directly
         encoded_jwt = jwt.encode(
             payload,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithm=settings.ALGORITHM,
+            "test-secret-key-for-testing-only-32chars",
+            algorithm="HS256",
         )
         return str(encoded_jwt)
 
@@ -115,16 +119,17 @@ class TestAPIKeyEndpoints:
         return repo
 
     @pytest.fixture
-    def auth_headers(self) -> Dict[str, str]:
-        """Create authentication headers."""
-        token = self.create_test_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def auth_headers(self, auth_token: str) -> Dict[str, str]:
+        """Create authentication headers using test fixture token."""
+        print(f"\n[DEBUG] auth_token received: {auth_token[:50]}...")
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        print(f"[DEBUG] auth_headers created: {headers}")
+        return headers
 
     @pytest.fixture
-    def admin_headers(self) -> Dict[str, str]:
-        """Create admin authentication headers."""
-        token = self.create_admin_jwt_token()
-        return {"Authorization": f"Bearer {token}"}
+    def admin_headers(self, admin_token: str) -> Dict[str, str]:
+        """Create admin authentication headers using test fixture token."""
+        return {"Authorization": f"Bearer {admin_token}"}
 
     @pytest.mark.asyncio
     async def test_list_api_keys(
@@ -200,27 +205,23 @@ class TestAPIKeyEndpoints:
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
         }
 
-        # Mock that no key with this name exists
-        mock_api_key_repo.list_user_keys.return_value = []
+        # Mock the APIKeyService
+        mock_service = AsyncMock()
+        mock_service.create_api_key.return_value = (mock_api_key, "vutf_fullkey123")
 
-        # Patch the APIKeyRepository class constructor
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            # Mock the key generation
-            with patch("app.api.endpoints.api_keys.APIKeyCRUDRouter._generate_api_key") as mock_generate:
-                mock_generate.return_value = ("vutf_fullkey123", "vutf_full", "hash123")
-
-                response = await async_client.post(
-                    "/api/v1/api-keys/",
-                    json=api_key_data,
-                    headers=auth_headers,
-                )
+        with patch("app.api.endpoints.api_keys.APIKeyService", return_value=mock_service):
+            response = await async_client.post(
+                "/api/v1/api-keys/",
+                json=api_key_data,
+                headers=auth_headers,
+            )
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["message"] == "API key created successfully"
         assert "key" in data["data"]  # Full key shown only on creation
-        assert data["data"]["warning"] == "Store this API key securely. It will not be shown again."
-        mock_api_key_repo.create.assert_called_once()
+        assert data["data"]["key"] == "vutf_fullkey123"
+        mock_service.create_api_key.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_api_key_duplicate_name(
@@ -236,8 +237,15 @@ class TestAPIKeyEndpoints:
             "permissions": {"read": True},
         }
 
-        # Patch the APIKeyRepository class constructor
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Mock the APIKeyService to raise ConflictError
+        mock_service = AsyncMock()
+        from app.core.errors import ConflictError
+
+        mock_service.create_api_key.side_effect = ConflictError(
+            message="API key with name 'Test API Key' already exists"
+        )
+
+        with patch("app.api.endpoints.api_keys.APIKeyService", return_value=mock_service):
             response = await async_client.post(
                 "/api/v1/api-keys/",
                 json=api_key_data,

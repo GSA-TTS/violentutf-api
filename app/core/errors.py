@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from structlog.stdlib import get_logger
 
 logger = get_logger(__name__)
@@ -60,6 +61,12 @@ class UnauthorizedError(APIError):
             message=message,
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+class AuthenticationError(UnauthorizedError):
+    """Authentication error - alias for UnauthorizedError."""
+
+    pass
 
 
 class ForbiddenError(APIError):
@@ -226,8 +233,8 @@ def setup_error_handlers(app: FastAPI, development_mode: bool = False) -> None:
     app.state.development_mode = development_mode
 
     # Custom error handlers
-    app.add_exception_handler(APIError, api_error_handler)  # type: ignore[arg-type]
-    app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(APIError, api_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
 
     # Generic error handler for unexpected exceptions
     app.add_exception_handler(Exception, generic_error_handler)
