@@ -79,6 +79,30 @@ adrs:
         - "rate exceeded"
         - "limit enforcement"
         - "redis state"
+        - "token bucket"
+        - "429 too many"
+        - "x-ratelimit-limit"
+        - "x-ratelimit-remaining"
+        - "x-ratelimit-reset"
+        - "retry-after"
+        - "organization rate"
+        - "per-org limiting"
+        - "ip-based limiting"
+        - "fixed window"
+        - "leaky bucket"
+        - "rate limit middleware"
+        - "missing rate headers"
+      file_patterns:
+        - "**/rate_limit*"
+        - "**/throttle*"
+        - "**/middleware/rate*"
+      diff_patterns:
+        - "X-RateLimit-"
+        - "429"
+        - "Too Many Requests"
+        - "Retry-After"
+        - "organization_id.*rate"
+        - "token.*bucket"
 
   # Data Serialization Format - ADR-006
   - id: "ADR-006"
@@ -122,6 +146,34 @@ adrs:
         - "sensitive data"
         - "log redaction"
         - "structured logs"
+        - "json logging"
+        - "correlation id"
+        - "structlog"
+        - "stdout logging"
+        - "auth context"
+        - "http context"
+        - "organization_id log"
+        - "user_id log"
+        - "pii redaction"
+        - "plain text logs"
+        - "sensitive data log"
+        - "log middleware"
+        - "async logging"
+        - "log level policy"
+      file_patterns:
+        - "**/logging*"
+        - "**/audit*"
+        - "**/middleware/log*"
+        - "**/structlog*"
+      diff_patterns:
+        - "structlog"
+        - "correlation_id"
+        - "organization_id.*log"
+        - "user_id.*log"
+        - "json.*log"
+        - "redact.*data"
+        - "print.*password"
+        - "log.*token"
 
   # Error Handling and Responses - ADR-009
   - id: "ADR-009"
@@ -303,3 +355,63 @@ adrs:
         - "middleware order"
         - "request pipeline"
         - "middleware chain"
+        - "cors middleware"
+        - "security headers"
+        - "csrf protection"
+        - "content security policy"
+      file_patterns:
+        - "**/middleware/**"
+      diff_patterns:
+        - "@middleware"
+        - "add_middleware"
+        - "middleware.*order"
+
+  # Advanced Security Patterns
+  - id: "ADR-SEC-001"
+    name: "Input Validation Violations"
+    description: "Violations related to input validation and sanitization"
+    severity_weight: 1.3
+    patterns:
+      conventional_commit_scope: "validation"
+      keywords:
+        - "fix validation"
+        - "input sanitization"
+        - "sql injection"
+        - "xss prevention"
+        - "path traversal"
+        - "command injection"
+        - "unsafe input"
+        - "validation bypass"
+      file_patterns:
+        - "**/validation*"
+        - "**/sanitize*"
+        - "**/input*"
+      diff_patterns:
+        - "validate.*input"
+        - "sanitize.*data"
+        - "escape.*html"
+        - "sql.*injection"
+
+  # Configuration Security
+  - id: "ADR-SEC-002"
+    name: "Configuration Security Violations"
+    description: "Violations related to secure configuration management"
+    severity_weight: 1.2
+    patterns:
+      conventional_commit_scope: "config"
+      keywords:
+        - "fix config"
+        - "hardcoded secret"
+        - "environment variable"
+        - "config security"
+        - "secret management"
+        - "configuration leak"
+      file_patterns:
+        - "**/config*"
+        - "**/.env*"
+        - "**/settings*"
+      diff_patterns:
+        - "password.*=.*"
+        - "secret.*=.*"
+        - "api_key.*=.*"
+        - "os.environ"

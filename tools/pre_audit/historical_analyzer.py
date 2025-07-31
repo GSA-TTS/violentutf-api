@@ -17,12 +17,15 @@ License: MIT
 """
 
 import argparse
+import fnmatch
 import json
 import logging
+import math
 import os
 import re
 import statistics
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -89,38 +92,87 @@ class FileViolationStats:
             self.last_violation = violation.timestamp
 
     def calculate_risk_score(self, severity_weights: Dict[str, float], analysis_start_date: datetime) -> float:
-        """Calculate multi-factor risk score for this file."""
+        """Calculate multi-factor risk score for this file with enhanced validation."""
         if self.total_violations == 0:
             return 0.0
+
+        # Input validation
+        if not isinstance(severity_weights, dict):
+            logger.warning("Invalid severity_weights provided, using defaults")  # type: ignore[unreachable]
+            severity_weights = {}
+
+        # Ensure timezone consistency
+        if analysis_start_date.tzinfo is None:
+            analysis_start_date = analysis_start_date.replace(tzinfo=timezone.utc)
 
         # Factor 1: Frequency (raw violation count)
         frequency = self.total_violations
 
-        # Factor 2: Recency Weight (decay function for older violations)
-        total_recency_weight = 0.0
-        analysis_window_days = (datetime.now(timezone.utc) - analysis_start_date).days
+        # Factor 2: Recency Weight with robust edge case handling
+        current_time = datetime.now(timezone.utc)
+        analysis_window_days = max(1, (current_time - analysis_start_date).days)  # Prevent division by zero
 
+        total_recency_weight = 0.0
         for violation in self.violation_instances:
-            days_ago = (datetime.now(timezone.utc) - violation.timestamp).days
-            # Linear decay: 1.0 for today, 0.1 for analysis window start
-            recency_weight = max(0.1, 1.0 - (days_ago / analysis_window_days) * 0.9)
+            # Ensure timezone consistency
+            violation_time = violation.timestamp
+            if violation_time.tzinfo is None:
+                violation_time = violation_time.replace(tzinfo=timezone.utc)
+
+            days_ago = (current_time - violation_time).days
+            days_ago = max(0, days_ago)  # Handle future dates gracefully
+
+            # Linear decay with bounds checking
+            if days_ago <= analysis_window_days:
+                recency_weight = max(0.1, 1.0 - (days_ago / analysis_window_days) * 0.9)
+            else:
+                recency_weight = 0.1  # Minimum weight for very old violations
+
             total_recency_weight += recency_weight
 
-        avg_recency_weight = total_recency_weight / len(self.violation_instances)
+        # Prevent division by zero
+        avg_recency_weight = total_recency_weight / max(1, len(self.violation_instances))
 
-        # Factor 3: Severity Weight (average of all ADR severities for this file)
-        total_severity = sum(
-            severity_weights.get(adr_id, 1.0) * count for adr_id, count in self.violations_by_adr.items()
-        )
+        # Factor 3: Severity Weight with validation and missing ADR handling
+        total_severity = 0.0
+        missing_adrs = []
+
+        for adr_id, count in self.violations_by_adr.items():
+            severity = severity_weights.get(adr_id, 1.0)
+            if adr_id not in severity_weights:
+                missing_adrs.append(adr_id)
+
+            # Validate severity weight bounds (should be between 0.1 and 3.0)
+            severity = max(0.1, min(3.0, severity))
+            total_severity += severity * count
+
+        # Log warning for missing ADRs
+        if missing_adrs:
+            logger.warning(f"Using default severity weight for ADRs: {missing_adrs}")
+
         avg_severity_weight = total_severity / self.total_violations
 
-        # Factor 4: Complexity Score (default to 1.0 if not available)
+        # Factor 4: Complexity Score with bounds validation
         complexity_score = self.complexity_score if self.complexity_score else 1.0
 
-        # Apply the risk formula: (Frequency × RecencyWeight) × SeverityWeight × ComplexityScore
-        risk_score = (frequency * avg_recency_weight) * avg_severity_weight * complexity_score
+        # Validate complexity bounds (reasonable range: 1.0 to 100.0)
+        if complexity_score <= 0:
+            logger.warning(f"Invalid complexity score {complexity_score}, using 1.0")
+            complexity_score = 1.0
+        elif complexity_score > 100:
+            logger.warning(f"Extremely high complexity score {complexity_score}, capping at 100.0")
+            complexity_score = 100.0
 
-        return risk_score
+        # Apply the risk formula with normalization for very high scores
+        base_risk = (frequency * avg_recency_weight) * avg_severity_weight * complexity_score
+
+        # Apply logarithmic normalization for very high scores to prevent range explosion
+        if base_risk > 100:
+            risk_score = 100 + math.log10(base_risk / 100) * 20
+        else:
+            risk_score = base_risk
+
+        return round(risk_score, 2)
 
 
 class ConventionalCommitParser:
@@ -163,12 +215,15 @@ class ConventionalCommitParser:
 
 
 class ADRPatternMatcher:
-    """Matches commits to ADR violations using configured patterns."""
+    """Matches commits to ADR violations using configured patterns with advanced diff analysis."""
 
     def __init__(self, patterns_config: Dict[str, Any]) -> None:
         """Initialize pattern matcher with configuration."""
         self.patterns_config = patterns_config
         self.severity_weights = self._extract_severity_weights()
+        self.file_pattern_cache: Dict[str, Set[str]] = {}
+        self.diff_pattern_cache: Dict[str, Set[str]] = {}
+        self._compile_patterns()
 
     def _extract_severity_weights(self) -> Dict[str, float]:
         """Extract severity weights from configuration."""
@@ -176,6 +231,22 @@ class ADRPatternMatcher:
         for adr in self.patterns_config.get("adrs", []):
             weights[adr["id"]] = adr.get("severity_weight", 1.0)
         return weights
+
+    def _compile_patterns(self) -> None:
+        """Pre-compile pattern matching for performance."""
+        import fnmatch
+
+        for adr in self.patterns_config.get("adrs", []):
+            adr_id = adr["id"]
+            patterns = adr.get("patterns", {})
+
+            # Compile file patterns
+            file_patterns = patterns.get("file_patterns", [])
+            self.file_pattern_cache[adr_id] = set(file_patterns)
+
+            # Compile diff patterns for advanced analysis
+            diff_patterns = patterns.get("diff_patterns", [])
+            self.diff_pattern_cache[adr_id] = set(diff_patterns)
 
     def find_violation_in_commit(self, commit_msg: str) -> Optional[str]:
         """
@@ -229,40 +300,341 @@ class ADRPatternMatcher:
 
         return None
 
+    def find_violation_in_file_changes(self, commit: Commit, modified_files: List[str]) -> List[Tuple[str, str, float]]:
+        """
+        Advanced diff analysis to find ADR violations in file changes.
+
+        Args:
+            commit: PyDriller commit object
+            modified_files: List of modified file paths
+
+        Returns:
+            List of tuples: (adr_id, file_path, confidence_score)
+        """
+        violations = []
+
+        try:
+            for modified_file in commit.modified_files:
+                if not modified_file.filename:
+                    continue
+
+                file_path = modified_file.filename
+
+                # Skip if file should be excluded
+                if self._should_exclude_file_for_diff(file_path):
+                    continue
+
+                # Analyze file path patterns
+                file_violations = self._analyze_file_path_patterns(file_path)
+                violations.extend(file_violations)
+
+                # Analyze diff content if available
+                if modified_file.diff:
+                    diff_violations = self._analyze_diff_patterns(file_path, modified_file.diff)
+                    violations.extend(diff_violations)
+
+                # Analyze source code content for deeper mapping
+                if modified_file.source_code_after:
+                    code_violations = self._analyze_code_content(file_path, modified_file.source_code_after)
+                    violations.extend(code_violations)
+
+        except Exception as e:
+            logger.warning(f"Error analyzing file changes in commit: {e}")
+
+        return violations
+
+    def _analyze_file_path_patterns(self, file_path: str) -> List[Tuple[str, str, float]]:
+        """Analyze file path against ADR file patterns."""
+        violations = []
+
+        for adr_id, file_patterns in self.file_pattern_cache.items():
+            for pattern in file_patterns:
+                if self._matches_glob_pattern(file_path, pattern):
+                    confidence = 0.7  # High confidence for file pattern match
+                    violations.append((adr_id, file_path, confidence))
+                    break  # Only count once per ADR
+
+        return violations
+
+    def _analyze_diff_patterns(self, file_path: str, diff_content: str) -> List[Tuple[str, str, float]]:
+        """Analyze diff content against ADR diff patterns."""
+        violations = []
+        diff_lower = diff_content.lower()
+
+        for adr_id, diff_patterns in self.diff_pattern_cache.items():
+            for pattern in diff_patterns:
+                if pattern.lower() in diff_lower:
+                    confidence = 0.8  # High confidence for diff pattern match
+                    violations.append((adr_id, file_path, confidence))
+                    break  # Only count once per ADR
+
+        return violations
+
+    def _analyze_code_content(self, file_path: str, source_code: str) -> List[Tuple[str, str, float]]:
+        """Analyze source code content for ADR-specific patterns."""
+        violations = []
+        code_lower = source_code.lower()
+
+        # Enhanced code analysis based on ADR patterns
+        for adr in self.patterns_config.get("adrs", []):
+            adr_id = str(adr["id"])
+
+            # Check for advanced code patterns based on ADR type
+            violation_confidence = self._calculate_code_violation_confidence(adr_id, code_lower, file_path)
+
+            if violation_confidence > 0.5:  # Only report medium+ confidence violations
+                violations.append((adr_id, file_path, violation_confidence))
+
+        return violations
+
+    def _calculate_code_violation_confidence(self, adr_id: str, code_content: str, file_path: str) -> float:
+        """Calculate confidence score for code-based ADR violations."""
+        confidence = 0.0
+
+        # ADR-002 Authentication Strategy patterns
+        if adr_id == "ADR-002":
+            auth_indicators = [
+                ("jwt", 0.3),
+                ("token", 0.2),
+                ("auth", 0.2),
+                ("login", 0.2),
+                ("rs256", 0.4),
+                ("algorithm", 0.3),
+                ("secret", 0.3),
+                ("bearer", 0.3),
+                ("authorization", 0.3),
+            ]
+            for pattern, weight in auth_indicators:
+                if pattern in code_content:
+                    confidence += weight
+
+        # ADR-005 Rate Limiting patterns
+        elif adr_id == "ADR-005":
+            rate_limit_indicators = [
+                ("rate", 0.3),
+                ("limit", 0.3),
+                ("throttle", 0.4),
+                ("bucket", 0.4),
+                ("redis", 0.3),
+                ("429", 0.5),
+                ("too many requests", 0.5),
+                ("x-ratelimit", 0.5),
+                ("organization_id", 0.3),
+            ]
+            for pattern, weight in rate_limit_indicators:
+                if pattern in code_content:
+                    confidence += weight
+
+        # ADR-008 Logging patterns
+        elif adr_id == "ADR-008":
+            logging_indicators = [
+                ("structlog", 0.5),
+                ("json", 0.2),
+                ("correlation_id", 0.4),
+                ("organization_id", 0.3),
+                ("user_id", 0.3),
+                ("redact", 0.4),
+                ("logger", 0.2),
+                ("log", 0.1),
+                ("audit", 0.3),
+            ]
+            for pattern, weight in logging_indicators:
+                if pattern in code_content:
+                    confidence += weight
+
+        # Boost confidence for files in relevant directories
+        if "/auth" in file_path and adr_id == "ADR-002":
+            confidence += 0.2
+        elif "/middleware" in file_path and adr_id in ["ADR-005", "ADR-008"]:
+            confidence += 0.2
+        elif "/logging" in file_path and adr_id == "ADR-008":
+            confidence += 0.3
+
+        return min(confidence, 1.0)  # Cap at 1.0
+
+    def _matches_glob_pattern(self, file_path: str, pattern: str) -> bool:
+        """Check if file path matches glob pattern."""
+        import fnmatch
+
+        try:
+            return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(file_path.lower(), pattern.lower())
+        except Exception:
+            return False
+
+    def _should_exclude_file_for_diff(self, file_path: str) -> bool:
+        """Check if file should be excluded from diff analysis."""
+        import fnmatch
+
+        exclude_patterns = [
+            "test*",
+            "*_test.py",
+            "tests/*",
+            "*.md",
+            "docs/*",
+            "*.txt",
+            "*.json",
+            "*.yml",
+            "*.yaml",
+            "*.xml",
+            "*.csv",
+        ]
+
+        for pattern in exclude_patterns:
+            if fnmatch.fnmatch(file_path, pattern):
+                return True
+        return False
+
+    def analyze_code_to_adr_mapping(self, file_path: str, content: str) -> Dict[str, float]:
+        """
+        Deep analysis to map code content to specific ADRs.
+
+        Args:
+            file_path: Path to the file being analyzed
+            content: File content to analyze
+
+        Returns:
+            Dictionary mapping ADR IDs to confidence scores
+        """
+        mappings = {}
+        content_lower = content.lower()
+
+        # Enhanced mapping based on comprehensive ADR analysis
+        adr_mappings = {
+            "ADR-002": {
+                "keywords": ["jwt", "token", "auth", "login", "rs256", "algorithm", "secret", "bearer"],
+                "functions": ["encode_jwt", "decode_jwt", "verify_token", "authenticate", "login"],
+                "imports": ["jwt", "jose", "pyjwt", "authentication"],
+                "file_indicators": ["/auth", "/middleware/auth", "/jwt", "/token"],
+            },
+            "ADR-005": {
+                "keywords": ["rate", "limit", "throttle", "bucket", "redis", "429", "x-ratelimit"],
+                "functions": ["rate_limit", "throttle", "check_rate", "limit_requests"],
+                "imports": ["redis", "rate_limit", "throttle"],
+                "file_indicators": ["/rate", "/throttle", "/middleware/rate", "/limiting"],
+            },
+            "ADR-008": {
+                "keywords": ["structlog", "correlation_id", "organization_id", "audit", "redact"],
+                "functions": ["log_", "audit_", "redact_", "get_logger", "setup_logging"],
+                "imports": ["structlog", "logging", "audit"],
+                "file_indicators": ["/logging", "/audit", "/middleware/log"],
+            },
+        }
+
+        for adr_id, patterns in adr_mappings.items():
+            confidence = 0.0
+
+            # Keyword matching
+            for keyword in patterns["keywords"]:
+                if keyword in content_lower:
+                    confidence += 0.1
+
+            # Function name matching
+            for func_name in patterns["functions"]:
+                if f"def {func_name}" in content_lower or f"function {func_name}" in content_lower:
+                    confidence += 0.3
+
+            # Import statement matching
+            for import_name in patterns["imports"]:
+                if f"import {import_name}" in content_lower or f"from {import_name}" in content_lower:
+                    confidence += 0.2
+
+            # File path matching
+            for indicator in patterns["file_indicators"]:
+                if indicator in file_path.lower():
+                    confidence += 0.3
+
+            if confidence > 0.3:  # Only include medium+ confidence mappings
+                mappings[adr_id] = min(confidence, 1.0)
+
+        return mappings
+
 
 class ComplexityAnalyzer:
-    """Analyzes code complexity using Lizard."""
+    """Analyzes code complexity using Lizard with caching."""
 
     # File extensions to analyze
     SUPPORTED_EXTENSIONS = {".py", ".js", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go"}
 
+    # Cache for complexity results to avoid duplicate analysis
+    _complexity_cache: Dict[str, Optional[float]] = {}
+
     @classmethod
     def analyze_file_complexity(cls, file_path: str) -> Optional[float]:
         """
-        Analyze the complexity of a single file.
+        Analyze the complexity of a single file with caching and security validation.
 
         Returns:
             Average cyclomatic complexity or None if analysis fails
         """
+        # Validate file path first for security
+        if not cls._is_safe_file_path(file_path):
+            logger.warning("Refusing to analyze potentially unsafe file path")
+            return None
+
+        # Check cache first
+        if file_path in cls._complexity_cache:
+            return cls._complexity_cache[file_path]
+
         if not os.path.exists(file_path):
+            cls._complexity_cache[file_path] = None
             return None
 
         file_ext = Path(file_path).suffix.lower()
         if file_ext not in cls.SUPPORTED_EXTENSIONS:
+            cls._complexity_cache[file_path] = None
             return None
 
         try:
+            # Additional security: Check file size before analysis
+            file_size = os.path.getsize(file_path)
+            if file_size > 10 * 1024 * 1024:  # 10MB limit
+                logger.warning(f"File too large for analysis: {file_path}")
+                cls._complexity_cache[file_path] = None
+                return None
+
             analysis = analyze_file(file_path)
             if not analysis.function_list:
-                return 1.0  # Simple file with no functions
+                result = 1.0  # Simple file with no functions
+            else:
+                # Calculate average cyclomatic complexity
+                complexities = [func.cyclomatic_complexity for func in analysis.function_list]
+                if not complexities:  # Safety check
+                    result = 1.0
+                else:
+                    result = float(statistics.mean(complexities))
 
-            # Calculate average cyclomatic complexity
-            complexities = [func.cyclomatic_complexity for func in analysis.function_list]
-            return float(statistics.mean(complexities))
+            cls._complexity_cache[file_path] = result
+            return result
 
-        except Exception as e:
-            logger.warning(f"Failed to analyze complexity for {file_path}: {e}")
+        except Exception:
+            logger.warning("Failed to analyze file complexity")
+            cls._complexity_cache[file_path] = None
             return None
+
+    @classmethod
+    def _is_safe_file_path(cls, file_path: str) -> bool:
+        """Validate file path for security."""
+        if not file_path or len(file_path) > 1000:
+            return False
+
+        # Check for path traversal
+        if ".." in file_path or file_path.startswith("/"):
+            return False
+
+        # Normalize and validate
+        try:
+            normalized = os.path.normpath(file_path)
+            if normalized.startswith(".."):
+                return False
+        except (ValueError, OSError):
+            return False
+
+        return True
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clear the complexity cache to prevent memory leaks."""
+        cls._complexity_cache.clear()
 
     @classmethod
     def is_source_file(cls, file_path: str) -> bool:
@@ -277,11 +649,18 @@ class ComplexityAnalyzer:
 class HistoricalAnalyzer:
     """Main analyzer class orchestrating the historical analysis."""
 
-    def __init__(self, repo_path: str, config_path: Optional[str] = None, analysis_window_days: int = 180) -> None:
+    def __init__(
+        self,
+        repo_path: str,
+        config_path: Optional[str] = None,
+        analysis_window_days: int = 180,
+        exclude_patterns: Optional[List[str]] = None,
+    ) -> None:
         """Initialize historical analyzer."""
         self.repo_path = repo_path
         self.analysis_window_days = analysis_window_days
         self.analysis_start_date = datetime.now(timezone.utc) - timedelta(days=analysis_window_days)
+        self.exclude_patterns = exclude_patterns or ["test*", "*_test.py", "tests/*", "*.md", "docs/*"]
 
         # Load configuration
         config_path = config_path or os.path.join(repo_path, "config", "violation_patterns.yml")
@@ -295,19 +674,99 @@ class HistoricalAnalyzer:
         self.all_violations: List[ArchitecturalViolation] = []
         self.processed_commits = 0
         self.violation_commits = 0
+        self.analysis_start_time = time.time()
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
-        """Load the violation patterns configuration."""
+        """Load the violation patterns configuration with validation."""
+        # Validate config path is within expected bounds
+        config_path = os.path.abspath(config_path)
+        if not config_path.endswith((".yml", ".yaml")):
+            raise ValueError("Configuration file must be a YAML file")
+
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 result = yaml.safe_load(f)
-                return result if isinstance(result, dict) else {}
+
+            # Validate loaded configuration structure
+            if not isinstance(result, dict):
+                logger.warning("Configuration is not a dictionary, using empty config")
+                return {}
+
+            # Validate required structure
+            if "adrs" not in result:
+                logger.warning("Configuration missing 'adrs' section, using empty config")
+                return {}
+
+            if not isinstance(result["adrs"], list):
+                logger.warning("Configuration 'adrs' section is not a list, using empty config")
+                return {}
+
+            # Validate each ADR entry
+            validated_adrs = []
+            for adr in result["adrs"]:
+                if not isinstance(adr, dict):
+                    continue
+                if "id" not in adr or "name" not in adr:
+                    continue
+                # Sanitize string fields
+                adr["id"] = str(adr["id"])[:50]  # Limit ID length
+                adr["name"] = str(adr["name"])[:100]  # Limit name length
+                validated_adrs.append(adr)
+
+            result["adrs"] = validated_adrs
+            return result
+
         except FileNotFoundError:
-            logger.error(f"Configuration file not found: {config_path}")
+            logger.error("Configuration file not found")
             raise
-        except yaml.YAMLError as e:
-            logger.error(f"Invalid YAML configuration: {e}")
+        except yaml.YAMLError:
+            logger.error("Invalid YAML configuration")
             raise
+        except Exception as e:
+            logger.error("Failed to load configuration")
+            raise ValueError("Configuration loading failed") from e
+
+    def _should_exclude_file(self, file_path: str) -> bool:
+        """Check if file should be excluded from analysis with security validation."""
+        import fnmatch
+
+        # Security: Validate file path doesn't contain path traversal
+        if not self._is_safe_path(file_path):
+            logger.warning(f"Excluding potentially unsafe path: {file_path[:50]}...")
+            return True
+
+        for pattern in self.exclude_patterns:
+            if fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(os.path.basename(file_path), pattern):
+                return True
+        return False
+
+    def _is_safe_path(self, file_path: str) -> bool:
+        """Validate that file path is safe and within repository bounds."""
+        if not file_path:
+            return False
+
+        # Check for path traversal attempts
+        if ".." in file_path or file_path.startswith("/"):
+            return False
+
+        # Normalize path and check it's within repo
+        try:
+            normalized_path = os.path.normpath(file_path)
+            if normalized_path.startswith(".."):
+                return False
+
+            # Check against repo path if available
+            if hasattr(self, "repo_path"):
+                full_path = os.path.join(self.repo_path, normalized_path)
+                repo_abs = os.path.abspath(self.repo_path)
+                file_abs = os.path.abspath(full_path)
+                if not file_abs.startswith(repo_abs):
+                    return False
+
+        except (ValueError, OSError):
+            return False
+
+        return len(file_path) < 1000  # Reasonable path length limit
 
     def analyze_repository(self) -> Dict[str, Any]:
         """
@@ -334,10 +793,18 @@ class HistoricalAnalyzer:
         # Generate analysis summary
         results = self._generate_analysis_summary()
 
+        # Add performance metrics with safety checks
+        analysis_duration = max(0.001, time.time() - self.analysis_start_time)  # Prevent division by zero
+        results["analysis_metadata"]["analysis_duration_seconds"] = round(analysis_duration, 2)
+        results["analysis_metadata"]["commits_per_second"] = round(self.processed_commits / analysis_duration, 2)
+
+        # Clean up cache to prevent memory leaks
+        ComplexityAnalyzer.clear_cache()
+
         logger.info(
             f"Analysis complete. Processed {self.processed_commits} commits, "
             f"found {self.violation_commits} violation commits affecting "
-            f"{len(self.file_stats)} files"
+            f"{len(self.file_stats)} files in {analysis_duration:.2f}s"
         )
 
         return results
@@ -367,12 +834,17 @@ class HistoricalAnalyzer:
 
                 self.violation_commits += 1
 
-                # Get the list of modified source files
-                modified_source_files = [
-                    mf.new_path or mf.old_path
-                    for mf in commit.modified_files
-                    if mf.new_path and ComplexityAnalyzer.is_source_file(mf.new_path)
-                ]
+                # Get the list of modified source files with security filtering
+                modified_source_files = []
+                for mf in commit.modified_files:
+                    file_path = mf.new_path or mf.old_path
+                    if (
+                        file_path
+                        and self._is_safe_path(file_path)
+                        and ComplexityAnalyzer.is_source_file(file_path)
+                        and not self._should_exclude_file(file_path)
+                    ):
+                        modified_source_files.append(file_path)
 
                 if not modified_source_files:
                     continue
@@ -606,13 +1078,142 @@ Files are considered "hotspots" when they have both high violation frequency AND
         return report
 
     def save_report(self, output_path: str) -> None:
-        """Save the Markdown report to a file."""
+        """Save the Markdown report to a file with enhanced naming."""
         report_content = self.generate_markdown_report()
 
-        with open(output_path, "w", encoding="utf-8") as f:
+        # Generate descriptive report name with ADRaudit_ prefix
+        enhanced_path = self._generate_enhanced_report_path(output_path)
+
+        with open(enhanced_path, "w", encoding="utf-8") as f:
             f.write(report_content)
 
-        logger.info(f"Report saved to: {output_path}")
+        logger.info(f"Report saved to: {enhanced_path}")
+
+    def _generate_enhanced_report_path(self, original_path: str) -> str:
+        """Generate enhanced report path with descriptive ADRaudit_ prefix."""
+        try:
+            # Parse the original path
+            path_obj = Path(original_path)
+            directory = path_obj.parent
+            extension = path_obj.suffix
+
+            # Generate descriptive name based on analysis results
+            metadata = self.results.get("analysis_metadata", {})
+
+            # Create descriptive components
+            timestamp = datetime.now().strftime("%Y%m%d")
+            total_violations = metadata.get("violation_commits_found", 0)
+            total_files = metadata.get("files_with_violations", 0)
+
+            # Get top violated ADR for context
+            top_adr = "General"
+            if self.results.get("top_violated_adrs"):
+                top_adr_id = self.results["top_violated_adrs"][0][0]
+                top_adr = top_adr_id.replace("ADR-", "").replace("-", "")
+
+            # Create descriptive report name
+            descriptive_name = f"ADRaudit_{top_adr}Violations_{total_violations}commits_{total_files}files_{timestamp}"
+
+            # Ensure the directory exists (reports folder)
+            reports_dir = directory / "reports" if directory.name != "reports" else directory
+            reports_dir.mkdir(exist_ok=True)
+
+            # Generate final path
+            enhanced_path = reports_dir / f"{descriptive_name}{extension}"
+
+            return str(enhanced_path)
+
+        except Exception as e:
+            logger.warning(f"Failed to generate enhanced report name, using original: {e}")
+            return original_path
+
+
+def _validate_repository_path(repo_path: str) -> bool:
+    """Validate repository path for security and existence."""
+    if not repo_path or len(repo_path) > 500:
+        return False
+
+    try:
+        # Normalize path and check for traversal
+        abs_path = os.path.abspath(repo_path)
+        if ".." in repo_path or not os.path.exists(abs_path):
+            return False
+
+        # Verify it's actually a git repository
+        git_dir = os.path.join(abs_path, ".git")
+        if not os.path.isdir(git_dir):
+            return False
+
+        # Check for basic git repository structure
+        required_git_items = ["config", "HEAD", "objects", "refs"]
+        for item in required_git_items:
+            if not os.path.exists(os.path.join(git_dir, item)):
+                return False
+
+        return True
+
+    except (OSError, ValueError):
+        return False
+
+
+def _validate_output_path(output_path: str) -> bool:
+    """Validate output path for security."""
+    if not output_path or len(output_path) > 500:
+        return False
+
+    try:
+        # Normalize and validate path
+        abs_path = os.path.abspath(output_path)
+
+        # Check for path traversal
+        if ".." in output_path:
+            return False
+
+        # Check file extension is safe
+        allowed_extensions = {".md", ".txt", ".json", ".csv"}
+        _, ext = os.path.splitext(output_path)
+        if ext.lower() not in allowed_extensions:
+            return False
+
+        # Check parent directory exists or can be created
+        parent_dir = os.path.dirname(abs_path)
+        if not os.path.exists(parent_dir):
+            # Check if we can create it (parent must exist)
+            grandparent = os.path.dirname(parent_dir)
+            if not os.path.exists(grandparent):
+                return False
+
+        return True
+
+    except (OSError, ValueError):
+        return False
+
+
+def _validate_config_path(config_path: str) -> bool:
+    """Validate configuration file path."""
+    if not config_path or len(config_path) > 500:
+        return False
+
+    try:
+        abs_path = os.path.abspath(config_path)
+
+        # Check for path traversal
+        if ".." in config_path:
+            return False
+
+        # Must exist and be readable
+        if not os.path.isfile(abs_path) or not os.access(abs_path, os.R_OK):
+            return False
+
+        # Check file extension
+        _, ext = os.path.splitext(config_path)
+        if ext.lower() not in {".yml", ".yaml"}:
+            return False
+
+        return True
+
+    except (OSError, ValueError):
+        return False
 
 
 def main() -> None:
@@ -645,29 +1246,57 @@ Examples:
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
+    parser.add_argument(
+        "--exclude", "-e", action="append", help="File patterns to exclude from analysis (can be used multiple times)"
+    )
+
+    parser.add_argument(
+        "--min-risk", "-r", type=float, default=0.0, help="Minimum risk score threshold for reporting (default: 0.0)"
+    )
+
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # Validate repository path
-    if not os.path.exists(args.repository_path):
-        logger.error(f"Repository path does not exist: {args.repository_path}")
+    # Enhanced security validation for all inputs
+    if not _validate_repository_path(args.repository_path):
+        logger.error("Invalid repository path")
         sys.exit(1)
 
-    if not os.path.exists(os.path.join(args.repository_path, ".git")):
-        logger.error(f"Not a Git repository: {args.repository_path}")
+    if not _validate_output_path(args.output):
+        logger.error("Invalid output path")
         sys.exit(1)
 
-    # Create output directory if needed
-    output_dir = os.path.dirname(args.output)
+    if args.json_output and not _validate_output_path(args.json_output):
+        logger.error("Invalid JSON output path")
+        sys.exit(1)
+
+    if args.config and not _validate_config_path(args.config):
+        logger.error("Invalid config path")
+        sys.exit(1)
+
+    # Validate numeric parameters
+    if args.days <= 0 or args.days > 3650:  # Max 10 years
+        logger.error("Analysis window must be between 1 and 3650 days")
+        sys.exit(1)
+
+    # Create output directory securely
+    output_dir = os.path.dirname(os.path.abspath(args.output))
     if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        try:
+            os.makedirs(output_dir, mode=0o755, exist_ok=True)
+        except OSError:
+            logger.error("Failed to create output directory")
+            sys.exit(1)
 
     try:
         # Run the analysis
         analyzer = HistoricalAnalyzer(
-            repo_path=args.repository_path, config_path=args.config, analysis_window_days=args.days
+            repo_path=args.repository_path,
+            config_path=args.config,
+            analysis_window_days=args.days,
+            exclude_patterns=args.exclude,
         )
 
         results = analyzer.analyze_repository()
@@ -676,11 +1305,17 @@ Examples:
         report_generator = ReportGenerator(results, analyzer.config)
         report_generator.save_report(args.output)
 
-        # Save JSON output if requested
+        # Save JSON output if requested with secure file handling
         if args.json_output:
-            with open(args.json_output, "w", encoding="utf-8") as f:
-                json.dump(results, f, indent=2, default=str)
-            logger.info(f"JSON results saved to: {args.json_output}")
+            try:
+                with open(args.json_output, "w", encoding="utf-8") as f:
+                    json.dump(results, f, indent=2, default=str, ensure_ascii=True)
+                # Set secure file permissions
+                os.chmod(args.json_output, 0o644)
+                logger.info("JSON results saved successfully")
+            except (OSError, IOError, json.JSONDecodeError):
+                logger.error("Failed to save JSON output")
+                # Continue execution, don't fail completely
 
         # Print summary
         print(f"\n✅ Analysis Complete!")
