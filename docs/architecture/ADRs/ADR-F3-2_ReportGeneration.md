@@ -107,3 +107,4 @@ A server-side engine is the only approach that meets the platform's requirements
 * This ADR provides the backend implementation for the features described in **`API_Report_Setup_Endpoints.md`**.
 * This is a primary consumer of the data storage strategies from **ADR-F2.2 (Data Storage)** and the analysis results from **ADR-F3.1 (Scoring Architecture)**.
 * The execution relies on the asynchronous architecture from **ADR-007 (Asynchronous Task Processing)**.
+* **ADR-011: Historical Code Analysis**: The Historical Code Analysis tool follows the established server-side report generation patterns defined in this ADR, producing standardized Markdown reports with consistent formatting and automated naming conventions for ADR compliance auditing.

@@ -111,3 +111,4 @@ The project will use the following tools, integrated into the Git repository and
 ---
 ## Related Artifacts/Decisions
 * This policy is a cross-cutting concern that applies to the entire codebase and all preceding ADRs. It is fundamental to the security and integrity of the entire application.
+* **ADR-011: Historical Code Analysis**: The Historical Code Analysis tool introduces new dependencies (PyDriller for Git analysis and Lizard for complexity analysis) that are subject to the vulnerability management and license compliance policies defined in this ADR. Both dependencies use approved MIT licenses and undergo continuous security scanning.

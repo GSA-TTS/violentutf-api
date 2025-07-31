@@ -40,3 +40,7 @@ semgrep>=1.45.0,<2.0.0
 # Documentation
 mkdocs>=1.5.0,<2.0.0
 mkdocs-material>=9.5.0,<10.0.0
+
+# Code Analysis Tools (for historical analyzer)
+pydriller>=2.5.0,<3.0.0
+lizard>=1.17.0,<2.0.0

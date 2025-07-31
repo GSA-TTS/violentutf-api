@@ -133,3 +133,4 @@ While structured logging is essential, it can become a performance bottleneck un
 ## Related Artifacts/Decisions
 * **ADR-002: Phased Authentication Strategy**: The authentication system provides the `organization_id` and `user_id` that are essential for the `auth_context` in every log.
 * **ADR-007: Asynchronous Task Processing**: The distributed nature of the system is the primary driver for requiring Correlation IDs for end-to-end tracing.
+* **ADR-011: Historical Code Analysis**: The logging patterns defined in this ADR are automatically monitored for compliance violations through the Historical Code Analysis tool, which detects non-structured logging, missing correlation IDs, and PII exposure in audit reports.
