@@ -88,6 +88,17 @@ jobs:
 
       - name: Validate JSON
         run: |
+          echo "Validating JSON files..."
+          invalid_files=""
           find . -name "*.json" -type f | while read file; do
-            python -m json.tool "$file" > /dev/null || echo "Invalid: $file"
+            echo "Checking $file"
+            if ! python -m json.tool "$file" > /dev/null; then
+              echo "❌ Invalid JSON: $file"
+              invalid_files="$invalid_files $file"
+            fi
           done
+          if [ -n "$invalid_files" ]; then
+            echo "❌ Found invalid JSON files: $invalid_files"
+            exit 1
+          fi
+          echo "✅ All JSON files are valid"
