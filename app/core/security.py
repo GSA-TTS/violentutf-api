@@ -11,6 +11,10 @@ from .config import get_settings
 
 logger = get_logger(__name__)
 
+# JWT token type constants to avoid hardcoded strings flagged by security scanners
+ACCESS_TOKEN_TYPE = "access"  # nosec B105 - Standard JWT token type
+REFRESH_TOKEN_TYPE = "refresh"  # nosec B105 - Standard JWT token type
+
 
 # Password hashing context with Argon2
 def _get_pwd_context() -> CryptContext:
@@ -146,11 +150,13 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, "Password is strong"
 
 
-def create_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None, token_type: str = "access") -> str:
+def create_token(
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None, token_type: str = ACCESS_TOKEN_TYPE
+) -> str:
     """Create a JWT token (generic function for any token type)."""
-    if token_type == "access":
+    if token_type == ACCESS_TOKEN_TYPE:
         return create_access_token(data, expires_delta)
-    elif token_type == "refresh":
+    elif token_type == REFRESH_TOKEN_TYPE:
         return create_refresh_token(data, expires_delta)
     else:
         # For other token types (like OAuth tokens), create a custom token

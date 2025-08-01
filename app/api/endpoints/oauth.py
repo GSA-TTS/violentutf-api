@@ -29,6 +29,10 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
 
+# Constants to avoid hardcoded strings flagged by security scanners
+BEARER_TOKEN_TYPE = "Bearer"  # nosec B105 - Standard OAuth2 token type
+REFRESH_TOKEN_GRANT = "refresh_token"  # nosec B105 - Standard OAuth2 grant type
+
 
 @router.post(
     "/applications",
@@ -412,7 +416,7 @@ async def oauth_token(
 
             return OAuthTokenResponse(
                 access_token=access_token,
-                token_type="Bearer",
+                token_type=BEARER_TOKEN_TYPE,
                 expires_in=expires_in,
                 refresh_token=refresh_token_str,
                 scope=scope,
@@ -440,7 +444,7 @@ async def oauth_token(
 
             return OAuthTokenResponse(
                 access_token=access_token,
-                token_type="Bearer",
+                token_type=BEARER_TOKEN_TYPE,
                 expires_in=expires_in,
                 refresh_token=new_refresh_token,
                 scope=scope,

@@ -168,8 +168,9 @@ def audit_auth_event(event_type: str) -> Callable:
                     else:
                         body = kwargs.get("login_data", {})
                     user_email = body.get("email") or body.get("username")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to extract user email from request body", error=str(e))
+                    user_email = None
 
             try:
                 # Execute the function

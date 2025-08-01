@@ -81,8 +81,12 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
                 csrf_value = form_data.get("csrf_token")
                 # Ensure it's a string, not an UploadFile
                 form_token = csrf_value if isinstance(csrf_value, str) else None
-            except Exception:
-                pass
+            except (ValueError, UnicodeDecodeError) as e:
+                logger.debug("Failed to parse form data for CSRF token", error=str(e))
+                form_token = None
+            except Exception as e:
+                logger.warning("Unexpected error parsing form data for CSRF", error=str(e))
+                form_token = None
 
         submitted_token = header_token or form_token
 

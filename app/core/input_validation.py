@@ -1005,8 +1005,12 @@ def validate_auth_request(func: Callable[..., Any]) -> Callable[..., Any]:
                                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                                 detail="Password too long",
                             )
-                except Exception:
-                    pass  # JSON parsing errors handled elsewhere
+                except (ValueError, TypeError, UnicodeDecodeError) as e:
+                    # JSON parsing errors will be handled by FastAPI's request parsing
+                    logger.debug("Failed to parse request JSON for validation", error=str(e))
+                except Exception as e:
+                    # Other unexpected errors
+                    logger.warning("Unexpected error during request validation", error=str(e))
 
         return await func(*args, **kwargs)
 

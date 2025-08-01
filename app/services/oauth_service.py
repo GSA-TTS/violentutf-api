@@ -22,6 +22,10 @@ from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)
 
+# OAuth2 token type constants to avoid hardcoded strings flagged by security scanners
+REFRESH_TOKEN_TYPE_HINT = "refresh_token"  # nosec B105 - Standard OAuth2 token hint
+ACCESS_TOKEN_TYPE_HINT = "access_token"  # nosec B105 - Standard OAuth2 token hint
+
 
 class OAuth2Service:
     """Service for OAuth2 operations."""
@@ -496,7 +500,7 @@ class OAuth2Service:
         revoked = False
 
         # Try access token first (unless hint says otherwise)
-        if token_type_hint != "refresh_token":
+        if token_type_hint != REFRESH_TOKEN_TYPE_HINT:
             query = select(OAuthAccessToken).where(OAuthAccessToken.token_hash == token_hash)
             result = await self.session.execute(query)
             access_token = result.scalar_one_or_none()
@@ -522,7 +526,7 @@ class OAuth2Service:
                 )
 
         # Try refresh token if not found or hint specified
-        if not revoked and token_type_hint != "access_token":
+        if not revoked and token_type_hint != ACCESS_TOKEN_TYPE_HINT:
             query = select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == token_hash)
             result = await self.session.execute(query)
             refresh_token = result.scalar_one_or_none()
