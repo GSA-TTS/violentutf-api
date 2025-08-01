@@ -149,8 +149,9 @@ class OrganizationAuditor:
                 for item in workflow_contents:
                     if item.name.endswith((".yml", ".yaml")):
                         workflow_files.append(item.path)
-            except Exception:
-                pass  # No workflows directory
+            except Exception as e:
+                print(f"Debug: No workflows directory in {repo.name}: {str(e)}")
+                workflow_files = []
 
             # Check scripts directory
             script_files = []
@@ -159,8 +160,9 @@ class OrganizationAuditor:
                 for item in script_contents:
                     if item.name.endswith((".sh", ".bash")) or item.type == "file":
                         script_files.append(item.path)
-            except Exception:
-                pass  # No scripts directory
+            except Exception as e:
+                print(f"Debug: No scripts directory in {repo.name}: {str(e)}")
+                script_files = []
 
             # Check individual files
             individual_files = []
