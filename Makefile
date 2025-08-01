@@ -60,7 +60,7 @@ security-scan:
 	bandit -r app/ -ll
 	pip-audit
 	@echo "Checking for secrets..."
-	@detect-secrets scan --baseline .secrets.baseline || true
+	@detect-secrets scan --baseline .secrets.baseline
 
 run:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000
