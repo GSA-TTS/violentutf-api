@@ -1,3 +1,5 @@
+import functools
+
 """Circuit breaker pattern implementation for resilient service calls."""
 
 import asyncio
@@ -29,7 +31,7 @@ class CircuitBreakerConfig:
     recovery_timeout: float = 60.0  # Time to wait before trying half-open
     success_threshold: int = 3  # Successes needed in half-open to close
     timeout: float = 30.0  # Timeout for individual calls
-    expected_exception: type = Exception  # Exception type that counts as failure
+    expected_exception: Union[type, tuple[type, ...]] = Exception  # Exception type(s) that count as failure
 
 
 @dataclass
@@ -51,6 +53,10 @@ class CircuitBreakerException(Exception):
         """Initialize circuit breaker exception."""
         super().__init__(message)
         self.circuit_name = circuit_name
+
+
+# Alias for backward compatibility
+CircuitBreakerOpenError = CircuitBreakerException
 
 
 class CircuitBreaker:
@@ -87,7 +93,8 @@ class CircuitBreaker:
         """Check and perform state transitions."""
         if self.state == CircuitState.CLOSED:
             if (
-                self.stats.failure_count >= self.config.failure_threshold
+                self.config.failure_threshold > 0
+                and self.stats.failure_count >= self.config.failure_threshold
                 and self.stats.last_failure_time
                 and time.time() - self.stats.last_failure_time < self.config.recovery_timeout
             ):
@@ -181,7 +188,11 @@ class CircuitBreaker:
 
             if self.state == CircuitState.HALF_OPEN:
                 await self._open_circuit()
-            elif self.state == CircuitState.CLOSED and self.stats.failure_count >= self.config.failure_threshold:
+            elif (
+                self.state == CircuitState.CLOSED
+                and self.config.failure_threshold > 0
+                and self.stats.failure_count >= self.config.failure_threshold
+            ):
                 await self._open_circuit()
 
             logger.warning(
@@ -317,6 +328,7 @@ def with_circuit_breaker(
     def decorator(func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
         circuit_breaker = get_circuit_breaker(name, config)
 
+        @functools.wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> T:
             return await circuit_breaker.call(func, *args, **kwargs)
 

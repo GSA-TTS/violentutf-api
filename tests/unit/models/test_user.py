@@ -48,7 +48,10 @@ class TestUserModel:
         db_session.flush()
 
         # Now check database-generated values
-        assert isinstance(user.id, uuid.UUID)
+        # GUID type returns string representation for consistency
+        assert isinstance(user.id, str)
+        # Validate it's a proper UUID string
+        uuid.UUID(user.id)  # This will raise if invalid
         assert user.created_at is not None
         assert user.version == 1
         assert user.is_active is True

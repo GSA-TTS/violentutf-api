@@ -50,6 +50,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
     # Security headers
     SECURE_COOKIES: bool = Field(default=True)
     CSRF_PROTECTION: bool = Field(default=True)
+    REQUEST_SIGNING_ENABLED: bool = Field(default=True)
     HSTS_MAX_AGE: int = Field(default=31536000)  # 1 year
     CSP_POLICY: Optional[str] = Field(default="default-src 'self'")
 
@@ -71,6 +72,12 @@ class Settings(BaseSettings):  # type: ignore[misc]
     RATE_LIMIT_ENABLED: bool = Field(default=True)
     RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=10, le=1000)
 
+    # Request size limits
+    MAX_REQUEST_SIZE: int = Field(default=10 * 1024 * 1024, description="Maximum request size in bytes (10MB)")
+    MAX_UPLOAD_SIZE: int = Field(default=50 * 1024 * 1024, description="Maximum upload size in bytes (50MB)")
+    MAX_REQUEST_LINE_SIZE: int = Field(default=8190, description="Maximum request line size")
+    MAX_REQUEST_FIELD_SIZE: int = Field(default=8190, description="Maximum request header field size")
+
     # Logging
     LOG_LEVEL: str = Field(default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     LOG_FORMAT: str = Field(default="json")
@@ -81,7 +88,6 @@ class Settings(BaseSettings):  # type: ignore[misc]
     METRICS_PORT: int = Field(default=9090, ge=1024, le=65535)
 
     # Request settings
-    MAX_REQUEST_SIZE: int = Field(default=10 * 1024 * 1024, ge=1024)  # 10MB
     REQUEST_TIMEOUT: int = Field(default=60, ge=10, le=300)
 
     # Server settings
@@ -295,6 +301,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
             "debug": self.DEBUG,
             "secure_cookies": self.SECURE_COOKIES,
             "csrf_protection": self.CSRF_PROTECTION,
+            "request_signing_enabled": self.REQUEST_SIGNING_ENABLED,
             "hsts_max_age": self.HSTS_MAX_AGE,
             "csp_policy": self.CSP_POLICY,
             "rate_limit_enabled": self.RATE_LIMIT_ENABLED,

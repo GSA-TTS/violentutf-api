@@ -1,11 +1,19 @@
 """Test application startup and integration."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Generator
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
+from httpx import ASGITransport, AsyncClient
+
+from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestApplicationStartup:
@@ -43,17 +51,18 @@ class TestApplicationStartup:
         from app.main import create_application
 
         app = create_application()
-        client = TestClient(app)
+        from tests.utils.testclient import SafeTestClient
 
-        # OpenAPI endpoints should return 404
-        response = client.get("/api/v1/openapi.json")
-        assert response.status_code == 404
+        with SafeTestClient(app) as client:
+            # OpenAPI endpoints should return 404
+            response = client.get("/api/v1/openapi.json")
+            assert response.status_code == 404
 
-        response = client.get("/api/v1/docs")
-        assert response.status_code == 404
+            response = client.get("/api/v1/docs")
+            assert response.status_code == 404
 
-        response = client.get("/api/v1/redoc")
-        assert response.status_code == 404
+            response = client.get("/api/v1/redoc")
+            assert response.status_code == 404
 
     def test_middleware_chain(self, client: TestClient) -> None:
         """Test that middleware chain is working correctly."""
@@ -93,7 +102,8 @@ class TestApplicationStartup:
     @pytest.mark.asyncio
     async def test_async_client(self, app: FastAPI) -> None:
         """Test with async client."""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
             response = await ac.get("/api/v1/health")
             assert response.status_code == 200
 

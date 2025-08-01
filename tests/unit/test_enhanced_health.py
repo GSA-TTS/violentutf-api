@@ -1,25 +1,36 @@
 """Test enhanced health check endpoints with real database and cache connectivity."""
 
+from __future__ import annotations
+
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import create_application
+from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 
 
 class TestEnhancedHealthEndpoints:
     """Test enhanced health check endpoints."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator["TestClient", None, None]:
         """Create test client with enhanced health endpoints."""
-        app = create_application()
-        return TestClient(app)
+        # Import TestClient locally to ensure correct resolution
+        from tests.utils.testclient import SafeTestClient
 
-    def test_health_check_basic(self, client: TestClient) -> None:
+        app = create_application()
+        with SafeTestClient(app) as test_client:
+            yield test_client
+
+    def test_health_check_basic(self, client: "TestClient") -> None:
         """Test basic health check endpoint."""
         response = client.get("/api/v1/health")
 
@@ -159,7 +170,7 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["disk_space"] is False
         assert data["checks"]["memory"] is False
 
-    def test_liveness_check(self, client: TestClient) -> None:
+    def test_liveness_check(self, client: "TestClient") -> None:
         """Test liveness check endpoint."""
         response = client.get("/api/v1/live")
 
@@ -307,14 +318,18 @@ class TestHealthCheckTracking:
     """Test that health check endpoints use monitoring decorators."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator["TestClient", None, None]:
         """Create test client."""
+        # Import TestClient locally to ensure correct resolution
+        from tests.utils.testclient import SafeTestClient
+
         app = create_application()
-        return TestClient(app)
+        with SafeTestClient(app) as test_client:
+            yield test_client
 
     @patch("app.utils.monitoring.health_check_total")
     @patch("app.utils.monitoring.health_check_duration")
-    def test_health_check_metrics_tracked(self, mock_duration: Any, mock_total: Any, client: TestClient) -> None:
+    def test_health_check_metrics_tracked(self, mock_duration: Any, mock_total: Any, client: "TestClient") -> None:
         """Test that health check metrics are properly tracked."""
         response = client.get("/api/v1/health")
 
@@ -338,7 +353,7 @@ class TestHealthCheckTracking:
         mock_dependency: Any,
         mock_duration: Any,
         mock_total: Any,
-        client: TestClient,
+        client: "TestClient",
     ) -> None:
         """Test that readiness check metrics are properly tracked."""
         # Mock successful checks
@@ -364,12 +379,16 @@ class TestHealthEndpointIntegration:
     """Test health endpoints with real integration scenarios."""
 
     @pytest.fixture
-    def client(self) -> TestClient:
+    def client(self) -> Generator["TestClient", None, None]:
         """Create test client."""
-        app = create_application()
-        return TestClient(app)
+        # Import TestClient locally to ensure correct resolution
+        from tests.utils.testclient import SafeTestClient
 
-    def test_all_health_endpoints_accessible(self, client: TestClient) -> None:
+        app = create_application()
+        with SafeTestClient(app) as test_client:
+            yield test_client
+
+    def test_all_health_endpoints_accessible(self, client: "TestClient") -> None:
         """Test that all health endpoints are accessible and return expected structure."""
         # Test basic health
         health_response = client.get("/api/v1/health")
@@ -394,7 +413,7 @@ class TestHealthEndpointIntegration:
         assert live_data["status"] == "alive"
 
     @patch("app.api.endpoints.health.settings")
-    def test_health_endpoints_with_no_database_config(self, mock_settings: Any, client: TestClient) -> None:
+    def test_health_endpoints_with_no_database_config(self, mock_settings: Any, client: "TestClient") -> None:
         """Test health endpoints when database is not configured."""
         mock_settings.DATABASE_URL = None
         mock_settings.REDIS_URL = None

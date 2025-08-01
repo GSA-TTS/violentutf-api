@@ -62,7 +62,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             REQUEST_COUNT.labels(
                 method=request.method,
                 endpoint=endpoint,
-                status=response.status_code,
+                status=str(response.status_code),  # Convert to string for consistency
             ).inc()
 
             REQUEST_DURATION.labels(
@@ -77,7 +77,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             REQUEST_COUNT.labels(
                 method=request.method,
                 endpoint=endpoint,
-                status=500,
+                status="500",  # Convert to string for consistency
             ).inc()
 
             REQUEST_DURATION.labels(

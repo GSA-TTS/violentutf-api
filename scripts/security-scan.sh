@@ -14,7 +14,7 @@ bandit -r . -f json -o security/bandit-report.json \
 
 # Safety (paid tool with free tier)
 echo "→ Running Safety..."
-safety check --save-json security/safety-report.json || true
+safety check --save-json security/safety-report.json || true  # JUSTIFIED: Safety API has rate limits and paid tiers, allow optional scan
 
 # pip-audit (Google/PyPA maintained, free)
 echo "→ Running pip-audit..."

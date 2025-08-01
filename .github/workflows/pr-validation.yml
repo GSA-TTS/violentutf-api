@@ -28,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install all quality tools
@@ -55,22 +55,21 @@ jobs:
             --skip B101,B601
 
       - name: Type checking
-        continue-on-error: true
         run: mypy . --install-types --non-interactive
 
       - name: Dependency vulnerabilities
         run: |
-          safety check --json --output safety-report.json || true
+          safety check --json --output safety-report.json
 
   test-matrix:
     name: Tests - ${{ matrix.os }} / Py${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ['3.10', '3.11']
+        python: ['3.11', '3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -84,12 +83,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-timeout pytest-xdist
+          pip install -r requirements-test.txt
+          pip install pytest-xdist  # Additional dependency for parallel testing
 
       - name: Run tests (Unix)
         if: runner.os != 'Windows'
         run: |
-          pytest tests/unit/ -v --cov=violentutf_api \
+          pytest tests/unit/ -v --cov=app \
             --cov-report=xml --timeout=300 -n auto
 
       - name: Run tests (Windows)
@@ -98,7 +98,7 @@ jobs:
           python scripts/run_tests_windows.py --test-dir tests/unit
 
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.xml
@@ -115,11 +115,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install API test deps
         run: |
-          pip install pytest httpx pydantic
+          pip install -r requirements-test.txt
+          pip install httpx pydantic
           pip install jsonschema openapi-spec-validator
 
       - name: Run contract tests
@@ -128,7 +129,7 @@ jobs:
           TESTING: "true"
         run: |
           pytest tests/contract/ -v -m "contract" \
-            --tb=short --maxfail=3 || true
+            --tb=short --maxfail=3
 
   docker-check:
     name: Docker Build Check
@@ -149,13 +150,15 @@ jobs:
 
           find . -name "Dockerfile*" -type f | while read df; do
             echo "Linting $df"
-            ./hadolint "$df" || echo "Warnings in $df"
+            ./hadolint "$df"
           done
 
       - name: Build test image
         run: |
           if [ -f Dockerfile ]; then
-            docker build -t violentutf-api:test . --target test || true
+            docker build -t violentutf-api:test . --target test
+          else
+            echo "No Dockerfile found, skipping Docker build"
           fi
 
   pr-summary:

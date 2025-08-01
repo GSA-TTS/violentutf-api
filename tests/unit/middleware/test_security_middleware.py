@@ -1,14 +1,21 @@
 """Tests for security headers middleware."""
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict, Generator
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
 from starlette.responses import Response
 
 from app.core.config import settings
 from app.middleware.security import SecurityHeadersMiddleware, setup_security_middleware
+from tests.utils.testclient import SafeTestClient
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestSecurityHeadersMiddleware:
@@ -28,11 +35,6 @@ class TestSecurityHeadersMiddleware:
         setup_security_middleware(app)
 
         return app
-
-    @pytest.fixture
-    def client(self, app: FastAPI) -> TestClient:
-        """Create test client."""
-        return TestClient(app)
 
     def test_security_headers_present(self, client: TestClient) -> None:
         """Test that security headers are added to responses."""
@@ -129,7 +131,9 @@ class TestSecurityHeadersMiddleware:
         monkeypatch.setattr("app.core.config.settings.ENVIRONMENT", "development")
         setup_security_middleware(app_dev)
 
-        client_dev = TestClient(app_dev)
+        from tests.utils.testclient import SafeTestClient
+
+        client_dev = SafeTestClient(app_dev)
         response_dev = client_dev.get("/test")
 
         # In development, CSP might allow unsafe-inline for scripts
@@ -212,7 +216,9 @@ class TestSecurityHeadersMiddleware:
         # For now, this test documents the possibility
         setup_security_middleware(app)
 
-        client = TestClient(app)
+        from tests.utils.testclient import SafeTestClient
+
+        client = SafeTestClient(app)
         response = client.get("/test")
 
         # Regular CSP header should be present
@@ -234,7 +240,9 @@ class TestTrustedHostMiddleware:
 
         setup_security_middleware(app)
 
-        client = TestClient(app)
+        from tests.utils.testclient import SafeTestClient
+
+        client = SafeTestClient(app)
 
         # Basic test that the middleware doesn't break normal requests
         response = client.get("/test")

@@ -13,6 +13,7 @@ from secure.headers import (
     XFrameOptions,
 )
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
@@ -23,7 +24,7 @@ logger = get_logger(__name__)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add comprehensive security headers to all responses."""
 
-    def __init__(self: "SecurityHeadersMiddleware", app: FastAPI) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize security headers middleware with explicit configuration."""
         super().__init__(app)
 
@@ -75,9 +76,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             permissions=permissions,
         )
 
-    async def dispatch(
-        self: "SecurityHeadersMiddleware", request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """Add security headers to response."""
         response = await call_next(request)
 
@@ -121,6 +120,6 @@ def setup_security_middleware(app: FastAPI) -> None:
         )
 
     # Add security headers
-    app.add_middleware(SecurityHeadersMiddleware)  # type: ignore[arg-type]
+    app.add_middleware(SecurityHeadersMiddleware)
 
     logger.info("Security middleware configured")

@@ -3,22 +3,26 @@
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, validates
 from sqlalchemy.orm.attributes import get_history
 from structlog.stdlib import get_logger
+
+from app.db.types import GUID
 
 logger = get_logger(__name__)
 
 # Security patterns for validation
 SQL_INJECTION_PATTERNS = [
-    r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b)",
+    # More sophisticated patterns that avoid false positives
+    r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b.*\b(FROM|INTO|WHERE|SET|TABLE|VALUES)\b)",
     r"(\bunion\b.*\bselect\b)",
-    r"(\b(OR|AND)\b.*=)",
-    r'([\'";].*(--))',
+    r"(\b(OR|AND)\b\s*['\"]?\s*\w*\s*['\"]?\s*=)",
+    r"(--.*$)",  # SQL comments
+    r"(/\*.*\*/)",  # SQL block comments
+    r"(;.*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)\b)",  # Multiple statements
 ]
 
 XSS_PATTERNS = [
@@ -37,11 +41,10 @@ class AuditMixin:
     # Mixins should not define __tablename__ - that's handled by the base class
 
     # Use mapped_column for SQLAlchemy 2.0 compatibility
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        GUID(),
         primary_key=True,
-        default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
+        default=lambda: str(uuid.uuid4()),
         nullable=False,
     )
 
@@ -50,6 +53,7 @@ class AuditMixin:
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         server_default=text("CURRENT_TIMESTAMP"),
+        index=True,
     )
 
     created_by: Mapped[str] = mapped_column(
@@ -65,6 +69,7 @@ class AuditMixin:
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         server_default=text("CURRENT_TIMESTAMP"),
+        index=True,
     )
 
     updated_by: Mapped[str] = mapped_column(
@@ -110,13 +115,16 @@ class AuditMixin:
             )
 
         # Add RLS indexes if RowLevelSecurityMixin is present
-        if hasattr(cls, "owner_id"):
+        if hasattr(cls, "owner_id") and hasattr(cls, "organization_id"):
             indexes.extend(
                 [
                     Index(f"idx_{cls.__tablename__}_owner", "owner_id", "organization_id"),
                     Index(f"idx_{cls.__tablename__}_access", "access_level", "owner_id"),
                 ]
             )
+        elif hasattr(cls, "owner_id"):
+            # Only owner_id without organization_id (e.g., OAuth models)
+            indexes.append(Index(f"idx_{cls.__tablename__}_owner", "owner_id"))
 
         # Combine all constraints
         all_constraints = tuple(indexes) + model_constraints
@@ -126,6 +134,26 @@ class AuditMixin:
             return all_constraints + (model_config,)
         else:
             return all_constraints
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize AuditMixin with proper defaults for in-memory instances."""
+        # Set defaults for audit fields
+        now = datetime.now(timezone.utc)
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = now
+        if "created_by" not in kwargs:
+            kwargs["created_by"] = "system"
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = now
+        if "updated_by" not in kwargs:
+            kwargs["updated_by"] = "system"
+        if "version" not in kwargs:
+            kwargs["version"] = 1
+
+        # Call parent constructor
+        super().__init__(**kwargs)
 
 
 class SoftDeleteMixin:
@@ -163,6 +191,15 @@ class SoftDeleteMixin:
         self.deleted_by = None
 
     # Soft delete index will be handled by the main __table_args__ in AuditMixin
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize SoftDeleteMixin with proper defaults for in-memory instances."""
+        # Set defaults for soft delete fields
+        if "is_deleted" not in kwargs:
+            kwargs["is_deleted"] = False
+
+        # Call parent constructor
+        super().__init__(**kwargs)
 
 
 class SecurityValidationMixin:
@@ -266,7 +303,7 @@ class RowLevelSecurityMixin:
     )
 
     organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         nullable=True,
         index=True,
     )
@@ -279,6 +316,43 @@ class RowLevelSecurityMixin:
     )
 
     # RLS indexes will be handled by the main __table_args__ in AuditMixin
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize RowLevelSecurityMixin with proper defaults for in-memory instances."""
+        # Set defaults for RLS fields
+        if "access_level" not in kwargs:
+            kwargs["access_level"] = "private"
+
+        # Call parent constructor
+        super().__init__(**kwargs)
+
+
+class VersionedMixin:
+    """Mixin for API versioning support."""
+
+    api_version: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="v1",
+        server_default="v1",
+        comment="API version for this record",
+    )
+
+    supported_versions: Mapped[List[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=lambda: ["v1"],
+        server_default='["v1"]',
+        comment="List of supported API versions",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize VersionedMixin with proper defaults."""
+        if "api_version" not in kwargs:
+            kwargs["api_version"] = "v1"
+        if "supported_versions" not in kwargs:
+            kwargs["supported_versions"] = ["v1"]
+        super().__init__(**kwargs)
 
 
 class BaseModelMixin(

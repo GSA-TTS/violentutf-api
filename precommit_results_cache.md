@@ -1,3 +1,0 @@
-# Pre-commit Check Results
-
-## Running pre-commit checks on model files...

@@ -10,6 +10,7 @@ from fastapi import APIRouter, Response, status
 from structlog.stdlib import get_logger
 
 from ...core.config import settings
+from ...core.rate_limiting import rate_limit
 from ...db.session import check_database_health
 from ...utils.cache import check_cache_health
 from ...utils.monitoring import check_dependency_health, track_health_check

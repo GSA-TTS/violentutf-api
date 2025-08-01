@@ -1,12 +1,22 @@
 """Test middleware components."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
+from tests.utils.testclient import SafeTestClient
+
+# TestClient imported via TYPE_CHECKING for type hints only
+
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -30,7 +40,7 @@ class TestSecurityHeadersMiddleware:
 
     def test_security_headers_added(self, test_app: FastAPI) -> None:
         """Test that security headers are added to responses."""
-        client = TestClient(test_app)
+        client = SafeTestClient(test_app)
         response = client.get("/test")
 
         assert response.status_code == 200
@@ -51,7 +61,7 @@ class TestSecurityHeadersMiddleware:
 
     def test_request_id_header(self, test_app: FastAPI) -> None:
         """Test that X-Request-ID is added."""
-        client = TestClient(test_app)
+        client = SafeTestClient(test_app)
         response = client.get("/test")
 
         assert "X-Request-ID" in response.headers
@@ -63,7 +73,7 @@ class TestRequestIDMiddleware:
 
     def test_request_id_generated(self, test_app: FastAPI) -> None:
         """Test that request ID is generated when not provided."""
-        client = TestClient(test_app)
+        client = SafeTestClient(test_app)
         response = client.get("/test")
 
         assert response.status_code == 200
@@ -76,7 +86,7 @@ class TestRequestIDMiddleware:
 
     def test_request_id_preserved(self, test_app: FastAPI) -> None:
         """Test that provided request ID is preserved."""
-        client = TestClient(test_app)
+        client = SafeTestClient(test_app)
         custom_id = "custom-request-id-123"
 
         response = client.get("/test", headers={"X-Request-ID": custom_id})
@@ -86,7 +96,7 @@ class TestRequestIDMiddleware:
 
     def test_different_requests_different_ids(self, test_app: FastAPI) -> None:
         """Test that different requests get different IDs."""
-        client = TestClient(test_app)
+        client = SafeTestClient(test_app)
 
         response1 = client.get("/test")
         response2 = client.get("/test")

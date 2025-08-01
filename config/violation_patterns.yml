@@ -1,0 +1,417 @@
+# ADR Violation Patterns Configuration
+# This file defines patterns to identify architectural violations in commit history
+# Based on the existing ADRs in docs/architecture/ADRs/
+
+adrs:
+  # REST API Style - ADR-001
+  - id: "ADR-001"
+    name: "REST API Style"
+    description: "Violations related to non-RESTful API design patterns"
+    severity_weight: 0.8
+    patterns:
+      conventional_commit_scope: "api"
+      keywords:
+        - "fix rest"
+        - "fix api design"
+        - "rest compliance"
+        - "api consistency"
+        - "endpoint naming"
+        - "http method"
+        - "resource uri"
+
+  # Authentication Strategy - ADR-002
+  - id: "ADR-002"
+    name: "Authentication Strategy"
+    description: "Violations related to JWT authentication implementation"
+    severity_weight: 1.4
+    patterns:
+      conventional_commit_scope: "auth"
+      keywords:
+        - "fix auth"
+        - "jwt token"
+        - "authentication bug"
+        - "token validation"
+        - "auth middleware"
+        - "login security"
+        - "session management"
+
+  # RBAC+ABAC Authorization - ADR-003
+  - id: "ADR-003"
+    name: "RBAC+ABAC Authorization"
+    description: "Violations related to role-based and attribute-based access control"
+    severity_weight: 1.5
+    patterns:
+      conventional_commit_scope: "rbac"
+      keywords:
+        - "fix authorization"
+        - "permission check"
+        - "role validation"
+        - "access control"
+        - "rbac violation"
+        - "tenant isolation"
+        - "privilege escalation"
+
+  # API Versioning - ADR-004
+  - id: "ADR-004"
+    name: "API Versioning"
+    description: "Violations related to API versioning strategy"
+    severity_weight: 0.9
+    patterns:
+      conventional_commit_scope: "version"
+      keywords:
+        - "fix versioning"
+        - "api version"
+        - "backward compatibility"
+        - "version header"
+        - "deprecation"
+
+  # Rate Limiting - ADR-005
+  - id: "ADR-005"
+    name: "Rate Limiting"
+    description: "Violations related to rate limiting implementation"
+    severity_weight: 1.2
+    patterns:
+      conventional_commit_scope: "rate-limit"
+      keywords:
+        - "fix rate limit"
+        - "rate limiting"
+        - "throttling"
+        - "rate exceeded"
+        - "limit enforcement"
+        - "redis state"
+        - "token bucket"
+        - "429 too many"
+        - "x-ratelimit-limit"
+        - "x-ratelimit-remaining"
+        - "x-ratelimit-reset"
+        - "retry-after"
+        - "organization rate"
+        - "per-org limiting"
+        - "ip-based limiting"
+        - "fixed window"
+        - "leaky bucket"
+        - "rate limit middleware"
+        - "missing rate headers"
+      file_patterns:
+        - "**/rate_limit*"
+        - "**/throttle*"
+        - "**/middleware/rate*"
+      diff_patterns:
+        - "X-RateLimit-"
+        - "429"
+        - "Too Many Requests"
+        - "Retry-After"
+        - "organization_id.*rate"
+        - "token.*bucket"
+
+  # Data Serialization Format - ADR-006
+  - id: "ADR-006"
+    name: "Data Serialization Format"
+    description: "Violations related to JSON serialization standards"
+    severity_weight: 0.7
+    patterns:
+      conventional_commit_scope: "serialization"
+      keywords:
+        - "fix serialization"
+        - "json format"
+        - "data format"
+        - "serialization error"
+
+  # Async Task Processing - ADR-007
+  - id: "ADR-007"
+    name: "Async Task Processing"
+    description: "Violations related to Celery/Redis async processing"
+    severity_weight: 1.3
+    patterns:
+      conventional_commit_scope: "async"
+      keywords:
+        - "fix async"
+        - "celery task"
+        - "background job"
+        - "task queue"
+        - "redis backend"
+        - "webhook security"
+
+  # Logging and Auditing - ADR-008
+  - id: "ADR-008"
+    name: "Logging and Auditing"
+    description: "Violations related to structured logging and audit requirements"
+    severity_weight: 1.1
+    patterns:
+      conventional_commit_scope: "logging"
+      keywords:
+        - "fix logging"
+        - "audit trail"
+        - "log format"
+        - "sensitive data"
+        - "log redaction"
+        - "structured logs"
+        - "json logging"
+        - "correlation id"
+        - "structlog"
+        - "stdout logging"
+        - "auth context"
+        - "http context"
+        - "organization_id log"
+        - "user_id log"
+        - "pii redaction"
+        - "plain text logs"
+        - "sensitive data log"
+        - "log middleware"
+        - "async logging"
+        - "log level policy"
+      file_patterns:
+        - "**/logging*"
+        - "**/audit*"
+        - "**/middleware/log*"
+        - "**/structlog*"
+      diff_patterns:
+        - "structlog"
+        - "correlation_id"
+        - "organization_id.*log"
+        - "user_id.*log"
+        - "json.*log"
+        - "redact.*data"
+        - "print.*password"
+        - "log.*token"
+
+  # Error Handling and Responses - ADR-009
+  - id: "ADR-009"
+    name: "Error and Response Standards"
+    description: "Violations related to RFC 7807 error response format"
+    severity_weight: 0.9
+    patterns:
+      conventional_commit_scope: "error"
+      keywords:
+        - "fix error"
+        - "error response"
+        - "rfc 7807"
+        - "error format"
+        - "exception handling"
+        - "stack trace"
+
+  # Software Dependencies - ADR-010
+  - id: "ADR-010"
+    name: "Software Dependencies"
+    description: "Violations related to dependency management and SCA"
+    severity_weight: 1.2
+    patterns:
+      conventional_commit_scope: "deps"
+      keywords:
+        - "fix dependency"
+        - "vulnerability"
+        - "sca scan"
+        - "package security"
+        - "dependency update"
+        - "security patch"
+
+  # Templating Engine - ADR-F1.1
+  - id: "ADR-F1.1"
+    name: "Sandboxed Templating Engine"
+    description: "Violations related to Jinja2 template injection prevention"
+    severity_weight: 1.4
+    patterns:
+      conventional_commit_scope: "template"
+      keywords:
+        - "fix template"
+        - "template injection"
+        - "jinja2 sandbox"
+        - "ssti vulnerability"
+        - "template security"
+
+  # Server-side Orchestration - ADR-F1.2
+  - id: "ADR-F1.2"
+    name: "Server-side Orchestration"
+    description: "Violations related to state machine execution"
+    severity_weight: 1.1
+    patterns:
+      conventional_commit_scope: "orchestration"
+      keywords:
+        - "fix orchestration"
+        - "state machine"
+        - "workflow engine"
+        - "execution flow"
+
+  # Endpoint Integration Architecture - ADR-F1.3
+  - id: "ADR-F1.3"
+    name: "Endpoint Integration Architecture"
+    description: "Violations related to external endpoint integration patterns"
+    severity_weight: 1.0
+    patterns:
+      conventional_commit_scope: "integration"
+      keywords:
+        - "fix integration"
+        - "endpoint call"
+        - "external api"
+        - "service integration"
+
+  # Vulnerability Taxonomies - ADR-F2.1
+  - id: "ADR-F2.1"
+    name: "Vulnerability Taxonomies"
+    description: "Violations related to vulnerability classification"
+    severity_weight: 1.0
+    patterns:
+      conventional_commit_scope: "taxonomy"
+      keywords:
+        - "fix taxonomy"
+        - "vulnerability class"
+        - "classification"
+
+  # Data Storage - ADR-F2.2
+  - id: "ADR-F2.2"
+    name: "Polyglot Persistence"
+    description: "Violations related to multi-database architecture"
+    severity_weight: 1.2
+    patterns:
+      conventional_commit_scope: "storage"
+      keywords:
+        - "fix storage"
+        - "database consistency"
+        - "data lifecycle"
+        - "polyglot persistence"
+        - "mongodb"
+        - "postgresql"
+
+  # Scoring Architecture - ADR-F3.1
+  - id: "ADR-F3.1"
+    name: "Hybrid Scoring Architecture"
+    description: "Violations related to two-phase scoring system"
+    severity_weight: 1.1
+    patterns:
+      conventional_commit_scope: "scoring"
+      keywords:
+        - "fix scoring"
+        - "scorer plugin"
+        - "triage scorer"
+        - "deep analysis"
+        - "scoring performance"
+
+  # Report Generation - ADR-F3.2
+  - id: "ADR-F3.2"
+    name: "Report Generation"
+    description: "Violations related to report generation patterns"
+    severity_weight: 0.9
+    patterns:
+      conventional_commit_scope: "report"
+      keywords:
+        - "fix report"
+        - "report generation"
+        - "template rendering"
+
+  # Untrusted Model Interactions - ADR-F4.1
+  - id: "ADR-F4.1"
+    name: "Container-based Sandboxing"
+    description: "Violations related to container security and isolation"
+    severity_weight: 1.6
+    patterns:
+      conventional_commit_scope: "sandbox"
+      keywords:
+        - "fix sandbox"
+        - "container escape"
+        - "docker security"
+        - "isolation breach"
+        - "privilege escalation"
+        - "sandbox bypass"
+
+  # Secret Management - ADR-F4.2
+  - id: "ADR-F4.2"
+    name: "Centralized Secrets Management"
+    description: "Violations related to secrets handling and storage"
+    severity_weight: 1.5
+    patterns:
+      conventional_commit_scope: "secrets"
+      keywords:
+        - "fix secrets"
+        - "secret exposure"
+        - "credential leak"
+        - "key management"
+        - "secrets rotation"
+        - "vault integration"
+
+  # Additional patterns for common architectural violations
+  - id: "GENERAL-SECURITY"
+    name: "General Security Violations"
+    description: "General security-related architectural violations"
+    severity_weight: 1.3
+    patterns:
+      conventional_commit_scope: "security"
+      keywords:
+        - "security fix"
+        - "vulnerability"
+        - "exploit"
+        - "security patch"
+        - "input validation"
+        - "sql injection"
+        - "xss prevention"
+
+  - id: "MIDDLEWARE-VIOLATIONS"
+    name: "Middleware Architecture Violations"
+    description: "Violations related to middleware ordering or implementation"
+    severity_weight: 1.1
+    patterns:
+      conventional_commit_scope: "middleware"
+      keywords:
+        - "fix middleware"
+        - "middleware order"
+        - "request pipeline"
+        - "middleware chain"
+        - "cors middleware"
+        - "security headers"
+        - "csrf protection"
+        - "content security policy"
+      file_patterns:
+        - "**/middleware/**"
+      diff_patterns:
+        - "@middleware"
+        - "add_middleware"
+        - "middleware.*order"
+
+  # Advanced Security Patterns
+  - id: "ADR-SEC-001"
+    name: "Input Validation Violations"
+    description: "Violations related to input validation and sanitization"
+    severity_weight: 1.3
+    patterns:
+      conventional_commit_scope: "validation"
+      keywords:
+        - "fix validation"
+        - "input sanitization"
+        - "sql injection"
+        - "xss prevention"
+        - "path traversal"
+        - "command injection"
+        - "unsafe input"
+        - "validation bypass"
+      file_patterns:
+        - "**/validation*"
+        - "**/sanitize*"
+        - "**/input*"
+      diff_patterns:
+        - "validate.*input"
+        - "sanitize.*data"
+        - "escape.*html"
+        - "sql.*injection"
+
+  # Configuration Security
+  - id: "ADR-SEC-002"
+    name: "Configuration Security Violations"
+    description: "Violations related to secure configuration management"
+    severity_weight: 1.2
+    patterns:
+      conventional_commit_scope: "config"
+      keywords:
+        - "fix config"
+        - "hardcoded secret"
+        - "environment variable"
+        - "config security"
+        - "secret management"
+        - "configuration leak"
+      file_patterns:
+        - "**/config*"
+        - "**/.env*"
+        - "**/settings*"
+      diff_patterns:
+        - "password.*=.*"
+        - "secret.*=.*"
+        - "api_key.*=.*"
+        - "os.environ"

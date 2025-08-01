@@ -67,8 +67,12 @@ class TestAuditMixin:
         assert model1.id is not None
         assert model2.id is not None
         assert model1.id != model2.id
-        assert isinstance(model1.id, uuid.UUID)
-        assert isinstance(model2.id, uuid.UUID)
+        # GUID type returns strings, not UUID objects
+        assert isinstance(model1.id, str)
+        assert isinstance(model2.id, str)
+        # Verify they are valid UUIDs
+        uuid.UUID(model1.id)  # Will raise if not valid UUID
+        uuid.UUID(model2.id)  # Will raise if not valid UUID
 
     def test_timestamps(self, in_memory_db: Any) -> None:
         """Test timestamp generation."""
