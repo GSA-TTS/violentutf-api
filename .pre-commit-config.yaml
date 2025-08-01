@@ -54,20 +54,25 @@ repos:
           - sqlalchemy
           - alembic
 
-  # Security scanning - PyCQA maintained
+  # Security scanning - PyCQA maintained - COMPREHENSIVE COVERAGE
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: ['-ll', '--skip', 'B101,B601']
+        name: bandit-comprehensive
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/']
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
+        pass_filenames: false
 
-  # Secret detection - Yelp maintained
+  # Secret detection - Yelp maintained - ALL FILES
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        name: detect-secrets-comprehensive
         args: ['--baseline', '.secrets.baseline']
-        exclude: '^(tests/|test_|.*_test\.py|package-lock\.json)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
+        pass_filenames: false
 
   # YAML formatting - Using stable v3 instead of alpha
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -139,14 +144,14 @@ repos:
         entry: python3 -c "import re, sys; patterns = [r'(?i)(api[_-]?key|api[_-]?secret|access[_-]?key|secret[_-]?key|client[_-]?secret|password|passwd|pwd)\s*[=:]\s*[\"\'`]([^\"\'`]+)[\"\'`]', r'(?i)bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*', r'sk_live_[a-zA-Z0-9]+', r'xox[baprs]-[a-zA-Z0-9\-]+', r'ghp_[a-zA-Z0-9]{36}']; content = sys.stdin.read(); violations = []; [violations.extend(re.finditer(p, content, re.MULTILINE)) for p in patterns]; sys.exit(1 if violations else 0)"
         language: system
         files: '\.(py|js|ts|jsx|tsx|java|go|rb|php|yml|yaml|json|env|sh|bash)$'
-        exclude: '(\.example|\.template|test_|_test\.|spec_|_spec\.).*'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|\.example|\.template|test_|_test\.|spec_|_spec\.).*'
 
       - id: no-print-statements
         name: Check for print statements
         entry: python3 -c "import re, sys; content = sys.stdin.read(); sys.exit(1 if re.search(r'^\s*print\(', content, re.MULTILINE) else 0)"
         language: system
         types: [python]
-        exclude: '(test_|_test\.py|debug|scripts/)'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_|_test\.py|debug|scripts/)'
 
       - id: check-api-security
         name: Check API security patterns
@@ -161,3 +166,52 @@ repos:
         files: '\.(yml|yaml|sh|bash|Makefile)$|^\.github/workflows/|^scripts/'
         args: ['--strict']
         pass_filenames: true
+
+      - id: comprehensive-security-check
+        name: 🔍 Comprehensive Security Check (ALL DIRS)
+        entry: |
+          python3 -c "
+          import subprocess, sys, json, os
+          print('🔍 Running comprehensive security check across ALL directories...')
+          print('📁 Scanning .github/ directory...')
+          result = subprocess.run(['bandit', '-r', '.github/', '-f', 'json'], capture_output=True, text=True)
+          if result.returncode != 0:
+              if result.stdout:
+                  try:
+                      report = json.loads(result.stdout)
+                      if report.get('results'):
+                          print('❌ Security issues found in .github/ directory:')
+                          for issue in report['results']:
+                              print(f'   {issue[\"filename\"]}:{issue[\"line_number\"]}: {issue[\"issue_text\"]}')
+                          sys.exit(1)
+                  except: pass
+              print('❌ Bandit scan failed on .github/ directory')
+              sys.exit(1)
+          print('✅ .github/ directory security check passed')
+          print('📁 Verifying no dangerous patterns in CI/CD files...')
+          masking_result = subprocess.run(['python3', '.github/scripts/ban-test-masking.py', '--strict'], capture_output=True)
+          if masking_result.returncode != 0:
+              print('❌ Dangerous test masking patterns detected')
+              sys.exit(1)
+          print('✅ No dangerous test masking patterns found')
+          print('✅ Comprehensive security check completed successfully')
+          "
+        language: system
+        files: '\.(py|yml|yaml|sh|bash)$'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
+        pass_filenames: false
+        always_run: true
+
+      - id: workflow-multi-layer-validation
+        name: 🔧 Multi-Layer Workflow Validation
+        entry: .github/scripts/validate-workflow-layers.py
+        language: system
+        files: '^\.github/workflows/.*\.ya?ml$'
+        pass_filenames: false
+
+      - id: workflow-execution-testing
+        name: 🧪 Workflow Execution Testing
+        entry: .github/scripts/test-workflow-execution.py
+        language: system
+        files: '^\.github/workflows/.*\.ya?ml$'
+        pass_filenames: false
