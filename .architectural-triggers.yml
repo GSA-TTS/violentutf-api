@@ -1,0 +1,109 @@
+# Architectural Analysis Trigger Configuration
+# This file controls when Claude Code analysis runs during pre-commit
+
+triggers:
+  # Always analyze these critical architectural paths
+  critical_paths:
+    - "app/core/**"
+    - "app/middleware/**"
+    - "app/api/base.py"
+    - "app/models/mixins.py"
+    - "**/base*.py"
+    - "**/abstract*.py"
+    - "app/db/migrations/**"
+
+  # Size-based triggers (lines changed)
+  size_thresholds:
+    default: 100
+    patterns:
+      - path: "app/api/**"
+        threshold: 150
+      - path: "app/core/**"
+        threshold: 50
+      - path: "app/middleware/**"
+        threshold: 50
+      - path: "app/services/**"
+        threshold: 75
+
+  # Keywords that trigger analysis (in code or commit message)
+  keywords:
+    # Architectural patterns
+    - "singleton"
+    - "factory"
+    - "observer"
+    - "decorator"
+    - "abstract"
+    - "interface"
+    - "base class"
+
+    # Architectural concerns
+    - "middleware"
+    - "authentication"
+    - "authorization"
+    - "rate limit"
+    - "cache"
+    - "session"
+    - "security"
+
+    # Structural changes
+    - "refactor"
+    - "restructure"
+    - "migrate"
+    - "breaking change"
+    - "api change"
+    - "schema change"
+    - "dependency"
+
+    # ADR-related
+    - "ADR"
+    - "architectural decision"
+    - "design decision"
+
+  # Commit message flags
+  commit_flags:
+    force: ["[arch]", "[security]", "[breaking]", "[refactor]"]
+    skip: ["[skip-arch]", "[wip]", "[draft]"]
+
+  # Risk scoring thresholds
+  risk_scoring:
+    threshold: 0.5  # Trigger if risk score > 0.5
+    weights:
+      critical_file: 0.4      # Files in auth, security, payment paths
+      size_factor: 0.2        # Large changes
+      complexity_increase: 0.2 # Complexity metrics
+      violation_history: 0.2   # Files with past violations
+
+  # Rate limiting to control API usage
+  rate_limits:
+    max_analyses_per_day: 10
+    max_analyses_per_developer_per_day: 3
+    reset_time: "00:00"  # UTC
+
+  # File patterns to always exclude
+  exclude_patterns:
+    - "*.md"
+    - "*.txt"
+    - "*.json"
+    - "*.yml"
+    - "*.yaml"
+    - "tests/**"
+    - "docs/**"
+    - "*_test.py"
+    - "test_*.py"
+    - "migrations/*.py"
+    - "__pycache__/**"
+    - ".git/**"
+
+# Performance settings
+performance:
+  cache_enabled: true
+  cache_ttl_hours: 24
+  parallel_file_analysis: true
+  max_parallel_files: 5
+
+# Output settings
+output:
+  show_trigger_reason: false  # Minimal output for pre-commit
+  verbose_on_trigger: false   # Don't show detailed analysis progress
+  silent_on_skip: true        # No output when skipping analysis
+  format: "simple"            # simple format for cleaner output

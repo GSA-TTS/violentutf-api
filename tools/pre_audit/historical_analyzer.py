@@ -135,7 +135,7 @@ class FileViolationStats:
 
         # Factor 3: Severity Weight with validation and missing ADR handling
         total_severity = 0.0
-        missing_adrs = []
+        missing_adrs: List[str] = []
 
         for adr_id, count in self.violations_by_adr.items():
             severity = severity_weights.get(adr_id, 1.0)
@@ -702,7 +702,7 @@ class HistoricalAnalyzer:
                 return {}
 
             # Validate each ADR entry
-            validated_adrs = []
+            validated_adrs: List[Dict[str, Any]] = []
             for adr in result["adrs"]:
                 if not isinstance(adr, dict):
                     continue
@@ -1238,8 +1238,8 @@ Examples:
     parser.add_argument(
         "--output",
         "-o",
-        default="reports/hotspot_analysis.md",
-        help="Output path for the analysis report (default: reports/hotspot_analysis.md)",
+        default="docs/reports/ADRaudit-claudecode/hotspot_analysis.md",
+        help="Output path for the analysis report (default: docs/reports/ADRaudit-claudecode/hotspot_analysis.md)",
     )
 
     parser.add_argument("--json-output", help="Also save results as JSON to specified file")

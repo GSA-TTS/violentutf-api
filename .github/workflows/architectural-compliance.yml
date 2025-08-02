@@ -1,0 +1,212 @@
+name: Architectural Compliance Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full_analysis:
+        description: 'Run full analysis instead of incremental'
+        required: false
+        default: 'false'
+
+jobs:
+  pattern-analysis:
+    name: Pattern-Based Architectural Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      pull-requests: write  # To post comments
+      checks: write        # To create check runs
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for diff analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Cache Analysis Results
+      uses: actions/cache@v3
+      with:
+        path: |
+          .cache/pattern_analysis
+          .cache/architectural_compliance
+        key: arch-analysis-${{ github.sha }}
+        restore-keys: |
+          arch-analysis-${{ github.event.pull_request.base.sha }}
+          arch-analysis-
+
+    - name: Install Dependencies
+      run: |
+        pip install pyyaml
+        # Note: Claude API not available in CI - pattern analysis only
+
+    - name: Determine Analysis Scope
+      id: scope
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "mode=incremental" >> $GITHUB_OUTPUT
+          echo "base_ref=origin/${{ github.base_ref }}" >> $GITHUB_OUTPUT
+        elif [[ "${{ inputs.full_analysis }}" == "true" ]]; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+          echo "base_ref=HEAD~1" >> $GITHUB_OUTPUT
+        else
+          echo "mode=incremental" >> $GITHUB_OUTPUT
+          echo "base_ref=HEAD~1" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run Pattern-Based Analysis
+      id: analysis
+      run: |
+        python tools/pre_audit/pattern_analyzer.py \
+          --mode ${{ steps.scope.outputs.mode }} \
+          --base-ref ${{ steps.scope.outputs.base_ref }} \
+          --output json \
+          --output-file analysis_results.json \
+          --changed-files-only
+
+    - name: Generate Summary Report
+      if: always()
+      run: |
+        python scripts/generate_pr_summary.py >> $GITHUB_STEP_SUMMARY
+
+    - name: Post PR Comment
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+
+          // Generate comment
+          const { execSync } = require('child_process');
+          execSync('python tools/pre_audit/pattern_analyzer.py --mode ci --output github-comment --output-file pr_comment.md --base-ref origin/${{ github.base_ref }}');
+
+          const comment = fs.readFileSync('pr_comment.md', 'utf8');
+
+          // Find existing comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const botComment = comments.find(comment =>
+            comment.user.type === 'Bot' &&
+            comment.body.includes('Architectural Compliance')
+          );
+
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: comment
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          }
+
+    - name: Upload Analysis Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: architectural-analysis-results
+        path: |
+          analysis_results.json
+          pr_comment.md
+        retention-days: 30
+
+    - name: Create Check Run
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          let results = {};
+
+          try {
+            const data = fs.readFileSync('analysis_results.json', 'utf8');
+            results = JSON.parse(data);
+          } catch (e) {
+            console.error('Could not read results:', e);
+          }
+
+          const totalViolations = results.total_violations || 0;
+          const criticalViolations = results.violations_by_severity?.critical || 0;
+          const highViolations = results.violations_by_severity?.high || 0;
+
+          let conclusion = 'success';
+          let title = '✅ Architectural compliance check passed';
+
+          if (criticalViolations > 0) {
+            conclusion = 'failure';
+            title = '❌ Critical architectural violations found';
+          } else if (highViolations > 0) {
+            conclusion = 'failure';
+            title = '❌ High severity architectural violations found';
+          } else if (totalViolations > 0) {
+            conclusion = 'neutral';
+            title = '⚠️ Minor architectural issues found';
+          }
+
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: 'Architectural Compliance',
+            head_sha: context.sha,
+            status: 'completed',
+            conclusion: conclusion,
+            output: {
+              title: title,
+              summary: `Found ${totalViolations} architectural violations (Critical: ${criticalViolations}, High: ${highViolations})`,
+              text: results.summary || 'See PR comment for details'
+            }
+          });
+
+    - name: Fail on Critical/High Violations
+      if: steps.analysis.outputs.critical_violations > 0 || steps.analysis.outputs.high_violations > 0
+      run: |
+        echo "❌ Build failed due to architectural violations"
+        echo "Critical violations: ${{ steps.analysis.outputs.critical_violations }}"
+        echo "High violations: ${{ steps.analysis.outputs.high_violations }}"
+        exit 1
+
+  local-analysis-reminder:
+    name: Local Analysis Reminder
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - name: Add PR Label
+      uses: actions/github-script@v6
+      with:
+        script: |
+          // Add label to remind about local analysis
+          try {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['needs-local-analysis']
+            });
+          } catch (e) {
+            console.log('Could not add label:', e.message);
+          }

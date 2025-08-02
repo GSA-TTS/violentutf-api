@@ -1,0 +1,248 @@
+# CI Violation Patterns Configuration
+# Pattern-based architectural violation detection for environments without Claude API access
+
+pattern_rules:
+  # Authentication & Authorization Patterns
+  - id: "AUTH-001"
+    adr_id: "ADR-002"
+    description: "Direct database access in API endpoints bypasses repository pattern"
+    severity: "high"
+    patterns:
+      - '@(app|router)\.(get|post|put|delete|patch).*\n([^}])*db\.(execute|query|select|insert|update|delete)'
+      - 'async def.*\(.*Request.*\).*\n([^}])*session\.(query|execute|add|delete)'
+    anti_patterns:
+      - 'repository\.'
+      - 'repo\.'
+      - 'service\.'
+    file_filters:
+      - "app/api/endpoints/**/*.py"
+      - "app/api/routes.py"
+      - "!app/api/endpoints/test_*.py"
+
+  - id: "AUTH-002"
+    adr_id: "ADR-002"
+    description: "Missing authentication decorator on protected endpoints"
+    severity: "critical"
+    patterns:
+      - '@(app|router)\.(get|post|put|delete|patch)\(["\'']/(?!public|health|docs|openapi)'
+    anti_patterns:
+      - '@authenticate'
+      - '@require_auth'
+      - '@login_required'
+      - 'dependencies=\[.*Depends\(.*auth'
+      - 'Security\('
+    file_filters:
+      - "app/api/endpoints/**/*.py"
+      - "!app/api/endpoints/public*.py"
+      - "!app/api/endpoints/health*.py"
+
+  - id: "AUTH-003"
+    adr_id: "ADR-002"
+    description: "Hardcoded role checks instead of RBAC/ABAC"
+    severity: "medium"
+    patterns:
+      - 'if.*user\.role.*==.*["\'']admin["\'']'
+      - 'if.*["\'']admin["\''].*in.*user\.roles'
+      - 'current_user\.role.*!=.*["\'']'
+    anti_patterns:
+      - 'has_permission\('
+      - 'check_permission\('
+      - '@require_permission'
+    file_filters:
+      - "app/**/*.py"
+
+  # Security Patterns
+  - id: "SEC-001"
+    adr_id: "ADR-005"
+    description: "Hardcoded secrets or credentials"
+    severity: "critical"
+    patterns:
+      - '(password|secret|api_key|token|private_key)\s*=\s*["\''][^"\''"]{8,}["\'']'
+      - '(AWS|AZURE|GCP|JWT)_.*KEY\s*=\s*["\''][^"\''"]+["\'']'
+      - 'Bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*'
+    anti_patterns:
+      - 'os\.getenv'
+      - 'os\.environ'
+      - 'config\.'
+      - 'settings\.'
+      - '\.example'
+      - 'test'
+    file_filters:
+      - "**/*.py"
+      - "!**/*test*.py"
+      - "!**/test_*.py"
+      - "!**/*.example.py"
+
+  - id: "SEC-002"
+    adr_id: "ADR-005"
+    description: "SQL injection vulnerability"
+    severity: "critical"
+    patterns:
+      - 'f["\''].*SELECT.*FROM.*{.*}.*["\'']'
+      - '\.format\(.*\).*SELECT.*FROM'
+      - '\+.*["\''].*WHERE.*=.*["\''].*\+'
+    anti_patterns:
+      - 'text\('
+      - 'bindparams'
+      - 'execute\(.*\?'
+      - ':parameter'
+    file_filters:
+      - "app/**/*.py"
+
+  - id: "SEC-003"
+    adr_id: "ADR-005"
+    description: "Missing input validation"
+    severity: "high"
+    patterns:
+      - 'request\.(json|data|form)\[.*\](?!.*validate)'
+      - 'request\.get_json\(\)(?!.*validate)'
+    anti_patterns:
+      - 'pydantic'
+      - 'BaseModel'
+      - 'validate_'
+      - 'ValidationError'
+    file_filters:
+      - "app/api/**/*.py"
+
+  # Architectural Patterns
+  - id: "ARCH-001"
+    adr_id: "ADR-003"
+    description: "Business logic in API layer violates layered architecture"
+    severity: "medium"
+    patterns:
+      - 'async def.*\(.*Request.*\).*\n([^}])*\n.*for.*in.*:\n.*if.*:\n.*(?:calculate|process|transform|aggregate)'
+      - '@(app|router)\.(get|post|put|delete).*\n([^}]){50,}.*\n.*return'
+    anti_patterns:
+      - 'service\.'
+      - 'use_case\.'
+      - 'await.*Service'
+    file_filters:
+      - "app/api/endpoints/**/*.py"
+
+  - id: "ARCH-002"
+    adr_id: "ADR-003"
+    description: "Cross-layer dependency violation"
+    severity: "high"
+    patterns:
+      - 'from app\.api.*import.*(?:model|schema|entity)'
+      - 'from app\.models.*import.*(?:endpoint|route|controller)'
+    anti_patterns: []
+    file_filters:
+      - "app/**/*.py"
+
+  - id: "ARCH-003"
+    adr_id: "ADR-001"
+    description: "Missing error handling in critical paths"
+    severity: "high"
+    patterns:
+      - 'async def.*(?:auth|login|payment|transaction).*\n(?!.*try:)'
+    anti_patterns:
+      - 'try:'
+      - '@error_handler'
+      - 'with.*suppress'
+    file_filters:
+      - "app/core/**/*.py"
+      - "app/services/**/*.py"
+
+  # Performance Patterns
+  - id: "PERF-001"
+    adr_id: "ADR-004"
+    description: "N+1 query problem detected"
+    severity: "medium"
+    patterns:
+      - 'for.*in.*:\n.*await.*\.(get|query|select|find)'
+      - 'async for.*in.*:\n.*await.*db\.'
+    anti_patterns:
+      - 'joinedload'
+      - 'selectinload'
+      - 'batch'
+      - 'bulk'
+    file_filters:
+      - "app/**/*.py"
+
+  - id: "PERF-002"
+    adr_id: "ADR-004"
+    description: "Missing caching on expensive operations"
+    severity: "medium"
+    patterns:
+      - 'async def get_.*\(.*\).*\n(?!.*cache)'
+      - 'def calculate_.*\(.*\).*\n(?!.*cache)'
+    anti_patterns:
+      - '@cache'
+      - 'cache\.'
+      - 'cached_'
+      - 'redis'
+    file_filters:
+      - "app/services/**/*.py"
+      - "app/core/**/*.py"
+
+  # Rate Limiting Patterns
+  - id: "RATE-001"
+    adr_id: "ADR-005"
+    description: "Missing rate limiting on public endpoints"
+    severity: "high"
+    patterns:
+      - '@(app|router)\.(get|post|put|delete).*["\'']/public'
+    anti_patterns:
+      - '@rate_limit'
+      - 'RateLimiter'
+      - 'slowapi'
+      - 'dependencies=\[.*rate_limit'
+    file_filters:
+      - "app/api/endpoints/**/*.py"
+
+  # Data Validation Patterns
+  - id: "DATA-001"
+    adr_id: "ADR-006"
+    description: "Missing Pydantic model for request/response"
+    severity: "medium"
+    patterns:
+      - 'async def.*\(.*dict.*\).*->'
+      - 'return\s+{.*}(?!.*\.dict\(\))'
+    anti_patterns:
+      - 'BaseModel'
+      - 'response_model='
+      - '\.dict\(\)'
+      - '\.json\(\)'
+    file_filters:
+      - "app/api/endpoints/**/*.py"
+
+  # Testing Patterns
+  - id: "TEST-001"
+    adr_id: "ADR-007"
+    description: "Direct mocking of implementation instead of interfaces"
+    severity: "low"
+    patterns:
+      - 'mock\.patch.*\._[a-zA-Z_]+'
+      - '@patch.*\._[a-zA-Z_]+'
+    anti_patterns:
+      - 'mock\.patch.*\.interface'
+      - 'mock\.patch.*\.protocol'
+    file_filters:
+      - "tests/**/*.py"
+
+# Severity Definitions
+severity_levels:
+  critical:
+    description: "Security vulnerabilities or major architectural violations"
+    fail_build: true
+
+  high:
+    description: "Significant architectural issues that should be fixed soon"
+    fail_build: true
+
+  medium:
+    description: "Architectural concerns that should be addressed"
+    fail_build: false
+
+  low:
+    description: "Minor issues or style violations"
+    fail_build: false
+
+# CI Configuration
+ci_config:
+  max_violations_before_fail: 0  # Fail on any critical/high violation
+  parallel_analysis: true
+  cache_results: true
+  include_fix_suggestions: true
+  generate_sarif: false  # Enable for GitHub Security tab integration

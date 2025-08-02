@@ -1,0 +1,595 @@
+{
+  "debug_summary": {
+    "selected_adr": "ADR-F3-1_ScoringArchitecture",
+    "analysis_time": 124.81257104873657,
+    "compliance_score": 15.2,
+    "violations_count": 8,
+    "hotspots_count": 0,
+    "enterprise_features_active": true,
+    "success": true
+  },
+  "full_result": {
+    "audit_metadata": {
+      "repository_path": ".",
+      "adr_path": "docs/architecture/ADRs",
+      "analysis_timestamp": "2025-08-02T19:15:41.930556+00:00",
+      "execution_time_seconds": 124.81257104873657,
+      "mode": "debug_single_adr",
+      "selected_adr": "ADR-F3-1_ScoringArchitecture",
+      "total_adrs_discovered": 21,
+      "analyzed_adrs": 1
+    },
+    "overall_compliance_score": 15.2,
+    "discovered_adrs": [
+      {
+        "adr_id": "ADR-011_HistoricalCodeAnalysis",
+        "title": "ADR-011: Historical Code Analysis for ADR Compliance Auditing",
+        "file_path": "docs/architecture/ADRs/ADR-011_HistoricalCodeAnalysis.md",
+        "requirements": [
+          "This decision establishes a systematic, automated approach to ADR compliance auditing that scales with the growing complexity of the ViolentUTF API architecture. The Historical Code Analysis Tool addresses critical audit team needs while maintaining security, performance, and operational requirements.",
+          "2. **Configurable Detection**: YAML-based patterns adapt to evolving ADR requirements"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-007_AsyncTaskProcessing",
+        "title": "ADR-007: Asynchronous Task Processing with HTTP Polling and Webhooks",
+        "file_path": "docs/architecture/ADRs/ADR-007_AsyncTaskProcessing.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-004_Versioning",
+        "title": "ADR-004: URI Path Versioning Strategy",
+        "file_path": "docs/architecture/ADRs/ADR-004_Versioning.md",
+        "requirements": [
+          "Non-breaking, backward-compatible changes (e.g., adding a new optional field to a response or adding a completely new endpoint) will **not** require a new version. The current major version will simply be updated."
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F1-3_EndpointIntegrationArchitecture",
+        "title": "ADR-F1.3: Extensible Plugin Architecture for Target AI Integration",
+        "file_path": "docs/architecture/ADRs/ADR-F1-3_EndpointIntegrationArchitecture.md",
+        "requirements": [
+          "1.  **Standard Interface**: A standardized **`ProviderPlugin` abstract interface** will be defined in the core application. This interface will specify a set of methods that every plugin must implement (e.g., `send_chat_completion`, `list_available_models`)."
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-003_RBAC+ABAC",
+        "title": "ADR-003: Hybrid Authorization Model using RBAC and ABAC",
+        "file_path": "docs/architecture/ADRs/ADR-003_RBAC+ABAC.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F2-1_VulnerabilityTaxonomies",
+        "title": "ADR-F2.1: Database-Driven Vulnerability Taxonomy Model",
+        "file_path": "docs/architecture/ADRs/ADR-F2-1_VulnerabilityTaxonomies.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-009_ErrorandResponses",
+        "title": "ADR-009: Standardized Error Handling with RFC 7807",
+        "file_path": "docs/architecture/ADRs/ADR-009_ErrorandResponses.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-006_DataSerializationFormat",
+        "title": "ADR-006: JSON as the Exclusive Data Serialization Format",
+        "file_path": "docs/architecture/ADRs/ADR-006_DataSerializationFormat.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-010_SoftwareDependencies",
+        "title": "ADR-010: Automated Dependency Management and SCA Policy",
+        "file_path": "docs/architecture/ADRs/ADR-010_SoftwareDependencies.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F1-1_TemplatingEngine",
+        "title": "ADR-F1.1: Sandboxed Templating Engine for Attack Payloads",
+        "file_path": "docs/architecture/ADRs/ADR-F1-1_TemplatingEngine.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-005_RateLimiting",
+        "title": "ADR-005: Multi-Layered Rate Limiting and Resource Consumption Policy",
+        "file_path": "docs/architecture/ADRs/ADR-005_RateLimiting.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-007_Auth_Failover",
+        "title": "ADR-007: Authentication Failover Mechanisms",
+        "file_path": "docs/architecture/ADRs/ADR-007_Auth_Failover.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-008_LoggingandAuditing",
+        "title": "ADR-008: Structured JSON Logging for Multi-Tenant Auditing and Observability",
+        "file_path": "docs/architecture/ADRs/ADR-008_LoggingandAuditing.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F3-1_ScoringArchitecture",
+        "title": "ADR-F3.1: Hybrid Scoring Architecture for Model Risk Analysis",
+        "file_path": "docs/architecture/ADRs/ADR-F3-1_ScoringArchitecture.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-001_RESTstyle",
+        "title": "ADR-001: Adopt REST for Standalone API Endpoints",
+        "file_path": "docs/architecture/ADRs/ADR-001_RESTstyle.md",
+        "requirements": [
+          "The ViolentUTF API will adopt and enhance a **RESTful architectural style** for all public-facing endpoints. This decision reaffirms the existing approach but adapts it to meet the new requirements of a standalone, GSA-compliant service."
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F1-2_ServersideOrchestration",
+        "title": "ADR-F1.2: Server-Side Orchestration for Multi-Turn Attacks",
+        "file_path": "docs/architecture/ADRs/ADR-F1-2_ServersideOrchestration.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F4-1_UntrustedModelInteractions",
+        "title": "ADR-F4.1: Container-based Sandboxing for Untrusted Model Execution",
+        "file_path": "docs/architecture/ADRs/ADR-F4-1_UntrustedModelInteractions.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-002_Authentication",
+        "title": "ADR-002: Phased Authentication Strategy using JWT and API Keys",
+        "file_path": "docs/architecture/ADRs/ADR-002_Authentication.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F2-2_DataStorage",
+        "title": "ADR-F2.2: Polyglot Persistence Strategy for Session Evidence",
+        "file_path": "docs/architecture/ADRs/ADR-F2-2_DataStorage.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F4-2_SecretManagement",
+        "title": "ADR-F4.2: Centralized Secrets Management for Target System Credentials",
+        "file_path": "docs/architecture/ADRs/ADR-F4-2_SecretManagement.md",
+        "requirements": [
+          "3.  **Just-in-Time (JIT) Retrieval**: Application services (e.g., background workers) will retrieve secrets from the manager on a just-in-time basis immediately before they are needed. Secrets will only be held in memory for the minimal time required and will never be written to disk."
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      },
+      {
+        "adr_id": "ADR-F3-2_ReportGeneration",
+        "title": "ADR-F3.2: Server-Side Engine for Automated Report Generation",
+        "file_path": "docs/architecture/ADRs/ADR-F3-2_ReportGeneration.md",
+        "requirements": [
+          "Follow architectural decision guidelines",
+          "Maintain consistency with existing patterns"
+        ],
+        "code_areas": [
+          "app/",
+          "services/",
+          "api/"
+        ],
+        "risk_level": "medium"
+      }
+    ],
+    "selected_adr_details": {
+      "adr_id": "ADR-F3-1_ScoringArchitecture",
+      "title": "ADR-F3.1: Hybrid Scoring Architecture for Model Risk Analysis",
+      "file_path": "docs/architecture/ADRs/ADR-F3-1_ScoringArchitecture.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    "adr_compliance": {
+      "ADR-F3-1_ScoringArchitecture": {
+        "adr_id": "ADR-F3-1_ScoringArchitecture",
+        "compliance_score": 15.2,
+        "violations": [
+          {
+            "file_path": "app/models/session.py",
+            "line_number": 94,
+            "description": "Session model lacks 'analysis_status' column required by ADR. ADR section 146 specifies: 'data models must be designed to accommodate scores being added at two different times. For example, the session_summary table needs an analysis_status column'",
+            "risk_level": "high",
+            "remediation_suggestion": "Add analysis_status field to Session model with enum values like PENDING, TRIAGE_COMPLETE, DEEP_ANALYSIS_COMPLETE",
+            "confidence": 0.95
+          },
+          {
+            "file_path": "app/",
+            "line_number": 0,
+            "description": "Missing ScorerPlugin abstract base class implementation. ADR lines 104-124 specify a ScorerPlugin ABC with SCORER_TYPE, SCORER_NAME, and score() method",
+            "risk_level": "critical",
+            "remediation_suggestion": "Create app/core/scorers/base.py with ScorerPlugin ABC containing SCORER_TYPE (Literal['real-time', 'batch']), SCORER_NAME (str), and abstract score() method",
+            "confidence": 0.98
+          },
+          {
+            "file_path": "app/",
+            "line_number": 0,
+            "description": "No real-time 'triage' scoring implementation found. ADR section 70 requires 'Phase 1: Real-time Triage Scoring' during test execution with lightweight scorers",
+            "risk_level": "critical",
+            "remediation_suggestion": "Implement real-time scoring in session service with lightweight scorers (regex, keyword matching) that run synchronously during response processing",
+            "confidence": 0.97
+          },
+          {
+            "file_path": "app/",
+            "line_number": 0,
+            "description": "Missing asynchronous 'Deep Analysis' batch job system. ADR section 71 requires 'Phase 2: Asynchronous Deep Analysis' triggered after test completion",
+            "risk_level": "critical",
+            "remediation_suggestion": "Implement async task queue (Celery/Redis per ADR-007) with scoring workers that process expensive analysis jobs after session completion",
+            "confidence": 0.98
+          },
+          {
+            "file_path": "app/services/session_service.py",
+            "line_number": 94,
+            "description": "Session completion does not trigger deep analysis job as required by ADR. Missing implementation of 'enqueue deep analysis job into task queue' from section 95",
+            "risk_level": "high",
+            "remediation_suggestion": "Add deep analysis job enqueue logic in session completion workflow, passing session_id to scoring worker",
+            "confidence": 0.92
+          },
+          {
+            "file_path": "app/",
+            "line_number": 0,
+            "description": "No evidence document storage for prompt/response/score triples. ADR section 93 requires saving 'prompt/response evidence document in the document database'",
+            "risk_level": "high",
+            "remediation_suggestion": "Implement MongoDB/document database integration for storing session evidence with triage and deep analysis scores",
+            "confidence": 0.94
+          },
+          {
+            "file_path": "app/core/config.py",
+            "line_number": 62,
+            "description": "Configuration lacks task queue settings required for scoring architecture. No Celery/Redis worker configuration found",
+            "risk_level": "medium",
+            "remediation_suggestion": "Add CELERY_BROKER_URL, CELERY_RESULT_BACKEND, SCORING_WORKER_CONCURRENCY settings to support async scoring tasks",
+            "confidence": 0.89
+          },
+          {
+            "file_path": "app/api/endpoints/sessions.py",
+            "line_number": 155,
+            "description": "Session creation endpoint does not implement triage scoring as required. Missing real-time scoring of responses during session",
+            "risk_level": "medium",
+            "remediation_suggestion": "Integrate real-time scorer plugins into session creation workflow to apply lightweight analysis immediately",
+            "confidence": 0.87
+          }
+        ],
+        "compliant_areas": [
+          "Session model provides basic session tracking infrastructure",
+          "Service layer architecture supports extensibility for scoring integration",
+          "Redis caching infrastructure can support scorer result caching"
+        ],
+        "recommendations": [
+          "Implement the ScorerPlugin architecture as specified in ADR lines 104-124 with abstract base class and plugin registration system",
+          "Create two-phase scoring workflow: real-time triage scoring during session and asynchronous deep analysis afterward",
+          "Integrate task queue system (Celery/Redis) to support background scoring workers as referenced in ADR-007",
+          "Add analysis_status tracking to session models and implement evidence document storage in MongoDB",
+          "Develop plugin registration and discovery system to allow easy addition of new scoring techniques",
+          "Implement hybrid client response pattern showing immediate triage results and eventual deep analysis completion"
+        ],
+        "analysis_timestamp": "2025-08-02T19:13:37.118020+00:00",
+        "files_analyzed": [
+          "docs/architecture/ADRs/ADR-F3-1_ScoringArchitecture.md",
+          "app/models/session.py",
+          "app/services/session_service.py",
+          "app/api/endpoints/sessions.py",
+          "app/schemas/session.py",
+          "app/core/config.py",
+          "app/main.py",
+          "docs/architecture/ADRs/ADR-007_AsyncTaskProcessing.md",
+          "docs/architecture/ADRs/ADR-F2-2_DataStorage.md"
+        ],
+        "analysis_summary": "The codebase shows a basic session management system but lacks the core Hybrid Scoring Architecture components specified in ADR-F3-1. Critical missing implementations include the ScorerPlugin system, two-phase scoring workflow (real-time triage + async deep analysis), evidence document storage, and task queue integration. The current implementation provides only 15.2% compliance with the architectural requirements. Major architectural work is needed to implement the scoring infrastructure before any scoring plugins can be developed."
+      }
+    },
+    "all_violations": [
+      {
+        "file_path": "app/models/session.py",
+        "line_number": 94,
+        "description": "Session model lacks 'analysis_status' column required by ADR. ADR section 146 specifies: 'data models must be designed to accommodate scores being added at two different times. For example, the session_summary table needs an analysis_status column'",
+        "risk_level": "high",
+        "remediation_suggestion": "Add analysis_status field to Session model with enum values like PENDING, TRIAGE_COMPLETE, DEEP_ANALYSIS_COMPLETE",
+        "confidence": 0.95
+      },
+      {
+        "file_path": "app/",
+        "line_number": 0,
+        "description": "Missing ScorerPlugin abstract base class implementation. ADR lines 104-124 specify a ScorerPlugin ABC with SCORER_TYPE, SCORER_NAME, and score() method",
+        "risk_level": "critical",
+        "remediation_suggestion": "Create app/core/scorers/base.py with ScorerPlugin ABC containing SCORER_TYPE (Literal['real-time', 'batch']), SCORER_NAME (str), and abstract score() method",
+        "confidence": 0.98
+      },
+      {
+        "file_path": "app/",
+        "line_number": 0,
+        "description": "No real-time 'triage' scoring implementation found. ADR section 70 requires 'Phase 1: Real-time Triage Scoring' during test execution with lightweight scorers",
+        "risk_level": "critical",
+        "remediation_suggestion": "Implement real-time scoring in session service with lightweight scorers (regex, keyword matching) that run synchronously during response processing",
+        "confidence": 0.97
+      },
+      {
+        "file_path": "app/",
+        "line_number": 0,
+        "description": "Missing asynchronous 'Deep Analysis' batch job system. ADR section 71 requires 'Phase 2: Asynchronous Deep Analysis' triggered after test completion",
+        "risk_level": "critical",
+        "remediation_suggestion": "Implement async task queue (Celery/Redis per ADR-007) with scoring workers that process expensive analysis jobs after session completion",
+        "confidence": 0.98
+      },
+      {
+        "file_path": "app/services/session_service.py",
+        "line_number": 94,
+        "description": "Session completion does not trigger deep analysis job as required by ADR. Missing implementation of 'enqueue deep analysis job into task queue' from section 95",
+        "risk_level": "high",
+        "remediation_suggestion": "Add deep analysis job enqueue logic in session completion workflow, passing session_id to scoring worker",
+        "confidence": 0.92
+      },
+      {
+        "file_path": "app/",
+        "line_number": 0,
+        "description": "No evidence document storage for prompt/response/score triples. ADR section 93 requires saving 'prompt/response evidence document in the document database'",
+        "risk_level": "high",
+        "remediation_suggestion": "Implement MongoDB/document database integration for storing session evidence with triage and deep analysis scores",
+        "confidence": 0.94
+      },
+      {
+        "file_path": "app/core/config.py",
+        "line_number": 62,
+        "description": "Configuration lacks task queue settings required for scoring architecture. No Celery/Redis worker configuration found",
+        "risk_level": "medium",
+        "remediation_suggestion": "Add CELERY_BROKER_URL, CELERY_RESULT_BACKEND, SCORING_WORKER_CONCURRENCY settings to support async scoring tasks",
+        "confidence": 0.89
+      },
+      {
+        "file_path": "app/api/endpoints/sessions.py",
+        "line_number": 155,
+        "description": "Session creation endpoint does not implement triage scoring as required. Missing real-time scoring of responses during session",
+        "risk_level": "medium",
+        "remediation_suggestion": "Integrate real-time scorer plugins into session creation workflow to apply lightweight analysis immediately",
+        "confidence": 0.87
+      }
+    ],
+    "violation_summary": {
+      "total_violations": 8,
+      "by_risk_level": {
+        "high": 3,
+        "critical": 3,
+        "medium": 2
+      },
+      "by_adr": {
+        "unknown": 8
+      },
+      "top_violated_files": [
+        {
+          "file": "app/",
+          "violation_count": 4
+        },
+        {
+          "file": "app/models/session.py",
+          "violation_count": 1
+        },
+        {
+          "file": "app/services/session_service.py",
+          "violation_count": 1
+        },
+        {
+          "file": "app/core/config.py",
+          "violation_count": 1
+        },
+        {
+          "file": "app/api/endpoints/sessions.py",
+          "violation_count": 1
+        }
+      ]
+    },
+    "architectural_hotspots": [],
+    "multi_tool_results": {
+      "analysis_type": "multi_tool_orchestration",
+      "focus_adr": "ADR-F3-1_ScoringArchitecture",
+      "tools_executed": [
+        "sonarqube",
+        "bandit",
+        "lizard",
+        "pytestarch"
+      ],
+      "findings": [],
+      "tool_summaries": {
+        "sonarqube": {
+          "findings_count": 0,
+          "execution_time": 0.1,
+          "status": "success"
+        },
+        "bandit": {
+          "findings_count": 0,
+          "execution_time": 0.1,
+          "status": "success"
+        },
+        "lizard": {
+          "findings_count": 0,
+          "execution_time": 0.1,
+          "status": "success"
+        },
+        "pytestarch": {
+          "findings_count": 0,
+          "execution_time": 0.1,
+          "status": "success"
+        }
+      },
+      "total_findings": 0,
+      "timestamp": "2025-08-02T19:15:41.930400+00:00"
+    },
+    "git_forensics_results": {
+      "available": true,
+      "error": "'EnterpriseClaudeCodeConfig' object has no attribute 'git_analysis_months'"
+    },
+    "rag_analysis_results": {
+      "message": "RAG analyzer not initialized"
+    },
+    "recommendations": [
+      "Address 3 critical violations immediately"
+    ]
+  }
+}
