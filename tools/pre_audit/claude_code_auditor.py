@@ -1513,7 +1513,7 @@ class GitForensicsAnalyzer:
                 "analysis_method": "git_forensics",
                 "adr_id": adr_id,
                 "violation_patterns": violation_patterns,
-                "architectural_hotspots": hotspots,
+                "architectural_hotspots": [h.to_dict() for h in hotspots],
                 "remediation_history": remediation_history,
                 "analysis_period_months": 6,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
