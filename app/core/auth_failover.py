@@ -113,17 +113,16 @@ class FallbackAuthProvider:
         # Verify password if hash is cached
         password_hash = user_data.get("password_hash")
         if password_hash:
-            # Use bcrypt if available, otherwise simple hash comparison
+            # Use bcrypt for secure password verification
             try:
                 import bcrypt
 
                 if not bcrypt.checkpw(password.encode(), password_hash.encode()):
                     return None
             except ImportError:
-                # Fallback to simple hash comparison (less secure)
-                simple_hash = hashlib.sha256(password.encode()).hexdigest()
-                if simple_hash != password_hash:
-                    return None
+                # bcrypt is required for secure password verification
+                logger.error("bcrypt library not available for secure password verification")
+                raise AuthenticationError("Password verification not available - system misconfiguration")
         else:
             # No password hash cached, can't verify
             logger.warning("No password hash cached for fallback auth", username=username_or_email)

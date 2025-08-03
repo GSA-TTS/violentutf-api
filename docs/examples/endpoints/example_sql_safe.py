@@ -412,12 +412,20 @@ async def generate_report(
                 detail=f"Invalid columns for table '{table_name}': {invalid_cols}",
             )
 
-        # Build safe query with validated identifiers
-        column_list = ", ".join(columns)
-        query = f"SELECT {column_list} FROM {table_name} LIMIT 100"  # nosec B608
+        # Build safe query with validated identifiers using SQLAlchemy
+        # Since table_name and columns are validated against allowlists,
+        # we can safely construct identifiers
+        from sqlalchemy import column, select, table
+
+        # Create table and column objects safely
+        table_obj = table(table_name)
+        column_objs = [column(col_name) for col_name in columns]
+
+        # Build query using SQLAlchemy constructs
+        query = select(*column_objs).select_from(table_obj).limit(100)
 
         # Execute query
-        result = await db.execute(text(query))
+        result = await db.execute(query)
         rows = result.fetchall()
 
         return {

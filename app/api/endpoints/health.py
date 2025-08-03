@@ -45,9 +45,15 @@ async def readiness_check(response: Response) -> Dict[str, Any]:
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
 
-    # Process system check results
+    # Process system check results safely without exposing exception details
     disk_healthy = not isinstance(system_checks[0], Exception) and system_checks[0]
     memory_healthy = not isinstance(system_checks[1], Exception) and system_checks[1]
+
+    # Log exceptions securely without exposing to client
+    if isinstance(system_checks[0], Exception):
+        logger.error("disk_space_check_exception", error_type=type(system_checks[0]).__name__)
+    if isinstance(system_checks[1], Exception):
+        logger.error("memory_check_exception", error_type=type(system_checks[1]).__name__)
 
     # Combine all checks
     all_checks = {

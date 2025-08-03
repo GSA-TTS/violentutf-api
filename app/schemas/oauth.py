@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, HttpUrl, validator
 
@@ -29,13 +30,37 @@ class OAuthApplicationCreate(BaseModel):
 
     @validator("redirect_uris")
     def validate_redirect_uris(cls, v: List[str]) -> List[str]:
-        """Validate redirect URIs list."""
+        """Validate redirect URIs list with proper URL parsing."""
         if not v or len(v) == 0:
             raise ValueError("At least one redirect URI is required")
-        # Validate each URI
+
+        # Validate each URI with proper URL parsing
         for uri in v:
-            if not uri or len(uri) < 10:
-                raise ValueError(f"Invalid redirect URI: {uri}")
+            if not uri:
+                raise ValueError("Empty redirect URI not allowed")
+
+            try:
+                parsed = urlparse(uri)
+
+                # Must have a valid scheme
+                if not parsed.scheme:
+                    raise ValueError(f"Invalid redirect URI - missing scheme: {uri}")
+
+                # Must have a valid netloc (domain)
+                if not parsed.netloc:
+                    raise ValueError(f"Invalid redirect URI - missing domain: {uri}")
+
+                # Only allow http/https schemes
+                if parsed.scheme not in ["http", "https"]:
+                    raise ValueError(f"Invalid redirect URI - only http/https allowed: {uri}")
+
+                # Validate domain is not suspicious
+                if parsed.netloc.count(".") == 0 and parsed.netloc not in ["localhost"]:
+                    raise ValueError(f"Invalid redirect URI - suspicious domain: {uri}")
+
+            except Exception as e:
+                raise ValueError(f"Invalid redirect URI format: {uri} - {str(e)}")
+
         return v
 
     @validator("allowed_scopes")

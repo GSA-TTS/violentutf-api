@@ -13,6 +13,8 @@ jobs:
   build-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +47,8 @@ jobs:
     name: Docker Release
     needs: build-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +76,8 @@ jobs:
     name: GitHub Release
     needs: [build-test, docker-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
