@@ -502,7 +502,7 @@ class EnhancedRepository(BaseRepository[T]):
                 "has_next": page.has_next,
                 "has_prev": page.has_prev,
                 "item_count": len(page.items),
-                "cached_at": datetime.utcnow().isoformat(),
+                "cached_at": datetime.now(timezone.utc).isoformat(),
             }
 
             cache_json = json.dumps(cache_data)

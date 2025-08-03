@@ -8,11 +8,7 @@ import pytest
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.core.permissions import (
-    get_current_user_permissions,
-    require_any_permission,
-    require_permission,
-)
+from app.core.permissions import get_current_user_permissions, require_any_permission, require_permission
 from app.middleware.permissions import PermissionChecker
 from app.models.permission import Permission
 from app.models.user import User

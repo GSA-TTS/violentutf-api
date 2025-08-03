@@ -1,7 +1,7 @@
 """Unit tests for authentication failover mechanisms."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -245,7 +245,7 @@ class TestFallbackAuthProvider:
             fallback_provider._emergency_tokens[token] = {
                 "user_id": "user",
                 "permissions": [],
-                "expires_at": datetime.utcnow() - timedelta(hours=1),
+                "expires_at": datetime.now(timezone.utc) - timedelta(hours=1),
                 "reason": "test",
             }
 

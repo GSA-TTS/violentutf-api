@@ -1,7 +1,7 @@
 """RBAC service for role and permission management."""
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -601,8 +601,10 @@ class RBACService:
             # Mark expired assignments as inactive
             update_query = (
                 update(UserRole)
-                .where(and_(UserRole.expires_at <= datetime.utcnow(), UserRole.is_active == True))  # noqa: E712
-                .values(is_active=False, updated_at=datetime.utcnow(), updated_by="system_cleanup")
+                .where(
+                    and_(UserRole.expires_at <= datetime.now(timezone.utc), UserRole.is_active == True)
+                )  # noqa: E712
+                .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
             )
 
             result = await self.session.execute(update_query)

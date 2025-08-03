@@ -32,7 +32,7 @@ try:
     from claude_code_auditor import ClaudeCodeArchitecturalAuditor
 except ImportError:
     print("Warning: Claude Code dependencies not available. Running in pattern-only mode.")
-    ClaudeCodeArchitecturalAuditor = None  # type: ignore[misc, assignment]
+    ClaudeCodeArchitecturalAuditor = None
 
 
 @dataclass
@@ -71,12 +71,13 @@ class AnalysisRateLimit:
 class SmartArchitecturalAnalyzer:
     """Smart analyzer with conditional triggers for architectural analysis"""
 
-    def __init__(self, config_path: str = ".architectural-triggers.yml"):
+    def __init__(self, config_path: str = ".architectural-triggers.yml", quiet: bool = False):
         self.config_path = Path(config_path)
         self.config = self._load_config()
         self.cache_dir = Path(".cache/smart_analyzer")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.rate_limits = self._load_rate_limits()
+        self.quiet = quiet
 
         # Initialize Claude Code auditor if available
         self.claude_auditor = None
@@ -84,7 +85,13 @@ class SmartArchitecturalAnalyzer:
             try:
                 self.claude_auditor = ClaudeCodeArchitecturalAuditor(".")
             except Exception as e:
-                print(f"Warning: Could not initialize Claude Code auditor: {e}")
+                if not self.quiet:
+                    print(f"Warning: Could not initialize Claude Code auditor: {e}")
+
+    def _print(self, *args: Any, **kwargs: Any) -> None:
+        """Print only if not in quiet mode"""
+        if not self.quiet:
+            print(*args, **kwargs)
 
     def _load_config(self) -> Dict[str, Any]:
         """Load trigger configuration"""
@@ -471,15 +478,15 @@ class SmartArchitecturalAnalyzer:
         if not trigger_result.should_analyze:
             if self.config.get("output", {}).get("silent_on_skip", False):
                 return None
-            print(f"✓ No architectural analysis needed: {trigger_result.reason}")
+            self._print(f"✓ No architectural analysis needed: {trigger_result.reason}")
             return None
 
         # Show trigger information
         if self.config.get("output", {}).get("show_trigger_reason", True):
-            print(f"🔍 Running architectural analysis: {trigger_result.reason}")
+            self._print(f"🔍 Running architectural analysis: {trigger_result.reason}")
             if trigger_result.risk_score > 0:
-                print(f"   Risk score: {trigger_result.risk_score:.2f}")
-            print(f"   Files to analyze: {len(trigger_result.files_to_analyze)}")
+                self._print(f"   Risk score: {trigger_result.risk_score:.2f}")
+            self._print(f"   Files to analyze: {len(trigger_result.files_to_analyze)}")
 
         # Update rate limits
         self._update_rate_limits()
@@ -496,7 +503,7 @@ class SmartArchitecturalAnalyzer:
 
                 return results
             except Exception as e:
-                print(f"❌ Error during Claude analysis: {e}")
+                print(f"❌ Error during Claude analysis: {e}")  # Always show errors
                 # Fall back to pattern-based analysis
                 return self._run_pattern_analysis(trigger_result.files_to_analyze)
         else:
@@ -506,14 +513,7 @@ class SmartArchitecturalAnalyzer:
     async def _run_claude_analysis(self, files: List[str]) -> Dict[str, Any]:
         """Run Claude Code analysis on specific files"""
         # TODO: Integrate with enhanced Claude Code auditor
-        # For now, return mock results
-        return {
-            "analysis_type": "claude_semantic",
-            "files_analyzed": files,
-            "violations": [],
-            "compliance_score": 95.0,
-            "timestamp": datetime.now().isoformat(),
-        }
+        raise NotImplementedError("Real implementation needed")
 
     def _run_pattern_analysis(self, files: List[str]) -> Dict[str, Any]:
         """Run pattern-based analysis as fallback"""
@@ -574,19 +574,25 @@ def main() -> None:
     parser.add_argument("--config", default=".architectural-triggers.yml", help="Trigger configuration file")
     parser.add_argument("--force", action="store_true", help="Force analysis regardless of triggers")
     parser.add_argument("--dry-run", action="store_true", help="Check triggers without running analysis")
+    parser.add_argument("--quiet", action="store_true", help="Suppress verbose output")
 
     args = parser.parse_args()
 
+    # Helper function for conditional printing
+    def maybe_print(*args_to_print: Any, **kwargs: Any) -> None:
+        if not args.quiet:
+            print(*args_to_print, **kwargs)
+
     # Initialize analyzer
-    analyzer = SmartArchitecturalAnalyzer(args.config)
+    analyzer = SmartArchitecturalAnalyzer(args.config, quiet=args.quiet)
 
     if args.dry_run:
         # Just check triggers
         result = analyzer.should_analyze(args.files)
-        print(f"Would analyze: {result.should_analyze}")
-        print(f"Reason: {result.reason}")
+        maybe_print(f"Would analyze: {result.should_analyze}")
+        maybe_print(f"Reason: {result.reason}")
         if result.files_to_analyze:
-            print(f"Files: {', '.join(result.files_to_analyze)}")
+            maybe_print(f"Files: {', '.join(result.files_to_analyze)}")
         sys.exit(0)
 
     # Run async analysis

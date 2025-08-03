@@ -186,48 +186,20 @@ class SemanticAnalyzerAgent(AnalysisAgent):
 
     async def _extract_adr_requirements(self, context: SharedContext) -> Dict[str, Any]:
         """Extract requirements from ADR documents"""
-        requirements = {}
-
         # In a real implementation, this would use Claude to analyze ADRs
-        # For now, return mock requirements
-        for adr_id, adr_content in context.adr_documents.items():
-            requirements[adr_id] = {
-                "rules": ["Authentication must use JWT", "All endpoints require rate limiting"],
-                "constraints": ["Max 100 requests per minute", "Token expiry 24 hours"],
-                "patterns": ["Repository pattern for data access", "Middleware for auth"],
-            }
-
-        return requirements
+        raise NotImplementedError("Real implementation needed")
 
     async def _discover_relevant_files(self, context: SharedContext) -> List[str]:
         """Discover files relevant to architectural analysis"""
         # In real implementation, use Glob and Grep tools
-        # For now, return mock file list
-        return [
-            "app/core/auth.py",
-            "app/middleware/authentication.py",
-            "app/api/endpoints/auth.py",
-            "app/services/user.py",
-        ]
+        raise NotImplementedError("Real implementation needed")
 
     async def _analyze_semantic_compliance(
         self, files: List[str], requirements: Dict[str, Any], context: SharedContext
     ) -> Dict[str, Any]:
         """Analyze semantic compliance of code with requirements"""
         # In real implementation, use Claude to analyze code semantics
-        # For now, return mock analysis
-        return {
-            "compliant_files": files[:2],
-            "violations": [
-                {
-                    "file": files[2],
-                    "requirement": "Authentication must use JWT",
-                    "issue": "Direct session usage found",
-                    "confidence": 0.85,
-                }
-            ],
-            "coverage": 0.75,
-        }
+        raise NotImplementedError("Real implementation needed")
 
     def _generate_insights(self, compliance_results: Dict[str, Any]) -> List[str]:
         """Generate architectural insights from analysis"""

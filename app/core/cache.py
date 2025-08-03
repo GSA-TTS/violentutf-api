@@ -1,7 +1,7 @@
 """Cache management with Redis integration and fallback support."""
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
 
 import redis.asyncio as redis
@@ -41,12 +41,12 @@ class CacheManager:
         # Check if we should retry connection
         if self._connection_failures >= self._max_connection_failures:
             if self._last_connection_attempt:
-                time_since_last_attempt = datetime.utcnow() - self._last_connection_attempt
+                time_since_last_attempt = datetime.now(timezone.utc) - self._last_connection_attempt
                 if time_since_last_attempt < self._connection_retry_delay:
                     return False
 
         try:
-            self._last_connection_attempt = datetime.utcnow()
+            self._last_connection_attempt = datetime.now(timezone.utc)
             self._redis_client = redis.from_url(
                 self.redis_url,
                 encoding="utf-8",
@@ -120,7 +120,7 @@ class CacheManager:
         # Fall back to in-memory cache
         cache_entry = self._fallback_cache.get(key)
         if cache_entry:
-            if cache_entry["expires_at"] and cache_entry["expires_at"] < datetime.utcnow():
+            if cache_entry["expires_at"] and cache_entry["expires_at"] < datetime.now(timezone.utc):
                 del self._fallback_cache[key]
                 return default
             return cache_entry["value"]
@@ -226,7 +226,7 @@ class CacheManager:
         # Check fallback cache
         if key in self._fallback_cache:
             cache_entry = self._fallback_cache[key]
-            if cache_entry["expires_at"] and cache_entry["expires_at"] < datetime.utcnow():
+            if cache_entry["expires_at"] and cache_entry["expires_at"] < datetime.now(timezone.utc):
                 del self._fallback_cache[key]
                 return False
             return True
@@ -386,7 +386,7 @@ class CacheManager:
         # Check fallback cache
         cache_entry = self._fallback_cache.get(key)
         if cache_entry and cache_entry["expires_at"]:
-            remaining = (cache_entry["expires_at"] - datetime.utcnow()).total_seconds()
+            remaining = (cache_entry["expires_at"] - datetime.now(timezone.utc)).total_seconds()
             if remaining > 0:
                 return int(remaining)
 
@@ -409,9 +409,9 @@ class CacheManager:
         # Test Redis connection
         if self._redis_client:
             try:
-                start_time = datetime.utcnow()
+                start_time = datetime.now(timezone.utc)
                 await self._redis_client.ping()
-                response_time = (datetime.utcnow() - start_time).total_seconds()
+                response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
                 health["redis_response_time_ms"] = response_time * 1000
                 health["redis_available"] = True
             except Exception as e:
@@ -431,7 +431,7 @@ class CacheManager:
 
     def _update_fallback_cache(self, key: str, value: Any, ttl: int) -> None:
         """Update fallback cache with TTL."""
-        expires_at = datetime.utcnow() + timedelta(seconds=ttl) if ttl > 0 else None
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl) if ttl > 0 else None
         self._fallback_cache[key] = {
             "value": value,
             "expires_at": expires_at,

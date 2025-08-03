@@ -38,7 +38,7 @@ repos:
     rev: v1.17.0
     hooks:
       - id: mypy
-        args: ['--ignore-missing-imports', '--strict']
+        args: ['--ignore-missing-imports', '--strict', '--no-error-summary', '--no-pretty']
         exclude: '^(tests/|alembic/|backups/|docs/)'
         additional_dependencies:
           - types-requests
@@ -60,7 +60,7 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/']
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/', '--quiet']
         exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
         pass_filenames: false
 
@@ -150,6 +150,7 @@ repos:
           - pyyaml>=6.0
           - anthropic>=0.25.0  # Optional, for Claude analysis
         verbose: false  # Reduced verbosity for cleaner output
+        args: ['--quiet']  # Further reduce output
         # Hook only runs when smart triggers are activated
         # Configure triggers in .architectural-triggers.yml
 

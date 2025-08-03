@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 from urllib.parse import quote
 
@@ -556,8 +556,8 @@ class TestOAuth2Service:
 
         mock_token = MagicMock(spec=OAuthRefreshToken)
         mock_token.scopes = json.dumps(["read:users", "write:users"])
-        mock_token.created_at = datetime.utcnow()
-        mock_token.last_used_at = datetime.utcnow()
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.last_used_at = datetime.now(timezone.utc)
 
         mock_result = MagicMock()
         mock_result.__iter__ = MagicMock(return_value=iter([(mock_app, mock_token)]))

@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -307,8 +307,8 @@ class TestAuditService:
         # Arrange
         user_id = str(uuid.uuid4())
         mock_logs = [
-            MagicMock(spec=AuditLog, action="user.login", created_at=datetime.utcnow()),
-            MagicMock(spec=AuditLog, action="user.update", created_at=datetime.utcnow()),
+            MagicMock(spec=AuditLog, action="user.login", created_at=datetime.now(timezone.utc)),
+            MagicMock(spec=AuditLog, action="user.update", created_at=datetime.now(timezone.utc)),
         ]
 
         mock_result = MagicMock()
@@ -318,7 +318,7 @@ class TestAuditService:
         # Act
         result = await audit_service.get_user_activity(
             user_id=user_id,
-            start_date=datetime.utcnow() - timedelta(days=7),
+            start_date=datetime.now(timezone.utc) - timedelta(days=7),
             limit=10,
         )
 

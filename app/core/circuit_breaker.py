@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, Union
@@ -72,7 +72,7 @@ class CircuitBreaker:
         self._failure_count = 0
         self._success_count = 0
         self._last_failure_time: Optional[datetime] = None
-        self._last_state_change: datetime = datetime.utcnow()
+        self._last_state_change: datetime = datetime.now(timezone.utc)
 
         # Metrics
         self._total_calls = 0
@@ -168,7 +168,7 @@ class CircuitBreaker:
     def _should_attempt_reset(self) -> bool:
         """Check if we should try to reset from open state."""
         if self._last_failure_time:
-            time_since_failure = datetime.utcnow() - self._last_failure_time
+            time_since_failure = datetime.now(timezone.utc) - self._last_failure_time
             return time_since_failure.total_seconds() >= self.recovery_timeout
         return False
 
@@ -198,7 +198,7 @@ class CircuitBreaker:
         self._total_failures += 1
         self._consecutive_failures += 1
         self._consecutive_successes = 0
-        self._last_failure_time = datetime.utcnow()
+        self._last_failure_time = datetime.now(timezone.utc)
 
         if self.is_half_open:
             self._transition_to_open()
@@ -217,7 +217,7 @@ class CircuitBreaker:
         self._state = CircuitState.CLOSED
         self._failure_count = 0
         self._success_count = 0
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
 
     def _transition_to_open(self) -> None:
         """Transition to open state."""
@@ -228,7 +228,7 @@ class CircuitBreaker:
             consecutive_failures=self._consecutive_failures,
         )
         self._state = CircuitState.OPEN
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
 
     def _transition_to_half_open(self) -> None:
         """Transition to half-open state."""
@@ -239,7 +239,7 @@ class CircuitBreaker:
         )
         self._state = CircuitState.HALF_OPEN
         self._success_count = 0
-        self._last_state_change = datetime.utcnow()
+        self._last_state_change = datetime.now(timezone.utc)
 
     def reset(self) -> None:
         """Manually reset circuit to closed state."""
@@ -251,7 +251,7 @@ class CircuitBreaker:
 
     def get_stats(self) -> Dict[str, Any]:
         """Get circuit breaker statistics."""
-        uptime = (datetime.utcnow() - self._last_state_change).total_seconds()
+        uptime = (datetime.now(timezone.utc) - self._last_state_change).total_seconds()
 
         return {
             "name": self.name,

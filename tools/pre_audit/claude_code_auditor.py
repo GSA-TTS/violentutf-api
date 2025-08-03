@@ -47,6 +47,10 @@ from urllib.parse import urlparse
 import yaml
 from dotenv import load_dotenv
 
+# Import git history parser and pattern matcher
+from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, GitHistoryParser
+from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixType
+
 # Vector database for RAG system
 try:
     import chromadb
@@ -1005,45 +1009,163 @@ Output Format:
         """Analyze architectural hotspots using git history and complexity metrics."""
         logger.info("Analyzing architectural hotspots")
 
-        options = self._create_analysis_options(max_turns=10)
+        # Try using GitHistoryParser first for more sophisticated analysis
+        try:
+            git_parser = GitHistoryParser(self.repo_path)
 
-        hotspot_prompt = """
-        Analyze architectural hotspots in this codebase:
+            # Find architectural fixes from the last 6 months
+            architectural_fixes = git_parser.find_architectural_fixes(since_months=6)
 
-        1. Use Bash to run git log analysis for code churn identification:
-           - git log --format=format: --name-only --since=6.month | grep -E '\\.(py|js|ts)$' | sort | uniq -c | sort -nr | head -20
+            # Find file change patterns
+            file_patterns = git_parser.find_file_change_patterns(since_months=6, min_frequency=3)
 
-        2. Identify files with both high churn AND high complexity
-        3. Look for patterns indicating architectural debt:
-           - Large files (>500 lines)
-           - High cyclomatic complexity
-           - Frequent bug fixes (commit messages with "fix", "bug")
-           - Multiple responsibilities in single files
+            # Convert to hotspot format
+            hotspots = []
 
-        Return JSON array of hotspots:
-        [
-            {
-                "file_path": "path/to/file.py",
-                "churn_score": 45,
-                "complexity_indicators": ["large_file", "multiple_responsibilities"],
-                "risk_level": "high",
-                "recommendations": ["refactor into smaller modules", "extract services"]
-            }
-        ]
-        """
+            # Add files with frequent architectural fixes as hotspots
+            file_fix_counts: Counter[str] = Counter()
+            for fix in architectural_fixes:
+                for file_path in fix.files_changed:
+                    file_fix_counts[file_path] += 1
 
-        hotspots = []
-        async for message in query(prompt=hotspot_prompt, options=options):
-            content = self._extract_message_content(message)
-            if content:
-                try:
-                    if content.startswith("[") and content.endswith("]"):
-                        parsed_hotspots = json.loads(content)
-                        hotspots.extend(parsed_hotspots)
-                except json.JSONDecodeError:
-                    logger.warning("Could not parse hotspot analysis response")
+            # Top files with architectural fixes
+            for file_path, fix_count in file_fix_counts.most_common(10):
+                if fix_count >= 2:  # At least 2 architectural fixes
+                    # Find related fixes
+                    related_fixes = [f for f in architectural_fixes if file_path in f.files_changed]
 
-        return hotspots
+                    hotspot = {
+                        "file_path": file_path,
+                        "churn_score": fix_count * 10,  # Weight by fix count
+                        "architectural_fix_count": fix_count,
+                        "fix_types": list(set(f.fix_type.value for f in related_fixes)),
+                        "complexity_indicators": self._identify_complexity_indicators(file_path, related_fixes),
+                        "risk_level": "high" if fix_count >= 4 else "medium" if fix_count >= 2 else "low",
+                        "recommendations": self._generate_hotspot_recommendations(file_path, related_fixes),
+                        "last_fix_date": max(f.date for f in related_fixes).isoformat(),
+                        "adr_references": sorted(set(adr for f in related_fixes for adr in f.adr_references)),
+                    }
+                    hotspots.append(hotspot)
+
+            # Add files that frequently change together
+            for pattern in file_patterns:
+                if pattern.is_architectural and pattern.frequency >= 3:
+                    hotspot = {
+                        "file_path": "pattern_" + "_".join(sorted(pattern.files)[:3]),  # Pattern identifier
+                        "files_in_pattern": sorted(pattern.files),
+                        "churn_score": pattern.frequency * 5,
+                        "complexity_indicators": ["tight_coupling", "co-change_pattern"],
+                        "risk_level": "medium",
+                        "recommendations": [
+                            "Consider decoupling these files",
+                            "Extract shared abstractions",
+                            "Review architectural boundaries",
+                        ],
+                        "pattern_frequency": pattern.frequency,
+                    }
+                    hotspots.append(hotspot)
+
+            # Sort by risk and churn
+            hotspots.sort(key=lambda h: (h["risk_level"] == "high", h["churn_score"]), reverse=True)
+
+            logger.info(f"Found {len(hotspots)} architectural hotspots using git history analysis")
+            return hotspots
+
+        except Exception as e:
+            logger.warning(f"GitHistoryParser analysis failed: {e}. Falling back to Claude Code analysis.")
+
+            # Fallback to original Claude Code analysis
+            options = self._create_analysis_options(max_turns=10)
+
+            hotspot_prompt = """
+            Analyze architectural hotspots in this codebase:
+
+            1. Use Bash to run git log analysis for code churn identification:
+               - git log --format=format: --name-only --since=6.month | grep -E '\\.(py|js|ts)$' | sort | uniq -c | sort -nr | head -20
+
+            2. Identify files with both high churn AND high complexity
+            3. Look for patterns indicating architectural debt:
+               - Large files (>500 lines)
+               - High cyclomatic complexity
+               - Frequent bug fixes (commit messages with "fix", "bug")
+               - Multiple responsibilities in single files
+
+            Return JSON array of hotspots:
+            [
+                {
+                    "file_path": "path/to/file.py",
+                    "churn_score": 45,
+                    "complexity_indicators": ["large_file", "multiple_responsibilities"],
+                    "risk_level": "high",
+                    "recommendations": ["refactor into smaller modules", "extract services"]
+                }
+            ]
+            """
+
+            hotspots = []
+            async for message in query(prompt=hotspot_prompt, options=options):
+                content = self._extract_message_content(message)
+                if content:
+                    try:
+                        if content.startswith("[") and content.endswith("]"):
+                            parsed_hotspots = json.loads(content)
+                            hotspots.extend(parsed_hotspots)
+                    except json.JSONDecodeError:
+                        logger.warning("Could not parse hotspot analysis response")
+
+            return hotspots
+
+    def _identify_complexity_indicators(self, file_path: str, fixes: List[ArchitecturalFix]) -> List[str]:
+        """Identify complexity indicators based on fix patterns."""
+        indicators = []
+
+        # Check fix types
+        fix_types = set(f.fix_type for f in fixes)
+        if FixType.BOUNDARY_FIX in fix_types:
+            indicators.append("boundary_violations")
+        if FixType.DEPENDENCY_FIX in fix_types:
+            indicators.append("dependency_issues")
+        if FixType.REFACTORING_FIX in fix_types:
+            indicators.append("requires_refactoring")
+
+        # Check frequency
+        if len(fixes) >= 3:
+            indicators.append("frequent_architectural_issues")
+
+        # Check file path patterns
+        if any(part in file_path.lower() for part in ["util", "helper", "common"]):
+            indicators.append("god_object_risk")
+
+        return indicators
+
+    def _generate_hotspot_recommendations(self, file_path: str, fixes: List[ArchitecturalFix]) -> List[str]:
+        """Generate recommendations based on fix patterns."""
+        recommendations = []
+
+        fix_types = set(f.fix_type for f in fixes)
+
+        if FixType.BOUNDARY_FIX in fix_types:
+            recommendations.append("Review and strengthen architectural boundaries")
+            recommendations.append("Consider extracting to separate modules")
+
+        if FixType.DEPENDENCY_FIX in fix_types:
+            recommendations.append("Analyze and reduce coupling")
+            recommendations.append("Introduce dependency injection or interfaces")
+
+        if FixType.REFACTORING_FIX in fix_types:
+            recommendations.append("Plan comprehensive refactoring")
+            recommendations.append("Break down into smaller, focused components")
+
+        if len(fixes) >= 4:
+            recommendations.append("Consider architectural redesign")
+            recommendations.append("Document architectural decisions in ADR")
+
+        # Check ADR compliance
+        adr_refs = set(adr for f in fixes for adr in f.adr_references)
+        if adr_refs:
+            recommendations.append(f"Ensure compliance with ADRs: {', '.join(sorted(adr_refs))}")
+
+        return recommendations
 
     def _calculate_overall_compliance_score(self, adr_compliance: Dict[str, Any]) -> float:
         """Calculate overall compliance score across all ADRs."""
@@ -1504,44 +1626,149 @@ class GitForensicsAnalyzer:
         self.logger.info(f"Analyzing git history for ADR compliance: {adr_id}")
 
         try:
-            # Analyze commit patterns related to the ADR
-            violation_patterns = await self._find_violation_patterns(adr_id)
-            hotspots = await self._identify_violation_hotspots()
-            remediation_history = await self._analyze_remediation_history(adr_id)
+            # Try using GitHistoryParser for enhanced analysis
+            try:
+                git_parser = GitHistoryParser(self.repo_path)
 
-            return {
-                "analysis_method": "git_forensics",
-                "adr_id": adr_id,
-                "violation_patterns": violation_patterns,
-                "architectural_hotspots": [h.to_dict() for h in hotspots],
-                "remediation_history": remediation_history,
-                "analysis_period_months": 6,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+                # Find all architectural fixes, filtered by ADR if specified
+                all_fixes = git_parser.find_architectural_fixes(since_months=6, adr_id=adr_id)
+
+                # Get fix statistics
+                fix_stats = git_parser.get_fix_statistics(all_fixes)
+
+                # Convert fixes to violation patterns
+                violation_patterns = []
+                for fix in all_fixes:
+                    pattern = {
+                        "id": f"pattern_{fix.commit_hash[:8]}",
+                        "commit_hash": fix.commit_hash,
+                        "commit_message": fix.commit_message,
+                        "author": fix.author,
+                        "date": fix.date.isoformat(),
+                        "files_changed": fix.files_changed,
+                        "fix_type": fix.fix_type.value,
+                        "confidence": fix.confidence,
+                        "adr_references": fix.adr_references,
+                        "pattern_matched": fix.pattern_matched,
+                        "lines_changed": fix.lines_added + fix.lines_deleted,
+                        "description": f"{fix.pattern_matched} - {fix.fix_type.value}",
+                        "risk_level": self._assess_pattern_risk(
+                            fix.commit_message, fix.files_changed[0] if fix.files_changed else ""
+                        ),
+                    }
+                    violation_patterns.append(pattern)
+
+                # Enhanced hotspot analysis
+                file_patterns = git_parser.find_file_change_patterns(since_months=6, min_frequency=2)
+                hotspots: List[ArchitecturalHotspot] = []
+
+                # Convert file patterns to hotspots
+                for file_pattern in file_patterns[:10]:  # Top 10 patterns
+                    if file_pattern.is_architectural:
+                        hotspot = ArchitecturalHotspot(
+                            file_path="_".join(sorted(file_pattern.files)[:3]),
+                            churn_score=float(file_pattern.frequency * 5),
+                            complexity_score=0.7 if file_pattern.frequency >= 5 else 0.5,
+                            risk_level="high" if file_pattern.frequency >= 5 else "medium",
+                            violation_history=[f"Co-change pattern detected {file_pattern.frequency} times"],
+                        )
+                        hotspots.append(hotspot)
+
+                # Enhanced remediation history
+                remediation_history: List[Dict[str, Any]] = []
+                for fix in all_fixes:
+                    if any(ft in [FixType.EXPLICIT_ADR_FIX, FixType.ARCHITECTURAL_FIX] for ft in [fix.fix_type]):
+                        remediation = {
+                            "date": fix.date.isoformat(),
+                            "commit_hash": fix.commit_hash[:8],
+                            "author": fix.author,
+                            "description": f"Fixed {fix.fix_type.value}: {fix.commit_message[:100]}",
+                            "effectiveness": "high" if fix.confidence > 0.8 else "medium",
+                            "files_affected": len(fix.files_changed),
+                        }
+                        remediation_history.append(remediation)
+
+                # Add summary statistics
+                summary = {
+                    "total_fixes": len(all_fixes),
+                    "fix_types": fix_stats.get("fix_types", {}),
+                    "top_contributors": fix_stats.get("top_contributors", []),
+                    "average_confidence": fix_stats.get("average_confidence", 0.0),
+                }
+
+                return {
+                    "analysis_method": "git_forensics_enhanced",
+                    "adr_id": adr_id,
+                    "violation_patterns": violation_patterns,
+                    "architectural_hotspots": [h.to_dict() for h in hotspots],
+                    "remediation_history": remediation_history,
+                    "analysis_period_months": 6,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "summary": summary,
+                }
+
+            except Exception as parser_error:
+                self.logger.warning(f"GitHistoryParser failed: {parser_error}. Falling back to pattern matcher.")
+
+                # Fallback to original implementation
+                violation_patterns = await self._find_violation_patterns(adr_id)
+                hotspots = await self._identify_violation_hotspots()
+                remediation_history_data = await self._analyze_remediation_history(adr_id)
+                remediation_history = remediation_history_data.get("recent_fixes", [])
+
+                return {
+                    "analysis_method": "git_forensics",
+                    "adr_id": adr_id,
+                    "violation_patterns": violation_patterns,
+                    "architectural_hotspots": [h.to_dict() for h in hotspots],
+                    "remediation_history": remediation_history,
+                    "analysis_period_months": 6,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
 
         except Exception as e:
             self.logger.error(f"Error in git forensics analysis: {e}")
             return {"available": True, "error": str(e)}
 
     async def _find_violation_patterns(self, adr_id: str) -> List[Dict[str, Any]]:
-        """Find patterns of violations and fixes related to the ADR."""
+        """Find patterns of violations and fixes related to the ADR using advanced pattern matching."""
         patterns = []
+
+        # Import the pattern matcher
+        from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher
+
+        pattern_matcher = ArchitecturalFixPatternMatcher()
 
         # Search for commits that mention the ADR or related fixes
         since_date = datetime.now() - timedelta(days=30 * 6)
 
         try:
-            commits = list(self.repo.iter_commits(since=since_date))
+            commits = list(self.repo.iter_commits(since=since_date, max_count=1000))
 
             for commit in commits:
-                message = commit.message.lower()
+                # Use the pattern matcher to analyze the commit
+                changed_files = list(commit.stats.files.keys())
+                matches = pattern_matcher.match_commit(commit.message, changed_files)
 
-                # Look for ADR-related fixes or violations
-                if any(keyword in message for keyword in [adr_id.lower(), "fix", "bug", "violation", "compliance"]):
+                # Check if this commit is related to the specific ADR
+                adr_related = False
+                for match in matches:
+                    if adr_id in match.adr_references:
+                        adr_related = True
+                        break
 
+                # If no explicit ADR reference, check if it's an architectural fix
+                if not adr_related and matches:
+                    # Still include high-confidence architectural fixes
+                    adr_related = any(m.confidence > 0.7 for m in matches)
+
+                if adr_related:
                     # Analyze the commit changes
                     for file_path in commit.stats.files:
                         if file_path.endswith((".py", ".js", ".ts", ".java")):
+                            # Find the best match for this commit
+                            best_match = max(matches, key=lambda m: m.confidence) if matches else None
+
                             pattern = {
                                 "id": f"pattern_{commit.hexsha[:8]}",
                                 "file_path": file_path,
@@ -1550,16 +1777,19 @@ class GitForensicsAnalyzer:
                                 "author": commit.author.name,
                                 "date": commit.committed_datetime.isoformat(),
                                 "changes": commit.stats.files[file_path],
-                                "description": f"Potential {adr_id} related change in {file_path}",
+                                "description": f"{best_match.pattern_name if best_match else 'Related change'} in {file_path}",
                                 "risk_level": self._assess_pattern_risk(commit.message, file_path),
+                                "fix_type": best_match.fix_type.value if best_match else "unknown",
+                                "confidence": best_match.confidence if best_match else 0.5,
+                                "adr_references": list(set(m.adr_references for m in matches if m.adr_references)),
                             }
                             patterns.append(pattern)
 
         except Exception as e:
             self.logger.warning(f"Error analyzing commit patterns: {e}")
 
-        # Sort by date (most recent first) and limit results
-        patterns.sort(key=lambda x: x["date"], reverse=True)
+        # Sort by confidence and date
+        patterns.sort(key=lambda x: (x["confidence"], x["date"]), reverse=True)
         return patterns[:20]  # Limit to most recent 20 patterns
 
     async def _identify_violation_hotspots(self) -> List[ArchitecturalHotspot]:
@@ -1571,7 +1801,9 @@ class GitForensicsAnalyzer:
             since_date = datetime.now() - timedelta(days=30 * 6)  # Default to 6 months
             file_churn: Dict[str, int] = defaultdict(int)
 
-            for commit in self.repo.iter_commits(since=since_date):
+            for i, commit in enumerate(self.repo.iter_commits(since=since_date)):
+                if i >= 1000:  # Limit to 1000 commits
+                    break
                 for file_path in commit.stats.files:
                     if file_path.endswith((".py", ".js", ".ts", ".java")):
                         changes = commit.stats.files[file_path]
@@ -1619,7 +1851,9 @@ class GitForensicsAnalyzer:
             since_date = datetime.now() - timedelta(days=30 * 6)  # Default to 6 months
 
             fix_commits = []
-            for commit in self.repo.iter_commits(since=since_date):
+            for i, commit in enumerate(self.repo.iter_commits(since=since_date)):
+                if i >= 1000:  # Limit to 1000 commits
+                    break
                 message = commit.message.lower()
                 if any(keyword in message for keyword in ["fix", "resolve", "address"]) and adr_id.lower() in message:
                     fix_commits.append(commit)
@@ -1981,23 +2215,23 @@ class RemoteCacheTier(CacheTier):
         self.connected = False
 
     async def get(self, key: str) -> Optional[CacheEntry]:
-        # Placeholder implementation
+        # TODO: Implement real functionality
         return None
 
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        # Placeholder implementation
+        # TODO: Implement real functionality
         return True
 
     async def delete(self, key: str) -> bool:
-        # Placeholder implementation
+        # TODO: Implement real functionality
         return True
 
     async def exists(self, key: str) -> bool:
-        # Placeholder implementation
+        # TODO: Implement real functionality
         return False
 
     async def clear(self) -> bool:
-        # Placeholder implementation
+        # TODO: Implement real functionality
         return True
 
 

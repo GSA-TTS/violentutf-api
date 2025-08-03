@@ -357,8 +357,8 @@ class IncrementalAnalyzer:
 
     async def _get_cache_key(self, file_path: str) -> str:
         """Generate cache key for a file"""
-        file_hash = self.change_tracker._get_file_hash(file_path)
-        return self.cache_manager.generate_key("architectural_analysis", file_path, file_hash)
+        file_hash: str = self.change_tracker._get_file_hash(file_path)
+        return str(self.cache_manager.generate_key("architectural_analysis", file_path, file_hash))
 
     async def _analyze_with_claude(self, files: List[str]) -> Dict[str, Any]:
         """Analyze files using Claude multi-agent system"""

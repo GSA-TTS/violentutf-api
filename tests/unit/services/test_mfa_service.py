@@ -1,7 +1,7 @@
 """Unit tests for MFA service."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pyotp
@@ -94,7 +94,7 @@ class TestMFAService:
         """Test TOTP setup with existing verified device."""
         # Arrange
         existing_device = MagicMock()
-        existing_device.verified_at = datetime.utcnow()
+        existing_device.verified_at = datetime.now(timezone.utc)
 
         with patch.object(mfa_service, "_get_user_device", return_value=existing_device):
             # Act & Assert

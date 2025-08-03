@@ -3,7 +3,7 @@
 import hashlib
 import json
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -226,7 +226,7 @@ class OAuth2Service:
         code_hash = hash_token(code)
 
         # Set expiration
-        expires_at = datetime.utcnow() + timedelta(minutes=self.AUTHORIZATION_CODE_EXPIRE_MINUTES)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.AUTHORIZATION_CODE_EXPIRE_MINUTES)
 
         # Extract request metadata
         ip_address = None
@@ -336,7 +336,7 @@ class OAuth2Service:
 
         # Mark code as used
         auth_code.is_used = True
-        auth_code.used_at = datetime.utcnow()
+        auth_code.used_at = datetime.now(timezone.utc)
 
         # Create tokens
         scopes = json.loads(auth_code.scopes)
@@ -412,7 +412,7 @@ class OAuth2Service:
 
         # Update refresh token usage
         refresh_token_obj.use_count += 1
-        refresh_token_obj.last_used_at = datetime.utcnow()
+        refresh_token_obj.last_used_at = datetime.now(timezone.utc)
 
         # Create new tokens
         access_token, new_refresh_token = await self._create_tokens(
@@ -513,7 +513,7 @@ class OAuth2Service:
                         return False
 
                 access_token.is_revoked = True
-                access_token.revoked_at = datetime.utcnow()
+                access_token.revoked_at = datetime.now(timezone.utc)
                 revoked = True
 
                 await self.audit_service.log_auth_event(
@@ -539,7 +539,7 @@ class OAuth2Service:
                         return False
 
                 refresh_token.is_revoked = True
-                refresh_token.revoked_at = datetime.utcnow()
+                refresh_token.revoked_at = datetime.now(timezone.utc)
                 revoked = True
 
                 # Also revoke associated access tokens
@@ -547,7 +547,7 @@ class OAuth2Service:
                 result = await self.session.execute(query)
                 for access_token in result.scalars():
                     access_token.is_revoked = True
-                    access_token.revoked_at = datetime.utcnow()
+                    access_token.revoked_at = datetime.now(timezone.utc)
 
                 await self.audit_service.log_auth_event(
                     event_type="oauth_refresh_token_revoked",
@@ -576,7 +576,7 @@ class OAuth2Service:
             .where(
                 OAuthRefreshToken.user_id == user_id,
                 OAuthRefreshToken.is_revoked == False,
-                OAuthRefreshToken.expires_at > datetime.utcnow(),
+                OAuthRefreshToken.expires_at > datetime.now(timezone.utc),
             )
             .distinct(OAuthApplication.id)
         )
@@ -624,7 +624,7 @@ class OAuth2Service:
         revoked_count = 0
         for token in result.scalars():
             token.is_revoked = True
-            token.revoked_at = datetime.utcnow()
+            token.revoked_at = datetime.now(timezone.utc)
             revoked_count += 1
 
         # Revoke all access tokens
@@ -637,7 +637,7 @@ class OAuth2Service:
 
         for token in result.scalars():
             token.is_revoked = True
-            token.revoked_at = datetime.utcnow()
+            token.revoked_at = datetime.now(timezone.utc)
             revoked_count += 1
 
         if revoked_count > 0:
@@ -779,7 +779,7 @@ class OAuth2Service:
         refresh_token_obj = OAuthRefreshToken(
             token_hash=refresh_token_hash,
             scopes=json.dumps(scopes),
-            expires_at=datetime.utcnow() + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS),
             application_id=app.id,
             user_id=user_id,
             ip_address=ip_address,
@@ -792,7 +792,7 @@ class OAuth2Service:
         access_token_obj = OAuthAccessToken(
             token_hash=access_token_hash,
             scopes=json.dumps(scopes),
-            expires_at=datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
             application_id=app.id,
             user_id=user_id,
             refresh_token_id=refresh_token_obj.id,

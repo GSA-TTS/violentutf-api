@@ -1,7 +1,7 @@
 """User-Role association model for RBAC system."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Table, Text
@@ -71,7 +71,7 @@ class UserRole(Base, BaseModelMixin):
         """
         if not self.expires_at:
             return False
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(timezone.utc) > self.expires_at
 
     def is_valid(self) -> bool:
         """Check if this role assignment is valid (active and not expired).
@@ -90,7 +90,7 @@ class UserRole(Base, BaseModelMixin):
         """
         self.is_active = False
         self.updated_by = revoked_by
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
         if reason:
             self.assignment_reason = f"{self.assignment_reason or ''} | Revoked: {reason}".strip(" |")
 
@@ -103,7 +103,7 @@ class UserRole(Base, BaseModelMixin):
         """
         self.expires_at = new_expiration
         self.updated_by = extended_by
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     def validate_assignment(self) -> None:
         """Validate the user-role assignment.
@@ -132,7 +132,7 @@ class UserRole(Base, BaseModelMixin):
         """
         if not self.expires_at:
             return None
-        delta = self.expires_at - datetime.utcnow()
+        delta = self.expires_at - datetime.now(timezone.utc)
         return max(0, delta.days)
 
     @property
@@ -145,5 +145,5 @@ class UserRole(Base, BaseModelMixin):
         """Get the age of this assignment in days."""
         if not self.assigned_at:
             return 0
-        delta = datetime.utcnow() - self.assigned_at
+        delta = datetime.now(timezone.utc) - self.assigned_at
         return delta.days

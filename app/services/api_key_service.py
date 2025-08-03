@@ -2,7 +2,7 @@
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -196,7 +196,7 @@ class APIKeyService:
                 continue
 
             # Skip expired keys if not requested
-            if not include_expired and key.expires_at and key.expires_at < datetime.utcnow():
+            if not include_expired and key.expires_at and key.expires_at < datetime.now(timezone.utc):
                 continue
 
             filtered_keys.append(key)
@@ -254,7 +254,7 @@ class APIKeyService:
             "total_keys": len(user_keys),
             "active_keys": len([k for k in user_keys if k.is_active()]),
             "revoked_keys": len([k for k in user_keys if k.revoked_at]),
-            "expired_keys": len([k for k in user_keys if k.expires_at and k.expires_at < datetime.utcnow()]),
+            "expired_keys": len([k for k in user_keys if k.expires_at and k.expires_at < datetime.now(timezone.utc)]),
             "total_usage": sum(k.usage_count for k in user_keys),
             "keys_by_permissions": self._analyze_permissions(user_keys),
             "recent_usage": self._analyze_recent_usage(user_keys),
@@ -359,7 +359,7 @@ class APIKeyService:
 
     def _analyze_recent_usage(self, keys: List[APIKey]) -> Dict[str, Any]:
         """Analyze recent usage patterns."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         last_24h = now - timedelta(days=1)
         last_7d = now - timedelta(days=7)
 

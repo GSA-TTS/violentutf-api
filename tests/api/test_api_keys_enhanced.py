@@ -2,7 +2,7 @@
 
 import hashlib
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 import pytest
@@ -39,7 +39,7 @@ class TestAPIKeyService:
             name="Test Enhanced Key",
             description="Test key with enhanced security",
             permissions={"users:read": True, "api_keys:read": True},
-            expires_at=datetime.utcnow() + timedelta(days=30),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
         )
 
         # Create API key with high entropy
@@ -113,10 +113,13 @@ class TestAPIKeyService:
         # Create multiple API keys with different states
         active_key = await create_test_api_key(clean_db_session, test_user["id"], name="Active Key")
         expired_key = await create_test_api_key(
-            clean_db_session, test_user["id"], name="Expired Key", expires_at=datetime.utcnow() - timedelta(days=1)
+            clean_db_session,
+            test_user["id"],
+            name="Expired Key",
+            expires_at=datetime.now(timezone.utc) - timedelta(days=1),
         )
         revoked_key = await create_test_api_key(clean_db_session, test_user["id"], name="Revoked Key")
-        revoked_key.revoked_at = datetime.utcnow()
+        revoked_key.revoked_at = datetime.now(timezone.utc)
 
         # Add some usage
         active_key.usage_count = 100
@@ -281,7 +284,7 @@ class TestAPIKeyEndpoints:
         # Create test keys
         active_key = await create_test_api_key(clean_db_session, user["id"], name="Active Key")
         revoked_key = await create_test_api_key(clean_db_session, user["id"], name="Revoked Key")
-        revoked_key.revoked_at = datetime.utcnow()
+        revoked_key.revoked_at = datetime.now(timezone.utc)
         await clean_db_session.commit()
 
         # Get keys (excluding revoked)
@@ -397,7 +400,10 @@ class TestAPIKeySecurityValidation:
         """Test that inactive keys cannot be validated."""
         # Create expired key
         api_key = await create_test_api_key(
-            clean_db_session, test_user["id"], name="Expired Key", expires_at=datetime.utcnow() - timedelta(days=1)
+            clean_db_session,
+            test_user["id"],
+            name="Expired Key",
+            expires_at=datetime.now(timezone.utc) - timedelta(days=1),
         )
 
         # Generate a valid key for testing

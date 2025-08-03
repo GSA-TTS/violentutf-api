@@ -3,7 +3,7 @@
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,8 +37,8 @@ async def create_test_user(
         "is_active": is_active,
         "is_superuser": False,
         "email_verified": True,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     user = User(**user_data)
@@ -93,8 +93,8 @@ async def create_test_api_key(
         "expires_at": expires_at,
         "usage_count": 0,
         "is_deleted": False,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
         "created_by": str(user_id),
         "updated_by": str(user_id),
         "version": 1,

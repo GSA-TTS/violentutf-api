@@ -1,7 +1,7 @@
 """Role management API endpoints."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -429,7 +429,7 @@ async def check_user_permission(
             "user_id": user_id,
             "permission": permission,
             "has_permission": has_permission,
-            "checked_at": datetime.utcnow().isoformat(),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
         }
 
         return BaseResponse(

@@ -1,7 +1,7 @@
 """Health check service for monitoring authentication components."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, text
@@ -45,7 +45,7 @@ class HealthCheckService:
         """
         # Return cached results if recent
         if not force and self._last_check_time:
-            time_since_check = datetime.utcnow() - self._last_check_time
+            time_since_check = datetime.now(timezone.utc) - self._last_check_time
             if time_since_check < self._check_interval:
                 return self._last_check_results
 
@@ -61,7 +61,7 @@ class HealthCheckService:
         # Process results
         health_results = {
             "status": HealthStatus.HEALTHY,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "components": {
                 "database": (
                     results[0] if not isinstance(results[0], Exception) else self._error_result("database", results[0])
@@ -90,7 +90,7 @@ class HealthCheckService:
             health_results["status"] = HealthStatus.DEGRADED
 
         # Cache results
-        self._last_check_time = datetime.utcnow()
+        self._last_check_time = datetime.now(timezone.utc)
         self._last_check_results = health_results
 
         return health_results
@@ -103,7 +103,7 @@ class HealthCheckService:
             Database health status
         """
         try:
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             async with get_db() as session:
                 # Simple query to test connection
@@ -124,7 +124,7 @@ class HealthCheckService:
                 else:
                     active_connections = 1
 
-            response_time = (datetime.utcnow() - start_time).total_seconds()
+            response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             return {
                 "status": HealthStatus.HEALTHY,
@@ -265,7 +265,7 @@ class HealthCheckService:
     async def _check_session_service(self) -> Dict[str, Any]:
         """Check session service health."""
         try:
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             # Test session operations
             from app.services.session_service import SessionService
@@ -275,7 +275,7 @@ class HealthCheckService:
                 # Try to clean up expired sessions (lightweight operation)
                 await service.cleanup_expired_sessions()
 
-            response_time = (datetime.utcnow() - start_time).total_seconds()
+            response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             return {
                 "status": HealthStatus.HEALTHY,
@@ -342,7 +342,7 @@ class HealthCheckService:
             Authentication metrics
         """
         metrics = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "metrics": {},
         }
 
@@ -353,7 +353,7 @@ class HealthCheckService:
 
                 active_sessions_query = select(Session).where(
                     Session.is_active == True,
-                    Session.expires_at > datetime.utcnow(),
+                    Session.expires_at > datetime.now(timezone.utc),
                 )
                 result = await session.execute(active_sessions_query)
                 active_sessions = len(result.scalars().all())
@@ -362,7 +362,7 @@ class HealthCheckService:
                 # Active users (logged in within last hour)
                 from app.models.user import User
 
-                one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+                one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
                 active_users_query = select(User).where(
                     User.last_login_at > one_hour_ago,
                 )

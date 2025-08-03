@@ -521,7 +521,7 @@ class UserRepository(BaseRepository[User]):
 
             # Update email verification status
             user.is_verified = True
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
             await self.db.refresh(user)
@@ -553,7 +553,7 @@ class UserRepository(BaseRepository[User]):
 
             # Deactivate user
             user.is_active = False
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
 
@@ -581,8 +581,8 @@ class UserRepository(BaseRepository[User]):
                 return None
 
             # Update last login
-            user.last_login_at = datetime.utcnow()
-            user.updated_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
+            user.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
             await self.db.refresh(user)
@@ -612,7 +612,7 @@ class UserRepository(BaseRepository[User]):
 
             # Update password
             user.password_hash = new_password_hash
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone.utc)
 
             await self.db.commit()
             await self.db.refresh(user)
