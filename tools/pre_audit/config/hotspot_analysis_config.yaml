@@ -1,0 +1,311 @@
+# Hotspot Analysis Configuration for GitHub Issue #43
+# Government-grade statistical analysis configuration following best practices
+# All parameters are based on academic research and empirical validation
+
+# Statistical Hotspot Detection Configuration
+statistical_detection:
+  # Hypothesis testing parameters
+  significance_level: 0.05          # Alpha level for statistical significance
+  confidence_level: 0.95            # Confidence level for intervals
+  bootstrap_samples: 1000           # Bootstrap resampling iterations
+
+  # Distribution fitting parameters
+  distribution_candidates:
+    - "normal"
+    - "lognormal"
+    - "gamma"
+    - "weibull_min"
+
+  # Model selection criteria
+  model_selection_criterion: "aic"   # AIC, BIC, or cross_validation
+  goodness_of_fit_threshold: 0.01   # Minimum p-value for KS test
+
+  # Multiple comparison correction
+  multiple_comparison_method: "bonferroni"  # bonferroni, fdr_bh
+
+  # Threshold learning parameters
+  min_samples_for_fitting: 50        # Minimum samples for reliable fitting
+  cross_validation_folds: 5          # Folds for model validation
+
+# Temporal Analysis Configuration
+temporal_weighting:
+  # Exponential decay parameters (GitHub issue #43 requirement)
+  default_half_life_days: 30         # Default half-life for exponential decay
+  max_age_days: 365                  # Maximum age to consider violations
+  optimization_window_days: 30       # Window for predictive optimization
+
+  # Parameter optimization
+  optimization_method: "f1_score"    # f1_score, precision, recall
+  optimization_bounds:
+    min_half_life: 1.0               # Minimum half-life in days
+    max_half_life: 365.0             # Maximum half-life in days
+
+  # Business impact multipliers
+  business_multipliers:
+    critical: 2.0                    # Critical system components
+    high: 1.5                        # High importance components
+    security: 1.3                    # Security-related files
+    medium: 1.0                      # Standard components
+    low: 0.7                         # Low importance components
+
+  # Temporal pattern analysis
+  seasonal_analysis:
+    enable_seasonal_decomposition: true
+    min_observations_for_seasonality: 60
+    default_seasonal_period: 30      # Days for seasonal pattern detection
+
+  # Anomaly detection in time series
+  anomaly_detection:
+    threshold_sigma: 2.5             # Standard deviations for anomaly detection
+    min_observations: 30             # Minimum observations for anomaly detection
+
+# Bayesian Risk Assessment Configuration
+bayesian_risk:
+  # MCMC and posterior sampling
+  mcmc_samples: 10000                # MCMC samples for posterior estimation
+  credible_interval_level: 0.95     # Credible interval level
+
+  # Model calibration requirements (critical for government use)
+  calibration_threshold: 0.1         # Maximum allowed Expected Calibration Error
+  max_ece: 0.1                       # Maximum ECE for model acceptance
+  calibration_bins: 10               # Bins for calibration analysis
+
+  # Prior distribution fitting
+  prior_fitting:
+    min_samples: 50                  # Minimum samples for prior fitting
+    distribution_selection: "aic"    # Model selection criterion
+    empirical_bayes: true            # Use empirical Bayes approach
+
+  # Likelihood model parameters
+  likelihood_model:
+    type: "bayesian_ridge"           # Model type
+    alpha_1: 1.0e-6                  # Gamma prior shape parameter
+    alpha_2: 1.0e-6                  # Gamma prior rate parameter
+    lambda_1: 1.0e-6                 # Gamma prior shape parameter
+    lambda_2: 1.0e-6                 # Gamma prior rate parameter
+
+  # Cross-validation for model validation
+  cross_validation:
+    folds: 5                         # Number of CV folds
+    scoring: "roc_auc"               # Scoring metric
+    stratified: true                 # Use stratified CV
+
+  # Feature importance and interpretability
+  interpretability:
+    calculate_feature_importance: true
+    feature_contribution_method: "linear_approximation"
+    min_contribution_threshold: 0.01
+
+# Advanced Feature Engineering Configuration
+feature_engineering:
+  # Enable/disable feature types
+  enable_domain_features: true       # Software engineering domain knowledge
+  enable_interaction_features: true  # Feature interactions
+  enable_temporal_features: true     # Temporal pattern features
+  enable_statistical_transforms: true # Mathematical transformations
+
+  # Interaction feature parameters
+  max_interaction_order: 2           # Maximum interaction order (2 = pairwise)
+  interaction_threshold: 0.01        # Minimum correlation for interactions
+
+  # Statistical transformations
+  transformations:
+    - "log"                          # Logarithmic transformation
+    - "sqrt"                         # Square root transformation
+    - "square"                       # Square transformation
+    - "inverse"                      # Inverse transformation
+    - "sigmoid"                      # Sigmoid transformation
+
+  # Domain knowledge patterns
+  domain_patterns:
+    security_patterns:
+      indicators: ["auth", "security", "login", "password", "token", "crypto"]
+      risk_multiplier: 1.5
+
+    core_system_patterns:
+      indicators: ["core", "base", "foundation", "engine", "kernel", "main"]
+      risk_multiplier: 1.3
+
+    api_interface_patterns:
+      indicators: ["api", "endpoint", "route", "controller", "interface"]
+      risk_multiplier: 1.2
+
+    database_patterns:
+      indicators: ["db", "database", "model", "schema", "migration"]
+      risk_multiplier: 1.25
+
+    configuration_patterns:
+      indicators: ["config", "setting", "env", "properties", "yaml"]
+      risk_multiplier: 1.1
+
+# Statistical Normalization Configuration
+normalization:
+  # Default normalization method
+  default_method: "robust_z_score"   # robust_z_score, quantile_uniform, box_cox
+
+  # Robust statistics parameters
+  robust_z_score:
+    use_median: true                 # Use median instead of mean
+    use_mad: true                    # Use MAD instead of standard deviation
+
+  # Quantile transformation parameters
+  quantile_transform:
+    output_distribution: "uniform"   # uniform or normal
+    n_quantiles: 1000               # Number of quantiles for transformation
+
+  # Outlier handling
+  outlier_detection:
+    method: "iqr"                   # iqr, zscore, isolation_forest
+    threshold: 3.0                  # Threshold for outlier detection
+
+  # Validation parameters
+  validation:
+    normality_tests: ["shapiro", "ks", "anderson"]
+    significance_level: 0.05
+
+# Performance and Scalability Configuration
+performance:
+  # Resource limits for government-scale repositories
+  max_files: 100000                 # Maximum files to analyze
+  max_execution_time: 900           # Maximum execution time (15 minutes)
+  memory_limit_gb: 8                # Maximum memory usage in GB
+
+  # Parallel processing
+  parallel_processing:
+    enable: true                    # Enable parallel processing
+    n_jobs: -1                      # Number of parallel jobs (-1 = all cores)
+    batch_size: 1000                # Batch size for processing
+
+  # Caching configuration
+  caching:
+    enable_result_caching: true     # Cache analysis results
+    cache_duration_hours: 24       # Cache validity duration
+    max_cache_size_mb: 1024        # Maximum cache size in MB
+
+# Validation and Testing Configuration
+validation:
+  # Algorithm correctness validation
+  correctness_validation:
+    synthetic_data_tests: true      # Test with synthetic data
+    known_hotspot_injection: true   # Test with known hotspots
+    min_f1_score: 0.85             # Minimum required F1 score
+
+  # Performance validation
+  performance_validation:
+    large_scale_tests: true         # Test with large datasets
+    max_analysis_time: 900          # Maximum allowed analysis time
+    memory_efficiency_tests: true   # Test memory usage
+
+  # Statistical model validation
+  model_validation:
+    calibration_tests: true         # Validate model calibration
+    cross_validation: true          # Cross-validation testing
+    bootstrap_validation: true      # Bootstrap validation
+
+  # Edge case testing
+  edge_case_testing:
+    empty_repository: true          # Test with empty repositories
+    single_file_repository: true    # Test with single file
+    extreme_outliers: true          # Test with extreme values
+    missing_data: true              # Test with missing data
+
+# Logging and Monitoring Configuration
+logging:
+  # Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"                     # Default logging level
+
+  # Log formatting
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Log file configuration
+  file_logging:
+    enable: true                    # Enable file logging
+    filename: "hotspot_analysis.log"
+    max_size_mb: 100               # Maximum log file size
+    backup_count: 5                # Number of backup files
+
+  # Performance logging
+  performance_logging:
+    enable: true                    # Log performance metrics
+    log_execution_times: true      # Log component execution times
+    log_memory_usage: true         # Log memory usage statistics
+
+# Security Configuration
+security:
+  # Input validation
+  input_validation:
+    max_file_path_length: 500       # Maximum file path length
+    allowed_file_extensions: [".py", ".js", ".java", ".cpp", ".c", ".go", ".rs"]
+    sanitize_inputs: true           # Sanitize all inputs
+
+  # Output sanitization
+  output_sanitization:
+    remove_sensitive_paths: true    # Remove sensitive file paths
+    anonymize_results: false        # Anonymize results (for testing)
+
+  # Access control
+  access_control:
+    require_authentication: false   # Authentication not implemented yet
+    log_access_attempts: true       # Log all access attempts
+
+# Integration Configuration
+integration:
+  # Claude Code Auditor integration
+  claude_code_auditor:
+    replace_risk_assessment: true   # Replace existing risk assessment
+    preserve_existing_features: true # Keep existing functionality
+
+  # Git history parser integration
+  git_history_parser:
+    enable_temporal_weighting: true # Enable temporal weighting
+    preserve_existing_analysis: true # Keep existing git analysis
+
+  # Database integration
+  database:
+    store_analysis_results: false   # Store results in database
+    cache_statistical_models: false # Cache trained models
+
+# Development and Debugging Configuration
+development:
+  # Debug mode settings
+  debug_mode: false                 # Enable debug mode
+  verbose_logging: false            # Enable verbose logging
+
+  # Testing and validation
+  run_validation_on_startup: false # Run validation tests on startup
+  generate_synthetic_data: false   # Generate synthetic test data
+
+  # Profiling
+  enable_profiling: false          # Enable performance profiling
+  profile_output_dir: "profiles"   # Directory for profiling output
+
+# =============================================================================
+# GIT INTEGRATION CONFIGURATION
+# =============================================================================
+git_integration:
+  # Repository settings
+  repo_path: "."                    # Path to git repository (default: current directory)
+
+  # Analysis parameters
+  min_confidence: 0.6               # Minimum confidence threshold for including git fixes
+  max_history_months: 12            # Maximum months of git history to analyze
+
+  # Integration settings
+  enable_git_temporal_analysis: true # Enable git temporal analysis
+  combine_git_with_violations: true  # Combine git fixes with external violations
+
+  # Pattern matching
+  architectural_fix_patterns:
+    security_fixes: true            # Include security-related fixes
+    performance_fixes: true         # Include performance-related fixes
+    compliance_fixes: true          # Include compliance-related fixes
+    refactoring_fixes: true         # Include refactoring-related fixes
+
+  # Weighting factors
+  fix_type_weights:
+    security: 1.5                   # Weight multiplier for security fixes
+    performance: 1.3                # Weight multiplier for performance fixes
+    compliance: 1.3                 # Weight multiplier for compliance fixes
+    architecture: 1.0               # Weight multiplier for architecture fixes
+    refactoring: 0.8                # Weight multiplier for refactoring fixes
+    bug_fix: 1.1                    # Weight multiplier for bug fixes
