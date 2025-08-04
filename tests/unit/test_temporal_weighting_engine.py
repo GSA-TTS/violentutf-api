@@ -8,11 +8,12 @@ the core requirement of GitHub Issue #43.
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 # Skip tests if statistical components not available
 try:
+    import numpy as np
+
     from tools.pre_audit.statistical_analysis.temporal_weighting_engine import (
         TemporalViolation,
         TemporalWeightingEngine,
@@ -22,7 +23,11 @@ try:
     TEMPORAL_COMPONENTS_AVAILABLE = True
 except ImportError:
     TEMPORAL_COMPONENTS_AVAILABLE = False
-    pytest.skip("TemporalWeightingEngine not available", allow_module_level=True)
+    # Create dummy classes for test collection
+    TemporalViolation = None  # type: ignore
+    TemporalWeightingEngine = None  # type: ignore
+    TemporalWeightingResult = None  # type: ignore
+    pytest.skip("Statistical analysis dependencies not available", allow_module_level=True)
 
 
 @pytest.fixture

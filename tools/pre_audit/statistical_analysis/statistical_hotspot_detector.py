@@ -14,10 +14,21 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
-from scipy import stats
-from sklearn.preprocessing import StandardScaler
+# Scientific computing dependencies with graceful degradation
+try:
+    import numpy as np
+    import pandas as pd
+    from scipy import stats
+    from sklearn.preprocessing import StandardScaler
+
+    HAS_SCIENTIFIC_DEPS = True
+except ImportError:
+    HAS_SCIENTIFIC_DEPS = False
+    # Create dummy modules for type checking
+    np = None
+    pd = None
+    stats = None
+    StandardScaler = None
 
 # Suppress specific warnings for cleaner output
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -150,11 +161,20 @@ class StatisticalHotspotDetector:
         Initialize statistical hotspot detector.
 
         Args:
-            significance_level: Alpha level for hypothesis testing (default: 0.05)
+            significance_level: Statistical significance threshold (default: 0.05)
             confidence_level: Confidence level for intervals (default: 0.95)
-            bootstrap_samples: Number of bootstrap resamples (default: 1000)
-            random_state: Random seed for reproducibility
+            bootstrap_samples: Number of bootstrap samples (default: 1000)
+            random_state: Random seed for reproducibility (default: 42)
+
+        Raises:
+            ImportError: If required scientific computing dependencies are not available
         """
+        if not HAS_SCIENTIFIC_DEPS:
+            raise ImportError(
+                "Scientific computing dependencies (numpy, pandas, scipy, scikit-learn) are required "
+                "for StatisticalHotspotDetector. Please install them with: "
+                "pip install numpy pandas scipy scikit-learn"
+            )
         self.significance_level = significance_level
         self.confidence_level = confidence_level
         self.bootstrap_samples = bootstrap_samples

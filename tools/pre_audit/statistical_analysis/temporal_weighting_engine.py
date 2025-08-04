@@ -17,9 +17,19 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
-from scipy.optimize import minimize_scalar
+# Scientific computing dependencies with graceful degradation
+try:
+    import numpy as np
+    import pandas as pd
+    from scipy.optimize import minimize_scalar
+
+    HAS_SCIENTIFIC_DEPS = True
+except ImportError:
+    HAS_SCIENTIFIC_DEPS = False
+    # Create dummy modules for type checking
+    np = None
+    pd = None
+    minimize_scalar = None
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 

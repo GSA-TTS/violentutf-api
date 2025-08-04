@@ -19,9 +19,19 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
-from scipy import stats
+# Scientific computing dependencies with graceful degradation
+try:
+    import numpy as np
+    import pandas as pd
+    from scipy import stats
+
+    HAS_SCIENTIFIC_DEPS = True
+except ImportError:
+    HAS_SCIENTIFIC_DEPS = False
+    # Create dummy modules for type checking
+    np = None
+    pd = None
+    stats = None
 
 # Import git history parser
 try:
@@ -123,7 +133,16 @@ class GitTemporalIntegrator:
             half_life_days: Half-life for exponential decay weighting
             min_confidence_threshold: Minimum confidence for including git fixes
             max_history_months: Maximum months of history to analyze
+
+        Raises:
+            ImportError: If required scientific computing dependencies are not available
         """
+        if not HAS_SCIENTIFIC_DEPS:
+            raise ImportError(
+                "Scientific computing dependencies (numpy, pandas, scipy) are required "
+                "for GitTemporalIntegrator. Please install them with: "
+                "pip install numpy pandas scipy"
+            )
         self.repo_path = Path(repo_path)
         self.half_life_days = half_life_days
         self.min_confidence_threshold = min_confidence_threshold

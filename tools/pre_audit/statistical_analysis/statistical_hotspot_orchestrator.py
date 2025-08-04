@@ -20,8 +20,18 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
+# Scientific computing dependencies with graceful degradation
+try:
+    import numpy as np
+    import pandas as pd
+
+    HAS_SCIENTIFIC_DEPS = True
+except ImportError:
+    HAS_SCIENTIFIC_DEPS = False
+    # Create dummy modules for type checking
+    np = None
+    pd = None
+
 import yaml
 
 from .adaptive_threshold_learner import AdaptiveThresholdLearner, ThresholdOptimizationResult

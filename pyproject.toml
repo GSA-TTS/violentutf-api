@@ -21,6 +21,11 @@ httpx = ">=0.27.0,<0.29.0"
 python-dotenv = ">=1.0.0,<2.0.0"
 pyyaml = ">=6.0.0,<7.0.0"
 gitpython = ">=3.1.40,<4.0.0"
+# Statistical analysis dependencies for GitHub Issue #43
+numpy = ">=1.24.0,<2.0.0"
+pandas = ">=2.0.0,<3.0.0"
+scipy = ">=1.10.0,<2.0.0"
+scikit-learn = ">=1.3.0,<2.0.0"
 
 [build-system]
 requires = ["poetry-core"]

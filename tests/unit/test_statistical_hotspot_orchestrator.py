@@ -9,12 +9,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import numpy as np
-import pandas as pd
 import pytest
 
 # Skip tests if statistical components not available
 try:
+    import numpy as np
+    import pandas as pd
+
     from tools.pre_audit.statistical_analysis.statistical_hotspot_orchestrator import (
         EnhancedArchitecturalHotspot,
         StatisticalHotspotOrchestrator,
@@ -24,7 +25,11 @@ try:
     STATISTICAL_COMPONENTS_AVAILABLE = True
 except ImportError:
     STATISTICAL_COMPONENTS_AVAILABLE = False
-    pytest.skip("StatisticalHotspotOrchestrator not available", allow_module_level=True)
+    # Create dummy classes for test collection
+    EnhancedArchitecturalHotspot = None  # type: ignore
+    StatisticalHotspotOrchestrator = None  # type: ignore
+    TemporalViolation = None  # type: ignore
+    pytest.skip("Statistical analysis dependencies not available", allow_module_level=True)
 
 
 @pytest.fixture

@@ -7,21 +7,27 @@ that replaces hard-coded thresholds with proper statistical analysis.
 
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
-from scipy import stats
 
 # Skip tests if statistical components not available
+pytest_plugins = []
+
 try:
+    import numpy as np
+    from scipy import stats
+
     from tools.pre_audit.statistical_analysis.statistical_hotspot_detector import (
         StatisticalHotspotDetector,
         StatisticalHotspotResult,
     )
 
-    STATISTICAL_DETECTOR_AVAILABLE = True
+    HAS_SCIENTIFIC_DEPS = True
 except ImportError:
-    STATISTICAL_DETECTOR_AVAILABLE = False
-    pytest.skip("StatisticalHotspotDetector not available", allow_module_level=True)
+    HAS_SCIENTIFIC_DEPS = False
+    # Create dummy classes for test collection
+    StatisticalHotspotDetector = None  # type: ignore
+    StatisticalHotspotResult = None  # type: ignore
+    pytest.skip("Statistical analysis dependencies not available", allow_module_level=True)
 
 
 @pytest.fixture
