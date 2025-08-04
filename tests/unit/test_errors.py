@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
 
-class TestModel(BaseModel):
+class ValidationModel(BaseModel):
     """Test model for validation."""
 
     name: str
@@ -76,7 +76,7 @@ def _setup_advanced_error_endpoints(app: FastAPI) -> None:
         raise InternalServerError("Something went wrong")
 
     @app.post("/test/pydantic-validation")
-    async def test_validation(data: TestModel) -> TestModel:
+    async def test_validation(data: ValidationModel) -> ValidationModel:
         return data
 
     @app.get("/test/unhandled")

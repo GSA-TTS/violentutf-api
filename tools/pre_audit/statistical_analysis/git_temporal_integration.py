@@ -323,6 +323,9 @@ class GitTemporalIntegrator:
         self, violation_history: List[Dict[str, Any]], file_path: str
     ) -> List[TemporalViolation]:
         """Convert external violation history to temporal violations."""
+        if not HAS_SCIENTIFIC_DEPS:
+            return []  # Return empty list if dependencies not available
+
         violations = []
 
         for violation_data in violation_history:
@@ -406,6 +409,10 @@ class GitTemporalIntegrator:
 
     def _analyze_temporal_patterns(self, violations: List[TemporalViolation]) -> Dict[str, Any]:
         """Analyze temporal patterns in violations."""
+        if not HAS_SCIENTIFIC_DEPS:
+            logger.warning("Scientific dependencies not available for temporal pattern analysis")
+            return {"pattern_detected": False}
+
         if not violations:
             return {"pattern_detected": False}
 
@@ -416,7 +423,7 @@ class GitTemporalIntegrator:
             "pattern_detected": True,
             "total_violations": len(violations),
             "time_span_days": ((max(timestamps) - min(timestamps)).days if len(timestamps) > 1 else 0),
-            "average_severity": float(np.mean(severities)),
+            "average_severity": float(sum(severities) / len(severities)) if severities else 0.0,
             "severity_trend": "stable",
         }
 
@@ -458,8 +465,11 @@ class GitTemporalIntegrator:
 
     def _analyze_severity_trends(self, severities: List[float]) -> Dict[str, Any]:
         """Analyze severity trends over time."""
+        if not HAS_SCIENTIFIC_DEPS:
+            return {"severity_trend": "stable"}
+
         try:
-            x = np.arange(len(severities))
+            x = list(range(len(severities)))
             slope, _, r_value, p_value, _ = stats.linregress(x, severities)
 
             trend_data: Dict[str, Union[float, str]] = {
@@ -480,6 +490,10 @@ class GitTemporalIntegrator:
 
     def _analyze_temporal_trends(self, violations: List[TemporalViolation]) -> Dict[str, Any]:
         """Perform comprehensive temporal trend analysis."""
+        if not HAS_SCIENTIFIC_DEPS:
+            logger.warning("Scientific dependencies not available for temporal trend analysis")
+            return {"trend_detected": False}
+
         if len(violations) < 2:
             return {"trend_detected": False}
 
@@ -523,7 +537,7 @@ class GitTemporalIntegrator:
                 # Trend in violation count
                 counts = monthly_agg[("severity", "count")].values
                 if len(counts) >= 3:
-                    x = np.arange(len(counts))
+                    x = list(range(len(counts)))
                     slope, _, r_value, p_value, _ = stats.linregress(x, counts)
 
                     trend_analysis.update(
@@ -560,14 +574,19 @@ class GitTemporalIntegrator:
         weighting_result: Optional[TemporalWeightingResult],
     ) -> Dict[str, float]:
         """Calculate statistical indicators for hotspot classification."""
+        if not HAS_SCIENTIFIC_DEPS:
+            logger.warning("Scientific dependencies not available for hotspot indicator calculation")
+            return {"hotspot_score": 0.0}
+
         if not violations:
             return {"hotspot_score": 0.0}
 
-        indicators = {}
+        indicators: Dict[str, float] = {}
 
         # Basic frequency indicators
         indicators["violation_frequency"] = float(len(violations))
-        indicators["average_severity"] = float(np.mean([v.severity for v in violations]))
+        severities = [v.severity for v in violations]
+        indicators["average_severity"] = float(sum(severities) / len(severities)) if severities else 0.0
 
         # Temporal weighting indicators
         if weighting_result:
@@ -585,7 +604,9 @@ class GitTemporalIntegrator:
         if violations:
             most_recent = max(v.timestamp for v in violations)
             days_since_recent = (now - most_recent).days
-            indicators["recency_factor"] = np.exp(-days_since_recent / 30.0)  # 30-day decay
+            import math
+
+            indicators["recency_factor"] = math.exp(-days_since_recent / 30.0)  # 30-day decay
         else:
             indicators["recency_factor"] = 0.0
 
@@ -606,6 +627,9 @@ class GitTemporalIntegrator:
         git_fixes: List[ArchitecturalFix],
     ) -> float:
         """Calculate integrated risk score combining all temporal factors."""
+        if not HAS_SCIENTIFIC_DEPS:
+            return 0.0  # Return safe default if dependencies not available
+
         if not violations and not git_fixes:
             return 0.0
 
@@ -613,7 +637,9 @@ class GitTemporalIntegrator:
 
         # Base violation risk
         if violations:
-            violation_risk = np.mean([v.severity for v in violations]) * len(violations) / 10.0
+            severities = [v.severity for v in violations]
+            avg_severity = sum(severities) / len(severities) if severities else 0.0
+            violation_risk = avg_severity * len(violations) / 10.0
             risk_components.append(min(violation_risk, 1.0))
 
         # Temporal weighting risk
@@ -623,14 +649,18 @@ class GitTemporalIntegrator:
 
         # Git history risk
         if git_fixes:
-            git_risk = np.mean([f.confidence for f in git_fixes]) * len(git_fixes) / 5.0
+            confidences = [f.confidence for f in git_fixes]
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+            git_risk = avg_confidence * len(git_fixes) / 5.0
             risk_components.append(min(git_risk, 1.0))
 
         # Combined risk (weighted average)
         if risk_components:
             weights = [0.4, 0.4, 0.2][: len(risk_components)]  # Temporal gets higher weight
-            normalized_weights = np.array(weights) / sum(weights)
-            integrated_risk = np.average(risk_components, weights=normalized_weights)
+            total_weight = sum(weights)
+            normalized_weights = [w / total_weight for w in weights]
+            # Calculate weighted average manually
+            integrated_risk = sum(risk * weight for risk, weight in zip(risk_components, normalized_weights))
         else:
             integrated_risk = 0.0
 
