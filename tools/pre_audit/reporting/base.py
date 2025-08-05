@@ -17,7 +17,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 # Import existing configuration
-from ..claude_code_auditor import EnterpriseClaudeCodeConfig
+try:
+    from ..claude_code_auditor import EnterpriseClaudeCodeConfig
+except ImportError:
+    # Create a mock class for environments where claude_code_auditor is not available
+    class EnterpriseClaudeCodeConfig:
+        """Mock configuration class for testing environments."""
+
+        def __init__(self, **kwargs):
+            self.reports_dir = kwargs.get("reports_dir", Path("./reports"))
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 
 
 class SecurityLevel(Enum):

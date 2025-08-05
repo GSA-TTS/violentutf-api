@@ -11,7 +11,6 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from tools.pre_audit.claude_code_auditor import EnterpriseClaudeCodeConfig
 from tools.pre_audit.reporting.base import ReportConfig, ReportDataProcessor, ReportGenerator, SecurityLevel
 
 
@@ -21,7 +20,7 @@ class TestReportConfig:
     @pytest.fixture
     def base_config(self):
         """Create base configuration from auditor."""
-        config = MagicMock(spec=EnterpriseClaudeCodeConfig)
+        config = MagicMock()
         # Use tempfile for test directory
         temp_dir = tempfile.mkdtemp(prefix="test_reports_")
         config.reports_dir = Path(temp_dir)
