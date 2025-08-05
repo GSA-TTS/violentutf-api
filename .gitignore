@@ -144,7 +144,7 @@ cython_debug/
 .vscode/
 
 # Security scan reports
-security/
+/security/
 *.sarif
 bandit-report.json
 safety-report.json
