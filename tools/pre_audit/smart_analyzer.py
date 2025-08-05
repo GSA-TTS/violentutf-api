@@ -26,13 +26,21 @@ import yaml
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add current directory to path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from anthropic import Anthropic
-    from claude_code_auditor import ClaudeCodeArchitecturalAuditor
+
+    # Try relative import first (when run as module)
+    try:
+        from .claude_code_auditor import ClaudeCodeArchitecturalAuditor
+    except ImportError:
+        # Fall back to absolute import (when run as script)
+        from claude_code_auditor import ClaudeCodeArchitecturalAuditor  # type: ignore[no-redef]
 except ImportError:
     print("Warning: Claude Code dependencies not available. Running in pattern-only mode.")
-    ClaudeCodeArchitecturalAuditor = None
+    ClaudeCodeArchitecturalAuditor = None  # type: ignore[assignment, misc]
 
 
 @dataclass

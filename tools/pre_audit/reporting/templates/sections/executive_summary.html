@@ -1,0 +1,54 @@
+{# Executive Summary Section Template #}
+<div class="executive-summary section">
+    <h2>Executive Summary</h2>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h3>Compliance Score</h3>
+            <div class="score-display">
+                <span class="score-value">{{ summary.compliance_score|round(1) }}%</span>
+                <div class="score-indicator {{ 'good' if summary.compliance_score >= 80 else 'warning' if summary.compliance_score >= 60 else 'critical' }}"></div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Total Violations</h3>
+            <div class="violations-breakdown">
+                <div class="total">{{ summary.total_violations }}</div>
+                <div class="breakdown">
+                    <span class="critical">Critical: {{ summary.critical_violations }}</span>
+                    <span class="high">High: {{ summary.high_violations }}</span>
+                    <span class="medium">Medium: {{ summary.medium_violations }}</span>
+                    <span class="low">Low: {{ summary.low_violations }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Technical Debt</h3>
+            <div class="debt-display">
+                <span class="debt-days">{{ summary.technical_debt_days|round(1) }} days</span>
+                <span class="debt-hours">({{ summary.technical_debt_hours|round(1) }} hours)</span>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Risk Assessment</h3>
+            <div class="risk-level {{ summary.risk_assessment.level|lower }}">
+                {{ summary.risk_assessment.level }}
+            </div>
+            <div class="risk-description">{{ summary.risk_assessment.description }}</div>
+        </div>
+    </div>
+
+    {% if summary.key_findings %}
+    <div class="key-findings">
+        <h3>Key Findings</h3>
+        <ul>
+            {% for finding in summary.key_findings[:5] %}
+            <li>{{ finding }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>

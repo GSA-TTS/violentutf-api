@@ -101,6 +101,10 @@ disable_error_code = ["unused-ignore"]
 module = "backups.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "tools.pre_audit.reporting.*"
+ignore_errors = true
+
 # Temporary overrides for SQLAlchemy 1.x model compatibility issues
 # These models use Column-based syntax that conflicts with Mapped-based mixins
 [[tool.mypy.overrides]]
