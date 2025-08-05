@@ -11,7 +11,39 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+
+    # Fallback implementations for numpy functions
+    def mean(values):
+        return sum(values) / len(values) if values else 0
+
+    def median(values):
+        if not values:
+            return 0
+        sorted_values = sorted(values)
+        n = len(sorted_values)
+        if n % 2 == 0:
+            return (sorted_values[n // 2 - 1] + sorted_values[n // 2]) / 2
+        return sorted_values[n // 2]
+
+    def std(values):
+        if not values:
+            return 0
+        m = mean(values)
+        return (sum((x - m) ** 2 for x in values) / len(values)) ** 0.5
+
+    # Create a mock np module
+    class MockNp:
+        mean = staticmethod(mean)
+        median = staticmethod(median)
+        std = staticmethod(std)
+
+    np = MockNp()
 
 # Import statistical analysis components if available
 try:
