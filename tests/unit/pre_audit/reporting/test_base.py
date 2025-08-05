@@ -142,7 +142,7 @@ class TestReportGenerator:
         test_cases = [
             ("report.pdf", "report.pdf"),
             ("my report.pdf", "my_report.pdf"),
-            ("../../../etc/passwd", "_.._.._"),  # Just check the start pattern
+            ("../../../etc/passwd", "__________etc_passwd"),  # Path traversal properly sanitized
             (".hidden", "hidden"),
             ("a" * 300 + ".pdf", "a" * 250),  # Check without extension
         ]

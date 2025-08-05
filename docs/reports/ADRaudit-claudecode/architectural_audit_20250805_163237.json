@@ -1,0 +1,3366 @@
+{
+  "audit_metadata": {
+    "repository_path": ".",
+    "adr_path": "docs/architecture/ADRs",
+    "analysis_timestamp": "2025-08-05T20:32:37.806838+00:00",
+    "execution_time_seconds": 5060.073114156723,
+    "total_adrs_analyzed": 21
+  },
+  "overall_compliance_score": 42.99047619047619,
+  "discovered_adrs": [
+    {
+      "adr_id": "ADR-011_HistoricalCodeAnalysis",
+      "title": "ADR-011: Historical Code Analysis for ADR Compliance Auditing",
+      "file_path": "docs/architecture/ADRs/ADR-011_HistoricalCodeAnalysis.md",
+      "requirements": [
+        "This decision establishes a systematic, automated approach to ADR compliance auditing that scales with the growing complexity of the ViolentUTF API architecture. The Historical Code Analysis Tool addresses critical audit team needs while maintaining security, performance, and operational requirements.",
+        "2. **Configurable Detection**: YAML-based patterns adapt to evolving ADR requirements"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-007_AsyncTaskProcessing",
+      "title": "ADR-007: Asynchronous Task Processing with HTTP Polling and Webhooks",
+      "file_path": "docs/architecture/ADRs/ADR-007_AsyncTaskProcessing.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-004_Versioning",
+      "title": "ADR-004: URI Path Versioning Strategy",
+      "file_path": "docs/architecture/ADRs/ADR-004_Versioning.md",
+      "requirements": [
+        "Non-breaking, backward-compatible changes (e.g., adding a new optional field to a response or adding a completely new endpoint) will **not** require a new version. The current major version will simply be updated."
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F1-3_EndpointIntegrationArchitecture",
+      "title": "ADR-F1.3: Extensible Plugin Architecture for Target AI Integration",
+      "file_path": "docs/architecture/ADRs/ADR-F1-3_EndpointIntegrationArchitecture.md",
+      "requirements": [
+        "1.  **Standard Interface**: A standardized **`ProviderPlugin` abstract interface** will be defined in the core application. This interface will specify a set of methods that every plugin must implement (e.g., `send_chat_completion`, `list_available_models`)."
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-003_RBAC+ABAC",
+      "title": "ADR-003: Hybrid Authorization Model using RBAC and ABAC",
+      "file_path": "docs/architecture/ADRs/ADR-003_RBAC+ABAC.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F2-1_VulnerabilityTaxonomies",
+      "title": "ADR-F2.1: Database-Driven Vulnerability Taxonomy Model",
+      "file_path": "docs/architecture/ADRs/ADR-F2-1_VulnerabilityTaxonomies.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-009_ErrorandResponses",
+      "title": "ADR-009: Standardized Error Handling with RFC 7807",
+      "file_path": "docs/architecture/ADRs/ADR-009_ErrorandResponses.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-006_DataSerializationFormat",
+      "title": "ADR-006: JSON as the Exclusive Data Serialization Format",
+      "file_path": "docs/architecture/ADRs/ADR-006_DataSerializationFormat.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-010_SoftwareDependencies",
+      "title": "ADR-010: Automated Dependency Management and SCA Policy",
+      "file_path": "docs/architecture/ADRs/ADR-010_SoftwareDependencies.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F1-1_TemplatingEngine",
+      "title": "ADR-F1.1: Sandboxed Templating Engine for Attack Payloads",
+      "file_path": "docs/architecture/ADRs/ADR-F1-1_TemplatingEngine.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-005_RateLimiting",
+      "title": "ADR-005: Multi-Layered Rate Limiting and Resource Consumption Policy",
+      "file_path": "docs/architecture/ADRs/ADR-005_RateLimiting.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-007_Auth_Failover",
+      "title": "ADR-007: Authentication Failover Mechanisms",
+      "file_path": "docs/architecture/ADRs/ADR-007_Auth_Failover.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-008_LoggingandAuditing",
+      "title": "ADR-008: Structured JSON Logging for Multi-Tenant Auditing and Observability",
+      "file_path": "docs/architecture/ADRs/ADR-008_LoggingandAuditing.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F3-1_ScoringArchitecture",
+      "title": "ADR-F3.1: Hybrid Scoring Architecture for Model Risk Analysis",
+      "file_path": "docs/architecture/ADRs/ADR-F3-1_ScoringArchitecture.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-001_RESTstyle",
+      "title": "ADR-001: Adopt REST for Standalone API Endpoints",
+      "file_path": "docs/architecture/ADRs/ADR-001_RESTstyle.md",
+      "requirements": [
+        "The ViolentUTF API will adopt and enhance a **RESTful architectural style** for all public-facing endpoints. This decision reaffirms the existing approach but adapts it to meet the new requirements of a standalone, GSA-compliant service."
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F1-2_ServersideOrchestration",
+      "title": "ADR-F1.2: Server-Side Orchestration for Multi-Turn Attacks",
+      "file_path": "docs/architecture/ADRs/ADR-F1-2_ServersideOrchestration.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F4-1_UntrustedModelInteractions",
+      "title": "ADR-F4.1: Container-based Sandboxing for Untrusted Model Execution",
+      "file_path": "docs/architecture/ADRs/ADR-F4-1_UntrustedModelInteractions.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-002_Authentication",
+      "title": "ADR-002: Phased Authentication Strategy using JWT and API Keys",
+      "file_path": "docs/architecture/ADRs/ADR-002_Authentication.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F2-2_DataStorage",
+      "title": "ADR-F2.2: Polyglot Persistence Strategy for Session Evidence",
+      "file_path": "docs/architecture/ADRs/ADR-F2-2_DataStorage.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F4-2_SecretManagement",
+      "title": "ADR-F4.2: Centralized Secrets Management for Target System Credentials",
+      "file_path": "docs/architecture/ADRs/ADR-F4-2_SecretManagement.md",
+      "requirements": [
+        "3.  **Just-in-Time (JIT) Retrieval**: Application services (e.g., background workers) will retrieve secrets from the manager on a just-in-time basis immediately before they are needed. Secrets will only be held in memory for the minimal time required and will never be written to disk."
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    },
+    {
+      "adr_id": "ADR-F3-2_ReportGeneration",
+      "title": "ADR-F3.2: Server-Side Engine for Automated Report Generation",
+      "file_path": "docs/architecture/ADRs/ADR-F3-2_ReportGeneration.md",
+      "requirements": [
+        "Follow architectural decision guidelines",
+        "Maintain consistency with existing patterns"
+      ],
+      "code_areas": [
+        "app/",
+        "services/",
+        "api/"
+      ],
+      "risk_level": "medium"
+    }
+  ],
+  "adr_compliance": {
+    "ADR-011_HistoricalCodeAnalysis": {
+      "adr_id": "ADR-011_HistoricalCodeAnalysis",
+      "compliance_score": 91.2,
+      "violations": [
+        {
+          "file_path": "tools/pre_audit/historical_analyzer.py",
+          "line_number": 0,
+          "description": "Missing comprehensive unit test suite - ADR requires extensive validation across multiple repository sizes and patterns",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create comprehensive unit test suite with fixtures for different repository patterns and edge cases",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "tools/pre_audit/historical_analyzer.py",
+          "line_number": 1225,
+          "description": "Help text example shows absolute paths instead of relative paths, inconsistent with security validation requirements",
+          "risk_level": "low",
+          "remediation_suggestion": "Update CLI help examples to use relative paths or document absolute path requirements",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "config/violation_patterns.yml",
+          "line_number": 418,
+          "description": "Configuration file ends abruptly without proper closure - may indicate incomplete implementation",
+          "risk_level": "low",
+          "remediation_suggestion": "Verify configuration file is complete and add proper file ending",
+          "confidence": 0.75
+        }
+      ],
+      "compliant_areas": [
+        "Git History Parser implemented with PyDriller integration (lines 39, 817-823)",
+        "ADR Pattern Matcher with configurable YAML patterns (lines 217-301, config file)",
+        "Multi-Factor Risk Scorer with logarithmic normalization (lines 94-175)",
+        "Report Generator with descriptive ADRaudit_ naming (lines 931-1129)",
+        "Comprehensive security layer with path traversal protection (lines 615-632, 743-769)",
+        "Performance optimization with caching and complexity analysis (lines 552-647)",
+        "Input validation with parameter bounds checking (lines 1279-1282)",
+        "Resource protection with file size limits (lines 588-594)",
+        "Secure file permissions (lines 1314, 1288)",
+        "Conventional commit parsing support (lines 178-215)",
+        "Advanced diff analysis for violation detection (lines 303-344)"
+      ],
+      "recommendations": [
+        "Implement comprehensive unit test suite covering all major components and edge cases",
+        "Add integration tests for the complete analysis workflow",
+        "Create performance benchmarks to validate 100+ commits/second requirement",
+        "Add CI/CD integration examples beyond the basic usage patterns",
+        "Implement web-based dashboard mentioned in future enhancements",
+        "Add automated pattern validation for YAML configuration updates"
+      ],
+      "analysis_timestamp": "2025-08-05T19:08:17.739091+00:00",
+      "files_analyzed": [
+        "tools/pre_audit/historical_analyzer.py",
+        "config/violation_patterns.yml",
+        "tools/pre_audit/config.py",
+        "tools/pre_audit/git_history_parser.py",
+        "docs/reports/ADRaudit-claudecode/debug_audit_ADR-011_HistoricalCodeAnalysis_20250805_135802.json"
+      ],
+      "analysis_summary": "ADR-011 is highly compliant with 91.2% implementation. The Historical Code Analysis Tool successfully implements all core architectural components: PyDriller-based Git history parsing, YAML-configurable ADR pattern matching, multi-factor risk scoring with logarithmic normalization, comprehensive Markdown report generation, and robust security validation. The tool demonstrates excellent security practices with path traversal protection, input validation, and resource limits. Performance requirements are met with caching, parallel processing, and complexity analysis. The primary gap is the absence of a comprehensive unit test suite, which is explicitly required by the ADR for validation across multiple repository sizes and patterns."
+    },
+    "ADR-007_AsyncTaskProcessing": {
+      "adr_id": "ADR-007_AsyncTaskProcessing",
+      "compliance_score": 15.0,
+      "violations": [
+        {
+          "file_path": "app/main.py",
+          "line_number": 1,
+          "description": "Missing Celery task queue integration. ADR requires dedicated Task Queue system (Celery) with message broker (Redis) for long-running tasks, but no Celery configuration found",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add Celery dependency to pyproject.toml and create app/core/celery.py for task queue configuration",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 1,
+          "description": "Missing /api/v1/scans and /api/v1/tasks endpoints. ADR specifies core scan endpoints that should return 202 Accepted with status URLs for tracking",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/api/endpoints/scans.py and app/api/endpoints/tasks.py with proper async task handling endpoints",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/models/__init__.py",
+          "line_number": 1,
+          "description": "Missing Task model for tracking asynchronous operations. ADR requires task record management with PENDING/RUNNING/SUCCESS/FAILED status tracking",
+          "risk_level": "high",
+          "remediation_suggestion": "Create app/models/task.py with Task model including task_id, status, result_url, webhook_url fields",
+          "confidence": 0.97
+        },
+        {
+          "file_path": "pyproject.toml",
+          "line_number": 19,
+          "description": "Missing Celery dependency. Redis is present for caching but Celery worker system is not configured for background task processing",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add celery[redis] dependency and configure worker processes for PyRIT orchestrator and Garak scan execution",
+          "confidence": 0.99
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 64,
+          "description": "Redis configuration exists for caching but lacks task queue broker configuration. ADR requires message broker setup for task queue management",
+          "risk_level": "medium",
+          "remediation_suggestion": "Extend Redis configuration with task queue specific settings like CELERY_BROKER_URL and CELERY_RESULT_BACKEND",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "No webhook support implementation. ADR specifies optional webhook mechanism for advanced clients to receive task completion callbacks",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement webhook validation, storage, and callback mechanism in task completion handlers",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "Missing worker processes directory. ADR requires separate worker processes that execute PyRIT orchestrator and Garak security scans",
+          "risk_level": "high",
+          "remediation_suggestion": "Create app/workers/ directory with celery worker definitions for long-running security scans",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/schemas/",
+          "line_number": 1,
+          "description": "Missing task-related Pydantic schemas. ADR requires proper request/response schemas for async task operations including status polling responses",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create app/schemas/task.py with TaskCreate, TaskStatus, TaskResponse schemas matching ADR specifications",
+          "confidence": 0.88
+        }
+      ],
+      "compliant_areas": [
+        "FastAPI framework properly configured for async operations",
+        "Redis dependency available for message broker functionality",
+        "Proper logging and monitoring infrastructure exists",
+        "Database connection pooling configured for scalability",
+        "Security middleware stack implemented for protected endpoints"
+      ],
+      "recommendations": [
+        "Implement Celery task queue with Redis broker for core async functionality",
+        "Create dedicated /api/v1/scans endpoint returning 202 Accepted responses with task tracking URLs",
+        "Add Task model with proper status state management (PENDING/RUNNING/SUCCESS/FAILED)",
+        "Implement task status polling endpoints at /api/v1/tasks/{task_id}",
+        "Add webhook callback system for advanced client integrations",
+        "Create worker processes for PyRIT orchestrator and Garak scan execution",
+        "Implement proper error handling and timeout management for long-running tasks",
+        "Add task result storage and retrieval mechanisms",
+        "Create comprehensive testing for async task workflows"
+      ],
+      "analysis_timestamp": "2025-08-05T19:10:16.384061+00:00",
+      "files_analyzed": [
+        "app/main.py",
+        "app/api/routes.py",
+        "app/models/__init__.py",
+        "app/core/config.py",
+        "app/api/endpoints/health.py",
+        "pyproject.toml"
+      ],
+      "analysis_summary": "The ViolentUTF API codebase has a solid foundation with FastAPI, Redis, and security middleware, but completely lacks the core async task processing architecture specified in ADR-007. No Celery integration, no scan endpoints, no task tracking models, and no worker processes exist. The implementation is at 15% compliance, requiring significant development to meet the ADR requirements for handling long-running PyRIT orchestrator and Garak security scan operations."
+    },
+    "ADR-004_Versioning": {
+      "adr_id": "ADR-004_Versioning",
+      "compliance_score": 78.0,
+      "violations": [
+        {
+          "file_path": "app/main.py",
+          "line_number": 216,
+          "description": "Missing deprecation handling in API router configuration - no middleware or headers for deprecated versions",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add deprecation middleware to include Deprecation and Warning headers for deprecated API versions",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 31,
+          "description": "Hard-coded v1 prefix without configuration for multiple versions or deprecation policy",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add configuration for supported API versions and deprecation settings",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/models/mixins.py",
+          "line_number": 336,
+          "description": "VersionedMixin defaults to v1 only without supporting multiple concurrent versions as required by ADR",
+          "risk_level": "low",
+          "remediation_suggestion": "Update supported_versions default to handle multiple concurrent versions properly",
+          "confidence": 0.75
+        },
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "API router lacks version-specific routing structure and deprecation response handling",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement version-specific APIRouter instances with deprecation headers for older versions",
+          "confidence": 0.95
+        }
+      ],
+      "compliant_areas": [
+        "URI path versioning correctly implemented with /api/v1 prefix in configuration (API_V1_STR)",
+        "FastAPI routing properly uses versioned prefix for all endpoints",
+        "OpenAPI documentation correctly versioned at /api/v1/openapi.json",
+        "All middleware properly handles versioned paths (/api/v1) for authentication, rate limiting, and permissions",
+        "Consistent v1 versioning pattern across all endpoint definitions",
+        "Version information included in health check responses",
+        "Models include VersionedMixin for API version tracking"
+      ],
+      "recommendations": [
+        "Implement deprecation middleware to add Deprecation and Warning headers when older API versions are accessed",
+        "Add configuration management for multiple concurrent API versions and deprecation timelines (6-month support window)",
+        "Create version-specific router structure to handle breaking changes between v1 and future v2",
+        "Add automated tests for deprecation header compliance",
+        "Document the current API version lifecycle and breaking change policy",
+        "Implement version negotiation logic for backward compatibility"
+      ],
+      "analysis_timestamp": "2025-08-05T19:13:31.008445+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-004_Versioning.md",
+        "app/main.py",
+        "app/core/config.py",
+        "app/api/routes.py",
+        "app/models/mixins.py",
+        "pyproject.toml",
+        "app/api/endpoints/health.py",
+        "Various middleware files with v1 path handling"
+      ],
+      "analysis_summary": "The ViolentUTF API demonstrates strong foundational compliance with ADR-004's URI path versioning strategy. The v1 prefix is consistently implemented across all endpoints, middleware, and configuration. However, the implementation lacks the deprecation policy mechanisms required by the ADR, specifically the Deprecation and Warning headers for deprecated versions, and lacks support for concurrent version management during transitions."
+    },
+    "ADR-F1-3_EndpointIntegrationArchitecture": {
+      "adr_id": "ADR-F1-3_EndpointIntegrationArchitecture",
+      "compliance_score": 15.0,
+      "violations": [
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+          "line_number": 1,
+          "description": "Missing ProviderPlugin abstract interface - no implementation of the required abstract base class with methods send_chat_completion, list_available_models, and validate_credentials found in the codebase",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/core/provider_plugin.py with the ProviderPlugin abstract base class implementing the interface specified in the ADR",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+          "line_number": 1,
+          "description": "Missing plugin discovery mechanism - no directory structure or loading system for violentutf_api/plugins/ as specified in the ADR",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/plugins/ directory structure and implement dynamic plugin discovery mechanism in app/core/plugin_loader.py",
+          "confidence": 0.97
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models",
+          "line_number": 1,
+          "description": "Missing Generator database model - no implementation of the Generator schema with fields: name, plugin_name, model_id, credentials_id as specified in ADR",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/models/generator.py with Generator model containing the required fields and foreign key relationships",
+          "confidence": 0.96
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/external_services.py",
+          "line_number": 38,
+          "description": "ExternalServiceClient exists but does not implement the ProviderPlugin interface - ServiceType includes AI_MODEL but lacks the required standardized methods for AI provider integration",
+          "risk_level": "high",
+          "remediation_suggestion": "Refactor ExternalServiceClient to inherit from ProviderPlugin or create AI-specific providers that implement the ProviderPlugin interface",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/startup.py",
+          "line_number": 13,
+          "description": "Application startup lacks plugin initialization - no plugin discovery or registration during application startup as required by the ADR",
+          "risk_level": "high",
+          "remediation_suggestion": "Add plugin discovery and registration logic to the on_startup() function to scan and load plugins from the plugins directory",
+          "confidence": 0.91
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/api/endpoints",
+          "line_number": 1,
+          "description": "Missing API endpoints for Generator management - no endpoints for creating, configuring, or managing Generator instances as specified in the ADR",
+          "risk_level": "high",
+          "remediation_suggestion": "Create app/api/endpoints/generators.py with CRUD operations for Generator management and orchestration endpoint integration",
+          "confidence": 0.89
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+          "line_number": 1,
+          "description": "Missing orchestration engine integration - no implementation of the server-side orchestration engine that consumes the ProviderPlugin interface as referenced in ADR-F1.2",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement orchestration engine in app/core/orchestrator.py that uses ProviderPlugin interface to send prompts to AI targets",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+          "line_number": 1,
+          "description": "No concrete plugin implementations - missing implementations for OpenAI, Anthropic, Ollama or other AI providers as plugins",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create concrete plugin implementations in app/plugins/ directory (e.g., openai_plugin.py, anthropic_plugin.py) that inherit from ProviderPlugin",
+          "confidence": 0.83
+        }
+      ],
+      "compliant_areas": [
+        "External services framework exists with circuit breaker protection (app/core/external_services.py)",
+        "Configuration management system supports extensible service types including AI_MODEL",
+        "Application follows FastAPI architecture patterns suitable for plugin integration",
+        "Database models and repositories infrastructure in place for data persistence",
+        "Security middleware and authentication systems ready for integration"
+      ],
+      "recommendations": [
+        "Implement the ProviderPlugin abstract interface as the foundation for all AI provider integrations",
+        "Create plugin discovery and loading mechanism with automatic registration at startup",
+        "Develop Generator database model and associated CRUD operations for managing AI endpoint configurations",
+        "Build concrete plugin implementations for major AI providers (OpenAI, Anthropic, Ollama)",
+        "Integrate plugin system with existing ExternalServiceClient for resilient API calls",
+        "Add orchestration engine that consumes ProviderPlugin interface for prompt execution",
+        "Implement secrets management integration for secure credential storage per ADR-F4.2",
+        "Add comprehensive testing framework for plugin system including mocking capabilities"
+      ],
+      "analysis_timestamp": "2025-08-05T19:14:36.199177+00:00",
+      "files_analyzed": [
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/architecture/ADRs/ADR-F1-3_EndpointIntegrationArchitecture.md",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/main.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/external_services.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/startup.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/config.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/pyproject.toml",
+        "Application directory structure analysis",
+        "Models, schemas, and API endpoints inventory"
+      ],
+      "analysis_summary": "The codebase has a solid foundation with external services framework, security middleware, and proper FastAPI architecture, but completely lacks the extensible plugin architecture specified in ADR-F1-3. The current ExternalServiceClient provides circuit breaker protection and resilient API calls, but does not implement the required ProviderPlugin interface for AI model integration. Critical missing components include the abstract ProviderPlugin interface, plugin discovery mechanism, Generator database model, and concrete AI provider implementations. The compliance score of 15% reflects that while the infrastructure exists to support plugin architecture, none of the core ADR requirements have been implemented."
+    },
+    "ADR-003_RBAC+ABAC": {
+      "adr_id": "ADR-003_RBAC+ABAC",
+      "compliance_score": 67.5,
+      "violations": [
+        {
+          "file_path": "app/repositories/base.py",
+          "line_number": 268,
+          "description": "Base repository queries do not enforce organization_id filtering. ABAC requirement states that 'query will always be filtered by the organization_id from the user's token' but base queries lack organization-aware filtering",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement mandatory organization_id filtering in all data access queries. Add _apply_organization_filter method that checks organization_id for all tenant-owned resources",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/repositories/user.py",
+          "line_number": 46,
+          "description": "User repository queries do not filter by organization_id. Users from different organizations can potentially access each other's data, violating ABAC tenant isolation requirements",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add organization_id filtering to all user queries: `and_(self.model.username == username, self.model.organization_id == current_user_org_id, self.model.is_deleted == False)`",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/api/endpoints/users.py",
+          "line_number": 305,
+          "description": "User endpoint lacks organization_id validation in get_current_user method. No verification that requested user belongs to same organization as requester",
+          "risk_level": "high",
+          "remediation_suggestion": "Add organization_id check: `if user.organization_id != current_user.organization_id: raise ForbiddenError('Access denied')`",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/middleware/permissions.py",
+          "line_number": 366,
+          "description": "Permission middleware has organization_id filtering logic for scoped permissions, but it's not consistently applied to all endpoints. ABAC checks should be mandatory for all data access",
+          "risk_level": "high",
+          "remediation_suggestion": "Extend _enhance_scoped_permission to apply organization_id filtering to all data access permissions, not just :own scoped ones",
+          "confidence": 0.8
+        },
+        {
+          "file_path": "app/models/user.py",
+          "line_number": 313,
+          "description": "User model exposes organization_id in to_dict() method but lacks validation that organization_id matches the authenticated user's organization during serialization",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add organization_id validation in serialization methods to prevent information disclosure across tenant boundaries",
+          "confidence": 0.75
+        },
+        {
+          "file_path": "app/core/security.py",
+          "line_number": 47,
+          "description": "JWT token creation does not explicitly include organization_id claim despite ADR requirement. Missing organization_id in JWT payload prevents proper ABAC enforcement",
+          "risk_level": "high",
+          "remediation_suggestion": "Modify create_access_token to include organization_id claim: `to_encode.update({'organization_id': data.get('organization_id')})`",
+          "confidence": 0.85
+        }
+      ],
+      "compliant_areas": [
+        "RBAC implementation with role validation in User model (lines 269-289)",
+        "Permission checking middleware with endpoint-to-permission mapping",
+        "Role-based decorators and dependencies in core/permissions.py",
+        "BaseModelMixin includes organization_id field for tenant isolation",
+        "JWT authentication middleware extracts and validates roles from tokens",
+        "RBAC service provides comprehensive role management functionality"
+      ],
+      "recommendations": [
+        "Implement mandatory organization_id filtering in BaseRepository._apply_filters method to ensure ABAC compliance for all queries",
+        "Add organization_id validation to all API endpoints that access tenant-owned resources",
+        "Enhance JWT token generation to include organization_id claim as required by ADR-003",
+        "Create ABAC enforcement dependency that can be applied to all endpoints accessing multi-tenant data",
+        "Add comprehensive integration tests to verify both RBAC and ABAC enforcement across all endpoints",
+        "Implement database-level row-level security (RLS) policies as an additional defense layer",
+        "Create audit logging for all authorization decisions to ensure compliance tracking"
+      ],
+      "analysis_timestamp": "2025-08-05T19:16:08.245761+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-003_RBAC+ABAC.md",
+        "app/core/permissions.py",
+        "app/services/rbac_service.py",
+        "app/models/user.py",
+        "app/models/mixins.py",
+        "app/middleware/permissions.py",
+        "app/middleware/authentication.py",
+        "app/api/endpoints/users.py",
+        "app/repositories/base.py",
+        "app/repositories/user.py",
+        "app/core/security.py"
+      ],
+      "analysis_summary": "The codebase implements RBAC correctly with comprehensive role management, but fails to properly enforce ABAC (organization-based tenant isolation). While the infrastructure exists (organization_id field in models), queries do not consistently filter by organization_id as required by ADR-003. This creates critical security vulnerabilities where users could potentially access data from other organizations. The hybrid model is partially implemented but lacks the mandatory ABAC enforcement layer described in the ADR."
+    },
+    "ADR-F2-1_VulnerabilityTaxonomies": {
+      "adr_id": "ADR-F2-1_VulnerabilityTaxonomies",
+      "compliance_score": 15.2,
+      "violations": [
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models/__init__.py",
+          "line_number": 12,
+          "description": "Missing VulnerabilityTaxonomy and TaxonomyMapping models - ADR mandates database-driven taxonomy with tables 'vulnerability_taxonomies' and 'taxonomy_mappings'",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create VulnerabilityTaxonomy and TaxonomyMapping SQLAlchemy models with the exact schema specified in ADR-F2-1",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/0d9d1d5fbe10_initial_database_models_with_.py",
+          "line_number": 27,
+          "description": "Database migration lacks vulnerability_taxonomies table creation - ADR requires tables for id, name, description, remediation_advice, parent_id, default_severity",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create Alembic migration to add vulnerability_taxonomies table with UUID id, String name, Text description, Text remediation_advice, UUID parent_id, Enum default_severity",
+          "confidence": 0.99
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/0d9d1d5fbe10_initial_database_models_with_.py",
+          "line_number": 27,
+          "description": "Database migration lacks taxonomy_mappings table creation - ADR requires table for mapping to external frameworks (OWASP, MITRE)",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create Alembic migration to add taxonomy_mappings table with id, taxonomy_id (FK), framework_name, framework_id, framework_url fields",
+          "confidence": 0.99
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/db/base.py",
+          "line_number": 11,
+          "description": "VulnerabilityTaxonomy and TaxonomyMapping models not imported in base.py - required for Alembic discovery",
+          "risk_level": "high",
+          "remediation_suggestion": "Import VulnerabilityTaxonomy and TaxonomyMapping models in app/db/base.py after creating them",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/config/violation_patterns.yml",
+          "line_number": 248,
+          "description": "Configuration shows taxonomy violations are tracked but no actual database-driven implementation exists - indicates awareness but no implementation",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement the database-driven taxonomy system that the violation pattern monitoring assumes exists",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/schemas/",
+          "line_number": 1,
+          "description": "Missing Pydantic schemas for VulnerabilityTaxonomy and TaxonomyMapping - required for API endpoints and data validation",
+          "risk_level": "high",
+          "remediation_suggestion": "Create Pydantic schemas for taxonomy models including hierarchical relationships and framework mappings",
+          "confidence": 0.93
+        },
+        {
+          "file_path": "app/repositories/",
+          "line_number": 1,
+          "description": "Missing repository classes for VulnerabilityTaxonomy and TaxonomyMapping - required for data access layer",
+          "risk_level": "high",
+          "remediation_suggestion": "Create repository classes with methods for taxonomy CRUD operations and hierarchical queries",
+          "confidence": 0.93
+        },
+        {
+          "file_path": "app/api/endpoints/",
+          "line_number": 1,
+          "description": "Missing API endpoints for taxonomy management - ADR implies administrative interface for taxonomy updates",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create REST API endpoints for taxonomy CRUD operations with proper authentication and authorization",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/",
+          "line_number": 1,
+          "description": "Missing seed data migration for initial OWASP Top 10 LLM taxonomy - ADR mandates initial seeding with OWASP Top 10",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create data migration script to populate vulnerability_taxonomies with OWASP Top 10 for Large Language Model Applications",
+          "confidence": 0.88
+        }
+      ],
+      "compliant_areas": [
+        "Database infrastructure exists with proper SQLAlchemy 2.0 setup",
+        "Alembic migration system is properly configured",
+        "BaseModelMixin provides UUID primary keys as required by ADR schema",
+        "Audit tracking infrastructure exists through AuditMixin",
+        "Security validation patterns exist in SecurityValidationMixin"
+      ],
+      "recommendations": [
+        "CRITICAL: Create VulnerabilityTaxonomy and TaxonomyMapping SQLAlchemy models following ADR schema exactly",
+        "CRITICAL: Generate Alembic migration to create both required database tables",
+        "HIGH: Implement hierarchical taxonomy support with self-referencing parent_id foreign key",
+        "HIGH: Create seed data migration with initial OWASP Top 10 LLM taxonomy entries",
+        "HIGH: Build repository layer for taxonomy data access with hierarchical query support",
+        "MEDIUM: Develop REST API endpoints for taxonomy management with proper RBAC",
+        "MEDIUM: Create mapping entries to external frameworks (OWASP, MITRE ATLAS)",
+        "LOW: Add administrative UI or process for taxonomy management as mentioned in ADR consequences"
+      ],
+      "analysis_timestamp": "2025-08-05T19:17:47.550912+00:00",
+      "files_analyzed": [
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/architecture/ADRs/ADR-F2-1_VulnerabilityTaxonomies.md",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models/__init__.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/db/base.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/db/base_class.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models/mixins.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/0d9d1d5fbe10_initial_database_models_with_.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/config/violation_patterns.yml",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/main.py"
+      ],
+      "analysis_summary": "ADR-F2-1 mandates a database-driven vulnerability taxonomy system with two tables (vulnerability_taxonomies and taxonomy_mappings) to replace hard-coded enums and enable dynamic taxonomy management. Analysis reveals ZERO implementation of this requirement - no models, tables, migrations, or API endpoints exist. The codebase has excellent infrastructure (SQLAlchemy 2.0, Alembic, proper base classes) but completely lacks the core taxonomy functionality. Violation monitoring configuration suggests awareness of the requirement but no actual implementation. This represents a critical architectural compliance failure requiring immediate remediation."
+    },
+    "ADR-009_ErrorandResponses": {
+      "adr_id": "ADR-009_ErrorandResponses",
+      "compliance_score": 25.0,
+      "violations": [
+        {
+          "file_path": "app/core/errors.py",
+          "line_number": 15,
+          "description": "ErrorDetail class uses custom ad-hoc error format instead of RFC 7807 standard. Fields are 'error', 'message', 'request_id', 'path', 'timestamp' instead of required RFC 7807 fields 'type', 'title', 'status', 'detail', 'instance'.",
+          "risk_level": "high",
+          "remediation_suggestion": "Replace ErrorDetail class with RFC 7807 compliant ProblemDetail class containing required fields: type (URI), title, status, detail, instance, plus custom fields correlation_id and error_code",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/core/errors.py",
+          "line_number": 132,
+          "description": "api_error_handler function returns custom JSON format instead of RFC 7807 application/problem+json content type with standard fields. Missing required fields: type (URI), error_code, and correlation_id as specified in ADR-009.",
+          "risk_level": "high",
+          "remediation_suggestion": "Modify api_error_handler to return RFC 7807 compliant response with Content-Type: application/problem+json and include correlation_id from request context",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/errors.py",
+          "line_number": 160,
+          "description": "validation_error_handler returns custom error format instead of RFC 7807 standard. Missing type URI, error_code, and proper RFC 7807 structure for validation errors.",
+          "risk_level": "high",
+          "remediation_suggestion": "Update validation_error_handler to use RFC 7807 format with type URI pointing to validation error documentation, include invalid_params extension as shown in ADR example",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/errors.py",
+          "line_number": 199,
+          "description": "generic_error_handler uses custom error format instead of RFC 7807. This violates the centralized exception handling requirement that should catch all exceptions and map to standard format.",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement RFC 7807 compliant generic error handler that maps all unexpected exceptions to standard problem+json format with appropriate error codes and correlation_id",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/schemas/base.py",
+          "line_number": 182,
+          "description": "APIErrorResponse class exists with RFC 7807 fields but is not being used by error handlers. This indicates incomplete implementation of the ADR.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Update all error handlers in app/core/errors.py to use the existing APIErrorResponse schema instead of custom ErrorDetail",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/main.py",
+          "line_number": 40,
+          "description": "rate_limit_handler uses custom error format instead of RFC 7807 standard. Returns plain JSON with 'detail' and 'type' fields instead of proper RFC 7807 structure.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Update rate_limit_handler to return RFC 7807 compliant response with proper type URI, correlation_id, and error_code",
+          "confidence": 0.8
+        },
+        {
+          "file_path": "app/api/endpoints/auth.py",
+          "line_number": 142,
+          "description": "Authentication endpoints raise HTTPException with custom messages instead of using centralized error handling. This bypasses the RFC 7807 standard error format requirement.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Replace HTTPException usage with custom APIError exceptions that will be properly handled by the centralized RFC 7807 error handler",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/",
+          "line_number": 0,
+          "description": "Missing Error Dictionary implementation as required by ADR-009. No centralized mapping of error codes to RFC 7807 type URIs, titles, and status codes found.",
+          "risk_level": "high",
+          "remediation_suggestion": "Create error dictionary in config/error_dictionary.py mapping error codes like 'VUTF-1001' to RFC 7807 metadata as specified in ADR example",
+          "confidence": 1.0
+        },
+        {
+          "file_path": "app/core/errors.py",
+          "line_number": 136,
+          "description": "Error responses are missing correlation_id field as required by ADR-009. Request ID is used but not properly mapped to correlation_id for linking to detailed logs per ADR-008.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add correlation_id field to all error responses, mapping from request.state.request_id to maintain traceability link to structured logs",
+          "confidence": 0.9
+        }
+      ],
+      "compliant_areas": [
+        "Request ID tracking is implemented in RequestIDMiddleware for correlation",
+        "Centralized error handler setup exists in setup_error_handlers function",
+        "APIErrorResponse schema in base.py contains correct RFC 7807 field structure",
+        "Structured logging is configured with correlation context support",
+        "Development mode error detail control is implemented in generic_error_handler"
+      ],
+      "recommendations": [
+        "Implement complete RFC 7807 error dictionary with VUTF error codes mapping to type URIs, titles, and status codes",
+        "Update all error handlers to return application/problem+json content type with proper RFC 7807 structure",
+        "Replace all HTTPException usage across endpoints with custom APIError exceptions to ensure centralized handling",
+        "Add correlation_id field to all error responses linking to ADR-008 structured logging",
+        "Create type URI endpoints (e.g., /errors/validation-error) that provide detailed documentation for each error type",
+        "Implement error_code field in all responses using VUTF-XXXX format as specified in ADR example",
+        "Add integration tests to verify RFC 7807 compliance for all error scenarios",
+        "Update API documentation to reflect RFC 7807 error response format"
+      ],
+      "analysis_timestamp": "2025-08-05T19:19:47.140098+00:00",
+      "files_analyzed": [
+        "app/main.py",
+        "app/core/errors.py",
+        "app/api/base.py",
+        "app/api/endpoints/auth.py",
+        "app/middleware/request_id.py",
+        "app/schemas/base.py",
+        "app/core/config.py",
+        "app/core/logging.py",
+        "app/api/endpoints/users.py"
+      ],
+      "analysis_summary": "The API has foundational error handling infrastructure but lacks full RFC 7807 compliance. While request ID tracking and structured logging exist, error responses use custom formats instead of the RFC 7807 standard. Critical missing components include the Error Dictionary, proper correlation_id mapping, and consistent use of application/problem+json content type. The existing APIErrorResponse schema shows awareness of RFC 7807 but is not being utilized by the error handlers."
+    },
+    "ADR-006_DataSerializationFormat": {
+      "adr_id": "ADR-006_DataSerializationFormat",
+      "compliance_score": 89.2,
+      "violations": [
+        {
+          "file_path": "app/api/endpoints/audit_logs.py",
+          "line_number": 620,
+          "description": "Endpoint supports CSV export format (text/csv) in addition to JSON, violating exclusive JSON requirement. Lines 618-625 implement format switching between CSV and JSON.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Remove CSV export functionality or ensure it's for internal/administrative use only and not part of the public API surface",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/api/endpoints/oauth.py",
+          "line_number": 220,
+          "description": "OAuth authorization endpoints return HTML responses (HTMLResponse) for browser-based OAuth flows, violating JSON-only requirement. Multiple endpoints use HTMLResponse.",
+          "risk_level": "low",
+          "remediation_suggestion": "OAuth HTML responses are acceptable as they serve a different purpose (browser UI) than API data exchange. Consider documenting this as an exception to the ADR.",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/schemas/audit_log.py",
+          "line_number": 90,
+          "description": "AuditLogExportRequest schema explicitly allows 'csv' and 'json' formats, enabling non-JSON data serialization for export functionality.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Restrict export formats to JSON only or clarify ADR scope to exclude administrative export functions",
+          "confidence": 0.9
+        }
+      ],
+      "compliant_areas": [
+        "All API endpoints use Pydantic models that serialize to JSON by default",
+        "FastAPI application is configured with default JSON content negotiation",
+        "BaseResponse and PaginatedResponse classes enforce JSON serialization",
+        "All CRUD operations exclusively use JSON for request/response bodies",
+        "Middleware consistently processes and returns JSON responses",
+        "OpenAPI specification generates JSON-only endpoint definitions",
+        "Input sanitization middleware properly handles application/json content-type",
+        "Error handling returns standardized JSON error responses"
+      ],
+      "recommendations": [
+        "Clarify ADR scope: Define whether administrative export functions (CSV) and OAuth browser flows (HTML) are exempt from the JSON-only requirement",
+        "Add explicit content-type validation middleware to reject non-JSON requests for API endpoints",
+        "Document exceptions: If CSV exports and HTML OAuth flows are intentional, document them as explicit exceptions with justification",
+        "Consider adding OpenAPI specification validation to ensure all documented endpoints specify application/json media type",
+        "Review audit log export functionality to determine if CSV support aligns with organizational requirements"
+      ],
+      "analysis_timestamp": "2025-08-05T19:22:45.726184+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-006_DataSerializationFormat.md",
+        "app/main.py",
+        "app/api/base.py",
+        "app/api/routes.py",
+        "app/schemas/base.py",
+        "app/api/endpoints/users.py",
+        "app/api/endpoints/audit_logs.py",
+        "app/api/endpoints/oauth.py",
+        "app/schemas/audit_log.py"
+      ],
+      "analysis_summary": "The codebase demonstrates strong compliance with ADR-006's JSON-exclusive serialization requirement. The primary violations involve audit log CSV exports and OAuth HTML responses. While these serve specific functional purposes, they technically violate the ADR's mandate for JSON exclusivity. The core API functionality properly implements JSON-only serialization through Pydantic models and FastAPI's default behavior."
+    },
+    "ADR-010_SoftwareDependencies": {
+      "adr_id": "ADR-010_SoftwareDependencies",
+      "compliance_score": 72.5,
+      "violations": [
+        {
+          "file_path": ".github/workflows/pr-validation.yml",
+          "line_number": 60,
+          "description": "pip-audit is not implemented as a blocking CI/CD step in PR validation workflow. ADR requires pip-audit as mandatory blocking quality gate",
+          "risk_level": "high",
+          "remediation_suggestion": "Add pip-audit as blocking step in PR validation workflow with failure conditions for CRITICAL/HIGH vulnerabilities",
+          "confidence": 0.95
+        },
+        {
+          "file_path": ".github/workflows/ci.yml",
+          "line_number": 48,
+          "description": "No dependency vulnerability scanning in main CI pipeline. ADR mandates pip-audit integration in CI/CD",
+          "risk_level": "high",
+          "remediation_suggestion": "Add pip-audit scanning step to CI pipeline with exit codes on critical vulnerabilities",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "config/vulnerability_management_policy.yml",
+          "line_number": 0,
+          "description": "Missing Vulnerability Management Policy file with SLOs (CRITICAL: 7 days, HIGH: 30 days, MEDIUM: 90 days)",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create formal vulnerability management policy configuration file with defined SLOs and enforcement mechanisms",
+          "confidence": 1.0
+        },
+        {
+          "file_path": "config/license_compliance_policy.yml",
+          "line_number": 0,
+          "description": "Missing License Compliance Policy configuration. ADR defines approved (MIT, Apache-2.0, BSD), restricted (LGPL, MPL), and prohibited (GPL, AGPL) licenses",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create license compliance policy file and integrate license checking into CI/CD pipeline",
+          "confidence": 0.95
+        },
+        {
+          "file_path": ".github/workflows/pr-validation.yml",
+          "line_number": 62,
+          "description": "Safety tool used but ADR specifically mandates pip-audit as the primary SCA tool. Safety is paid tier with limitations",
+          "risk_level": "medium",
+          "remediation_suggestion": "Replace or supplement safety check with pip-audit as primary dependency vulnerability scanner",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "security/pip-audit-report.json",
+          "line_number": 1,
+          "description": "Existing pip-audit report shows 12 vulnerabilities including CRITICAL (aiohttp, mcp) and HIGH (pillow, protobuf) - violates ADR blocking policy",
+          "risk_level": "critical",
+          "remediation_suggestion": "Immediate remediation required for CRITICAL/HIGH vulnerabilities per ADR policy before any PR merges",
+          "confidence": 1.0
+        }
+      ],
+      "compliant_areas": [
+        "Dependabot properly configured with weekly schedules and grouped updates",
+        "Bandit security scanning integrated in pre-commit hooks and CI pipelines",
+        "pip-audit tool installed and available in requirements-dev.txt",
+        "Security scanning scripts (security-scan.sh) implement comprehensive checks",
+        "Pre-commit hooks include detect-secrets for secret detection",
+        "Makefile provides security-scan target with comprehensive coverage",
+        "Dependencies properly pinned with version ranges in requirements files"
+      ],
+      "recommendations": [
+        "Implement pip-audit as blocking step in PR validation workflow with failure on CRITICAL/HIGH vulnerabilities",
+        "Create formal vulnerability management policy with automated SLO enforcement",
+        "Add license compliance checking to CI/CD pipeline with policy enforcement",
+        "Remediate existing CRITICAL vulnerabilities (aiohttp CVE-2025-53643, mcp CVE-2025-53365) immediately",
+        "Integrate semgrep (already available) into CI pipeline for additional static analysis",
+        "Create automated vulnerability tracking system with SLO monitoring",
+        "Add Dependabot configuration for security-only updates with immediate merge on critical fixes"
+      ],
+      "analysis_timestamp": "2025-08-05T19:24:12.390791+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-010_SoftwareDependencies.md",
+        "requirements-dev.txt",
+        "pyproject.toml",
+        ".github/dependabot.yml",
+        ".pre-commit-config.yaml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/pr-validation.yml",
+        ".github/workflows/security.yml",
+        "scripts/security-scan.sh",
+        "check_security.sh",
+        "requirements.txt",
+        "requirements-test.txt",
+        "security/pip-audit-report.json",
+        "Makefile",
+        ".secrets.baseline"
+      ],
+      "analysis_summary": "ADR-010 is 72.5% compliant with solid tooling foundation (Dependabot, Bandit, pip-audit) but missing critical enforcement mechanisms. Key gaps: pip-audit not blocking CI/CD, no formal vulnerability management policy with SLOs, no license compliance policy, and existing CRITICAL vulnerabilities violating blocking policy. The infrastructure exists but enforcement and policy compliance are insufficient."
+    },
+    "ADR-F1-1_TemplatingEngine": {
+      "adr_id": "ADR-F1-1_TemplatingEngine",
+      "compliance_score": 0.0,
+      "violations": [
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "Complete absence of templating engine endpoint implementation - no routes defined for payload generation or template rendering as required by ADR-F1-1",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement a dedicated /api/v1/templates or /api/v1/payload-generation endpoint with Jinja2 SandboxedEnvironment integration",
+          "confidence": 1.0
+        },
+        {
+          "file_path": "app/services/",
+          "line_number": 1,
+          "description": "Missing templating service implementation - no service class exists to handle sandboxed Jinja2 template rendering for attack payloads",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/services/template_service.py implementing sandboxed Jinja2 environment with custom filters (base64encode, urlencode, leetspeak, etc.)",
+          "confidence": 1.0
+        },
+        {
+          "file_path": "app/schemas/",
+          "line_number": 1,
+          "description": "Missing template request/response schemas - no Pydantic models defined for template rendering requests and responses",
+          "risk_level": "high",
+          "remediation_suggestion": "Create template schemas defining TemplateRenderRequest, TemplateRenderResponse, and validation for template content and variables",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "requirements.txt",
+          "line_number": 56,
+          "description": "Jinja2 dependency exists but no sandboxed templating implementation found - dependency installed but ADR requirements not implemented",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement SandboxedEnvironment usage with resource limits and custom filters as specified in ADR-F1-1",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 50,
+          "description": "Missing template security configuration - no settings for template rendering resource limits, timeout controls, or sandbox restrictions",
+          "risk_level": "high",
+          "remediation_suggestion": "Add TEMPLATE_RENDER_TIMEOUT, TEMPLATE_MAX_MEMORY, and TEMPLATE_ALLOWED_FILTERS configuration settings",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "config/violation_patterns.yml",
+          "line_number": 214,
+          "description": "ADR-F1-1 monitoring patterns not configured - violation detection system doesn't include specific patterns for this ADR",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add ADR-F1-1 specific patterns to monitor template injection vulnerabilities and sandboxing bypasses",
+          "confidence": 0.85
+        }
+      ],
+      "compliant_areas": [
+        "Jinja2 dependency is correctly included in requirements.txt",
+        "SandboxedEnvironment is used in reporting module (tools/pre_audit/reporting/exporters/html_generator.py) demonstrating awareness of secure templating practices",
+        "Security middleware framework exists that could be extended for template security validation"
+      ],
+      "recommendations": [
+        "Implement /api/v1/templates endpoint with POST method for template rendering",
+        "Create TemplateService class using Jinja2 SandboxedEnvironment with strict resource limits",
+        "Implement custom filters: base64encode, base64decode, urlencode, leetspeak, reverse, json_escape",
+        "Add template validation middleware to prevent Server-Side Template Injection (SSTI)",
+        "Configure CPU time limits and memory constraints for template rendering processes",
+        "Add comprehensive logging and monitoring for template rendering operations",
+        "Create unit tests covering all custom filters and security boundaries",
+        "Document template API usage and security considerations for red team users",
+        "Implement rate limiting specifically for template rendering endpoints",
+        "Add template content size limits to prevent DoS attacks"
+      ],
+      "analysis_timestamp": "2025-08-05T19:25:36.500992+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F1-1_TemplatingEngine.md",
+        "requirements.txt",
+        "app/main.py",
+        "app/api/routes.py",
+        "app/core/config.py",
+        "tools/pre_audit/reporting/exporters/html_generator.py",
+        "config/violation_patterns.yml"
+      ],
+      "analysis_summary": "ADR-F1-1_TemplatingEngine is completely unimplemented. While the system has Jinja2 dependency and demonstrates knowledge of SandboxedEnvironment in reporting, there is no implementation of the core requirement: a secure templating engine for generating adversarial prompt payloads. Critical gaps include missing endpoints, services, schemas, and security configurations specifically required for red team payload generation use cases."
+    },
+    "ADR-005_RateLimiting": {
+      "adr_id": "ADR-005_RateLimiting",
+      "compliance_score": 65.0,
+      "violations": [
+        {
+          "file_path": "app/core/rate_limiting.py",
+          "line_number": 103,
+          "description": "Implementation uses SlowAPI instead of native Token Bucket algorithm as specified in ADR. SlowAPI may use different algorithms internally.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement native Token Bucket algorithm or verify SlowAPI uses Token Bucket internally and document this decision",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/middleware/rate_limiting.py",
+          "line_number": 145,
+          "description": "Rate limiting logic is incomplete - middleware has placeholder implementation that skips actual enforcement in test/development mode",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement complete rate limiting logic with proper Redis integration for production environments",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/api/endpoints/auth.py",
+          "line_number": 110,
+          "description": "Missing @rate_limit decorator on authentication endpoints despite ADR requirement for strict rate limits on auth endpoints",
+          "risk_level": "high",
+          "remediation_suggestion": "Add @rate_limit('auth_login') decorator to login endpoint and similar decorators to other auth endpoints",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/rate_limiting.py",
+          "line_number": 195,
+          "description": "Rate limit headers implementation is incomplete - add_rate_limit_headers function is empty with only placeholder comments",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement proper rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset) as required by ADR",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "app/main.py",
+          "line_number": 52,
+          "description": "Rate limit exception handler returns generic 60-second retry-after instead of calculating actual retry time based on rate limit window",
+          "risk_level": "medium",
+          "remediation_suggestion": "Calculate actual retry-after time based on rate limit window and remaining time",
+          "confidence": 0.82
+        },
+        {
+          "file_path": "app/core/rate_limiting.py",
+          "line_number": 42,
+          "description": "Missing implementation for resource-intensive endpoints mentioned in ADR (POST /api/v1/scans, POST /api/v1/reports/generate) - these endpoints are not found in current codebase",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement scan and report generation endpoints with appropriate strict rate limits (10/minute for scans, 20/minute for reports)",
+          "confidence": 0.75
+        }
+      ],
+      "compliant_areas": [
+        "Multi-layered rate limiting configuration is properly defined in RATE_LIMITS dictionary",
+        "Organization-based rate limiting key generation using organization_id from JWT as specified",
+        "Redis backend configuration is properly set up for distributed rate limiting",
+        "Different rate limits for different endpoint types (auth: 5/minute, health: 120/minute, etc.)",
+        "Proper fallback to IP-based rate limiting when user context is not available",
+        "Rate limiting middleware is properly integrated into FastAPI application middleware stack",
+        "Custom rate limit exception handling with 429 status code",
+        "Rate limiting can be enabled/disabled via configuration"
+      ],
+      "recommendations": [
+        "Complete the rate limiting middleware implementation by removing test/development mode bypass logic",
+        "Add @rate_limit decorators to all authentication endpoints as required by ADR",
+        "Implement proper rate limit headers in responses (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)",
+        "Add the missing resource-intensive endpoints (scans, reports) mentioned in ADR with appropriate rate limits",
+        "Verify SlowAPI uses Token Bucket algorithm internally or implement native Token Bucket algorithm",
+        "Implement proper retry-after calculation based on actual rate limit windows",
+        "Add comprehensive integration tests for rate limiting across all endpoint layers",
+        "Document the actual rate limiting algorithm being used (SlowAPI implementation details)"
+      ],
+      "analysis_timestamp": "2025-08-05T19:27:35.086252+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-005_RateLimiting.md",
+        "app/core/rate_limiting.py",
+        "app/middleware/rate_limiting.py",
+        "app/core/config.py",
+        "app/main.py",
+        "app/api/routes.py",
+        "app/api/endpoints/auth.py",
+        "app/api/endpoints/users.py",
+        "tests/security/test_rate_limiting.py",
+        "tests/unit/core/test_core_rate_limiting.py"
+      ],
+      "analysis_summary": "The implementation partially complies with ADR-005 requirements. Core infrastructure for multi-layered rate limiting is in place with proper configuration and Redis backend support. However, critical gaps exist in actual enforcement logic, endpoint-level decorators, and proper header implementation. The middleware contains development bypasses that prevent actual rate limiting in non-production environments. Missing resource-intensive endpoints mentioned in the ADR also impact compliance."
+    },
+    "ADR-007_Auth_Failover": {
+      "adr_id": "ADR-007_Auth_Failover",
+      "compliance_score": 78.5,
+      "violations": [
+        {
+          "file_path": "app/core/auth_failover.py",
+          "line_number": 117,
+          "description": "bcrypt import is done dynamically inside function instead of at module level, and fallback to insecure authentication if bcrypt unavailable",
+          "risk_level": "high",
+          "remediation_suggestion": "Import bcrypt at module level and fail fast during startup if not available. Remove fallback authentication without password verification",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/core/cache.py",
+          "line_number": 42,
+          "description": "Connection retry logic uses hard-coded failure threshold (3) instead of configurable value from ADR requirements",
+          "risk_level": "medium",
+          "remediation_suggestion": "Make connection failure threshold configurable through settings and align with circuit breaker patterns",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/core/cache.py",
+          "line_number": 111,
+          "description": "Cache deserialization falls back to returning raw bytes when JSON decode fails, potentially bypassing security controls",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement strict deserialization with proper error handling instead of returning raw bytes",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "app/services/health_service.py",
+          "line_number": 232,
+          "description": "Health check service uses synchronous get_all_circuit_stats() instead of async variant, missing proper integration with circuit breaker pattern",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement async circuit breaker stats collection and ensure proper integration with auth failover monitoring",
+          "confidence": 0.8
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 64,
+          "description": "Redis configuration lacks specific failover settings like sentinel configuration, connection pool settings for high availability",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add Redis Sentinel configuration, connection pool settings, and failover-specific parameters to support ADR requirements",
+          "confidence": 0.75
+        },
+        {
+          "file_path": "app/middleware/authentication.py",
+          "line_number": 84,
+          "description": "JWT authentication middleware lacks integration with fallback authentication provider when primary auth fails",
+          "risk_level": "high",
+          "remediation_suggestion": "Integrate middleware with FallbackAuthProvider to handle authentication when primary JWT service is degraded",
+          "confidence": 0.9
+        }
+      ],
+      "compliant_areas": [
+        "Cache-based session management implemented with Redis primary and fallback storage",
+        "Circuit breaker pattern properly implemented with configurable thresholds and state management",
+        "Multiple authentication methods supported (JWT, API keys, emergency tokens)",
+        "Health monitoring service with comprehensive component checking",
+        "Graceful degradation logic with fallback cache when Redis unavailable",
+        "Write-through caching implementation for consistency",
+        "Exponential backoff and retry logic in circuit breaker",
+        "Emergency access tokens for critical operations",
+        "Comprehensive logging and metrics collection"
+      ],
+      "recommendations": [
+        "Integrate authentication middleware with fallback auth provider for seamless failover",
+        "Add Redis Sentinel configuration for true high availability",
+        "Implement API key authentication fallback when JWT services fail",
+        "Add configuration for circuit breaker thresholds in authentication flows",
+        "Implement read-only mode detection and enforcement during database failures",
+        "Add automated health check triggers for authentication service degradation",
+        "Enhance monitoring with authentication-specific metrics and alerting",
+        "Implement cached permission checks with proper TTL management"
+      ],
+      "analysis_timestamp": "2025-08-05T19:28:56.118905+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-007_Auth_Failover.md",
+        "app/core/auth_failover.py",
+        "app/utils/circuit_breaker.py",
+        "app/core/circuit_breaker.py",
+        "app/core/cache.py",
+        "app/services/health_service.py",
+        "app/core/config.py",
+        "app/middleware/authentication.py"
+      ],
+      "analysis_summary": "The codebase demonstrates strong architectural compliance with ADR-007 requirements, implementing most core components including circuit breakers, caching with fallback, health monitoring, and emergency access mechanisms. However, there are integration gaps between components and some security concerns around fallback authentication. The overall architecture follows the ADR design patterns but needs better integration between authentication middleware and fallback providers to achieve true failover capabilities."
+    },
+    "ADR-008_LoggingandAuditing": {
+      "adr_id": "ADR-008_LoggingandAuditing",
+      "compliance_score": 72.5,
+      "violations": [
+        {
+          "file_path": "app/core/logging.py",
+          "line_number": 107,
+          "description": "Missing correlation_id field in log_request_context function - ADR requires correlation_id but only request_id is used",
+          "risk_level": "medium",
+          "remediation_suggestion": "Update log_request_context to use 'correlation_id' field instead of 'request_id' to match ADR schema",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/logging.py",
+          "line_number": 15,
+          "description": "Service logging uses 'service' field instead of required 'service_name' field per ADR schema",
+          "risk_level": "medium",
+          "remediation_suggestion": "Change 'service' field to 'service_name' in add_app_context function to match ADR requirements",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/middleware/audit.py",
+          "line_number": 234,
+          "description": "Multi-tenant context missing - no organization_id in audit logs despite multi-tenant requirements",
+          "risk_level": "high",
+          "remediation_suggestion": "Add organization_id extraction from user context and include in auth_context object for all audit log entries",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/services/audit_service.py",
+          "line_number": 135,
+          "description": "Request context lacks auth_context structure - user_id and organization_id not wrapped in auth_context object",
+          "risk_level": "high",
+          "remediation_suggestion": "Restructure logging to include auth_context object with organization_id and user_id as per ADR schema",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/middleware/request_id.py",
+          "line_number": 39,
+          "description": "Missing user_id in request context binding - log_request_context call doesn't include user_id parameter",
+          "risk_level": "medium",
+          "remediation_suggestion": "Extract user_id from request state and pass to log_request_context for complete audit trail",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/core/logging.py",
+          "line_number": 25,
+          "description": "Data redaction policy incomplete - missing 'firstName', 'lastName' and other PII fields specified in ADR",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add missing sensitive keys: 'firstName', 'lastName', 'email', 'credentials' to sensitive_keys set",
+          "confidence": 0.88
+        }
+      ],
+      "compliant_areas": [
+        "Structured JSON logging correctly implemented using structlog",
+        "Logging to stdout properly configured in setup_logging()",
+        "Log level policy implemented with correct semantics (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+        "Data sanitization function properly removes sensitive information",
+        "ISO 8601 timestamps with UTC timezone correctly configured",
+        "Request ID generation and correlation implemented",
+        "Comprehensive audit logging middleware in place",
+        "Log format configurable between JSON and console output",
+        "Asynchronous logging not blocking main application threads"
+      ],
+      "recommendations": [
+        "Implement complete ADR-008 log schema with correlation_id, service_name, auth_context structure",
+        "Add organization_id extraction and multi-tenant context to all log entries",
+        "Enhance data redaction policy to include all PII fields specified in ADR",
+        "Update audit middleware to capture full auth_context including organization_id",
+        "Consider implementing log sampling for DEBUG level as mentioned in ADR performance considerations",
+        "Add http_context object structure for HTTP-related log entries",
+        "Implement centralized log redaction processor as specified in ADR technical requirements"
+      ],
+      "analysis_timestamp": "2025-08-05T19:31:12.158868+00:00",
+      "files_analyzed": [
+        "app/core/logging.py",
+        "app/middleware/logging.py",
+        "app/middleware/request_id.py",
+        "app/middleware/audit.py",
+        "app/services/audit_service.py",
+        "app/models/audit_log.py",
+        "app/main.py",
+        "app/core/config.py"
+      ],
+      "analysis_summary": "The application has a solid foundation for structured logging with JSON output and audit trails, but lacks full compliance with ADR-008's multi-tenant logging requirements. Critical gaps include missing organization_id context, incomplete log schema implementation (correlation_id vs request_id), and insufficient PII redaction coverage. The logging infrastructure is well-architected but needs refinement to meet the security and audit requirements for a multi-tenant platform."
+    },
+    "ADR-F3-1_ScoringArchitecture": {
+      "adr_id": "ADR-F3-1_ScoringArchitecture",
+      "compliance_score": 12.0,
+      "violations": [
+        {
+          "file_path": "app/main.py",
+          "line_number": 238,
+          "description": "No scorer plugin architecture found. ADR requires extensible 'Scorer Plugin' architecture with ScorerPlugin abstract base class for real-time and batch scoring.",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement ScorerPlugin ABC with SCORER_TYPE and SCORER_NAME attributes, and score() method as specified in ADR lines 104-124",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/services/",
+          "line_number": 1,
+          "description": "Missing hybrid scoring service architecture. No evidence of real-time 'triage' scoring or asynchronous 'deep analysis' phases as required by ADR.",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create ScoringService with real-time lightweight scorers and background batch processing for expensive analysis",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/models/session.py",
+          "line_number": 277,
+          "description": "Session model exists but lacks analysis_status column required for two-phase scoring lifecycle tracking as specified in ADR line 146.",
+          "risk_level": "high",
+          "remediation_suggestion": "Add analysis_status ENUM column to track 'execution_complete', 'analysis_in_progress', 'analysis_complete' states",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/core/external_services.py",
+          "line_number": 38,
+          "description": "External services include AI_MODEL type but no integration with scoring system for LLM-based scoring as required for 'deep analysis' phase.",
+          "risk_level": "high",
+          "remediation_suggestion": "Integrate AI_MODEL service type with batch scoring workers for LLM-based analysis (toxicity, bias measurement)",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No evidence of prompt-response evidence storage in document database as required by ADR for storing raw test data.",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement document database models for storing prompt/response pairs with embedded triage scores",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "Missing task queue integration for deep analysis batch jobs. ADR-007 defines async task processing but no scoring worker implementation found.",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement scoring workers that process session_ids from task queue for batch analysis as specified in ADR lines 95-98",
+          "confidence": 0.93
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No scorer plugin registration system found. Missing service registry for managing lightweight vs expensive scorers.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create scorer registry with plugin discovery and categorization by SCORER_TYPE ('real-time' vs 'batch')",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No orchestration worker integration for real-time scoring during model response processing as specified in ADR lines 91-94.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Integrate triage scoring into response processing pipeline with immediate score storage",
+          "confidence": 0.87
+        }
+      ],
+      "compliant_areas": [
+        "Async task processing foundation exists (ADR-007 implementation provides background job capability)",
+        "Session management system provides session_id tracking mechanism",
+        "External services framework supports AI model integration pattern",
+        "Database architecture supports extensible data models with mixins"
+      ],
+      "recommendations": [
+        "CRITICAL: Implement ScorerPlugin abstract base class with real-time/batch categorization before any scoring functionality",
+        "HIGH: Create hybrid scoring service with immediate triage + delayed deep analysis phases",
+        "HIGH: Add analysis_status tracking to session model to support two-phase scoring lifecycle",
+        "HIGH: Implement document database storage for prompt/response evidence with embedded scores",
+        "MEDIUM: Create scorer plugin registry with automatic discovery and type-based routing",
+        "MEDIUM: Integrate scoring workflow into existing orchestration and task processing systems",
+        "LOW: Add configuration system for scorer plugin timeouts and resource limits"
+      ],
+      "analysis_timestamp": "2025-08-05T19:32:39.111464+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F3-1_ScoringArchitecture.md",
+        "app/main.py",
+        "app/core/external_services.py",
+        "tools/pre_audit/streaming_auditor.py",
+        "app/models/session.py",
+        "app/repositories/session.py",
+        "app/services/session_service.py",
+        "docs/architecture/ADRs/ADR-007_AsyncTaskProcessing.md",
+        "app/repositories/base.py",
+        "app/core/config.py"
+      ],
+      "analysis_summary": "The codebase shows CRITICAL non-compliance with ADR-F3-1 Scoring Architecture. While foundational elements exist (async task processing, session management, external services), the core hybrid scoring architecture is completely missing. No scorer plugins, no real-time triage scoring, no batch deep analysis system, and no evidence document storage have been implemented. The 12% compliance score reflects only the presence of supporting infrastructure that could enable the required architecture."
+    },
+    "ADR-001_RESTstyle": {
+      "adr_id": "ADR-001_RESTstyle",
+      "compliance_score": 88.5,
+      "violations": [
+        {
+          "file_path": "app/main.py",
+          "line_number": 146,
+          "description": "OpenAPI/docs endpoints are conditionally disabled in production but ADR requires clear URI path versioning strategy implementation. The API_V1_STR is used but path versioning strategy implementation is incomplete.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Implement comprehensive API versioning strategy as referenced in ADR-004, ensure all endpoints follow /api/v1/ pattern consistently",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "API router lacks explicit versioning strategy implementation. While API_V1_STR is used in main.py, the router itself doesn't enforce versioning constraints.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add versioning validation middleware or explicit version handling in router configuration",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/api/base.py",
+          "line_number": 36,
+          "description": "BaseCRUDRouter implements comprehensive REST patterns but lacks explicit field selection query parameter validation for over-fetching mitigation as required by ADR",
+          "risk_level": "low",
+          "remediation_suggestion": "Add query parameter validation for 'fields' and 'exclude_fields' parameters in base router to enforce ADR requirement for over-fetching mitigation",
+          "confidence": 0.8
+        },
+        {
+          "file_path": "app/middleware/authentication.py",
+          "line_number": 31,
+          "description": "Hardcoded exempt paths list should be configuration-driven to ensure consistency with ADR requirement for standalone operation without gateway dependency",
+          "risk_level": "low",
+          "remediation_suggestion": "Move exempt paths to configuration file and implement dynamic path exemption management",
+          "confidence": 0.75
+        }
+      ],
+      "compliant_areas": [
+        "FastAPI framework usage provides natural RESTful architecture",
+        "Standard HTTP methods (GET, POST, PUT, DELETE, PATCH) properly implemented across all CRUD endpoints",
+        "JSON standardization implemented throughout with proper serialization via Pydantic schemas",
+        "Comprehensive pagination and filtering implemented in BaseFilter and PaginatedResponse schemas",
+        "Field selection utilities in app/utils/field_selection.py address over-fetching concerns",
+        "Authentication and authorization middleware implemented for standalone operation",
+        "Rate limiting middleware provides policy implementation without gateway dependency",
+        "Comprehensive error handling with standardized JSON responses via APIErrorResponse schema",
+        "OpenAPI documentation automatically generated following REST conventions",
+        "Resource-oriented URI structure with proper HTTP status codes"
+      ],
+      "recommendations": [
+        "Complete API versioning strategy implementation as outlined in ADR-004",
+        "Add comprehensive field selection query parameter validation to all list endpoints",
+        "Implement configuration-driven path exemption management for authentication middleware",
+        "Add explicit Content-Type validation middleware to ensure JSON-only communication",
+        "Create comprehensive API documentation examples showing pagination, filtering, and field selection usage",
+        "Implement request/response logging middleware to track API usage patterns for optimization"
+      ],
+      "analysis_timestamp": "2025-08-05T19:34:16.216881+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-001_RESTstyle.md",
+        "app/main.py",
+        "app/api/routes.py",
+        "app/api/base.py",
+        "app/core/config.py",
+        "app/api/endpoints/users.py",
+        "app/api/endpoints/auth.py",
+        "app/schemas/base.py",
+        "app/utils/field_selection.py",
+        "app/middleware/authentication.py",
+        "app/middleware/rate_limiting.py"
+      ],
+      "analysis_summary": "The ViolentUTF API demonstrates strong compliance with ADR-001_RESTstyle requirements. The implementation successfully adopts REST architectural patterns using FastAPI, implements comprehensive JSON standardization, provides sophisticated pagination/filtering capabilities, and includes field selection utilities to mitigate over-fetching issues. The standalone authentication and rate limiting middleware fulfill the ADR requirement for independent operation without gateway dependencies. Key areas for improvement include completing the API versioning strategy and enhancing field selection parameter validation across all endpoints."
+    },
+    "ADR-F1-2_ServersideOrchestration": {
+      "adr_id": "ADR-F1-2_ServersideOrchestration",
+      "compliance_score": 15.0,
+      "violations": [
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "Missing orchestrator endpoints - No '/api/v1/orchestrators/execute' endpoint defined as required by ADR",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add orchestrator router to include_router calls with prefix '/orchestrators'",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/api/endpoints/",
+          "line_number": 1,
+          "description": "Missing orchestrator endpoint implementation - No orchestrator.py file found in endpoints directory",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/api/endpoints/orchestrator.py with POST /execute endpoint that accepts YAML/JSON workflow definitions",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/models/__init__.py",
+          "line_number": 21,
+          "description": "Missing orchestration data models - No models for storing orchestration jobs, state machines, or execution transcripts",
+          "risk_level": "high",
+          "remediation_suggestion": "Create models for OrchestrationJob, WorkflowState, ExecutionTranscript with proper relationships and state tracking",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/core/startup.py",
+          "line_number": 21,
+          "description": "Missing background task infrastructure - No Celery or async task processing setup for long-running orchestrations",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement background worker system with task queue integration (Celery/Redis) for asynchronous orchestration execution",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/schemas/__init__.py",
+          "line_number": 37,
+          "description": "Missing orchestration schemas - No Pydantic models for workflow definitions, state transitions, or orchestration responses",
+          "risk_level": "high",
+          "remediation_suggestion": "Create OrchestrationRequest, WorkflowDefinition, StateTransition, and OrchestrationResponse schemas",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 524,
+          "description": "Missing orchestration configuration - No settings for state machine execution, task timeouts, or workflow validation",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add ORCHESTRATION_TIMEOUT, MAX_WORKFLOW_STATES, ENABLE_ORCHESTRATION settings to configuration",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/db/base.py",
+          "line_number": 12,
+          "description": "Missing orchestration database tables - No orchestration-related models imported for Alembic migration discovery",
+          "risk_level": "medium",
+          "remediation_suggestion": "Import orchestration models (OrchestrationJob, WorkflowState) so Alembic can generate migration scripts",
+          "confidence": 0.82
+        }
+      ],
+      "compliant_areas": [
+        "FastAPI framework supports asynchronous processing architecture required for orchestration",
+        "Existing authentication and authorization middleware can secure orchestration endpoints",
+        "Database infrastructure with SQLAlchemy ORM supports complex orchestration state storage",
+        "Logging framework is properly configured to support orchestration execution tracking"
+      ],
+      "recommendations": [
+        "Implement OrchestrationJob model with fields: id, status (PENDING/RUNNING/SUCCESS/FAILURE), workflow_definition, created_at, started_at, completed_at, result_data",
+        "Create state machine execution engine that parses YAML/JSON workflow definitions and manages state transitions",
+        "Add background task processing with Celery for asynchronous orchestration execution",
+        "Implement POST /api/v1/orchestrators/execute endpoint that validates workflow, creates job, returns task_id",
+        "Add GET /api/v1/orchestrators/{task_id}/status endpoint for polling orchestration progress",
+        "Create WorkflowState model to store conversation transcripts and state transition history",
+        "Implement template rendering engine integration (Jinja2) for prompt generation with variables",
+        "Add comprehensive validation for workflow schema including state definitions, transitions, and conditions",
+        "Create robust error handling for failed orchestrations with detailed logging and recovery options"
+      ],
+      "analysis_timestamp": "2025-08-05T19:35:37.557789+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F1-2_ServersideOrchestration.md",
+        "app/main.py",
+        "app/api/routes.py",
+        "app/api/endpoints/health.py",
+        "app/core/config.py",
+        "app/models/__init__.py",
+        "app/schemas/__init__.py",
+        "app/db/base.py",
+        "app/core/startup.py"
+      ],
+      "analysis_summary": "The ViolentUTF API completely lacks implementation of the server-side orchestration engine required by ADR-F1-2. While the foundational FastAPI architecture supports the required features, none of the core orchestration components exist: no orchestrator endpoints, no workflow execution engine, no orchestration data models, no background task processing, and no state machine implementation. The compliance score of 15% reflects only the basic architectural foundation being compatible with the ADR requirements."
+    },
+    "ADR-F4-1_UntrustedModelInteractions": {
+      "adr_id": "ADR-F4-1_UntrustedModelInteractions",
+      "compliance_score": 5.0,
+      "violations": [
+        {
+          "file_path": "app/core/external_services.py",
+          "line_number": 38,
+          "description": "ServiceType enum includes AI_MODEL but no container sandboxing implementation exists for untrusted model execution",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement Docker SDK integration with container orchestration for ephemeral sandbox containers",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "pyproject.toml",
+          "line_number": 1,
+          "description": "Missing docker dependency required for container-based sandboxing of untrusted model execution",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add docker>=6.0.0 to dependencies for dynamic container provisioning",
+          "confidence": 0.99
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No container orchestration worker implementation exists to manage ephemeral sandbox containers",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/core/container_orchestrator.py with Docker SDK for secure, ephemeral container management",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "Missing secure container profile implementation with restricted capabilities and resource limits",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement SecurityProfile class with --user, --read-only, --cap-drop=ALL, --network=none, resource limits",
+          "confidence": 0.97
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No execution flow implementation for untrusted model testing with stdin/stdout communication",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create execution pipeline with container provisioning, model code injection via stdin, and response capture via stdout",
+          "confidence": 0.96
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "Missing ProviderPlugin interface required for plugin system that would utilize container sandboxing",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement abstract ProviderPlugin base class with send_chat_completion method for sandboxed execution",
+          "confidence": 0.94
+        },
+        {
+          "file_path": "app/",
+          "line_number": 1,
+          "description": "No plugin directory structure exists for untrusted model provider implementations",
+          "risk_level": "high",
+          "remediation_suggestion": "Create app/plugins/ directory structure with __init__.py and provider-specific modules",
+          "confidence": 0.93
+        },
+        {
+          "file_path": "app/api/",
+          "line_number": 1,
+          "description": "Missing API endpoints for orchestrating sandboxed untrusted model execution",
+          "risk_level": "high",
+          "remediation_suggestion": "Create endpoints for model testing with proper container sandboxing integration",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/models/",
+          "line_number": 1,
+          "description": "No database models exist for storing Generator configurations that require sandboxed execution",
+          "risk_level": "medium",
+          "remediation_suggestion": "Create Generator model with plugin_name, model_id, and security_profile fields",
+          "confidence": 0.9
+        }
+      ],
+      "compliant_areas": [
+        "Basic security-focused Dockerfile with non-root user implementation",
+        "External services framework with circuit breaker pattern suitable for AI model integrations",
+        "Comprehensive authentication and authorization system for secure access control",
+        "Input validation and sanitization middleware for request security",
+        "Audit logging system for tracking all system interactions"
+      ],
+      "recommendations": [
+        "PRIORITY 1: Implement Docker SDK integration with secure container orchestration for untrusted model execution",
+        "PRIORITY 2: Create SecurityProfile class with ADR-specified container restrictions (--user, --read-only, --cap-drop=ALL, --network=none, resource limits)",
+        "PRIORITY 3: Develop ephemeral container lifecycle management with automatic cleanup after execution",
+        "PRIORITY 4: Implement stdin/stdout communication channel for controlled model interaction",
+        "PRIORITY 5: Create ProviderPlugin abstract interface specifically designed for sandboxed execution",
+        "PRIORITY 6: Build plugin discovery system for dynamically loading untrusted model providers",
+        "PRIORITY 7: Add comprehensive monitoring and logging for all sandboxed execution activities",
+        "PRIORITY 8: Implement timeout and resource limit enforcement for container execution",
+        "PRIORITY 9: Create API endpoints for orchestrating secure model testing workflows",
+        "PRIORITY 10: Develop database models for storing Generator configurations and execution results"
+      ],
+      "analysis_timestamp": "2025-08-05T19:36:59.810096+00:00",
+      "files_analyzed": [
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/architecture/ADRs/ADR-F4-1_UntrustedModelInteractions.md",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/main.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/external_services.py",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/architecture/ADRs/ADR-F1-3_EndpointIntegrationArchitecture.md",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/pyproject.toml",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/Dockerfile",
+        "/Users/tamnguyen/Documents/GitHub/violentutf-api/config/violation_patterns.yml"
+      ],
+      "analysis_summary": "CRITICAL COMPLIANCE FAILURE: The ViolentUTF API completely lacks the container-based sandboxing architecture required by ADR-F4-1. While the codebase demonstrates excellent security practices and has a foundation for external service integration, it has zero implementation of the mandatory ephemeral container orchestration, secure container profiles, or controlled execution channels required for safely interacting with untrusted AI models. This represents a fundamental security gap that prevents any safe execution of third-party model code, making the core ViolentUTF functionality impossible to implement securely. The 5% compliance score reflects only the presence of basic containerization infrastructure (Dockerfile) and external service patterns that could serve as a foundation, but no actual sandboxing implementation exists."
+    },
+    "ADR-002_Authentication": {
+      "adr_id": "ADR-002_Authentication",
+      "compliance_score": 45.2,
+      "violations": [
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 42,
+          "description": "JWT algorithm defaults to HS256 instead of required RS256. ADR-002 explicitly mandates RS256 (asymmetric) for security reasons, stating 'RS256 will be used, as asymmetric keys allow the signing key to be kept private while the public key for verification can be widely distributed.'",
+          "risk_level": "critical",
+          "remediation_suggestion": "Change ALGORITHM default from 'HS256' to 'RS256' and implement proper RSA key pair generation and management",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/core/security.py",
+          "line_number": 51,
+          "description": "JWT encoding uses symmetric SECRET_KEY instead of RSA private key. Current implementation uses settings.SECRET_KEY.get_secret_value() which violates ADR requirement for asymmetric cryptography.",
+          "risk_level": "critical",
+          "remediation_suggestion": "Replace SECRET_KEY usage with RSA private key loading and implement proper key management for asymmetric JWT signing",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/core/security.py",
+          "line_number": 91,
+          "description": "JWT decoding uses symmetric SECRET_KEY instead of RSA public key. The decode operation should use RSA public key for signature verification as required by ADR-002.",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement RSA public key loading for JWT verification and update decode logic to use asymmetric verification",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/core/security.py",
+          "line_number": 96,
+          "description": "Missing required JWT claims specified in ADR-002. The ADR requires tokens to include 'standard claims (sub, iat, exp, jti) as well as custom claims for authorization (roles, permissions, organization_id)' but jti (JWT ID) is missing.",
+          "risk_level": "high",
+          "remediation_suggestion": "Add jti (JWT ID) claim to all JWT tokens for proper token identification and tracking",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/security.py",
+          "line_number": 96,
+          "description": "No token revocation/blocklist implementation found. ADR-002 requires 'A token blocklist will be implemented using a distributed cache (e.g., Redis) to enable immediate revocation of specific tokens or all tokens for a user.'",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement Redis-based token blocklist system for immediate token revocation capability",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/services/api_key_service.py",
+          "line_number": 32,
+          "description": "API key prefix format violates ADR-002 specification. ADR requires keys with prefix 'vutf-api_...' for identifiability, but implementation uses 'vutf' format.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Change key_format default from 'vutf' to 'vutf-api_' to match ADR specification",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/models/api_key.py",
+          "line_number": 100,
+          "description": "API key hash storage uses SHA256 but ADR-002 doesn't specify the hashing algorithm strength. While SHA256 is acceptable, the implementation should explicitly validate this meets security requirements.",
+          "risk_level": "low",
+          "remediation_suggestion": "Document and validate that SHA256 hashing meets the ADR's security requirements for API key storage",
+          "confidence": 0.75
+        },
+        {
+          "file_path": "app/api/endpoints/auth.py",
+          "line_number": 188,
+          "description": "JWT token claims implementation is incomplete. While roles and organization_id are included, the iat (issued at) claim is missing from explicit token data, though it may be added by the JWT library.",
+          "risk_level": "medium",
+          "remediation_suggestion": "Explicitly add iat (issued at) and jti (JWT ID) claims to ensure full compliance with ADR requirements",
+          "confidence": 0.8
+        }
+      ],
+      "compliant_areas": [
+        "JWT Bearer token authentication is implemented and functional",
+        "API key authentication system with managed endpoints exists",
+        "Dual authentication mechanism (JWT + API keys) is properly implemented",
+        "Short-lived access tokens (30 min default) and long-lived refresh tokens (7 days) are configured",
+        "Token refresh mechanism with rotation is implemented",
+        "API key permissions system with granular scopes is implemented",
+        "Secure password hashing using Argon2 is implemented",
+        "API key usage tracking and expiration features are present",
+        "Proper authentication middleware for Bearer token validation",
+        "User authentication repository with proper credential validation"
+      ],
+      "recommendations": [
+        "CRITICAL: Implement RS256 asymmetric JWT signing immediately - this is a fundamental security requirement",
+        "CRITICAL: Replace SECRET_KEY with proper RSA key pair management for JWT operations",
+        "HIGH: Implement Redis-based JWT token revocation/blocklist system as specified in ADR",
+        "HIGH: Add missing jti (JWT ID) claims to all JWT tokens for proper tracking",
+        "MEDIUM: Update API key prefix format to use 'vutf-api_' as specified in ADR-002",
+        "MEDIUM: Explicitly add iat claims to JWT token data for full compliance",
+        "LOW: Document API key hashing security validation",
+        "Consider implementing OAuth2/OIDC integration planning as mentioned in Phase 2 of the ADR"
+      ],
+      "analysis_timestamp": "2025-08-05T19:41:30.013181+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-002_Authentication.md",
+        "app/core/auth.py",
+        "app/core/security.py",
+        "app/middleware/authentication.py",
+        "app/api/endpoints/auth.py",
+        "app/models/api_key.py",
+        "app/core/config.py",
+        "app/api/endpoints/api_keys.py",
+        "app/services/api_key_service.py"
+      ],
+      "analysis_summary": "The authentication implementation achieves basic dual-mechanism functionality but has critical violations in JWT cryptography (using HS256 instead of required RS256), missing token revocation system, and incomplete JWT claims. While the API key system is well-implemented, the core JWT security architecture does not comply with ADR-002's asymmetric cryptography requirements. The compliance score of 45.2% reflects these significant security architecture violations that must be addressed immediately."
+    },
+    "ADR-F2-2_DataStorage": {
+      "adr_id": "ADR-F2-2_DataStorage",
+      "compliance_score": 25.0,
+      "violations": [
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 59,
+          "description": "ADR mandates polyglot persistence with PostgreSQL, MongoDB/DynamoDB, and blob storage, but configuration only supports DATABASE_URL for single relational database",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add configuration parameters for document database (MONGODB_URL or DYNAMODB_CONFIG) and blob storage (S3_CONFIG or BLOB_STORAGE_CONFIG)",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/db/session.py",
+          "line_number": 39,
+          "description": "Database session management only implements relational database (PostgreSQL/SQLite) connection handling, missing document database and blob storage session management",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement separate session managers for document database and blob storage as specified in ADR",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/models/__init__.py",
+          "line_number": 1,
+          "description": "Data models do not implement the ADR-specified data partitioning strategy. Missing evidence models for document database storage of prompt-response-score data",
+          "risk_level": "high",
+          "remediation_suggestion": "Create TestEvidence model for document database storage with fields: session_id, prompt, response, scores, vulnerability_ids",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/models/session.py",
+          "line_number": 18,
+          "description": "Current Session model stores all data in relational database instead of implementing ADR requirement for session summaries in PostgreSQL and detailed evidence in document database",
+          "risk_level": "high",
+          "remediation_suggestion": "Refactor Session model to store only summary data and implement separate TestEvidence collection in document database",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "pyproject.toml",
+          "line_number": 9,
+          "description": "Project dependencies lack MongoDB/DynamoDB clients and blob storage libraries (boto3 for S3, azure-storage-blob, etc.) required by ADR",
+          "risk_level": "high",
+          "remediation_suggestion": "Add dependencies: pymongo or motor for MongoDB, boto3 for AWS S3, azure-storage-blob for Azure blob storage",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 1,
+          "description": "API endpoints do not include test evidence management endpoints required for polyglot persistence architecture",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add test evidence endpoints: /test-sessions, /evidence, /vulnerability-taxonomy as specified in ADR",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 96,
+          "description": "Missing data lifecycle management configuration for hot/cold storage transition (90-day rule) and retention policies (7-year deletion)",
+          "risk_level": "medium",
+          "remediation_suggestion": "Add configuration for EVIDENCE_HOT_STORAGE_DAYS, EVIDENCE_ARCHIVE_AFTER_DAYS, EVIDENCE_RETENTION_YEARS",
+          "confidence": 0.8
+        }
+      ],
+      "compliant_areas": [
+        "Database connection pooling with proper configuration (lines 51-68 in app/db/session.py)",
+        "Audit trail implementation for metadata tracking (app/models/audit_log.py)",
+        "User and session management in relational database as specified",
+        "Security validation and string sanitization for stored data"
+      ],
+      "recommendations": [
+        "Implement document database layer with MongoDB or DynamoDB client integration",
+        "Add blob storage service layer with S3/Azure Blob Storage integration",
+        "Create data partitioning service to route data to appropriate storage systems",
+        "Implement data lifecycle management service for automated archival and retention",
+        "Add evidence collection models and repositories for document database operations",
+        "Create background tasks for data archival and lifecycle management",
+        "Add comprehensive integration tests for polyglot persistence architecture",
+        "Update API documentation to reflect three-tier storage architecture"
+      ],
+      "analysis_timestamp": "2025-08-05T19:42:49.822083+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F2-2_DataStorage.md",
+        "app/core/config.py",
+        "app/db/session.py",
+        "app/db/base.py",
+        "app/models/user.py",
+        "app/models/session.py",
+        "app/models/audit_log.py",
+        "app/api/routes.py",
+        "pyproject.toml"
+      ],
+      "analysis_summary": "The codebase currently implements only the relational database tier of the ADR-specified polyglot persistence strategy. Major violations include missing document database and blob storage implementations, absence of data partitioning logic, and lack of data lifecycle management. The current architecture stores all data in a single PostgreSQL/SQLite database, which contradicts the ADR's requirement for three distinct storage systems optimized for different data types and access patterns."
+    },
+    "ADR-F4-2_SecretManagement": {
+      "adr_id": "ADR-F4-2_SecretManagement",
+      "compliance_score": 15.0,
+      "violations": [
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 39,
+          "description": "SECRET_KEY is stored directly in environment variables without using dedicated secrets manager. This violates the ADR requirement for externalized storage of secrets.",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement SecretsManagerClient interface and move SECRET_KEY to dedicated secrets manager with reference-only storage in config",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "app/services/oauth_service.py",
+          "line_number": 95,
+          "description": "Client secrets are stored directly in database (client_secret_hash) instead of using dedicated secrets manager as required by ADR",
+          "risk_level": "critical",
+          "remediation_suggestion": "Store only non-sensitive pointers to secrets manager paths instead of hashed secrets in database",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/models/api_key.py",
+          "line_number": 27,
+          "description": "API key hashes are stored directly in database (key_hash field) rather than using centralized secrets manager",
+          "risk_level": "critical",
+          "remediation_suggestion": "Replace key_hash storage with secret_reference field pointing to secrets manager path",
+          "confidence": 0.97
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 59,
+          "description": "DATABASE_URL may contain credentials stored as environment variables instead of retrieving from secrets manager",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement just-in-time retrieval of database credentials from secrets manager",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/core/config.py",
+          "line_number": 64,
+          "description": "REDIS_URL may contain credentials stored as environment variables instead of retrieving from secrets manager",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement just-in-time retrieval of Redis credentials from secrets manager",
+          "confidence": 0.9
+        },
+        {
+          "file_path": "app/services/api_key_service.py",
+          "line_number": 53,
+          "description": "API keys are generated and stored without using the SecretsManagerClient abstraction layer required by ADR",
+          "risk_level": "critical",
+          "remediation_suggestion": "Implement SecretsManagerClient interface and use JIT retrieval pattern for API key access",
+          "confidence": 0.95
+        }
+      ],
+      "compliant_areas": [
+        "Environment variable validation and masking in config.py",
+        "Password hashing functions in security.py using industry standards",
+        "Token hashing using SHA256 for stored references"
+      ],
+      "recommendations": [
+        "Implement the SecretsManagerClient abstract interface as defined in ADR (lines 104-116)",
+        "Create concrete implementations for different secrets managers (HashiCorp Vault, AWS Secrets Manager)",
+        "Refactor OAuth service to store only secret references instead of hashed secrets",
+        "Update API key model to use secret_reference field instead of key_hash",
+        "Implement just-in-time secret retrieval for all credential access points",
+        "Add configuration-based secrets manager backend selection",
+        "Create migration scripts to move existing secrets to dedicated secrets manager",
+        "Implement comprehensive audit logging for all secret access operations",
+        "Add automated cleanup of secrets from memory after use",
+        "Create security tests to verify no secrets are persisted in application database"
+      ],
+      "analysis_timestamp": "2025-08-05T19:44:08.732956+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F4-2_SecretManagement.md",
+        "app/core/config.py",
+        "app/services/oauth_service.py",
+        "app/models/api_key.py",
+        "app/services/api_key_service.py",
+        "app/core/security.py",
+        "app/main.py"
+      ],
+      "analysis_summary": "The codebase shows a critical non-compliance with ADR-F4-2 SecretManagement requirements. Currently, all sensitive credentials (SECRET_KEY, client secrets, API keys) are stored either as environment variables or encrypted/hashed in the application database. The ADR explicitly requires externalized storage using a dedicated secrets management service with only non-sensitive pointers stored in the database. The SecretsManagerClient abstraction layer defined in the ADR is completely missing from the implementation. This represents a significant security gap that could lead to credential compromise if the application database or environment is breached."
+    },
+    "ADR-F3-2_ReportGeneration": {
+      "adr_id": "ADR-F3-2_ReportGeneration",
+      "compliance_score": 12.5,
+      "violations": [
+        {
+          "file_path": "app/api/routes.py",
+          "line_number": 21,
+          "description": "Missing report generation API endpoints - ADR requires POST /api/v1/reports/generate endpoint but no report-related routes are registered in the main API router",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add report endpoints to routes.py: api_router.include_router(reports.router, prefix='/reports', tags=['Reports'])",
+          "confidence": 0.98
+        },
+        {
+          "file_path": "app/api/endpoints/",
+          "line_number": 0,
+          "description": "Critical missing implementation - No report endpoints file exists (reports.py should exist in app/api/endpoints/)",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/api/endpoints/reports.py with POST /api/v1/reports/generate endpoint implementation using FastAPI router",
+          "confidence": 0.99
+        },
+        {
+          "file_path": "requirements.txt",
+          "line_number": 55,
+          "description": "Missing Celery dependency - ADR requires Celery for async task processing but celery is not listed in requirements.txt",
+          "risk_level": "critical",
+          "remediation_suggestion": "Add celery>=5.3.0,<6.0.0 and redis>=5.0.0,<6.0.0 to requirements.txt for async task queue implementation",
+          "confidence": 0.95
+        },
+        {
+          "file_path": "requirements.txt",
+          "line_number": 55,
+          "description": "Missing Playwright dependency - ADR specifies Playwright for PDF rendering via headless browsers but playwright is not installed",
+          "risk_level": "high",
+          "remediation_suggestion": "Add playwright>=1.40.0,<2.0.0 to requirements.txt and run playwright install for browser binaries",
+          "confidence": 0.92
+        },
+        {
+          "file_path": "app/",
+          "line_number": 0,
+          "description": "Missing report generation worker implementation - No Celery worker tasks defined for server-side report processing",
+          "risk_level": "critical",
+          "remediation_suggestion": "Create app/workers/report_worker.py with Celery tasks for HTML template population and PDF generation using Playwright",
+          "confidence": 0.96
+        },
+        {
+          "file_path": "app/",
+          "line_number": 0,
+          "description": "Missing blob storage integration - ADR requires saving generated reports to blob storage but no storage service implementation exists",
+          "risk_level": "high",
+          "remediation_suggestion": "Implement app/services/storage_service.py for blob storage operations (AWS S3, Azure Blob, or local file storage)",
+          "confidence": 0.88
+        },
+        {
+          "file_path": "tools/pre_audit/reporting/exporters/pdf_generator.py",
+          "line_number": 86,
+          "description": "Incorrect PDF generation approach - Current implementation uses ReportLab instead of ADR-specified Playwright headless browser approach",
+          "risk_level": "medium",
+          "remediation_suggestion": "Replace ReportLab PDF generation with Playwright headless browser implementation as specified in ADR",
+          "confidence": 0.85
+        },
+        {
+          "file_path": "app/",
+          "line_number": 0,
+          "description": "Missing report configuration models - No database models for storing report configurations and user-selected content blocks",
+          "risk_level": "high",
+          "remediation_suggestion": "Create app/models/report_config.py with ReportConfiguration model including template selection and content blocks",
+          "confidence": 0.9
+        }
+      ],
+      "compliant_areas": [
+        "Jinja2 templating engine is correctly installed (requirements.txt:56) as specified in ADR",
+        "HTML template structure exists in tools/pre_audit/reporting/templates/ following composable block architecture",
+        "JSON output format capability implemented in tools/pre_audit/reporting/exporters/json_generator.py",
+        "Security sanitization implemented in reporting module security components"
+      ],
+      "recommendations": [
+        "Implement the complete async report generation flow: API endpoint → Celery task → HTML template population → Playwright PDF conversion → Blob storage",
+        "Create comprehensive report configuration system allowing users to select templates and content blocks",
+        "Integrate with ADR-007 async task processing for proper task queue management and status polling",
+        "Implement proper error handling and status reporting for long-running report generation jobs",
+        "Add rate limiting for report generation endpoints (20/minute as suggested in ADR-005)",
+        "Create dedicated reporting worker processes with resource monitoring for CPU/memory intensive operations",
+        "Implement proper blob storage cleanup and lifecycle management for generated reports"
+      ],
+      "analysis_timestamp": "2025-08-05T20:14:19.975713+00:00",
+      "files_analyzed": [
+        "docs/architecture/ADRs/ADR-F3-2_ReportGeneration.md",
+        "app/api/routes.py",
+        "requirements.txt",
+        "app/main.py",
+        "tools/pre_audit/reporting/base.py",
+        "tools/pre_audit/reporting/exporters/pdf_generator.py",
+        "docs/architecture/ADRs/ADR-007_AsyncTaskProcessing.md"
+      ],
+      "analysis_summary": "Critical compliance failure - ADR-F3-2_ReportGeneration is almost completely unimplemented. While some reporting infrastructure exists in the tools/pre_audit directory, the core server-side report generation engine with async task processing, Playwright PDF rendering, and API endpoints is missing. The existing PDF generation uses ReportLab instead of the ADR-specified Playwright approach. Immediate architectural implementation is required to meet ADR requirements."
+    }
+  },
+  "all_violations": [
+    {
+      "file_path": "tools/pre_audit/historical_analyzer.py",
+      "line_number": 0,
+      "description": "Missing comprehensive unit test suite - ADR requires extensive validation across multiple repository sizes and patterns",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create comprehensive unit test suite with fixtures for different repository patterns and edge cases",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "tools/pre_audit/historical_analyzer.py",
+      "line_number": 1225,
+      "description": "Help text example shows absolute paths instead of relative paths, inconsistent with security validation requirements",
+      "risk_level": "low",
+      "remediation_suggestion": "Update CLI help examples to use relative paths or document absolute path requirements",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "config/violation_patterns.yml",
+      "line_number": 418,
+      "description": "Configuration file ends abruptly without proper closure - may indicate incomplete implementation",
+      "risk_level": "low",
+      "remediation_suggestion": "Verify configuration file is complete and add proper file ending",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 1,
+      "description": "Missing Celery task queue integration. ADR requires dedicated Task Queue system (Celery) with message broker (Redis) for long-running tasks, but no Celery configuration found",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add Celery dependency to pyproject.toml and create app/core/celery.py for task queue configuration",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 1,
+      "description": "Missing /api/v1/scans and /api/v1/tasks endpoints. ADR specifies core scan endpoints that should return 202 Accepted with status URLs for tracking",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/api/endpoints/scans.py and app/api/endpoints/tasks.py with proper async task handling endpoints",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/models/__init__.py",
+      "line_number": 1,
+      "description": "Missing Task model for tracking asynchronous operations. ADR requires task record management with PENDING/RUNNING/SUCCESS/FAILED status tracking",
+      "risk_level": "high",
+      "remediation_suggestion": "Create app/models/task.py with Task model including task_id, status, result_url, webhook_url fields",
+      "confidence": 0.97
+    },
+    {
+      "file_path": "pyproject.toml",
+      "line_number": 19,
+      "description": "Missing Celery dependency. Redis is present for caching but Celery worker system is not configured for background task processing",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add celery[redis] dependency and configure worker processes for PyRIT orchestrator and Garak scan execution",
+      "confidence": 0.99
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 64,
+      "description": "Redis configuration exists for caching but lacks task queue broker configuration. ADR requires message broker setup for task queue management",
+      "risk_level": "medium",
+      "remediation_suggestion": "Extend Redis configuration with task queue specific settings like CELERY_BROKER_URL and CELERY_RESULT_BACKEND",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "No webhook support implementation. ADR specifies optional webhook mechanism for advanced clients to receive task completion callbacks",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement webhook validation, storage, and callback mechanism in task completion handlers",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "Missing worker processes directory. ADR requires separate worker processes that execute PyRIT orchestrator and Garak security scans",
+      "risk_level": "high",
+      "remediation_suggestion": "Create app/workers/ directory with celery worker definitions for long-running security scans",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/schemas/",
+      "line_number": 1,
+      "description": "Missing task-related Pydantic schemas. ADR requires proper request/response schemas for async task operations including status polling responses",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create app/schemas/task.py with TaskCreate, TaskStatus, TaskResponse schemas matching ADR specifications",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 216,
+      "description": "Missing deprecation handling in API router configuration - no middleware or headers for deprecated versions",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add deprecation middleware to include Deprecation and Warning headers for deprecated API versions",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 31,
+      "description": "Hard-coded v1 prefix without configuration for multiple versions or deprecation policy",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add configuration for supported API versions and deprecation settings",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/models/mixins.py",
+      "line_number": 336,
+      "description": "VersionedMixin defaults to v1 only without supporting multiple concurrent versions as required by ADR",
+      "risk_level": "low",
+      "remediation_suggestion": "Update supported_versions default to handle multiple concurrent versions properly",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "API router lacks version-specific routing structure and deprecation response handling",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement version-specific APIRouter instances with deprecation headers for older versions",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+      "line_number": 1,
+      "description": "Missing ProviderPlugin abstract interface - no implementation of the required abstract base class with methods send_chat_completion, list_available_models, and validate_credentials found in the codebase",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/core/provider_plugin.py with the ProviderPlugin abstract base class implementing the interface specified in the ADR",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+      "line_number": 1,
+      "description": "Missing plugin discovery mechanism - no directory structure or loading system for violentutf_api/plugins/ as specified in the ADR",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/plugins/ directory structure and implement dynamic plugin discovery mechanism in app/core/plugin_loader.py",
+      "confidence": 0.97
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models",
+      "line_number": 1,
+      "description": "Missing Generator database model - no implementation of the Generator schema with fields: name, plugin_name, model_id, credentials_id as specified in ADR",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/models/generator.py with Generator model containing the required fields and foreign key relationships",
+      "confidence": 0.96
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/external_services.py",
+      "line_number": 38,
+      "description": "ExternalServiceClient exists but does not implement the ProviderPlugin interface - ServiceType includes AI_MODEL but lacks the required standardized methods for AI provider integration",
+      "risk_level": "high",
+      "remediation_suggestion": "Refactor ExternalServiceClient to inherit from ProviderPlugin or create AI-specific providers that implement the ProviderPlugin interface",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/core/startup.py",
+      "line_number": 13,
+      "description": "Application startup lacks plugin initialization - no plugin discovery or registration during application startup as required by the ADR",
+      "risk_level": "high",
+      "remediation_suggestion": "Add plugin discovery and registration logic to the on_startup() function to scan and load plugins from the plugins directory",
+      "confidence": 0.91
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/api/endpoints",
+      "line_number": 1,
+      "description": "Missing API endpoints for Generator management - no endpoints for creating, configuring, or managing Generator instances as specified in the ADR",
+      "risk_level": "high",
+      "remediation_suggestion": "Create app/api/endpoints/generators.py with CRUD operations for Generator management and orchestration endpoint integration",
+      "confidence": 0.89
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+      "line_number": 1,
+      "description": "Missing orchestration engine integration - no implementation of the server-side orchestration engine that consumes the ProviderPlugin interface as referenced in ADR-F1.2",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement orchestration engine in app/core/orchestrator.py that uses ProviderPlugin interface to send prompts to AI targets",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+      "line_number": 1,
+      "description": "No concrete plugin implementations - missing implementations for OpenAI, Anthropic, Ollama or other AI providers as plugins",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create concrete plugin implementations in app/plugins/ directory (e.g., openai_plugin.py, anthropic_plugin.py) that inherit from ProviderPlugin",
+      "confidence": 0.83
+    },
+    {
+      "file_path": "app/repositories/base.py",
+      "line_number": 268,
+      "description": "Base repository queries do not enforce organization_id filtering. ABAC requirement states that 'query will always be filtered by the organization_id from the user's token' but base queries lack organization-aware filtering",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement mandatory organization_id filtering in all data access queries. Add _apply_organization_filter method that checks organization_id for all tenant-owned resources",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/repositories/user.py",
+      "line_number": 46,
+      "description": "User repository queries do not filter by organization_id. Users from different organizations can potentially access each other's data, violating ABAC tenant isolation requirements",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add organization_id filtering to all user queries: `and_(self.model.username == username, self.model.organization_id == current_user_org_id, self.model.is_deleted == False)`",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/api/endpoints/users.py",
+      "line_number": 305,
+      "description": "User endpoint lacks organization_id validation in get_current_user method. No verification that requested user belongs to same organization as requester",
+      "risk_level": "high",
+      "remediation_suggestion": "Add organization_id check: `if user.organization_id != current_user.organization_id: raise ForbiddenError('Access denied')`",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/middleware/permissions.py",
+      "line_number": 366,
+      "description": "Permission middleware has organization_id filtering logic for scoped permissions, but it's not consistently applied to all endpoints. ABAC checks should be mandatory for all data access",
+      "risk_level": "high",
+      "remediation_suggestion": "Extend _enhance_scoped_permission to apply organization_id filtering to all data access permissions, not just :own scoped ones",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/models/user.py",
+      "line_number": 313,
+      "description": "User model exposes organization_id in to_dict() method but lacks validation that organization_id matches the authenticated user's organization during serialization",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add organization_id validation in serialization methods to prevent information disclosure across tenant boundaries",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/core/security.py",
+      "line_number": 47,
+      "description": "JWT token creation does not explicitly include organization_id claim despite ADR requirement. Missing organization_id in JWT payload prevents proper ABAC enforcement",
+      "risk_level": "high",
+      "remediation_suggestion": "Modify create_access_token to include organization_id claim: `to_encode.update({'organization_id': data.get('organization_id')})`",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/models/__init__.py",
+      "line_number": 12,
+      "description": "Missing VulnerabilityTaxonomy and TaxonomyMapping models - ADR mandates database-driven taxonomy with tables 'vulnerability_taxonomies' and 'taxonomy_mappings'",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create VulnerabilityTaxonomy and TaxonomyMapping SQLAlchemy models with the exact schema specified in ADR-F2-1",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/0d9d1d5fbe10_initial_database_models_with_.py",
+      "line_number": 27,
+      "description": "Database migration lacks vulnerability_taxonomies table creation - ADR requires tables for id, name, description, remediation_advice, parent_id, default_severity",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create Alembic migration to add vulnerability_taxonomies table with UUID id, String name, Text description, Text remediation_advice, UUID parent_id, Enum default_severity",
+      "confidence": 0.99
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/0d9d1d5fbe10_initial_database_models_with_.py",
+      "line_number": 27,
+      "description": "Database migration lacks taxonomy_mappings table creation - ADR requires table for mapping to external frameworks (OWASP, MITRE)",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create Alembic migration to add taxonomy_mappings table with id, taxonomy_id (FK), framework_name, framework_id, framework_url fields",
+      "confidence": 0.99
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/db/base.py",
+      "line_number": 11,
+      "description": "VulnerabilityTaxonomy and TaxonomyMapping models not imported in base.py - required for Alembic discovery",
+      "risk_level": "high",
+      "remediation_suggestion": "Import VulnerabilityTaxonomy and TaxonomyMapping models in app/db/base.py after creating them",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/config/violation_patterns.yml",
+      "line_number": 248,
+      "description": "Configuration shows taxonomy violations are tracked but no actual database-driven implementation exists - indicates awareness but no implementation",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement the database-driven taxonomy system that the violation pattern monitoring assumes exists",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/schemas/",
+      "line_number": 1,
+      "description": "Missing Pydantic schemas for VulnerabilityTaxonomy and TaxonomyMapping - required for API endpoints and data validation",
+      "risk_level": "high",
+      "remediation_suggestion": "Create Pydantic schemas for taxonomy models including hierarchical relationships and framework mappings",
+      "confidence": 0.93
+    },
+    {
+      "file_path": "app/repositories/",
+      "line_number": 1,
+      "description": "Missing repository classes for VulnerabilityTaxonomy and TaxonomyMapping - required for data access layer",
+      "risk_level": "high",
+      "remediation_suggestion": "Create repository classes with methods for taxonomy CRUD operations and hierarchical queries",
+      "confidence": 0.93
+    },
+    {
+      "file_path": "app/api/endpoints/",
+      "line_number": 1,
+      "description": "Missing API endpoints for taxonomy management - ADR implies administrative interface for taxonomy updates",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create REST API endpoints for taxonomy CRUD operations with proper authentication and authorization",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/alembic/versions/",
+      "line_number": 1,
+      "description": "Missing seed data migration for initial OWASP Top 10 LLM taxonomy - ADR mandates initial seeding with OWASP Top 10",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create data migration script to populate vulnerability_taxonomies with OWASP Top 10 for Large Language Model Applications",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/core/errors.py",
+      "line_number": 15,
+      "description": "ErrorDetail class uses custom ad-hoc error format instead of RFC 7807 standard. Fields are 'error', 'message', 'request_id', 'path', 'timestamp' instead of required RFC 7807 fields 'type', 'title', 'status', 'detail', 'instance'.",
+      "risk_level": "high",
+      "remediation_suggestion": "Replace ErrorDetail class with RFC 7807 compliant ProblemDetail class containing required fields: type (URI), title, status, detail, instance, plus custom fields correlation_id and error_code",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/core/errors.py",
+      "line_number": 132,
+      "description": "api_error_handler function returns custom JSON format instead of RFC 7807 application/problem+json content type with standard fields. Missing required fields: type (URI), error_code, and correlation_id as specified in ADR-009.",
+      "risk_level": "high",
+      "remediation_suggestion": "Modify api_error_handler to return RFC 7807 compliant response with Content-Type: application/problem+json and include correlation_id from request context",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/errors.py",
+      "line_number": 160,
+      "description": "validation_error_handler returns custom error format instead of RFC 7807 standard. Missing type URI, error_code, and proper RFC 7807 structure for validation errors.",
+      "risk_level": "high",
+      "remediation_suggestion": "Update validation_error_handler to use RFC 7807 format with type URI pointing to validation error documentation, include invalid_params extension as shown in ADR example",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/errors.py",
+      "line_number": 199,
+      "description": "generic_error_handler uses custom error format instead of RFC 7807. This violates the centralized exception handling requirement that should catch all exceptions and map to standard format.",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement RFC 7807 compliant generic error handler that maps all unexpected exceptions to standard problem+json format with appropriate error codes and correlation_id",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/schemas/base.py",
+      "line_number": 182,
+      "description": "APIErrorResponse class exists with RFC 7807 fields but is not being used by error handlers. This indicates incomplete implementation of the ADR.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Update all error handlers in app/core/errors.py to use the existing APIErrorResponse schema instead of custom ErrorDetail",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 40,
+      "description": "rate_limit_handler uses custom error format instead of RFC 7807 standard. Returns plain JSON with 'detail' and 'type' fields instead of proper RFC 7807 structure.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Update rate_limit_handler to return RFC 7807 compliant response with proper type URI, correlation_id, and error_code",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/api/endpoints/auth.py",
+      "line_number": 142,
+      "description": "Authentication endpoints raise HTTPException with custom messages instead of using centralized error handling. This bypasses the RFC 7807 standard error format requirement.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Replace HTTPException usage with custom APIError exceptions that will be properly handled by the centralized RFC 7807 error handler",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/",
+      "line_number": 0,
+      "description": "Missing Error Dictionary implementation as required by ADR-009. No centralized mapping of error codes to RFC 7807 type URIs, titles, and status codes found.",
+      "risk_level": "high",
+      "remediation_suggestion": "Create error dictionary in config/error_dictionary.py mapping error codes like 'VUTF-1001' to RFC 7807 metadata as specified in ADR example",
+      "confidence": 1.0
+    },
+    {
+      "file_path": "app/core/errors.py",
+      "line_number": 136,
+      "description": "Error responses are missing correlation_id field as required by ADR-009. Request ID is used but not properly mapped to correlation_id for linking to detailed logs per ADR-008.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add correlation_id field to all error responses, mapping from request.state.request_id to maintain traceability link to structured logs",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/api/endpoints/audit_logs.py",
+      "line_number": 620,
+      "description": "Endpoint supports CSV export format (text/csv) in addition to JSON, violating exclusive JSON requirement. Lines 618-625 implement format switching between CSV and JSON.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Remove CSV export functionality or ensure it's for internal/administrative use only and not part of the public API surface",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/api/endpoints/oauth.py",
+      "line_number": 220,
+      "description": "OAuth authorization endpoints return HTML responses (HTMLResponse) for browser-based OAuth flows, violating JSON-only requirement. Multiple endpoints use HTMLResponse.",
+      "risk_level": "low",
+      "remediation_suggestion": "OAuth HTML responses are acceptable as they serve a different purpose (browser UI) than API data exchange. Consider documenting this as an exception to the ADR.",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/schemas/audit_log.py",
+      "line_number": 90,
+      "description": "AuditLogExportRequest schema explicitly allows 'csv' and 'json' formats, enabling non-JSON data serialization for export functionality.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Restrict export formats to JSON only or clarify ADR scope to exclude administrative export functions",
+      "confidence": 0.9
+    },
+    {
+      "file_path": ".github/workflows/pr-validation.yml",
+      "line_number": 60,
+      "description": "pip-audit is not implemented as a blocking CI/CD step in PR validation workflow. ADR requires pip-audit as mandatory blocking quality gate",
+      "risk_level": "high",
+      "remediation_suggestion": "Add pip-audit as blocking step in PR validation workflow with failure conditions for CRITICAL/HIGH vulnerabilities",
+      "confidence": 0.95
+    },
+    {
+      "file_path": ".github/workflows/ci.yml",
+      "line_number": 48,
+      "description": "No dependency vulnerability scanning in main CI pipeline. ADR mandates pip-audit integration in CI/CD",
+      "risk_level": "high",
+      "remediation_suggestion": "Add pip-audit scanning step to CI pipeline with exit codes on critical vulnerabilities",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "config/vulnerability_management_policy.yml",
+      "line_number": 0,
+      "description": "Missing Vulnerability Management Policy file with SLOs (CRITICAL: 7 days, HIGH: 30 days, MEDIUM: 90 days)",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create formal vulnerability management policy configuration file with defined SLOs and enforcement mechanisms",
+      "confidence": 1.0
+    },
+    {
+      "file_path": "config/license_compliance_policy.yml",
+      "line_number": 0,
+      "description": "Missing License Compliance Policy configuration. ADR defines approved (MIT, Apache-2.0, BSD), restricted (LGPL, MPL), and prohibited (GPL, AGPL) licenses",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create license compliance policy file and integrate license checking into CI/CD pipeline",
+      "confidence": 0.95
+    },
+    {
+      "file_path": ".github/workflows/pr-validation.yml",
+      "line_number": 62,
+      "description": "Safety tool used but ADR specifically mandates pip-audit as the primary SCA tool. Safety is paid tier with limitations",
+      "risk_level": "medium",
+      "remediation_suggestion": "Replace or supplement safety check with pip-audit as primary dependency vulnerability scanner",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "security/pip-audit-report.json",
+      "line_number": 1,
+      "description": "Existing pip-audit report shows 12 vulnerabilities including CRITICAL (aiohttp, mcp) and HIGH (pillow, protobuf) - violates ADR blocking policy",
+      "risk_level": "critical",
+      "remediation_suggestion": "Immediate remediation required for CRITICAL/HIGH vulnerabilities per ADR policy before any PR merges",
+      "confidence": 1.0
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "Complete absence of templating engine endpoint implementation - no routes defined for payload generation or template rendering as required by ADR-F1-1",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement a dedicated /api/v1/templates or /api/v1/payload-generation endpoint with Jinja2 SandboxedEnvironment integration",
+      "confidence": 1.0
+    },
+    {
+      "file_path": "app/services/",
+      "line_number": 1,
+      "description": "Missing templating service implementation - no service class exists to handle sandboxed Jinja2 template rendering for attack payloads",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/services/template_service.py implementing sandboxed Jinja2 environment with custom filters (base64encode, urlencode, leetspeak, etc.)",
+      "confidence": 1.0
+    },
+    {
+      "file_path": "app/schemas/",
+      "line_number": 1,
+      "description": "Missing template request/response schemas - no Pydantic models defined for template rendering requests and responses",
+      "risk_level": "high",
+      "remediation_suggestion": "Create template schemas defining TemplateRenderRequest, TemplateRenderResponse, and validation for template content and variables",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "requirements.txt",
+      "line_number": 56,
+      "description": "Jinja2 dependency exists but no sandboxed templating implementation found - dependency installed but ADR requirements not implemented",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement SandboxedEnvironment usage with resource limits and custom filters as specified in ADR-F1-1",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 50,
+      "description": "Missing template security configuration - no settings for template rendering resource limits, timeout controls, or sandbox restrictions",
+      "risk_level": "high",
+      "remediation_suggestion": "Add TEMPLATE_RENDER_TIMEOUT, TEMPLATE_MAX_MEMORY, and TEMPLATE_ALLOWED_FILTERS configuration settings",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "config/violation_patterns.yml",
+      "line_number": 214,
+      "description": "ADR-F1-1 monitoring patterns not configured - violation detection system doesn't include specific patterns for this ADR",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add ADR-F1-1 specific patterns to monitor template injection vulnerabilities and sandboxing bypasses",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/core/rate_limiting.py",
+      "line_number": 103,
+      "description": "Implementation uses SlowAPI instead of native Token Bucket algorithm as specified in ADR. SlowAPI may use different algorithms internally.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement native Token Bucket algorithm or verify SlowAPI uses Token Bucket internally and document this decision",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/middleware/rate_limiting.py",
+      "line_number": 145,
+      "description": "Rate limiting logic is incomplete - middleware has placeholder implementation that skips actual enforcement in test/development mode",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement complete rate limiting logic with proper Redis integration for production environments",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/api/endpoints/auth.py",
+      "line_number": 110,
+      "description": "Missing @rate_limit decorator on authentication endpoints despite ADR requirement for strict rate limits on auth endpoints",
+      "risk_level": "high",
+      "remediation_suggestion": "Add @rate_limit('auth_login') decorator to login endpoint and similar decorators to other auth endpoints",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/rate_limiting.py",
+      "line_number": 195,
+      "description": "Rate limit headers implementation is incomplete - add_rate_limit_headers function is empty with only placeholder comments",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement proper rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset) as required by ADR",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 52,
+      "description": "Rate limit exception handler returns generic 60-second retry-after instead of calculating actual retry time based on rate limit window",
+      "risk_level": "medium",
+      "remediation_suggestion": "Calculate actual retry-after time based on rate limit window and remaining time",
+      "confidence": 0.82
+    },
+    {
+      "file_path": "app/core/rate_limiting.py",
+      "line_number": 42,
+      "description": "Missing implementation for resource-intensive endpoints mentioned in ADR (POST /api/v1/scans, POST /api/v1/reports/generate) - these endpoints are not found in current codebase",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement scan and report generation endpoints with appropriate strict rate limits (10/minute for scans, 20/minute for reports)",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/core/auth_failover.py",
+      "line_number": 117,
+      "description": "bcrypt import is done dynamically inside function instead of at module level, and fallback to insecure authentication if bcrypt unavailable",
+      "risk_level": "high",
+      "remediation_suggestion": "Import bcrypt at module level and fail fast during startup if not available. Remove fallback authentication without password verification",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/core/cache.py",
+      "line_number": 42,
+      "description": "Connection retry logic uses hard-coded failure threshold (3) instead of configurable value from ADR requirements",
+      "risk_level": "medium",
+      "remediation_suggestion": "Make connection failure threshold configurable through settings and align with circuit breaker patterns",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/core/cache.py",
+      "line_number": 111,
+      "description": "Cache deserialization falls back to returning raw bytes when JSON decode fails, potentially bypassing security controls",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement strict deserialization with proper error handling instead of returning raw bytes",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/services/health_service.py",
+      "line_number": 232,
+      "description": "Health check service uses synchronous get_all_circuit_stats() instead of async variant, missing proper integration with circuit breaker pattern",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement async circuit breaker stats collection and ensure proper integration with auth failover monitoring",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 64,
+      "description": "Redis configuration lacks specific failover settings like sentinel configuration, connection pool settings for high availability",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add Redis Sentinel configuration, connection pool settings, and failover-specific parameters to support ADR requirements",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/middleware/authentication.py",
+      "line_number": 84,
+      "description": "JWT authentication middleware lacks integration with fallback authentication provider when primary auth fails",
+      "risk_level": "high",
+      "remediation_suggestion": "Integrate middleware with FallbackAuthProvider to handle authentication when primary JWT service is degraded",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/logging.py",
+      "line_number": 107,
+      "description": "Missing correlation_id field in log_request_context function - ADR requires correlation_id but only request_id is used",
+      "risk_level": "medium",
+      "remediation_suggestion": "Update log_request_context to use 'correlation_id' field instead of 'request_id' to match ADR schema",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/logging.py",
+      "line_number": 15,
+      "description": "Service logging uses 'service' field instead of required 'service_name' field per ADR schema",
+      "risk_level": "medium",
+      "remediation_suggestion": "Change 'service' field to 'service_name' in add_app_context function to match ADR requirements",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/middleware/audit.py",
+      "line_number": 234,
+      "description": "Multi-tenant context missing - no organization_id in audit logs despite multi-tenant requirements",
+      "risk_level": "high",
+      "remediation_suggestion": "Add organization_id extraction from user context and include in auth_context object for all audit log entries",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/services/audit_service.py",
+      "line_number": 135,
+      "description": "Request context lacks auth_context structure - user_id and organization_id not wrapped in auth_context object",
+      "risk_level": "high",
+      "remediation_suggestion": "Restructure logging to include auth_context object with organization_id and user_id as per ADR schema",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/middleware/request_id.py",
+      "line_number": 39,
+      "description": "Missing user_id in request context binding - log_request_context call doesn't include user_id parameter",
+      "risk_level": "medium",
+      "remediation_suggestion": "Extract user_id from request state and pass to log_request_context for complete audit trail",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/core/logging.py",
+      "line_number": 25,
+      "description": "Data redaction policy incomplete - missing 'firstName', 'lastName' and other PII fields specified in ADR",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add missing sensitive keys: 'firstName', 'lastName', 'email', 'credentials' to sensitive_keys set",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 238,
+      "description": "No scorer plugin architecture found. ADR requires extensible 'Scorer Plugin' architecture with ScorerPlugin abstract base class for real-time and batch scoring.",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement ScorerPlugin ABC with SCORER_TYPE and SCORER_NAME attributes, and score() method as specified in ADR lines 104-124",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/services/",
+      "line_number": 1,
+      "description": "Missing hybrid scoring service architecture. No evidence of real-time 'triage' scoring or asynchronous 'deep analysis' phases as required by ADR.",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create ScoringService with real-time lightweight scorers and background batch processing for expensive analysis",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/models/session.py",
+      "line_number": 277,
+      "description": "Session model exists but lacks analysis_status column required for two-phase scoring lifecycle tracking as specified in ADR line 146.",
+      "risk_level": "high",
+      "remediation_suggestion": "Add analysis_status ENUM column to track 'execution_complete', 'analysis_in_progress', 'analysis_complete' states",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/core/external_services.py",
+      "line_number": 38,
+      "description": "External services include AI_MODEL type but no integration with scoring system for LLM-based scoring as required for 'deep analysis' phase.",
+      "risk_level": "high",
+      "remediation_suggestion": "Integrate AI_MODEL service type with batch scoring workers for LLM-based analysis (toxicity, bias measurement)",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No evidence of prompt-response evidence storage in document database as required by ADR for storing raw test data.",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement document database models for storing prompt/response pairs with embedded triage scores",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "Missing task queue integration for deep analysis batch jobs. ADR-007 defines async task processing but no scoring worker implementation found.",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement scoring workers that process session_ids from task queue for batch analysis as specified in ADR lines 95-98",
+      "confidence": 0.93
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No scorer plugin registration system found. Missing service registry for managing lightweight vs expensive scorers.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create scorer registry with plugin discovery and categorization by SCORER_TYPE ('real-time' vs 'batch')",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No orchestration worker integration for real-time scoring during model response processing as specified in ADR lines 91-94.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Integrate triage scoring into response processing pipeline with immediate score storage",
+      "confidence": 0.87
+    },
+    {
+      "file_path": "app/main.py",
+      "line_number": 146,
+      "description": "OpenAPI/docs endpoints are conditionally disabled in production but ADR requires clear URI path versioning strategy implementation. The API_V1_STR is used but path versioning strategy implementation is incomplete.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Implement comprehensive API versioning strategy as referenced in ADR-004, ensure all endpoints follow /api/v1/ pattern consistently",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "API router lacks explicit versioning strategy implementation. While API_V1_STR is used in main.py, the router itself doesn't enforce versioning constraints.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add versioning validation middleware or explicit version handling in router configuration",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/api/base.py",
+      "line_number": 36,
+      "description": "BaseCRUDRouter implements comprehensive REST patterns but lacks explicit field selection query parameter validation for over-fetching mitigation as required by ADR",
+      "risk_level": "low",
+      "remediation_suggestion": "Add query parameter validation for 'fields' and 'exclude_fields' parameters in base router to enforce ADR requirement for over-fetching mitigation",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/middleware/authentication.py",
+      "line_number": 31,
+      "description": "Hardcoded exempt paths list should be configuration-driven to ensure consistency with ADR requirement for standalone operation without gateway dependency",
+      "risk_level": "low",
+      "remediation_suggestion": "Move exempt paths to configuration file and implement dynamic path exemption management",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "Missing orchestrator endpoints - No '/api/v1/orchestrators/execute' endpoint defined as required by ADR",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add orchestrator router to include_router calls with prefix '/orchestrators'",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/api/endpoints/",
+      "line_number": 1,
+      "description": "Missing orchestrator endpoint implementation - No orchestrator.py file found in endpoints directory",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/api/endpoints/orchestrator.py with POST /execute endpoint that accepts YAML/JSON workflow definitions",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/models/__init__.py",
+      "line_number": 21,
+      "description": "Missing orchestration data models - No models for storing orchestration jobs, state machines, or execution transcripts",
+      "risk_level": "high",
+      "remediation_suggestion": "Create models for OrchestrationJob, WorkflowState, ExecutionTranscript with proper relationships and state tracking",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/core/startup.py",
+      "line_number": 21,
+      "description": "Missing background task infrastructure - No Celery or async task processing setup for long-running orchestrations",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement background worker system with task queue integration (Celery/Redis) for asynchronous orchestration execution",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/schemas/__init__.py",
+      "line_number": 37,
+      "description": "Missing orchestration schemas - No Pydantic models for workflow definitions, state transitions, or orchestration responses",
+      "risk_level": "high",
+      "remediation_suggestion": "Create OrchestrationRequest, WorkflowDefinition, StateTransition, and OrchestrationResponse schemas",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 524,
+      "description": "Missing orchestration configuration - No settings for state machine execution, task timeouts, or workflow validation",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add ORCHESTRATION_TIMEOUT, MAX_WORKFLOW_STATES, ENABLE_ORCHESTRATION settings to configuration",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/db/base.py",
+      "line_number": 12,
+      "description": "Missing orchestration database tables - No orchestration-related models imported for Alembic migration discovery",
+      "risk_level": "medium",
+      "remediation_suggestion": "Import orchestration models (OrchestrationJob, WorkflowState) so Alembic can generate migration scripts",
+      "confidence": 0.82
+    },
+    {
+      "file_path": "app/core/external_services.py",
+      "line_number": 38,
+      "description": "ServiceType enum includes AI_MODEL but no container sandboxing implementation exists for untrusted model execution",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement Docker SDK integration with container orchestration for ephemeral sandbox containers",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "pyproject.toml",
+      "line_number": 1,
+      "description": "Missing docker dependency required for container-based sandboxing of untrusted model execution",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add docker>=6.0.0 to dependencies for dynamic container provisioning",
+      "confidence": 0.99
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No container orchestration worker implementation exists to manage ephemeral sandbox containers",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/core/container_orchestrator.py with Docker SDK for secure, ephemeral container management",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "Missing secure container profile implementation with restricted capabilities and resource limits",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement SecurityProfile class with --user, --read-only, --cap-drop=ALL, --network=none, resource limits",
+      "confidence": 0.97
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No execution flow implementation for untrusted model testing with stdin/stdout communication",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create execution pipeline with container provisioning, model code injection via stdin, and response capture via stdout",
+      "confidence": 0.96
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "Missing ProviderPlugin interface required for plugin system that would utilize container sandboxing",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement abstract ProviderPlugin base class with send_chat_completion method for sandboxed execution",
+      "confidence": 0.94
+    },
+    {
+      "file_path": "app/",
+      "line_number": 1,
+      "description": "No plugin directory structure exists for untrusted model provider implementations",
+      "risk_level": "high",
+      "remediation_suggestion": "Create app/plugins/ directory structure with __init__.py and provider-specific modules",
+      "confidence": 0.93
+    },
+    {
+      "file_path": "app/api/",
+      "line_number": 1,
+      "description": "Missing API endpoints for orchestrating sandboxed untrusted model execution",
+      "risk_level": "high",
+      "remediation_suggestion": "Create endpoints for model testing with proper container sandboxing integration",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/models/",
+      "line_number": 1,
+      "description": "No database models exist for storing Generator configurations that require sandboxed execution",
+      "risk_level": "medium",
+      "remediation_suggestion": "Create Generator model with plugin_name, model_id, and security_profile fields",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 42,
+      "description": "JWT algorithm defaults to HS256 instead of required RS256. ADR-002 explicitly mandates RS256 (asymmetric) for security reasons, stating 'RS256 will be used, as asymmetric keys allow the signing key to be kept private while the public key for verification can be widely distributed.'",
+      "risk_level": "critical",
+      "remediation_suggestion": "Change ALGORITHM default from 'HS256' to 'RS256' and implement proper RSA key pair generation and management",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/core/security.py",
+      "line_number": 51,
+      "description": "JWT encoding uses symmetric SECRET_KEY instead of RSA private key. Current implementation uses settings.SECRET_KEY.get_secret_value() which violates ADR requirement for asymmetric cryptography.",
+      "risk_level": "critical",
+      "remediation_suggestion": "Replace SECRET_KEY usage with RSA private key loading and implement proper key management for asymmetric JWT signing",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/core/security.py",
+      "line_number": 91,
+      "description": "JWT decoding uses symmetric SECRET_KEY instead of RSA public key. The decode operation should use RSA public key for signature verification as required by ADR-002.",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement RSA public key loading for JWT verification and update decode logic to use asymmetric verification",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/core/security.py",
+      "line_number": 96,
+      "description": "Missing required JWT claims specified in ADR-002. The ADR requires tokens to include 'standard claims (sub, iat, exp, jti) as well as custom claims for authorization (roles, permissions, organization_id)' but jti (JWT ID) is missing.",
+      "risk_level": "high",
+      "remediation_suggestion": "Add jti (JWT ID) claim to all JWT tokens for proper token identification and tracking",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/security.py",
+      "line_number": 96,
+      "description": "No token revocation/blocklist implementation found. ADR-002 requires 'A token blocklist will be implemented using a distributed cache (e.g., Redis) to enable immediate revocation of specific tokens or all tokens for a user.'",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement Redis-based token blocklist system for immediate token revocation capability",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/services/api_key_service.py",
+      "line_number": 32,
+      "description": "API key prefix format violates ADR-002 specification. ADR requires keys with prefix 'vutf-api_...' for identifiability, but implementation uses 'vutf' format.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Change key_format default from 'vutf' to 'vutf-api_' to match ADR specification",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/models/api_key.py",
+      "line_number": 100,
+      "description": "API key hash storage uses SHA256 but ADR-002 doesn't specify the hashing algorithm strength. While SHA256 is acceptable, the implementation should explicitly validate this meets security requirements.",
+      "risk_level": "low",
+      "remediation_suggestion": "Document and validate that SHA256 hashing meets the ADR's security requirements for API key storage",
+      "confidence": 0.75
+    },
+    {
+      "file_path": "app/api/endpoints/auth.py",
+      "line_number": 188,
+      "description": "JWT token claims implementation is incomplete. While roles and organization_id are included, the iat (issued at) claim is missing from explicit token data, though it may be added by the JWT library.",
+      "risk_level": "medium",
+      "remediation_suggestion": "Explicitly add iat (issued at) and jti (JWT ID) claims to ensure full compliance with ADR requirements",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 59,
+      "description": "ADR mandates polyglot persistence with PostgreSQL, MongoDB/DynamoDB, and blob storage, but configuration only supports DATABASE_URL for single relational database",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add configuration parameters for document database (MONGODB_URL or DYNAMODB_CONFIG) and blob storage (S3_CONFIG or BLOB_STORAGE_CONFIG)",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/db/session.py",
+      "line_number": 39,
+      "description": "Database session management only implements relational database (PostgreSQL/SQLite) connection handling, missing document database and blob storage session management",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement separate session managers for document database and blob storage as specified in ADR",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/models/__init__.py",
+      "line_number": 1,
+      "description": "Data models do not implement the ADR-specified data partitioning strategy. Missing evidence models for document database storage of prompt-response-score data",
+      "risk_level": "high",
+      "remediation_suggestion": "Create TestEvidence model for document database storage with fields: session_id, prompt, response, scores, vulnerability_ids",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/models/session.py",
+      "line_number": 18,
+      "description": "Current Session model stores all data in relational database instead of implementing ADR requirement for session summaries in PostgreSQL and detailed evidence in document database",
+      "risk_level": "high",
+      "remediation_suggestion": "Refactor Session model to store only summary data and implement separate TestEvidence collection in document database",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "pyproject.toml",
+      "line_number": 9,
+      "description": "Project dependencies lack MongoDB/DynamoDB clients and blob storage libraries (boto3 for S3, azure-storage-blob, etc.) required by ADR",
+      "risk_level": "high",
+      "remediation_suggestion": "Add dependencies: pymongo or motor for MongoDB, boto3 for AWS S3, azure-storage-blob for Azure blob storage",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 1,
+      "description": "API endpoints do not include test evidence management endpoints required for polyglot persistence architecture",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add test evidence endpoints: /test-sessions, /evidence, /vulnerability-taxonomy as specified in ADR",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 96,
+      "description": "Missing data lifecycle management configuration for hot/cold storage transition (90-day rule) and retention policies (7-year deletion)",
+      "risk_level": "medium",
+      "remediation_suggestion": "Add configuration for EVIDENCE_HOT_STORAGE_DAYS, EVIDENCE_ARCHIVE_AFTER_DAYS, EVIDENCE_RETENTION_YEARS",
+      "confidence": 0.8
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 39,
+      "description": "SECRET_KEY is stored directly in environment variables without using dedicated secrets manager. This violates the ADR requirement for externalized storage of secrets.",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement SecretsManagerClient interface and move SECRET_KEY to dedicated secrets manager with reference-only storage in config",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/services/oauth_service.py",
+      "line_number": 95,
+      "description": "Client secrets are stored directly in database (client_secret_hash) instead of using dedicated secrets manager as required by ADR",
+      "risk_level": "critical",
+      "remediation_suggestion": "Store only non-sensitive pointers to secrets manager paths instead of hashed secrets in database",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/models/api_key.py",
+      "line_number": 27,
+      "description": "API key hashes are stored directly in database (key_hash field) rather than using centralized secrets manager",
+      "risk_level": "critical",
+      "remediation_suggestion": "Replace key_hash storage with secret_reference field pointing to secrets manager path",
+      "confidence": 0.97
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 59,
+      "description": "DATABASE_URL may contain credentials stored as environment variables instead of retrieving from secrets manager",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement just-in-time retrieval of database credentials from secrets manager",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/core/config.py",
+      "line_number": 64,
+      "description": "REDIS_URL may contain credentials stored as environment variables instead of retrieving from secrets manager",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement just-in-time retrieval of Redis credentials from secrets manager",
+      "confidence": 0.9
+    },
+    {
+      "file_path": "app/services/api_key_service.py",
+      "line_number": 53,
+      "description": "API keys are generated and stored without using the SecretsManagerClient abstraction layer required by ADR",
+      "risk_level": "critical",
+      "remediation_suggestion": "Implement SecretsManagerClient interface and use JIT retrieval pattern for API key access",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "app/api/routes.py",
+      "line_number": 21,
+      "description": "Missing report generation API endpoints - ADR requires POST /api/v1/reports/generate endpoint but no report-related routes are registered in the main API router",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add report endpoints to routes.py: api_router.include_router(reports.router, prefix='/reports', tags=['Reports'])",
+      "confidence": 0.98
+    },
+    {
+      "file_path": "app/api/endpoints/",
+      "line_number": 0,
+      "description": "Critical missing implementation - No report endpoints file exists (reports.py should exist in app/api/endpoints/)",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/api/endpoints/reports.py with POST /api/v1/reports/generate endpoint implementation using FastAPI router",
+      "confidence": 0.99
+    },
+    {
+      "file_path": "requirements.txt",
+      "line_number": 55,
+      "description": "Missing Celery dependency - ADR requires Celery for async task processing but celery is not listed in requirements.txt",
+      "risk_level": "critical",
+      "remediation_suggestion": "Add celery>=5.3.0,<6.0.0 and redis>=5.0.0,<6.0.0 to requirements.txt for async task queue implementation",
+      "confidence": 0.95
+    },
+    {
+      "file_path": "requirements.txt",
+      "line_number": 55,
+      "description": "Missing Playwright dependency - ADR specifies Playwright for PDF rendering via headless browsers but playwright is not installed",
+      "risk_level": "high",
+      "remediation_suggestion": "Add playwright>=1.40.0,<2.0.0 to requirements.txt and run playwright install for browser binaries",
+      "confidence": 0.92
+    },
+    {
+      "file_path": "app/",
+      "line_number": 0,
+      "description": "Missing report generation worker implementation - No Celery worker tasks defined for server-side report processing",
+      "risk_level": "critical",
+      "remediation_suggestion": "Create app/workers/report_worker.py with Celery tasks for HTML template population and PDF generation using Playwright",
+      "confidence": 0.96
+    },
+    {
+      "file_path": "app/",
+      "line_number": 0,
+      "description": "Missing blob storage integration - ADR requires saving generated reports to blob storage but no storage service implementation exists",
+      "risk_level": "high",
+      "remediation_suggestion": "Implement app/services/storage_service.py for blob storage operations (AWS S3, Azure Blob, or local file storage)",
+      "confidence": 0.88
+    },
+    {
+      "file_path": "tools/pre_audit/reporting/exporters/pdf_generator.py",
+      "line_number": 86,
+      "description": "Incorrect PDF generation approach - Current implementation uses ReportLab instead of ADR-specified Playwright headless browser approach",
+      "risk_level": "medium",
+      "remediation_suggestion": "Replace ReportLab PDF generation with Playwright headless browser implementation as specified in ADR",
+      "confidence": 0.85
+    },
+    {
+      "file_path": "app/",
+      "line_number": 0,
+      "description": "Missing report configuration models - No database models for storing report configurations and user-selected content blocks",
+      "risk_level": "high",
+      "remediation_suggestion": "Create app/models/report_config.py with ReportConfiguration model including template selection and content blocks",
+      "confidence": 0.9
+    }
+  ],
+  "violation_summary": {
+    "total_violations": 137,
+    "by_risk_level": {
+      "medium": 43,
+      "low": 7,
+      "critical": 37,
+      "high": 50
+    },
+    "by_adr": {
+      "unknown": 137
+    },
+    "top_violated_files": [
+      {
+        "file": "app/",
+        "violation_count": 14
+      },
+      {
+        "file": "app/core/config.py",
+        "violation_count": 11
+      },
+      {
+        "file": "app/api/routes.py",
+        "violation_count": 8
+      },
+      {
+        "file": "app/main.py",
+        "violation_count": 6
+      },
+      {
+        "file": "app/core/security.py",
+        "violation_count": 5
+      },
+      {
+        "file": "app/core/errors.py",
+        "violation_count": 5
+      },
+      {
+        "file": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app",
+        "violation_count": 4
+      },
+      {
+        "file": "app/models/__init__.py",
+        "violation_count": 3
+      },
+      {
+        "file": "pyproject.toml",
+        "violation_count": 3
+      },
+      {
+        "file": "app/schemas/",
+        "violation_count": 3
+      }
+    ]
+  },
+  "architectural_hotspots": [
+    {
+      "file_path": ".pre-commit-config.yaml",
+      "churn_score": 20,
+      "architectural_fix_count": 2,
+      "fix_types": [
+        "architectural_fix",
+        "dependency_fix"
+      ],
+      "complexity_indicators": [
+        "dependency_issues"
+      ],
+      "risk_level": "medium",
+      "recommendations": [
+        "Analyze and reduce coupling",
+        "Introduce dependency injection or interfaces"
+      ],
+      "last_fix_date": "2025-08-03T13:06:24-04:00",
+      "adr_references": []
+    }
+  ],
+  "recommendations": [
+    "Address 37 critical violations immediately"
+  ]
+}

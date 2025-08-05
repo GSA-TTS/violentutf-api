@@ -7,6 +7,7 @@ client-side rendering in HTML reports.
 
 import json
 import logging
+import threading
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -67,6 +68,7 @@ class ChartGenerator:
         """Initialize chart generator."""
         self.encoder = OutputEncoder()
         self._chart_id_counter = 0
+        self._chart_id_lock = threading.Lock()
 
     def generate_pie_chart(self, data: Dict[str, Any], title: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -379,8 +381,9 @@ class ChartGenerator:
             Dictionary with HTML and JavaScript code
         """
         if not container_id:
-            self._chart_id_counter += 1
-            container_id = f"chart-{self._chart_id_counter}"
+            with self._chart_id_lock:
+                self._chart_id_counter += 1
+                container_id = f"chart-{self._chart_id_counter}"
 
         # Encode configuration for safe embedding
         config_json = self.encoder.encode_for_javascript(json.dumps(chart_config, separators=(",", ":")))

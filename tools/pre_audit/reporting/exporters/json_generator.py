@@ -140,6 +140,9 @@ class JSONReportGenerator(ReportGenerator):
             Path to generated JSON report
         """
         try:
+            # Validate data size
+            self.validator._validate_data_size(audit_data, self.config.max_input_size_mb)
+
             # Validate input data
             validated_data = self.validator.validate_audit_data(audit_data)
 
@@ -192,9 +195,9 @@ class JSONReportGenerator(ReportGenerator):
                     # Minimal output for public
                     json.dump(filtered_data, f, indent=2, ensure_ascii=True)
                 else:
-                    # Pretty print for internal use
+                    # Pretty print for internal use - still use ensure_ascii for security
                     json.dump(
-                        filtered_data, f, indent=2, ensure_ascii=False, sort_keys=True, default=self._json_serializer
+                        filtered_data, f, indent=2, ensure_ascii=True, sort_keys=True, default=self._json_serializer
                     )
 
             logger.info(f"JSON report generated: {output_path}")

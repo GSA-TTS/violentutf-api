@@ -284,6 +284,40 @@ class TestInputValidator:
         # Should limit to 10 items
         assert len(result[0]["violation_history"]) == 10
 
+    # Test Data Size Validation
+    def test_validate_data_size_blocks_large_data(self, validator):
+        """Test that overly large data is blocked."""
+        # Create data that exceeds 50MB when serialized
+        large_data = {
+            "all_violations": [
+                {"file_path": f"file_{i}.py", "message": "x" * 10000, "adr_id": "ADR-001"}  # 10KB per message
+                for i in range(6000)  # 60MB total
+            ]
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validator._validate_data_size(large_data, max_size_mb=50)
+        assert "exceeds maximum allowed size" in str(exc_info.value)
+
+    def test_validate_data_size_allows_normal_data(self, validator, sample_audit_data):
+        """Test that normal-sized data passes validation."""
+        # This should not raise any exception
+        validator._validate_data_size(sample_audit_data, max_size_mb=50)
+
+    def test_validate_audit_data_enforces_size_limit(self, validator):
+        """Test that validate_audit_data checks size internally."""
+        # Create data that's just over 50MB
+        large_data = {
+            "all_violations": [
+                {"file_path": f"file_{i}.py", "message": "x" * 1000000, "adr_id": "ADR-001"}  # 1MB per message
+                for i in range(55)  # 55MB total
+            ]
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validator.validate_audit_data(large_data)
+        assert "data size" in str(exc_info.value).lower()
+
     # Test Statistics Tracking
     def test_get_validation_stats(self, validator, sample_audit_data):
         """Test validation statistics tracking."""

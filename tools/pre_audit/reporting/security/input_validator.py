@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from .validation_rules import ValidationRules
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,13 +54,16 @@ class InputValidator:
         re.compile(r"data:text/html", re.IGNORECASE),
     ]
 
-    # SQL injection patterns
+    # SQL injection patterns - more targeted to avoid false positives
     SQL_PATTERNS = [
-        re.compile(r"(union|select|insert|update|delete|drop|create)\s+", re.IGNORECASE),
-        re.compile(r"--"),  # SQL comment (anywhere in string)
+        # Match SQL keywords only when they appear to be actual SQL statements
+        re.compile(r";\s*(union|select|insert|update|delete|drop|create)\s+", re.IGNORECASE),
+        re.compile(r"(union\s+all\s+select|union\s+select)", re.IGNORECASE),
+        re.compile(r"--\s*$"),  # SQL comment at end of line
         re.compile(r"/\*.*\*/"),  # SQL block comment
-        re.compile(r";\s*(select|insert|update|delete|drop)", re.IGNORECASE),
         re.compile(r"'\s*(or|and)\s*'?\d*'?\s*=", re.IGNORECASE),  # Common SQL injection
+        re.compile(r"(drop\s+table|create\s+table|alter\s+table)", re.IGNORECASE),
+        re.compile(r"(exec\s*\(|execute\s+immediate)", re.IGNORECASE),
     ]
 
     def __init__(self, strict_mode: bool = True):
@@ -69,7 +74,13 @@ class InputValidator:
             strict_mode: If True, applies strictest validation rules
         """
         self.strict_mode = strict_mode
-        self._validation_stats = {"total_validations": 0, "passed": 0, "failed": 0, "blocked_patterns": []}
+        self._validation_stats = {
+            "total_validations": 0,
+            "passed": 0,
+            "failed": 0,
+            "blocked_patterns": [],
+            "fields_removed": 0,
+        }
 
     def validate_audit_data(self, audit_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -87,6 +98,9 @@ class InputValidator:
         self._validation_stats["total_validations"] += 1
 
         try:
+            # Check data size first
+            self._validate_data_size(audit_data)
+
             # Start with empty validated data
             validated = {}
 
@@ -105,9 +119,10 @@ class InputValidator:
                 if key not in ["all_violations", "architectural_hotspots", "audit_metadata"]:
                     try:
                         validated[key] = self._validate_dict({key: value}, depth=0)[key]
-                    except ValidationError:
-                        # Skip fields that fail validation
-                        pass
+                    except ValidationError as e:
+                        # Skip fields that fail validation but log the issue
+                        logger.debug(f"Skipping field '{key}' due to validation error: {str(e)}")
+                        self._validation_stats["fields_removed"] += 1
 
             self._validation_stats["passed"] += 1
             return validated
@@ -287,75 +302,84 @@ class InputValidator:
 
     def _validate_violations(self, violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Validate violation entries."""
+        # Check collection size
+        ValidationRules.validate_collection_size(violations, ValidationRules.MAX_VIOLATIONS_COUNT, "violations")
+
         validated = []
         for violation in violations:
             if not isinstance(violation, dict):
                 continue
 
-            # Validate critical fields
-            validated_violation = {}
+            try:
+                # Use comprehensive validation from rules
+                validated_violation = ValidationRules.validate_violation(violation)
 
-            # File path validation
-            if "file_path" in violation:
-                try:
-                    validated_violation["file_path"] = str(self.validate_file_path(violation["file_path"]))
-                except ValidationError:
-                    # Use safe fallback
-                    validated_violation["file_path"] = "unknown"
-
-            # Safe copy of other fields
-            safe_fields = ["line_number", "adr_id", "risk_level", "technical_debt_hours"]
-            for field in safe_fields:
-                if field in violation:
-                    validated_violation[field] = violation[field]
-
-            # Validate string fields
-            string_fields = ["message", "adr_title", "evidence", "remediation_guidance"]
-            for field in string_fields:
-                if field in violation and violation[field]:
+                # Additional file path validation with our security checks
+                if "file_path" in validated_violation:
                     try:
-                        validated_violation[field] = self.validate_string(str(violation[field]), field)
+                        validated_violation["file_path"] = str(
+                            self.validate_file_path(validated_violation["file_path"])
+                        )
                     except ValidationError:
-                        validated_violation[field] = "[Content sanitized]"
+                        validated_violation["file_path"] = "unknown"
 
-            validated.append(validated_violation)
+                # Validate additional string fields
+                string_fields = ["message", "adr_title", "evidence", "remediation_guidance"]
+                for field in string_fields:
+                    if field in violation and violation[field]:
+                        try:
+                            validated_violation[field] = self.validate_string(str(violation[field]), field)
+                        except ValidationError:
+                            validated_violation[field] = "[Content sanitized]"
+
+                validated.append(validated_violation)
+
+            except Exception as e:
+                logger.warning(f"Skipping invalid violation: {str(e)}")
+                continue
 
         return validated
 
     def _validate_hotspots(self, hotspots: List[Any]) -> List[Dict[str, Any]]:
         """Validate hotspot entries."""
+        # Check collection size
+        ValidationRules.validate_collection_size(hotspots, ValidationRules.MAX_HOTSPOTS_COUNT, "hotspots")
+
         validated = []
 
         for hotspot in hotspots:
             if isinstance(hotspot, dict):
-                validated_hotspot = {}
+                try:
+                    # Use comprehensive validation from rules
+                    validated_hotspot = ValidationRules.validate_hotspot(hotspot)
 
-                # Validate file path
-                if "file_path" in hotspot:
-                    try:
-                        validated_hotspot["file_path"] = str(self.validate_file_path(hotspot["file_path"]))
-                    except ValidationError:
-                        validated_hotspot["file_path"] = "unknown"
+                    # Additional file path validation with our security checks
+                    if "file_path" in validated_hotspot:
+                        try:
+                            validated_hotspot["file_path"] = str(
+                                self.validate_file_path(validated_hotspot["file_path"])
+                            )
+                        except ValidationError:
+                            validated_hotspot["file_path"] = "unknown"
 
-                # Copy numeric fields
-                numeric_fields = [
-                    "risk_score",
-                    "churn_score",
-                    "complexity_score",
-                    "integrated_risk_probability",
-                    "temporal_weight",
-                ]
-                for field in numeric_fields:
-                    if field in hotspot and isinstance(hotspot[field], (int, float)):
-                        validated_hotspot[field] = hotspot[field]
+                    # Copy additional numeric fields not in basic validation
+                    numeric_fields = ["integrated_risk_probability", "temporal_weight"]
+                    for field in numeric_fields:
+                        if field in hotspot and isinstance(hotspot[field], (int, float)):
+                            validated_hotspot[field] = float(hotspot[field])
 
-                # Validate arrays
-                if "violation_history" in hotspot and isinstance(hotspot["violation_history"], list):
-                    validated_hotspot["violation_history"] = self._validate_list(
-                        hotspot["violation_history"][:10], depth=1  # Limit size
-                    )
+                    # Validate arrays
+                    if "violation_history" in hotspot and isinstance(hotspot["violation_history"], list):
+                        validated_hotspot["violation_history"] = self._validate_list(
+                            hotspot["violation_history"][:10], depth=1  # Limit size
+                        )
 
-                validated.append(validated_hotspot)
+                    validated.append(validated_hotspot)
+
+                except Exception as e:
+                    logger.warning(f"Skipping invalid hotspot: {str(e)}")
+                    # Handle as basic hotspot
+                    validated.append({"file_path": str(hotspot), "type": "basic"})
             else:
                 # Handle other hotspot types
                 validated.append({"file_path": str(hotspot), "type": "basic"})
@@ -366,16 +390,29 @@ class InputValidator:
         """Validate audit metadata."""
         validated = {}
 
-        # Safe fields that don't need string validation
-        safe_fields = ["total_files_analyzed", "execution_time_seconds", "cache_hits", "cache_misses", "audit_version"]
+        # Numeric fields with validation
+        numeric_validations = {
+            "total_files_analyzed": (0, 1000000),
+            "execution_time_seconds": (0.0, 86400.0),  # Max 24 hours
+            "cache_hits": (0, 1000000),
+            "cache_misses": (0, 1000000),
+            "total_adrs_analyzed": (0, 10000),
+        }
 
-        for field in safe_fields:
+        for field, (min_val, max_val) in numeric_validations.items():
             if field in metadata:
-                validated[field] = metadata[field]
+                try:
+                    value = float(metadata[field])
+                    if min_val <= value <= max_val:
+                        validated[field] = value
+                    else:
+                        logger.warning(f"Metadata field '{field}' out of range: {value}")
+                        validated[field] = min(max(value, min_val), max_val)
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid numeric metadata field '{field}': {metadata[field]}")
 
         # String fields that need validation
-        string_fields = ["repository_path", "analysis_timestamp", "mode", "selected_adr", "git_branch"]
-
+        string_fields = ["repository_path", "analysis_timestamp", "git_branch"]
         for field in string_fields:
             if field in metadata and metadata[field]:
                 try:
@@ -383,8 +420,61 @@ class InputValidator:
                 except ValidationError:
                     validated[field] = "[Sanitized]"
 
+        # Analysis mode validation
+        if "mode" in metadata:
+            try:
+                validated["mode"] = ValidationRules.validate_analysis_mode(metadata["mode"])
+            except ValueError:
+                validated["mode"] = "audit"  # Default
+
+        # ADR ID validation
+        if "selected_adr" in metadata and metadata["selected_adr"]:
+            try:
+                validated["selected_adr"] = ValidationRules.validate_adr_id(metadata["selected_adr"])
+            except ValueError:
+                validated["selected_adr"] = None
+
+        # Version string
+        if "audit_version" in metadata:
+            version = str(metadata["audit_version"])[:20]  # Limit length
+            validated["audit_version"] = re.sub(r"[^\w\.\-]", "", version)
+
         return validated
 
     def get_validation_stats(self) -> Dict[str, Any]:
         """Get validation statistics."""
         return self._validation_stats.copy()
+
+    def _validate_data_size(self, data: Any, max_size_mb: int = 50) -> None:
+        """
+        Check if data size is within acceptable limits.
+
+        Args:
+            data: Data to check
+            max_size_mb: Maximum allowed size in MB
+
+        Raises:
+            ValidationError: If data is too large
+        """
+        import sys
+
+        try:
+            # Get size of object in bytes
+            size_bytes = sys.getsizeof(json.dumps(data))
+            size_mb = size_bytes / (1024 * 1024)
+
+            if size_mb > max_size_mb:
+                raise ValidationError(f"Data size ({size_mb:.2f} MB) exceeds maximum allowed size ({max_size_mb} MB)")
+
+            logger.debug(f"Data size validation passed: {size_mb:.2f} MB")
+
+        except (TypeError, ValueError) as e:
+            # If we can't serialize to JSON, estimate size differently
+            logger.warning(f"Could not determine exact data size: {str(e)}")
+            # Fall back to basic object size check
+            size_bytes = sys.getsizeof(data)
+            size_mb = size_bytes / (1024 * 1024)
+
+            # Be more conservative with the estimate
+            if size_mb > max_size_mb / 2:
+                raise ValidationError(f"Estimated data size ({size_mb:.2f} MB) may exceed limits")

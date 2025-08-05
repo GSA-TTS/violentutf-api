@@ -118,17 +118,25 @@ class TestExportManager:
 
     def test_export_all_handles_validation_error(self, manager):
         """Test that validation errors are handled properly."""
-        # Test with data that might fail validation or skip raising error
-        invalid_data = {"invalid": "data"}
+        # The current implementation is robust and handles missing fields gracefully
+        # Test with minimal data to ensure it doesn't crash
+        minimal_data = {"invalid": "data"}
 
-        # The validator might accept this, so let's check the actual behavior
-        try:
-            results = manager.export_all(invalid_data)
-            # If no error, ensure some exports might have failed
-            assert any(path is None for path in results.values())
-        except ValidationError:
-            # If validation error raised, that's also acceptable
-            assert manager._export_stats["failed_exports"] >= 1
+        # The system should handle this gracefully
+        results = manager.export_all(minimal_data)
+
+        # All exports should complete successfully with default values
+        assert all(path is not None for path in results.values())
+        assert len(results) >= 1  # At least one format exported
+
+        # For actual validation errors, we need data that fails size limits
+        import json
+
+        huge_data = {"all_violations": [{"data": "x" * 1000000} for _ in range(100)]}
+
+        # This should fail due to size constraints
+        with pytest.raises(ValidationError, match="exceeds maximum allowed size"):
+            manager.export_all(huge_data)
 
     def test_export_all_handles_generator_error(self, manager, sample_audit_data):
         """Test handling of generator errors."""
@@ -227,6 +235,9 @@ class TestExportManager:
 
     def test_get_export_stats(self, manager, sample_audit_data):
         """Test export statistics."""
+        # Disable parallel export to ensure sequential is called
+        manager.config.enable_parallel_export = False
+
         # Perform some exports
         with patch.object(manager, "_export_sequential", return_value={"html": Path("test.html")}):
             manager.export_all(sample_audit_data)

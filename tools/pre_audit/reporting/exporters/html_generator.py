@@ -8,6 +8,7 @@ with a secure, template-based approach using Jinja2 sandboxed environment.
 import json
 import logging
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -47,8 +48,8 @@ class HTMLReportGenerator(ReportGenerator):
         # Setup Jinja2 sandboxed environment
         self._setup_template_environment()
 
-        # Statistics
-        self._generation_stats = {"reports_generated": 0, "charts_created": 0, "errors": 0}
+        # Note: Statistics removed for thread safety
+        # Each generate() call is stateless
 
     def _setup_template_environment(self):
         """Setup Jinja2 sandboxed environment for secure templating."""
@@ -74,6 +75,9 @@ class HTMLReportGenerator(ReportGenerator):
         self.env.filters["risk_color"] = self._get_risk_color
         self.env.filters["risk_icon"] = self._get_risk_icon
 
+        # Add custom functions
+        self.env.globals["static_url"] = self._static_url
+
     def generate(self, audit_data: Dict[str, Any]) -> Path:
         """
         Generate HTML report from audit data.
@@ -85,6 +89,9 @@ class HTMLReportGenerator(ReportGenerator):
             Path to generated HTML report
         """
         try:
+            # Validate data size
+            self.validator._validate_data_size(audit_data, self.config.max_input_size_mb)
+
             # Validate input data
             validated_data = self.validator.validate_audit_data(audit_data)
 
@@ -116,6 +123,7 @@ class HTMLReportGenerator(ReportGenerator):
                 "include_charts": self.config.enable_charts,
                 "include_recommendations": self.config.include_recommendations,
                 "include_executive_summary": self.config.include_executive_summary,
+                "max_violations_per_page": getattr(self.config, "max_violations_per_page", 100),
             }
 
             # Generate visualizations if enabled
@@ -126,19 +134,26 @@ class HTMLReportGenerator(ReportGenerator):
             template = self.env.get_template("audit_report.html")
             html_content = template.render(**report_data)
 
-            # Save report
+            # Save report with secure permissions
             output_path = self._get_output_path("html")
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
-            self._generation_stats["reports_generated"] += 1
+            # Set secure file permissions (owner read/write only)
+            os.chmod(output_path, 0o600)
+
+            # Copy static files to output directory
+            self._copy_static_files(output_path.parent)
+
             logger.info(f"HTML report generated: {output_path}")
 
             return output_path
 
         except Exception as e:
-            self._generation_stats["errors"] += 1
             logger.error(f"HTML generation failed: {str(e)}")
+            import traceback
+
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise
 
     def validate_data(self, audit_data: Dict[str, Any]) -> bool:
@@ -224,11 +239,12 @@ class HTMLReportGenerator(ReportGenerator):
                 },
             }
 
-        self._generation_stats["charts_created"] += len(charts)
+        # Charts created: len(charts)
 
         # Encode chart data for safe embedding
         for chart_id, chart_data in charts.items():
-            charts[chart_id]["json"] = self.encoder.encode_for_javascript(json.dumps(chart_data))
+            # Store the raw data - we'll handle encoding in the template
+            charts[chart_id]["json"] = json.dumps(chart_data, ensure_ascii=True)
 
         return charts
 
@@ -265,6 +281,13 @@ class HTMLReportGenerator(ReportGenerator):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-src 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+
     <title>Architectural Audit Report - {{ metadata.timestamp|format_timestamp }}</title>
     <style>
         :root {
@@ -415,7 +438,7 @@ class HTMLReportGenerator(ReportGenerator):
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="static/js/chart.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -477,7 +500,7 @@ class HTMLReportGenerator(ReportGenerator):
         document.addEventListener('DOMContentLoaded', function() {
             {% for chart_id, chart in charts.items() %}
             try {
-                const {{ chart_id }}_data = JSON.parse('{{ chart.json|safe }}');
+                const {{ chart_id }}_data = JSON.parse({{ chart.json|tojson }});
                 // Chart rendering code would go here
             } catch (e) {
                 console.error('Chart rendering error:', e);
@@ -666,21 +689,24 @@ class HTMLReportGenerator(ReportGenerator):
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             return dt.strftime("%Y-%m-%d %H:%M:%S")
-        except:
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"Could not format timestamp '{timestamp}': {str(e)}")
             return timestamp
 
     def _format_number(self, value: Any) -> str:
         """Format number with thousands separator."""
         try:
             return f"{int(value):,}"
-        except:
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Could not format number '{value}': {str(e)}")
             return str(value)
 
     def _format_percentage(self, value: Any) -> str:
         """Format as percentage."""
         try:
             return f"{float(value):.1f}%"
-        except:
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Could not format percentage '{value}': {str(e)}")
             return str(value)
 
     def _get_risk_color(self, value: Any) -> str:
@@ -697,7 +723,8 @@ class HTMLReportGenerator(ReportGenerator):
                 return "#ff5722"  # Deep orange
             else:
                 return "#f44336"  # Red
-        except:
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Could not determine risk color for '{value}': {str(e)}")
             return "#666"  # Gray
 
     def _get_risk_icon(self, risk_level: str) -> str:
@@ -716,3 +743,55 @@ class HTMLReportGenerator(ReportGenerator):
 
         # Show first and last parts
         return f"{parts[0]}/.../{parts[-1]}"
+
+    def _static_url(self, path: str) -> str:
+        """Generate URL for static files."""
+        # For now, return relative path to static files
+        # In production, this could be a CDN URL or absolute path
+        return f"static/{path}"
+
+    def _copy_static_files(self, output_dir: Path) -> None:
+        """Copy static files to output directory."""
+        try:
+            # Validate output directory
+            output_dir = Path(output_dir).resolve()
+
+            # Ensure we're not writing outside allowed directories
+            allowed_base = self.config.output_dir.resolve()
+            if not str(output_dir).startswith(str(allowed_base)):
+                raise ValueError(f"Output directory {output_dir} is outside allowed path {allowed_base}")
+
+            # Create static directory in output location
+            static_output = output_dir / "static"
+            static_output.mkdir(exist_ok=True, mode=0o755)
+
+            # Copy JS files
+            js_output = static_output / "js"
+            js_output.mkdir(exist_ok=True, mode=0o755)
+
+            # Source static directory
+            static_source = Path(__file__).parent.parent / "static"
+
+            # Copy Chart.js if it exists
+            chart_source = static_source / "js" / "chart.min.js"
+            if chart_source.exists():
+                import shutil
+
+                shutil.copy2(chart_source, js_output / "chart.min.js")
+                logger.debug(f"Copied Chart.js to {js_output}")
+            else:
+                # Fallback: embed Chart.js inline (not recommended for production)
+                logger.warning("Chart.js not found locally, using inline fallback")
+                self._create_inline_chartjs(js_output)
+
+        except Exception as e:
+            logger.warning(f"Could not copy static files: {str(e)}")
+            # Reports will still work, just without local Chart.js
+
+    def _create_inline_chartjs(self, js_dir: Path) -> None:
+        """Create a minimal Chart.js file as fallback."""
+        fallback_content = """// Chart.js not available locally
+// Add Chart.js manually or update from CDN
+console.warn('Chart.js not loaded. Charts will not be displayed.');"""
+
+        (js_dir / "chart.min.js").write_text(fallback_content)

@@ -28,6 +28,12 @@ import hashlib
 import json
 import logging
 import os
+import sys
+from pathlib import Path
+
+# Add the project root to Python path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 import pickle
 import random
 import shutil
@@ -51,6 +57,9 @@ from dotenv import load_dotenv
 # Import git history parser and pattern matcher
 from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, GitHistoryParser
 from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixType
+
+# Import enhanced reporting module
+from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel
 
 # Import statistical hotspot analysis components (GitHub Issue #43)
 try:
@@ -1303,14 +1312,43 @@ Output Format:
     async def _generate_debug_html_report(
         self, debug_audit_results: Dict[str, Any], timestamp: str, selected_adr: str
     ) -> None:
-        """Generate HTML report for debug audit results."""
-        html_content = self._create_debug_html_report_template(debug_audit_results)
-        html_file = self.config.reports_dir / f"debug_audit_{selected_adr}_{timestamp}.html"
+        """Generate HTML report for debug audit results using enhanced reporting module."""
+        # Use new reporting module
+        report_config = ReportConfig(
+            output_dir=self.config.reports_dir,
+            security_level=SecurityLevel.INTERNAL,
+            enable_charts=True,
+            include_hotspots=True,
+            include_recommendations=True,
+            include_executive_summary=True,
+            export_formats=["html"],
+        )
 
-        with open(html_file, "w", encoding="utf-8") as f:
-            f.write(html_content)
+        # Generate secure HTML report
+        from tools.pre_audit.reporting.exporters import HTMLReportGenerator
 
-        logger.info(f"Debug HTML report saved to {html_file}")
+        html_gen = HTMLReportGenerator(report_config)
+
+        try:
+            # Generate the report
+            html_path = html_gen.generate(debug_audit_results)
+
+            # Rename to match expected filename
+            expected_path = self.config.reports_dir / f"debug_audit_{selected_adr}_{timestamp}.html"
+            if html_path.exists():
+                import shutil
+
+                shutil.move(str(html_path), str(expected_path))
+                logger.info(f"Enhanced debug HTML report saved to {expected_path}")
+        except Exception as e:
+            logger.error(f"Failed to generate enhanced debug HTML report: {e}")
+            # Fallback to original method
+            logger.info("Falling back to basic debug HTML generation")
+            html_content = self._create_debug_html_report_template(debug_audit_results)
+            html_file = self.config.reports_dir / f"debug_audit_{selected_adr}_{timestamp}.html"
+            with open(html_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logger.info(f"Basic debug HTML report saved to {html_file}")
 
     async def _generate_debug_sarif_output(
         self, debug_audit_results: Dict[str, Any], timestamp: str, selected_adr: str
@@ -1419,14 +1457,43 @@ Output Format:
         }
 
     async def _generate_html_report(self, audit_results: Dict[str, Any], timestamp: str) -> None:
-        """Generate HTML report for audit results."""
-        html_content = self._create_html_report_template(audit_results)
-        html_file = self.config.reports_dir / f"architectural_audit_{timestamp}.html"
+        """Generate HTML report using enhanced reporting module."""
+        # Use new reporting module instead of unsafe string concatenation
+        report_config = ReportConfig(
+            output_dir=self.config.reports_dir,
+            security_level=SecurityLevel.INTERNAL,
+            enable_charts=True,
+            include_hotspots=True,
+            include_recommendations=True,
+            include_executive_summary=True,
+            export_formats=["html"],
+        )
 
-        with open(html_file, "w", encoding="utf-8") as f:
-            f.write(html_content)
+        # Generate secure HTML report
+        from tools.pre_audit.reporting.exporters import HTMLReportGenerator
 
-        logger.info(f"HTML report saved to {html_file}")
+        html_gen = HTMLReportGenerator(report_config)
+
+        try:
+            # Generate the report
+            html_path = html_gen.generate(audit_results)
+
+            # Rename to match expected filename
+            expected_path = self.config.reports_dir / f"architectural_audit_{timestamp}.html"
+            if html_path.exists():
+                import shutil
+
+                shutil.move(str(html_path), str(expected_path))
+                logger.info(f"Enhanced HTML report saved to {expected_path}")
+        except Exception as e:
+            logger.error(f"Failed to generate enhanced HTML report: {e}")
+            # Fallback to original method
+            logger.info("Falling back to basic HTML generation")
+            html_content = self._create_html_report_template(audit_results)
+            html_file = self.config.reports_dir / f"architectural_audit_{timestamp}.html"
+            with open(html_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logger.info(f"Basic HTML report saved to {html_file}")
 
     def _create_html_report_template(self, audit_results: Dict[str, Any]) -> str:
         """Create HTML report template."""

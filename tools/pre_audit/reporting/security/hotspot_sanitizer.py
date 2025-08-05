@@ -78,6 +78,7 @@ class HotspotSanitizer:
             "temporal_weight",
             "p_value",
             "effect_size",
+            "violation_count",
         ]
         for field in numeric_fields:
             if field in hotspot_dict and isinstance(hotspot_dict[field], (int, float)):
@@ -318,8 +319,8 @@ class HotspotSanitizer:
         if hasattr(obj, "to_dict") and callable(obj.to_dict) and not hasattr(obj, "_mock_name"):
             try:
                 return obj.to_dict()
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to convert object to dict using to_dict(): {type(obj).__name__} - {str(e)}")
 
         # Build dict from known attributes
         result = {}
@@ -356,16 +357,16 @@ class HotspotSanitizer:
                             result[attr] = self._object_to_dict(value, seen_objects)
                         else:
                             result[attr] = value
-            except:
+            except Exception as e:
                 # Skip any attribute that can't be accessed
-                pass
+                logger.debug(f"Skipping attribute '{attr}' on {type(obj).__name__}: {str(e)}")
 
         # If no known attributes found, try generic approach
         if not result and hasattr(obj, "__dict__"):
             try:
                 result = {k: v for k, v in obj.__dict__.items() if not k.startswith("_")}
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to access __dict__ on {type(obj).__name__}: {str(e)}")
 
         return result if result else {"type": str(type(obj)), "value": str(obj)}
 

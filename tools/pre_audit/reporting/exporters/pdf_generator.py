@@ -104,6 +104,9 @@ class PDFReportGenerator(ReportGenerator):
             Path to generated PDF report
         """
         try:
+            # Validate data size
+            self.validator._validate_data_size(audit_data, self.config.max_input_size_mb)
+
             # Validate input data
             validated_data = self.validator.validate_audit_data(audit_data)
 
@@ -687,7 +690,8 @@ class PDFReportGenerator(ReportGenerator):
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             return dt.strftime("%Y-%m-%d %H:%M:%S")
-        except:
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"Could not format timestamp '{timestamp}': {str(e)}")
             return timestamp
 
     def _calculate_percentage(self, part: int, total: int) -> str:

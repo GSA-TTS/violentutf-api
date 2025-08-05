@@ -89,6 +89,11 @@
         </div>
     </section>
 
+    <!-- ADR Analysis Details -->
+    {% if adr_compliance %}
+        {% include 'sections/adr_analysis_details.html' %}
+    {% endif %}
+
     <!-- Hotspot Analysis -->
     {% if hotspot_analysis %}
         {% include 'sections/hotspot_analysis.html' %}
@@ -143,8 +148,15 @@
     {% if charts and charts.violation_pie %}
     (function() {
         const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
-        const config = {{ charts.violation_pie.json|safe }};
+        // Parse JSON data safely
+        const configData = document.createElement('script');
+        configData.type = 'application/json';
+        configData.id = 'chart-config-data';
+        configData.textContent = {{ charts.violation_pie.json|tojson }};
+        document.head.appendChild(configData);
+        const config = JSON.parse(document.getElementById('chart-config-data').textContent);
         new Chart(ctx, config);
+        configData.remove();
     })();
     {% endif %}
 

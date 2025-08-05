@@ -8,6 +8,7 @@ with parallel processing support for optimal performance.
 import asyncio
 import logging
 import os
+import threading
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -17,6 +18,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from .base import ReportConfig, SecurityLevel
 from .exporters import HTMLReportGenerator, JSONReportGenerator, PDFReportGenerator
 from .security import InputValidator, ValidationError
+from .security.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,8 @@ class ExportManager:
         # Initialize generators
         self._init_generators()
 
-        # Statistics
+        # Statistics with thread safety
+        self._stats_lock = threading.Lock()
         self._export_stats = {
             "total_exports": 0,
             "successful_exports": 0,
@@ -59,6 +62,11 @@ class ExportManager:
             "total_time": 0,
             "format_times": {},
         }
+
+        # Rate limiting (10 exports per minute by default)
+        self.rate_limiter = RateLimiter(
+            max_requests=getattr(config, "rate_limit_max", 10), window_seconds=getattr(config, "rate_limit_window", 60)
+        )
 
     def _init_generators(self):
         """Initialize report generators based on configuration."""
@@ -87,15 +95,23 @@ class ExportManager:
         Returns:
             Dictionary mapping format to output path
         """
+        # Check rate limit
+        if not self.rate_limiter.allow_request("export_all"):
+            wait_time = self.rate_limiter.time_until_next_allowed()
+            logger.warning(f"Rate limit exceeded. Try again in {wait_time:.1f} seconds")
+            raise ValueError(f"Rate limit exceeded. Please wait {wait_time:.1f} seconds")
+
         start_time = time.time()
-        self._export_stats["total_exports"] += 1
+        with self._stats_lock:
+            self._export_stats["total_exports"] += 1
 
         try:
             # Validate data once
             validated_data = self.validator.validate_audit_data(audit_data)
         except ValidationError as e:
             logger.error(f"Data validation failed: {str(e)}")
-            self._export_stats["failed_exports"] += 1
+            with self._stats_lock:
+                self._export_stats["failed_exports"] += 1
             raise
 
         results = {}
@@ -109,18 +125,21 @@ class ExportManager:
 
         # Update statistics
         total_time = time.time() - start_time
-        self._export_stats["total_time"] += total_time
 
         # Log results
         successful = [fmt for fmt, path in results.items() if path]
         failed = [fmt for fmt, path in results.items() if not path]
 
-        if successful:
-            self._export_stats["successful_exports"] += len(successful)
-            logger.info(f"Successfully exported formats: {', '.join(successful)}")
+        with self._stats_lock:
+            self._export_stats["total_time"] += total_time
+            if successful:
+                self._export_stats["successful_exports"] += len(successful)
+            if failed:
+                self._export_stats["failed_exports"] += len(failed)
 
+        if successful:
+            logger.info(f"Successfully exported formats: {', '.join(successful)}")
         if failed:
-            self._export_stats["failed_exports"] += len(failed)
             logger.warning(f"Failed to export formats: {', '.join(failed)}")
 
         logger.info(f"Export completed in {total_time:.2f} seconds")
@@ -146,7 +165,8 @@ class ExportManager:
 
                 # Record timing
                 export_time = time.time() - start_time
-                self._export_stats["format_times"][format_name] = export_time
+                with self._stats_lock:
+                    self._export_stats["format_times"][format_name] = export_time
 
                 results[format_name] = output_path
                 logger.info(f"{format_name.upper()} report generated in {export_time:.2f}s")
@@ -186,7 +206,8 @@ class ExportManager:
                     results[format_name] = output_path
 
                     if output_path:
-                        self._export_stats["format_times"][format_name] = export_time
+                        with self._stats_lock:
+                            self._export_stats["format_times"][format_name] = export_time
                         logger.info(f"{format_name.upper()} report generated in {export_time:.2f}s")
 
                 except Exception as e:
@@ -319,7 +340,8 @@ class ExportManager:
 
     def get_export_stats(self) -> Dict[str, Any]:
         """Get export statistics."""
-        stats = self._export_stats.copy()
+        with self._stats_lock:
+            stats = self._export_stats.copy()
 
         # Calculate averages
         if stats["successful_exports"] > 0:

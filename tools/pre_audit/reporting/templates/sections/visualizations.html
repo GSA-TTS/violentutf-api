@@ -1,0 +1,156 @@
+<!-- Visualizations Section -->
+<section id="visualizations" class="report-section">
+    <h2 class="section-title">Visualizations</h2>
+
+    <div class="charts-grid">
+        {% if charts.temporal_trends %}
+        <div class="chart-container">
+            <h3>Temporal Trends</h3>
+            <canvas id="temporal-trends-chart"></canvas>
+        </div>
+        {% endif %}
+
+        {% if charts.top_files_bar %}
+        <div class="chart-container">
+            <h3>Top Violated Files</h3>
+            <canvas id="top-files-chart"></canvas>
+        </div>
+        {% endif %}
+
+        {% if charts.hotspot_heatmap %}
+        <div class="chart-container full-width">
+            <h3>Risk Hotspot Heatmap</h3>
+            <canvas id="hotspot-heatmap"></canvas>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.chart-container {
+    background: var(--card-bg, #fff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.chart-container.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-container h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if charts.temporal_trends %}
+    // Temporal Trends Chart
+    (function() {
+        const ctx = document.getElementById('temporal-trends-chart').getContext('2d');
+        const data = {{ charts.temporal_trends.data|tojson }};
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: data.colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    })();
+    {% endif %}
+
+    {% if charts.top_files_bar %}
+    // Top Files Bar Chart
+    (function() {
+        const ctx = document.getElementById('top-files-chart').getContext('2d');
+        const data = {{ charts.top_files_bar.data|tojson }};
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Violations',
+                    data: data.values,
+                    backgroundColor: data.color,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })();
+    {% endif %}
+
+    {% if charts.hotspot_heatmap %}
+    // Hotspot Heatmap
+    (function() {
+        const ctx = document.getElementById('hotspot-heatmap').getContext('2d');
+        const data = {{ charts.hotspot_heatmap.data|tojson }};
+
+        // Create gradient colors based on risk scores
+        const colors = data.values.map(value => {
+            const intensity = value / 100;
+            return `rgba(255, ${Math.floor(255 * (1 - intensity))}, ${Math.floor(255 * (1 - intensity))}, 0.8)`;
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Risk Score',
+                    data: data.values,
+                    backgroundColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    })();
+    {% endif %}
+});
+</script>

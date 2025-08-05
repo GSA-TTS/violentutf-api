@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Architectural Audit Report - Code quality and compliance analysis">
+    <title>Architectural Audit Report - 2025-08-05 16:32:37</title>
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+    <!-- Custom styles -->
+    <style>
+/* Main styles */    </style>
+
+</head>
+<body>
+    <div class="report-container">
+        <!-- Header -->
+        <header class="report-header">
+            <div class="header-content">
+                <h1 class="report-title">Architectural Audit Report</h1>
+                <div class="header-meta">
+                    <span class="meta-item">
+                        <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        </svg>
+                        2025-08-05 16:32:37
+                    </span>
+                    <span class="meta-item">
+                        <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        Version unknown
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="report-nav" id="report-nav">
+            <ul class="nav-list">
+                <li><a href="#summary" class="nav-link">Summary</a></li>
+                <li><a href="#executive" class="nav-link">Executive Summary</a></li>
+                <li><a href="#analysis-timeline" class="nav-link">Analysis Timeline</a></li>
+                <li><a href="#hotspots" class="nav-link">Hotspots</a></li>
+                <li><a href="#violations" class="nav-link">Violations</a></li>
+                <li><a href="#recommendations" class="nav-link">Recommendations</a></li>
+                <li><a href="#visualizations" class="nav-link">Visualizations</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="report-content">
+    <!-- Compliance Score Hero -->
+    <section class="hero-section">
+        <div class="compliance-score-container">
+            <div class="score-circle" data-score="42.99047619047619">
+                <svg viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" class="score-bg"/>
+                    <circle cx="100" cy="100" r="90" class="score-progress"
+                            style="stroke-dashoffset: 322.10380952380956"/>
+                </svg>
+                <div class="score-text">
+                    <span class="score-value">43.0%</span>
+                    <span class="score-label">Compliance</span>
+                </div>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Files Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">137</div>
+                    <div class="stat-label">Total Violations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Technical Debt (Days)</div>
+                </div>
+                <div class="stat-card risk-critical">
+                    <div class="stat-value">CRITICAL</div>
+                    <div class="stat-label">Risk Level</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Executive Summary -->
+<div class="executive-summary section">
+    <h2>Executive Summary</h2>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h3>Compliance Score</h3>
+            <div class="score-display">
+                <span class="score-value">43.0%</span>
+                <div class="score-indicator critical"></div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Total Violations</h3>
+            <div class="violations-breakdown">
+                <div class="total">137</div>
+                <div class="breakdown">
+                    <span class="critical">Critical: 37</span>
+                    <span class="high">High: 50</span>
+                    <span class="medium">Medium: 43</span>
+                    <span class="low">Low: 7</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Technical Debt</h3>
+            <div class="debt-display">
+                <span class="debt-days">0.0 days</span>
+                <span class="debt-hours">(0 hours)</span>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Risk Assessment</h3>
+            <div class="risk-level ">
+
+            </div>
+            <div class="risk-description"></div>
+        </div>
+    </div>
+
+    <div class="key-findings">
+        <h3>Key Findings</h3>
+        <ul>
+            <li>Critical: Overall compliance score is 43.0%, requiring immediate attention</li>
+            <li>Found 37 critical violations requiring immediate remediation</li>
+        </ul>
+    </div>
+</div>
+    <!-- Risk Overview -->
+    <section id="risk-overview" class="report-section">
+        <h2 class="section-title">Risk Overview</h2>
+
+        <div class="risk-distribution">
+            <div class="chart-wrapper">
+                <canvas id="risk-distribution-chart"></canvas>
+            </div>
+
+            <div class="risk-breakdown">
+                <table class="risk-table">
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="risk-critical">
+                            <td><span class="risk-indicator"></span> Critical</td>
+                            <td>37</td>
+                            <td>27.0%</td>
+                        </tr>
+                        <tr class="risk-high">
+                            <td><span class="risk-indicator"></span> High</td>
+                            <td>50</td>
+                            <td>36.5%</td>
+                        </tr>
+                        <tr class="risk-medium">
+                            <td><span class="risk-indicator"></span> Medium</td>
+                            <td>43</td>
+                            <td>31.4%</td>
+                        </tr>
+                        <tr class="risk-low">
+                            <td><span class="risk-indicator"></span> Low</td>
+                            <td>7</td>
+                            <td>5.1%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADR Analysis Details -->
+
+    <!-- Hotspot Analysis -->
+<section class="section hotspot-analysis">
+    <h2>Architectural Hotspots</h2>
+
+    <div class="hotspot-summary">
+        <h3>Summary</h3>
+        <p>Mixed: 0% improving, 0% degrading</p>
+
+        <div class="stats-grid">
+            <div class="stat">
+                <label>Total Hotspots</label>
+                <div class="value">1</div>
+            </div>
+            <div class="stat">
+                <label>Critical Risk</label>
+                <div class="value risk-critical">0</div>
+            </div>
+            <div class="stat">
+                <label>Average Risk</label>
+                <div class="value">0.0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hotspot-list">
+        <h3>Top Risk Areas</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Risk Score</th>
+                    <th>Confidence</th>
+                    <th>Violations</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>.pre-commit-config.yaml</td>
+                    <td class="risk-minimal">
+                        0.0%
+                    </td>
+                    <td>N/A</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-minimal">
+                            Minimal
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-container" id="temporal-trends-chart"></div>
+    <div class="chart-container" id="hotspot-heatmap"></div>
+</section>
+    <!-- Violations Detail -->
+<section class="section violations">
+    <h2>ADR Violations</h2>
+
+    <div class="violations-summary">
+        <p>Total violations found: <strong>137</strong></p>
+    </div>
+
+    <div class="violations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Line</th>
+                    <th>ADR</th>
+                    <th>Risk</th>
+                    <th>Message</th>
+                    <th>Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>app</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>42</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>59</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/errors.py</td>
+                    <td>199</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/external_services.py</td>
+                    <td>38</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/security.py</td>
+                    <td>51</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/core/security.py</td>
+                    <td>91</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/db/session.py</td>
+                    <td>39</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/main.py</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/main.py</td>
+                    <td>238</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/models/api_key.py</td>
+                    <td>27</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/repositories/base.py</td>
+                    <td>268</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/repositories/user.py</td>
+                    <td>46</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/services</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/services</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/services/api_key_service.py</td>
+                    <td>53</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/services/oauth_service.py</td>
+                    <td>95</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>config/vulnerability_management_policy.yml</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>pyproject.toml</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>pyproject.toml</td>
+                    <td>19</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>requirements.txt</td>
+                    <td>55</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>security/pip-audit-report.json</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>12</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>27</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>27</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>.github/workflows/ci.yml</td>
+                    <td>48</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>.github/workflows/pr-validation.yml</td>
+                    <td>60</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>0</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/api</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/auth.py</td>
+                    <td>110</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/users.py</td>
+                    <td>305</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/auth_failover.py</td>
+                    <td>117</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>39</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>50</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>59</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>64</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/errors.py</td>
+                    <td>15</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/errors.py</td>
+                    <td>132</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/errors.py</td>
+                    <td>160</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/external_services.py</td>
+                    <td>38</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/rate_limiting.py</td>
+                    <td>42</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/security.py</td>
+                    <td>47</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/security.py</td>
+                    <td>96</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/security.py</td>
+                    <td>96</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/startup.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/middleware/audit.py</td>
+                    <td>234</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/middleware/authentication.py</td>
+                    <td>84</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/middleware/permissions.py</td>
+                    <td>366</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/middleware/rate_limiting.py</td>
+                    <td>145</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/models/__init__.py</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/models/__init__.py</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/models/__init__.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/models/session.py</td>
+                    <td>18</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/models/session.py</td>
+                    <td>277</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/repositories</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/schemas</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/schemas</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/schemas/__init__.py</td>
+                    <td>37</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/services/audit_service.py</td>
+                    <td>135</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>pyproject.toml</td>
+                    <td>9</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>requirements.txt</td>
+                    <td>55</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>requirements.txt</td>
+                    <td>56</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>11</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>13</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>38</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>unknown</td>
+                    <td>248</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>.github/workflows/pr-validation.yml</td>
+                    <td>62</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/audit_logs.py</td>
+                    <td>620</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/auth.py</td>
+                    <td>142</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/auth.py</td>
+                    <td>188</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>1</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/api/routes.py</td>
+                    <td>21</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/core/cache.py</td>
+                    <td>42</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/core/cache.py</td>
+                    <td>111</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+                <tr>
+                    <td>app/core/config.py</td>
+                    <td>31</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="note">Showing 100 of 137 violations.
+           See JSON report for complete list.</p>
+    </div>
+</section>
+    <!-- Recommendations -->
+<!-- Recommendations Section -->
+<section id="recommendations" class="report-section">
+    <h2 class="section-title">Recommendations</h2>
+
+    <div class="recommendations-container">
+        <div class="recommendation-card priority-critical">
+            <div class="rec-header">
+                <span class="priority-badge">CRITICAL</span>
+                <span class="category">General</span>
+            </div>
+
+            <div class="rec-content">
+                <h4>Address 37 critical violations immediately</h4>
+
+
+
+                <div class="steps">
+                    <label>Implementation Steps:</label>
+                    <ol>
+                        <li>Review current implementation</li>
+                        <li>Plan necessary changes</li>
+                        <li>Implement fix with tests</li>
+                        <li>Validate against ADR requirements</li>
+                        <li>Deploy and monitor</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.recommendations-container {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.recommendation-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid;
+}
+
+.recommendation-card.priority-critical {
+    border-left-color: #f44336;
+}
+
+.recommendation-card.priority-high {
+    border-left-color: #ff9800;
+}
+
+.recommendation-card.priority-medium {
+    border-left-color: #ffc107;
+}
+
+.recommendation-card.priority-low {
+    border-left-color: #4caf50;
+}
+
+.rec-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: white;
+}
+
+.priority-badge:has-text("CRITICAL") {
+    background-color: #f44336;
+}
+
+.priority-badge:has-text("HIGH") {
+    background-color: #ff9800;
+}
+
+.priority-badge:has-text("MEDIUM") {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.priority-badge:has-text("LOW") {
+    background-color: #4caf50;
+}
+
+.category {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.rec-content h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+}
+
+.effort, .impact {
+    margin-bottom: 0.75rem;
+}
+
+.effort label, .impact label {
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.steps {
+    margin-top: 1rem;
+}
+
+.steps label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.steps ol {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+}
+</style>
+    <!-- Visualizations -->
+<!-- Visualizations Section -->
+<section id="visualizations" class="report-section">
+    <h2 class="section-title">Visualizations</h2>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3>Temporal Trends</h3>
+            <canvas id="temporal-trends-chart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>Top Violated Files</h3>
+            <canvas id="top-files-chart"></canvas>
+        </div>
+
+        <div class="chart-container full-width">
+            <h3>Risk Hotspot Heatmap</h3>
+            <canvas id="hotspot-heatmap"></canvas>
+        </div>
+    </div>
+</section>
+
+<style>
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.chart-container {
+    background: var(--card-bg, #fff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.chart-container.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-container h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Temporal Trends Chart
+    (function() {
+        const ctx = document.getElementById('temporal-trends-chart').getContext('2d');
+        const data = {"colors": ["#4caf50", "#ff9800", "#f44336"], "labels": ["Improving", "Stable", "Degrading"], "values": [0.0, 0.0, 0.0]};
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: data.colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    })();
+
+    // Top Files Bar Chart
+    (function() {
+        const ctx = document.getElementById('top-files-chart').getContext('2d');
+        const data = {"color": "#1976d2", "labels": ["app", "unknown", "app/core/config.py", "app/api/routes.py", "app/main.py", "app/core/security.py", "app/core/errors.py", "app/models/__init__.py", "pyproject.toml", "app/schemas"], "values": [14, 14, 11, 8, 6, 5, 5, 3, 3, 3]};
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Violations',
+                    data: data.values,
+                    backgroundColor: data.color,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })();
+
+    // Hotspot Heatmap
+    (function() {
+        const ctx = document.getElementById('hotspot-heatmap').getContext('2d');
+        const data = {"colorScale": "Reds", "labels": [".pre-commit-config.yaml"], "values": [0.0]};
+
+        // Create gradient colors based on risk scores
+        const colors = data.values.map(value => {
+            const intensity = value / 100;
+            return `rgba(255, ${Math.floor(255 * (1 - intensity))}, ${Math.floor(255 * (1 - intensity))}, 0.8)`;
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Risk Score',
+                    data: data.values,
+                    backgroundColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    })();
+});
+</script>
+    <!-- Metadata -->
+    <section id="metadata" class="report-section">
+        <h2 class="section-title">Report Metadata</h2>
+        <div class="metadata-grid">
+            <div class="metadata-item">
+                <label>Report ID</label>
+                <value>5babe768-0f90-45eb-894d-5b46a342d49c</value>
+            </div>
+            <div class="metadata-item">
+                <label>Repository</label>
+                <value>.</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Mode</label>
+                <value>Unknown</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Duration</label>
+                <value>5,060s</value>
+            </div>
+        </div>
+    </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="report-footer">
+            <div class="footer-content">
+                <p class="security-level">
+                    Security Level: <span class="badge badge-internal">INTERNAL</span>
+                </p>
+                <p class="generation-info">
+                    Generated by Enhanced Reporting Module v2.0.0
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+// Main JS    </script>
+
+<script>
+    // Initialize risk distribution chart
+    (function() {
+        const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
+        const config = {\"type\": \"pie\", \"data\": {\"labels\": [\"Critical\", \"High\", \"Medium\", \"Low\"], \"values\": [37, 50, 43, 7], \"colors\": [\"#d32f2f\", \"#f57c00\", \"#fbc02d\", \"#388e3c\"]}};
+        new Chart(ctx, config);
+    })();
+
+    // Animate compliance score
+    document.addEventListener('DOMContentLoaded', function() {
+        const scoreCircle = document.querySelector('.score-progress');
+        if (scoreCircle) {
+            scoreCircle.style.animation = 'scoreAnimation 1.5s ease-out forwards';
+        }
+    });
+</script>
+</body>
+</html>

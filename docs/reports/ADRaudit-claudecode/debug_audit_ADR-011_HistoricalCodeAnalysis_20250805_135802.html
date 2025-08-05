@@ -1,0 +1,49 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Claude Code Debug Audit - ADR-011_HistoricalCodeAnalysis</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { background: #f4f4f4; padding: 20px; border-radius: 5px; }
+                .section { margin: 20px 0; }
+                .violation { background: #fff2f2; padding: 10px; margin: 10px 0; border-left: 4px solid #ff4444; }
+                .hotspot { background: #fff8e1; padding: 10px; margin: 10px 0; border-left: 4px solid #ff9800; }
+                .success { color: #4CAF50; }
+                .error { color: #f44336; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🐛 Claude Code Debug Audit Report</h1>
+                <p><strong>Selected ADR:</strong> ADR-011_HistoricalCodeAnalysis</p>
+                <p><strong>Analysis Time:</strong> 105.98s</p>
+                <p><strong>Compliance Score:</strong> 87.3</p>
+                <p><strong>Mode:</strong> debug_single_adr</p>
+            </div>
+
+            <div class="section">
+                <h2>📊 Summary</h2>
+                <p>Violations: 5</p>
+                <p>Hotspots: 1</p>
+                <p>Recommendations: 0</p>
+            </div>
+
+            <div class="section">
+                <h2>⚠️ Violations</h2>
+                <div class="violation"><strong>Unknown</strong>: ComplexityAnalyzer._is_safe_file_path() method uses basic path validation but lacks comprehensive protection against all path traversal variants mentioned in ADR security requirements. Missing validation for null bytes, encoded traversal sequences, and Windows-specific paths.<br><small>File: tools/pre_audit/historical_analyzer.py (Line 562)</small></div><div class="violation"><strong>Unknown</strong>: Repository path validation function _validate_repository_path() does not implement all security validations mentioned in ADR requirements. Missing comprehensive git structure validation and symlink resolution checks.<br><small>File: tools/pre_audit/historical_analyzer.py (Line 1131)</small></div><div class="violation"><strong>Unknown</strong>: Configuration file contains 20+ ADR patterns as required, but some advanced patterns mentioned in ADR (like machine learning enhancement patterns) are not yet implemented.<br><small>File: config/violation_patterns.yml (Line 95)</small></div><div class="violation"><strong>Unknown</strong>: Performance metrics calculation includes commits_per_second but there's no explicit validation that it meets the ADR requirement of 100+ commits per second. No benchmark testing infrastructure found.<br><small>File: tools/pre_audit/historical_analyzer.py (Line 799)</small></div><div class="violation"><strong>Unknown</strong>: Report naming convention implemented correctly follows ADRaudit_ prefix requirement, but missing integration with existing CI/CD pipelines mentioned in ADR operational integration section.<br><small>File: tools/pre_audit/historical_analyzer.py (Line 1092)</small></div>
+            </div>
+
+            <div class="section">
+                <h2>🔥 Architectural Hotspots</h2>
+                <div class="hotspot"><strong>.pre-commit-config.yaml</strong><br>Risk Score: Unknown</div>
+            </div>
+
+            <div class="section">
+                <h2>💡 Recommendations</h2>
+                <ul>
+
+                </ul>
+            </div>
+        </body>
+        </html>
