@@ -87,11 +87,12 @@ The Claude Code Enterprise Architectural Governance Platform is a revolutionary 
 
 3. **Enterprise Environment Setup**:
    ```bash
-   cp .env.example .env
-   # Edit .env with enterprise configuration
+   cd tools/pre_audit
+   cp .env.claude_audit.example .env.claude_audit
+   # Edit .env.claude_audit with enterprise configuration
    ```
 
-   **Enterprise .env Configuration**:
+   **Enterprise .env.claude_audit Configuration**:
    ```env
    # Core Configuration
    ANTHROPIC_API_KEY=your_api_key_here
@@ -142,8 +143,9 @@ The Claude Code Enterprise Architectural Governance Platform is a revolutionary 
    mkdir -p .cache/claude_code_analysis
 
    # Set up environment
-   cp .env.example .env
-   # Edit .env and add your ANTHROPIC_API_KEY
+   cd tools/pre_audit
+   cp .env.claude_audit.example .env.claude_audit
+   # Edit .env.claude_audit and add your ANTHROPIC_API_KEY
    ```
 
 ### Quick Start with Smart Triggers
@@ -1288,7 +1290,7 @@ async def update_enterprise_dashboard(audit_results):
    ```
    Authentication failed: Invalid API key
    ```
-   **Solution**: Verify your `.env` file contains valid `ANTHROPIC_API_KEY`.
+   **Solution**: Verify your `tools/pre_audit/.env.claude_audit` file contains valid `ANTHROPIC_API_KEY`.
 
 4. **Compliance Score Shows 0.0%**:
    ```
@@ -1311,7 +1313,7 @@ async def update_enterprise_dashboard(audit_results):
    ```
    Analysis timeout after 300 seconds
    ```
-   **Solution**: Increase timeout in `.env`:
+   **Solution**: Increase timeout in `tools/pre_audit/.env.claude_audit`:
    ```env
    ANALYSIS_TIMEOUT=600
    MAX_TURNS=15

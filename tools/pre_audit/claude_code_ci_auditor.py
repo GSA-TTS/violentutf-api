@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -36,8 +37,14 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from dedicated config file
+env_file = Path(__file__).parent / ".env.claude_audit"
+if not env_file.exists():
+    env_example = Path(__file__).parent / ".env.claude_audit.example"
+    if env_example.exists():
+        shutil.copy(env_example, env_file)
+        logger.info(f"Created {env_file} from example file")
+load_dotenv(dotenv_path=env_file)
 
 
 class ClaudeCodeCIAuditor:

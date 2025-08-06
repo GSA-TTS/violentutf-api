@@ -118,8 +118,16 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from dedicated config file
+# Use .env.claude_audit to avoid conflicts with main .env
+env_file = Path(__file__).parent / ".env.claude_audit"
+if not env_file.exists():
+    # Fallback to .env.claude_audit.example if main file doesn't exist
+    env_example = Path(__file__).parent / ".env.claude_audit.example"
+    if env_example.exists():
+        shutil.copy(env_example, env_file)
+        logging.info(f"Created {env_file} from example file")
+load_dotenv(dotenv_path=env_file)
 
 
 class EnterpriseClaudeCodeConfig:
