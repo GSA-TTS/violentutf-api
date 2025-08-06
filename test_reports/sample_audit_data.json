@@ -2,7 +2,7 @@
   "audit_metadata": {
     "repository_path": "/Users/test/violentutf-api",
     "adr_path": "/Users/test/violentutf-api/docs/architecture/ADRs",
-    "analysis_timestamp": "2025-08-05T21:31:04.976966+00:00",
+    "analysis_timestamp": "2025-08-05T22:23:28.200247+00:00",
     "execution_time_seconds": 42.7,
     "mode": "comprehensive",
     "total_adrs_analyzed": 12,
