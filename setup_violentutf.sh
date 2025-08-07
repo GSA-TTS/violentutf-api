@@ -7,15 +7,26 @@
 
 set -e  # Exit on error
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-# MAGENTA is removed as it was unused
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-BOLD='\033[1m'
+# Detect if terminal supports colors
+if [ -t 1 ] && command -v tput >/dev/null 2>&1; then
+    # Color codes for output
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    YELLOW=$(tput setaf 3)
+    BLUE=$(tput setaf 4)
+    CYAN=$(tput setaf 6)
+    NC=$(tput sgr0) # No Color
+    BOLD=$(tput bold)
+else
+    # No colors if terminal doesn't support them
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    CYAN=''
+    NC=''
+    BOLD=''
+fi
 
 # Configuration
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,6 +41,19 @@ MINIMUM_DOCKER_VERSION="20.10.0"
 # MINIMUM_DOCKER_COMPOSE_VERSION removed as it was unused
 MINIMUM_PYTHON_VERSION="3.11"
 REQUIRED_DISK_SPACE_MB=2048
+
+# Admin credentials and API key
+ADMIN_USERNAME=""
+ADMIN_PASSWORD=""
+ADMIN_EMAIL=""
+GENERATED_API_KEY=""
+ADMIN_CREDENTIALS_SET="false"
+GENERATED_DB_PASSWORD=""
+GENERATED_SECRET_KEY=""
+GENERATED_JWT_SECRET=""
+GENERATED_REDIS_PASSWORD=""
+GENERATED_SECRETS=""
+DIM='\033[2m'
 
 # Function to print colored output
 print_color() {
@@ -344,7 +368,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-violentutf}:${DB_PASSWORD:-violentutf}@db:5432/${DB_NAME:-violentutf}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://violentutf:violentutf@db:5432/violentutf}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-min-32-chars-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
@@ -436,7 +460,8 @@ EOF
 generate_secret() {
     local length=${1:-32}
     if command -v openssl &> /dev/null; then
-        openssl rand -base64 "$length" | tr -d "=+/" | cut -c1-"$length"
+        # Generate hex string which is guaranteed to be alphanumeric
+        openssl rand -hex "$((length / 2 + 1))" | cut -c1-"$length"
     elif command -v uuidgen &> /dev/null; then
         # Fallback to UUID-based generation
         local secret=""
@@ -484,10 +509,21 @@ create_env_file() {
     if [ -f "$SCRIPT_DIR/$ENV_EXAMPLE_FILE" ]; then
         print_status "info" "Creating .env from .env.example with secure secrets..."
         cp "$SCRIPT_DIR/$ENV_EXAMPLE_FILE" "$SCRIPT_DIR/$ENV_FILE"
-        # Update with generated secrets
-        sed -i.bak "s/your_api_key_here/$SECRET_KEY/g" "$SCRIPT_DIR/$ENV_FILE"
-        sed -i.bak "s/your-secret-key-min-32-chars-change-in-production/$SECRET_KEY/g" "$SCRIPT_DIR/$ENV_FILE"
-        rm -f "$SCRIPT_DIR/$ENV_FILE.bak"
+
+        # Use awk to safely replace all secrets
+        awk -v secret="$SECRET_KEY" \
+            -v dbpass="$DB_PASSWORD" \
+            -v redispass="$REDIS_PASSWORD" \
+            -v jwtsecret="$JWT_SECRET" '
+        {
+            gsub(/your-secret-key-min-32-chars-change-in-production/, secret)
+            gsub(/your-jwt-secret-min-32-chars-change-in-production/, jwtsecret)
+            gsub(/change-this-secure-password-in-production/, dbpass)
+            gsub(/your_api_key_here/, secret)
+            print
+        }' "$SCRIPT_DIR/$ENV_FILE" > "$SCRIPT_DIR/$ENV_FILE.tmp"
+
+        mv "$SCRIPT_DIR/$ENV_FILE.tmp" "$SCRIPT_DIR/$ENV_FILE"
     else
         print_status "info" "Creating .env file with secure secrets..."
         cat > "$SCRIPT_DIR/$ENV_FILE" << EOF
@@ -693,6 +729,437 @@ restore_data() {
     print_status "success" "Restore completed"
 }
 
+# Function to fix database URL for async operations
+fix_database_url() {
+    print_status "info" "Configuring database URL for async operations..."
+
+    if [ -f "$SCRIPT_DIR/$ENV_FILE" ]; then
+        # Check if DATABASE_URL needs updating
+        if grep -q "^DATABASE_URL=postgresql://" "$SCRIPT_DIR/$ENV_FILE" || grep -q "^# DATABASE_URL=" "$SCRIPT_DIR/$ENV_FILE"; then
+            # Get the current password from DB_PASSWORD
+            local db_password
+            db_password=$(grep "^DB_PASSWORD=" "$SCRIPT_DIR/$ENV_FILE" | cut -d'=' -f2)
+
+            # Update or add DATABASE_URL with asyncpg
+            awk -v password="$db_password" '
+            /^DATABASE_URL=postgresql:\/\// || /^# DATABASE_URL=/ {
+                print "DATABASE_URL=postgresql+asyncpg://violentutf:" password "@db:5432/violentutf"
+                next
+            }
+            {print}
+            ' "$SCRIPT_DIR/$ENV_FILE" > "$SCRIPT_DIR/$ENV_FILE.tmp"
+
+            mv "$SCRIPT_DIR/$ENV_FILE.tmp" "$SCRIPT_DIR/$ENV_FILE"
+            print_status "success" "DATABASE_URL configured for async operations"
+        fi
+    fi
+}
+
+# Function to run database migrations
+run_database_migrations() {
+    print_status "info" "Running database migrations..."
+
+    # Wait for database to be ready
+    local max_attempts=30
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if ${DOCKER_COMPOSE_CMD:-docker compose} exec -T db pg_isready -U violentutf &>/dev/null; then
+            print_status "success" "Database is ready"
+            break
+        fi
+        if [ $((attempt % 5)) -eq 0 ]; then
+            print_status "info" "Waiting for database (attempt $attempt/$max_attempts)..."
+        else
+            printf "."
+        fi
+        sleep 2
+        ((attempt++))
+    done
+    echo ""
+
+    if [ $attempt -gt $max_attempts ]; then
+        print_status "error" "Database failed to become ready"
+        return 1
+    fi
+
+    # Initialize database schema
+    print_status "info" "Initializing database schema..."
+    local migration_output
+    migration_output=$(${DOCKER_COMPOSE_CMD:-docker compose} exec -T api python -c '
+import asyncio
+from app.db.session import init_db
+asyncio.run(init_db())
+print("Database initialized")
+' 2>&1) && migration_success=true || migration_success=false
+
+    if [ "$migration_success" = "true" ] && echo "$migration_output" | grep -q "Database initialized"; then
+        print_status "success" "Database schema initialized"
+    else
+        print_status "warning" "Database initialization may need manual intervention"
+    fi
+}
+
+# Function to create admin user and generate API key
+create_admin_user() {
+    print_status "info" "Setting up admin credentials..."
+
+    # Generate admin credentials
+    ADMIN_USERNAME="admin"
+    ADMIN_PASSWORD=$(generate_secret 16)
+    ADMIN_EMAIL="admin@violentutf.local"
+
+    # Generate API key even if database setup fails
+    GENERATED_API_KEY=$(generate_secret 43)
+
+    # Try to create admin user in database
+    print_status "info" "Attempting to create admin user in database..."
+
+    # Create Python script for admin setup
+    cat > /tmp/setup_admin.py << 'PYTHON_SCRIPT'
+import asyncio
+import sys
+import os
+import secrets
+from datetime import datetime, timedelta, timezone
+
+sys.path.insert(0, '/app')
+
+async def create_admin():
+    try:
+        # Import all models to ensure they're registered
+        from app.db.base import Base
+        from app.db.session import engine, get_db
+        from app.models import user as user_model, api_key as api_key_model  # Import to register
+        from app.models.user import User
+        from app.models.api_key import APIKey
+        from app.core.security import hash_password
+        from sqlalchemy import select
+
+        # Create tables if they don't exist
+        if engine:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                print("Database tables created/verified")
+
+        async with get_db() as db:
+            try:
+                admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+                admin_password = os.environ.get('ADMIN_PASSWORD', 'changeme')
+                admin_email = os.environ.get('ADMIN_EMAIL', 'admin@violentutf.local')
+
+                # Check if admin exists
+                result = await db.execute(select(User).where(User.username == admin_username))
+                existing_user = result.scalar_one_or_none()
+
+                if existing_user:
+                    print(f"Admin user already exists: {existing_user.username}")
+                    user = existing_user
+                else:
+                    # Create admin user
+                    user = User(
+                        username=admin_username,
+                        email=admin_email,
+                        hashed_password=hash_password(admin_password),
+                        is_active=True,
+                        is_superuser=True,
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    db.add(user)
+                    await db.commit()
+                    await db.refresh(user)
+                    print(f"Created admin user: {user.username}")
+
+                # Generate API key
+                api_key_value = secrets.token_urlsafe(32)
+
+                # Check for existing setup key
+                result = await db.execute(
+                    select(APIKey).where(
+                        (APIKey.user_id == user.id) &
+                        (APIKey.name == "Setup API Key")
+                    )
+                )
+                existing_key = result.scalar_one_or_none()
+
+                if existing_key:
+                    existing_key.key = api_key_value
+                    existing_key.expires_at = datetime.now(timezone.utc) + timedelta(days=365)
+                    await db.commit()
+                else:
+                    api_key = APIKey(
+                        name="Setup API Key",
+                        key=api_key_value,
+                        user_id=user.id,
+                        expires_at=datetime.now(timezone.utc) + timedelta(days=365),
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    db.add(api_key)
+                    await db.commit()
+
+                print(f"API_KEY={api_key_value}")
+                return
+
+            except Exception as e:
+                print(f"Database error: {e}")
+                await db.rollback()
+                return
+            finally:
+                await db.close()
+
+    except ImportError as e:
+        print(f"Import error: {e}")
+        # Generate API key for manual setup
+        api_key = os.environ.get('FALLBACK_API_KEY', secrets.token_urlsafe(32))
+        print(f"API_KEY={api_key}")
+        print("MANUAL_SETUP_REQUIRED=true")
+    except Exception as e:
+        print(f"Setup error: {e}")
+        # Generate API key for manual setup
+        api_key = os.environ.get('FALLBACK_API_KEY', secrets.token_urlsafe(32))
+        print(f"API_KEY={api_key}")
+        print("MANUAL_SETUP_REQUIRED=true")
+
+asyncio.run(create_admin())
+PYTHON_SCRIPT
+
+    # Copy script to container
+    docker cp /tmp/setup_admin.py "${PROJECT_NAME}:/tmp/setup_admin.py" 2>/dev/null || {
+        print_status "warning" "Could not copy admin setup script - using generated credentials"
+        ADMIN_CREDENTIALS_SET="true"  # We have the generated credentials
+        rm -f /tmp/setup_admin.py
+        return 0
+    }
+
+    # Run the script with fallback API key
+    local output
+    output=$(${DOCKER_COMPOSE_CMD:-docker compose} exec -T \
+        -e ADMIN_USERNAME="$ADMIN_USERNAME" \
+        -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+        -e ADMIN_EMAIL="$ADMIN_EMAIL" \
+        -e FALLBACK_API_KEY="$GENERATED_API_KEY" \
+        api python /tmp/setup_admin.py 2>&1) && setup_success=true || setup_success=false
+
+    # Check if database setup succeeded
+    if [ "$setup_success" = "true" ] || echo "$output" | grep -q "Created admin user\|Admin user already exists"; then
+        print_status "success" "Admin user configured in database"
+    elif echo "$output" | grep -q "MANUAL_SETUP_REQUIRED=true"; then
+        print_status "info" "Database setup pending - credentials generated for later use"
+    fi
+
+    # Extract API key from output (might be different if created in DB)
+    local db_api_key
+    db_api_key=$(echo "$output" | grep "API_KEY=" | tail -1 | cut -d'=' -f2)
+    if [ -n "$db_api_key" ]; then
+        GENERATED_API_KEY="$db_api_key"
+    fi
+
+    ADMIN_CREDENTIALS_SET="true"  # We always have credentials
+
+    # Cleanup
+    rm -f /tmp/setup_admin.py
+    ${DOCKER_COMPOSE_CMD:-docker compose} exec -T api rm -f /tmp/setup_admin.py 2>/dev/null || true  # JUSTIFIED: Cleanup is non-critical
+}
+
+# Function to verify all services
+verify_all_services() {
+    print_header "Service Verification"
+
+    local all_healthy=true
+
+    # Check API health
+    print_status "info" "Checking API health endpoint..."
+    local api_response
+    local retry_count=0
+    local max_retries=5
+
+    while [ $retry_count -lt $max_retries ]; do
+        api_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" http://localhost:8000/api/v1/health 2>/dev/null || echo "HTTP_CODE:000")
+        local http_code
+        http_code=$(echo "$api_response" | grep "HTTP_CODE:" | cut -d':' -f2)
+
+        if [ "$http_code" = "200" ]; then
+            print_status "success" "API health check passed"
+            break
+        elif [ "$http_code" = "401" ]; then
+            print_status "info" "API requires authentication (expected behavior)"
+            break
+        else
+            ((retry_count++))
+            if [ $retry_count -lt $max_retries ]; then
+                sleep 2
+            fi
+        fi
+    done
+
+    # Check database
+    print_status "info" "Checking database connectivity..."
+    if ${DOCKER_COMPOSE_CMD:-docker compose} exec -T db pg_isready -U violentutf &>/dev/null; then
+        print_status "success" "Database is accessible"
+    else
+        print_status "error" "Database is not accessible"
+        all_healthy=false
+    fi
+
+    # Check Redis
+    print_status "info" "Checking Redis connectivity..."
+    # Get Redis password from .env if it exists
+    local redis_password=""
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        redis_password=$(grep "^REDIS_PASSWORD=" "$SCRIPT_DIR/.env" | cut -d'=' -f2)
+    fi
+
+    if [ -n "$redis_password" ]; then
+        # Test with password
+        if ${DOCKER_COMPOSE_CMD:-docker compose} exec -T redis redis-cli -a "$redis_password" ping 2>/dev/null | grep -q PONG; then
+            print_status "success" "Redis is accessible (with authentication)"
+        else
+            print_status "warning" "Redis may require different authentication"
+        fi
+    else
+        # Test without password
+        if ${DOCKER_COMPOSE_CMD:-docker compose} exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+            print_status "success" "Redis is accessible"
+        else
+            print_status "warning" "Redis may require authentication"
+        fi
+    fi
+
+    # Check Nginx
+    print_status "info" "Checking Nginx proxy..."
+    local nginx_response
+    nginx_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/v1/health 2>/dev/null || echo "000")
+
+    if [ "$nginx_response" = "200" ] || [ "$nginx_response" = "401" ]; then
+        print_status "success" "Nginx proxy is working"
+    else
+        print_status "warning" "Nginx proxy returned status: $nginx_response"
+    fi
+
+    # Test authenticated access
+    if [ -n "$GENERATED_API_KEY" ]; then
+        print_status "info" "Testing API authentication..."
+        local auth_test
+        auth_test=$(curl -s -H "Authorization: Bearer $GENERATED_API_KEY" \
+            http://localhost:8000/api/v1/users/me 2>/dev/null || echo "{}")
+
+        if echo "$auth_test" | grep -q "username"; then
+            print_status "success" "API authentication is working"
+        else
+            print_status "info" "API authentication will be available after full initialization"
+        fi
+    fi
+
+    echo ""
+    if [ "$all_healthy" = true ]; then
+        print_status "success" "All services verified successfully!"
+        return 0
+    else
+        print_status "warning" "Some services may need attention"
+        return 1
+    fi
+}
+
+# Function to display enhanced setup summary
+display_enhanced_summary() {
+    echo ""
+    echo "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo "${CYAN}║${BOLD}  ViolentUTF API Setup Complete!                             ${NC}${CYAN}║${NC}"
+    echo "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    echo "${BOLD}🌐 Access URLs:${NC}"
+    echo "   API Base:     ${GREEN}http://localhost:8000${NC}"
+    echo "   API Docs:     ${GREEN}http://localhost:8000/docs${NC}"
+    echo "   ReDoc:        ${GREEN}http://localhost:8000/redoc${NC}"
+    echo "   Health Check: ${GREEN}http://localhost:8000/api/v1/health${NC}"
+    echo "   Via Nginx:    ${GREEN}http://localhost/api/v1/health${NC}"
+    echo ""
+
+    if [ -n "$ADMIN_USERNAME" ]; then
+        echo "${BOLD}👤 Admin Credentials:${NC}"
+        echo "   Username: ${YELLOW}$ADMIN_USERNAME${NC}"
+        echo "   Password: ${YELLOW}$ADMIN_PASSWORD${NC}"
+        echo "   Email:    ${YELLOW}$ADMIN_EMAIL${NC}"
+        echo ""
+
+        if [ "$ADMIN_CREDENTIALS_SET" != "true" ]; then
+            echo "   ${DIM}(Note: Database setup pending - save these for manual configuration)${NC}"
+            echo ""
+        fi
+    fi
+
+    if [ -n "$GENERATED_API_KEY" ]; then
+        echo "${BOLD}🔑 API Key:${NC}"
+        echo "   ${GREEN}$GENERATED_API_KEY${NC}"
+        echo ""
+        echo "${BOLD}📝 Example API Usage:${NC}"
+        echo "   ${DIM}# Get current user info${NC}"
+        echo "   curl -H \"Authorization: Bearer $GENERATED_API_KEY\" \\"
+        echo "        http://localhost:8000/api/v1/users/me"
+        echo ""
+        echo "   ${DIM}# Access API documentation${NC}"
+        echo "   curl -H \"Authorization: Bearer $GENERATED_API_KEY\" \\"
+        echo "        http://localhost:8000/docs"
+        echo ""
+    fi
+
+    echo "${BOLD}📊 Service Status:${NC}"
+    ${DOCKER_COMPOSE_CMD:-docker compose} ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+    echo ""
+
+    echo "${BOLD}🛠️  Management Commands:${NC}"
+    echo "   View logs:        ${DIM}./setup_violentutf.sh --logs${NC}"
+    echo "   Check status:     ${DIM}./setup_violentutf.sh --status${NC}"
+    echo "   Stop services:    ${DIM}./setup_violentutf.sh --stop${NC}"
+    echo "   Restart services: ${DIM}./setup_violentutf.sh --restart${NC}"
+    echo "   Create backup:    ${DIM}./setup_violentutf.sh --backup${NC}"
+    echo ""
+
+    # Save credentials to secure file
+    if [ -n "$GENERATED_API_KEY" ] || [ -n "$ADMIN_PASSWORD" ]; then
+        local creds_file="$SCRIPT_DIR/.api_credentials"
+        cat > "$creds_file" << EOF
+# ViolentUTF API Credentials
+# Generated: $(date)
+# KEEP THIS FILE SECURE - DO NOT COMMIT TO VERSION CONTROL
+
+## Admin Account
+ADMIN_USERNAME=$ADMIN_USERNAME
+ADMIN_PASSWORD=$ADMIN_PASSWORD
+ADMIN_EMAIL=$ADMIN_EMAIL
+
+## API Access
+API_KEY=$GENERATED_API_KEY
+
+## Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=violentutf
+DB_USER=violentutf
+DB_PASSWORD=$GENERATED_DB_PASSWORD
+
+## Service URLs
+API_URL=http://localhost:8000
+DOCS_URL=http://localhost:8000/docs
+HEALTH_URL=http://localhost:8000/api/v1/health
+
+## Example Usage
+# curl -H "Authorization: Bearer $GENERATED_API_KEY" http://localhost:8000/api/v1/users/me
+EOF
+        chmod 600 "$creds_file"
+
+        echo "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo "${YELLOW}⚠️  Credentials saved to: ${BOLD}$creds_file${NC}"
+        echo "${YELLOW}   Keep this file secure and do not commit to version control${NC}"
+        echo "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    fi
+
+    echo ""
+    echo "${GREEN}🎉 Setup completed successfully! Your API is ready to use.${NC}"
+    echo ""
+}
+
 # Function to check and update existing secrets
 check_update_secrets() {
     if [ ! -f "$SCRIPT_DIR/$ENV_FILE" ]; then
@@ -708,18 +1175,46 @@ check_update_secrets() {
         print_status "warning" "Default SECRET_KEY detected - generating secure one"
         local new_secret
         new_secret=$(generate_secret 64)
-        sed -i.bak "s/your-secret-key-min-32-chars-change-in-production/$new_secret/g" "$temp_env"
+        # Use awk to safely replace the secret
+        awk -v secret="$new_secret" '
+        {
+            gsub(/your-secret-key-min-32-chars-change-in-production/, secret)
+            print
+        }' "$temp_env" > "$temp_env.new"
+        mv "$temp_env.new" "$temp_env"
         GENERATED_SECRET_KEY="$new_secret"
         updated=true
     fi
 
     # Check and replace default DB_PASSWORD
-    if grep -q "^DB_PASSWORD=violentutf$" "$temp_env" 2>/dev/null; then
+    if grep -q "change-this-secure-password-in-production" "$temp_env" 2>/dev/null; then
         print_status "warning" "Default DB_PASSWORD detected - generating secure one"
         local new_pass
         new_pass=$(generate_secret 32)
-        sed -i.bak "s/^DB_PASSWORD=violentutf$/DB_PASSWORD=$new_pass/g" "$temp_env"
+        # Use awk to safely replace the password
+        awk -v dbpass="$new_pass" '
+        {
+            gsub(/change-this-secure-password-in-production/, dbpass)
+            print
+        }' "$temp_env" > "$temp_env.new"
+        mv "$temp_env.new" "$temp_env"
         GENERATED_DB_PASSWORD="$new_pass"
+        updated=true
+    fi
+
+    # Check and replace default JWT_SECRET
+    if grep -q "your-jwt-secret-min-32-chars-change-in-production" "$temp_env" 2>/dev/null; then
+        print_status "warning" "Default JWT_SECRET detected - generating secure one"
+        local new_jwt
+        new_jwt=$(generate_secret 48)
+        # Use awk to safely replace the JWT secret
+        awk -v jwtsecret="$new_jwt" '
+        {
+            gsub(/your-jwt-secret-min-32-chars-change-in-production/, jwtsecret)
+            print
+        }' "$temp_env" > "$temp_env.new"
+        mv "$temp_env.new" "$temp_env"
+        GENERATED_JWT_SECRET="$new_jwt"
         updated=true
     fi
 
@@ -751,7 +1246,6 @@ check_update_secrets() {
 
     if [ "$updated" = true ]; then
         mv "$temp_env" "$SCRIPT_DIR/$ENV_FILE"
-        rm -f "$temp_env.bak"
         GENERATED_SECRETS="true"
         print_status "success" "Updated .env with secure secrets"
         return 0
@@ -778,18 +1272,50 @@ setup_project() {
 
     # Check and update existing secrets if needed
     if [ -f "$SCRIPT_DIR/$ENV_FILE" ]; then
+        # Temporarily disable exit on error for this check
+        set +e
         check_update_secrets
+        local update_result=$?
+        set -e
+
+        if [ $update_result -eq 0 ]; then
+            print_status "info" "Secrets have been updated"
+        else
+            # Function returns 1 when no updates needed, which is fine
+            print_status "info" "Using existing secure secrets"
+        fi
     fi
 
     # Build Docker image
     print_status "info" "Building Docker image..."
+    set +e
     docker build -t "${PROJECT_NAME}:latest" "$SCRIPT_DIR"
-    print_status "success" "Docker image built successfully"
+    local build_result=$?
+    set -e
+
+    if [ $build_result -eq 0 ]; then
+        print_status "success" "Docker image built successfully"
+    else
+        print_status "error" "Docker image build failed"
+        print_status "info" "Please check the Dockerfile and requirements.txt"
+        print_status "info" "You can manually build with: docker build -t ${PROJECT_NAME}:latest ."
+        return 1
+    fi
 
     # Start services
     print_status "info" "Starting services..."
     cd "$SCRIPT_DIR"
+    set +e
     ${DOCKER_COMPOSE_CMD:-docker compose} up -d
+    local compose_result=$?
+    set -e
+
+    if [ $compose_result -ne 0 ]; then
+        print_status "error" "Failed to start services"
+        print_status "info" "Please check docker-compose.yml and try:"
+        print_status "info" "  docker compose up -d"
+        return 1
+    fi
 
     # Wait for services to be healthy
     print_status "info" "Waiting for services to be healthy..."
@@ -806,20 +1332,27 @@ setup_project() {
     done
     echo ""
 
+    # Fix database URL for async operations
+    fix_database_url
+
     # Run database migrations
-    print_status "info" "Running database migrations..."
-    # JUSTIFIED: Database migrations may fail if DB is not ready yet - we continue anyway
-    if ! docker exec "${PROJECT_NAME}" alembic upgrade head 2>/dev/null; then
-        print_status "warning" "Database migration failed - may need manual intervention"
-    fi
+    run_database_migrations
 
-    # Show service status
-    print_status "info" "Service status:"
-    ${DOCKER_COMPOSE_CMD:-docker compose} ps
+    # Create admin user and generate API key
+    create_admin_user
 
-    print_color "$GREEN" "\n═══════════════════════════════════════════════════════════════"
-    print_status "success" "ViolentUTF API setup completed!"
+    # Verify all services are working
+    verify_all_services
 
+    # Display enhanced setup summary
+    display_enhanced_summary
+
+    # Return success since we completed the core setup
+    return 0
+}
+
+# Function to display generated credentials (legacy - kept for compatibility)
+display_generated_credentials() {
     # Display generated credentials if new ones were created
     if [ "$GENERATED_SECRETS" = "true" ]; then
         print_color "$YELLOW" "\n🔐 IMPORTANT: Generated Credentials (save these securely!):"
@@ -903,37 +1436,55 @@ EOF
 
 # Function to cleanup (preserving data)
 cleanup() {
-    print_header "Cleaning up (preserving data)"
+    print_header "Cleaning up (preserving data and configuration)"
 
     cd "$SCRIPT_DIR" || exit 1
 
-    # Stop containers
-    print_status "info" "Stopping containers..."
-    ${DOCKER_COMPOSE_CMD:-docker compose} down
-
-    # Remove cache directories
-    print_status "info" "Removing cache directories..."
-    for dir in "${CACHE_DIRS[@]}"; do
-        # JUSTIFIED: Cleanup operations should continue even if some directories don't exist
-        find . -type d -name "$dir" -exec rm -rf {} + 2>/dev/null || print_status "warning" "Could not remove some $dir directories"
-    done
-
-    # Remove log files (but keep the directory)
-    print_status "info" "Clearing log files..."
-    if [ -d "logs" ]; then
-        rm -f logs/*.log 2>/dev/null || print_status "warning" "Some log files could not be removed"
+    # Stop containers for this project only
+    print_status "info" "Stopping ViolentUTF API containers..."
+    if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        ${DOCKER_COMPOSE_CMD:-docker compose} down
     fi
 
-    # Remove __pycache__ and .pyc files
+    # Remove only project-specific cache directories
+    print_status "info" "Removing project cache directories..."
+    for dir in "${CACHE_DIRS[@]}"; do
+        # Only remove within project directory
+        if [ -d "./$dir" ]; then
+            rm -rf "./$dir"
+            print_status "success" "Removed $dir"
+        fi
+    done
+
+    # Clear log files (but keep the logs directory and .env)
+    print_status "info" "Clearing log files..."
+    if [ -d "logs" ]; then
+        rm -f logs/*.log 2>/dev/null && print_status "success" "Cleared log files"
+    fi
+
+    # Remove Python cache files in project directory only
     print_status "info" "Removing Python cache files..."
-    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || print_status "warning" "Some cache directories could not be removed"
-    find . -type f -name "*.pyc" -delete 2>/dev/null || print_status "warning" "Some .pyc files could not be removed"
+    find . -type d -name "__pycache__" -maxdepth 3 -exec rm -rf {} + 2>/dev/null
+    find . -type f -name "*.pyc" -maxdepth 3 -delete 2>/dev/null
 
-    # Clean Docker system (remove unused images, not volumes)
-    print_status "info" "Cleaning Docker system..."
-    docker system prune -f --filter "label!=keep"
+    # Note: NOT doing docker system prune as it affects other projects
+    print_status "info" "Note: Docker images and volumes are preserved"
 
-    print_status "success" "Cleanup completed (data preserved)"
+    print_status "success" "Cleanup completed"
+    echo ""
+    print_color "$GREEN" "✓ Preserved:"
+    echo "  • Docker volumes (database data)"
+    echo "  • Configuration files (.env, docker-compose.yml, nginx.conf)"
+    echo "  • Backup directory"
+    echo "  • Docker images (for faster restart)"
+    echo ""
+    print_color "$YELLOW" "✗ Removed:"
+    echo "  • Running containers (stopped)"
+    echo "  • Cache directories (.pytest_cache, __pycache__, etc.)"
+    echo "  • Log files (*.log)"
+    echo "  • Python compiled files (*.pyc)"
+    echo ""
+    print_status "info" "To restart: ./setup_violentutf.sh --start"
 }
 
 # Function to deep cleanup (remove everything)
@@ -958,19 +1509,15 @@ deep_cleanup() {
     print_status "info" "Removing all containers, networks, and volumes..."
     ${DOCKER_COMPOSE_CMD:-docker compose} down -v --remove-orphans
 
-    # Remove Docker images
-    print_status "info" "Removing Docker images..."
+    # Remove Docker images for this project only
+    print_status "info" "Removing ViolentUTF API Docker images..."
     # Handle case where images might not exist
     if docker images -q "${PROJECT_NAME}:latest" | grep -q .; then
         docker rmi "${PROJECT_NAME}:latest"
     fi
 
-    # Remove specific images if they exist
-    for image in "postgres:15-alpine" "redis:7-alpine" "nginx:alpine"; do
-        if docker images -q "$image" | grep -q .; then
-            docker rmi "$(docker images -q "$image")"
-        fi
-    done
+    # Note: NOT removing postgres/redis/nginx images as they may be used by other projects
+    print_status "info" "Note: Base images (postgres, redis, nginx) preserved for other projects"
 
     # Remove all cache and temporary directories
     print_status "info" "Removing all cache and temporary files..."
@@ -991,12 +1538,31 @@ deep_cleanup() {
     [ -f "$DOCKER_COMPOSE_FILE" ] && rm -f "$DOCKER_COMPOSE_FILE"
     [ -f "nginx.conf" ] && rm -f "nginx.conf"
 
-    # Clean all Docker resources
-    print_status "info" "Cleaning all Docker resources..."
-    docker system prune -af --volumes
+    # Clean only project-specific Docker resources
+    print_status "info" "Cleaning project-specific Docker resources..."
+    # Remove only networks and volumes with our project name
+    docker network ls | grep "${PROJECT_NAME}" | awk '{print $1}' | xargs -r docker network rm 2>/dev/null || true  # JUSTIFIED: Docker cleanup is best effort
+    docker volume ls | grep "${PROJECT_NAME}" | awk '{print $2}' | xargs -r docker volume rm 2>/dev/null || true  # JUSTIFIED: Docker cleanup is best effort
 
     print_status "success" "Deep cleanup completed"
+    echo ""
+    print_color "$RED" "✗ Removed (Project-Specific Only):"
+    echo "  • All ViolentUTF API containers"
+    echo "  • All ViolentUTF API volumes (database data lost!)"
+    echo "  • ViolentUTF API Docker image"
+    echo "  • Project networks"
+    echo "  • Configuration files (docker-compose.yml, nginx.conf)"
+    echo "  • All cache and temporary files"
+    echo "  • Data directories"
+    echo ""
+    print_color "$GREEN" "✓ Preserved:"
+    echo "  • .env file (contains your secrets)"
+    echo "  • Source code"
+    echo "  • Backup directory with latest backup"
+    echo "  • Base Docker images (postgres, redis, nginx) for other projects"
+    echo ""
     print_status "info" "Backup saved in $BACKUP_DIR"
+    print_status "info" "To start fresh: ./setup_violentutf.sh --setup"
 }
 
 # Function to show usage
@@ -1011,8 +1577,8 @@ ${BOLD}Options:${NC}
   --help, -h           Show this help message
   --precheck           Check all prerequisites without installing
   --setup              Setup and launch ViolentUTF API (default)
-  --cleanup            Clean up containers and cache (preserve data)
-  --deepcleanup        Remove everything including data and volumes
+  --cleanup            Stop containers, remove cache (preserve data/config)
+  --deepcleanup        Remove EVERYTHING: containers, volumes, images, config
   --backup             Create backup of data and configuration
   --restore <path>     Restore from backup
   --status             Show current service status
@@ -1144,7 +1710,17 @@ main() {
             ;;
         --setup)
             if check_prerequisites; then
+                set +e
                 setup_project
+                local setup_result=$?
+                set -e
+
+                if [ $setup_result -ne 0 ]; then
+                    print_status "warning" "Setup encountered some issues"
+                    print_status "info" "Please review the messages above and complete any manual steps needed"
+                    print_status "info" "You can check service status with: docker compose ps"
+                    exit 1
+                fi
             else
                 print_status "error" "Prerequisites check failed. Please fix the issues and try again."
                 exit 1

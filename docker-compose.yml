@@ -10,7 +10,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-violentutf}:${DB_PASSWORD:-violentutf}@db:5432/${DB_NAME:-violentutf}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://violentutf:violentutf@db:5432/violentutf}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-min-32-chars-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}

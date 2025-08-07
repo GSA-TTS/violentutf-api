@@ -23,7 +23,7 @@ from ...core.input_validation import (
 )
 from ...core.rate_limiting import rate_limit
 from ...core.security import create_access_token, create_refresh_token, validate_password_strength
-from ...db.session import get_db
+from ...db.session import get_db_dependency
 from ...repositories.user import UserRepository
 
 logger = get_logger(__name__)
@@ -118,7 +118,7 @@ AUTH_VALIDATION_CONFIG = ValidationConfig(
 async def login(
     request: LoginRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_dependency),
 ) -> LoginResponse:
     """Authenticate user and return JWT tokens with comprehensive input validation."""
     try:
@@ -208,7 +208,7 @@ async def login(
 )
 async def register(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_dependency),
 ) -> Dict[str, str]:
     """Register a new user account with comprehensive input validation."""
     try:
@@ -290,7 +290,7 @@ async def register(
 )
 async def refresh_token(
     request: TokenRefreshRequest,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_dependency),
 ) -> LoginResponse:
     """Refresh access token using refresh token with comprehensive validation."""
     try:

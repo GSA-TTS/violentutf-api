@@ -505,6 +505,29 @@ def get_engine() -> Optional[AsyncEngine]:
     return _engine
 
 
+async def get_db_dependency() -> AsyncGenerator[AsyncSession, None]:
+    """
+    FastAPI dependency for database session.
+
+    This is a generator function that yields the session for use with FastAPI's Depends.
+    """
+    # Use circuit breaker to protect session creation
+    session: AsyncSession = await db_circuit_breaker.call(_create_database_session)
+
+    try:
+        yield session
+    except SQLAlchemyError as e:
+        logger.error("Database SQLAlchemy error", error=str(e))
+        await session.rollback()
+        raise
+    except Exception as e:
+        logger.error("Database session error", error=str(e))
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
 async def recreate_database_pool() -> bool:
     """
     Recreate the database connection pool.

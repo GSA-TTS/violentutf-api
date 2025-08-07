@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import JSON, Boolean, DateTime, String, UniqueConstraint
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
@@ -87,11 +88,13 @@ class User(Base, BaseModelMixin):
         comment="IP address of the user's last successful login",
     )
 
+    # Use JSON type that works with both PostgreSQL and SQLite
+    # SQLAlchemy will handle the JSON serialization/deserialization
     roles: Mapped[List[str]] = mapped_column(
         JSON,
         nullable=False,
-        default=lambda: ["viewer"],
-        server_default='["viewer"]',
+        default=list,  # Empty list by default
+        server_default="[]",
         comment="User roles for RBAC authorization (viewer, tester, admin)",
     )
 

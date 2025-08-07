@@ -1,39 +1,38 @@
-"""Database utilities and fixtures for testing."""
+"""Fixed test database management with proper lifecycle and isolation."""
 
 import asyncio
 import os
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.sql import text
 
-from app.core.config import settings
 from app.db.base import Base
 
 
-class DatabaseTestManager:
-    """Manages test database lifecycle and operations."""
+class TestDatabaseManager:
+    """Test database manager with proper lifecycle management."""
 
-    def __init__(self) -> None:
+    def __init__(self, database_url: str | None = None):
         """Initialize test database manager."""
+        self.database_url = database_url or "sqlite+aiosqlite:///./test_violentutf.db"
         self.engine: AsyncEngine | None = None
         self.session_maker: async_sessionmaker[AsyncSession] | None = None
 
-    async def initialize(self, database_url: str | None = None) -> None:
+    async def initialize(self) -> None:
         """Initialize test database with tables."""
-        if database_url is None:
-            database_url = "sqlite+aiosqlite:///./test_violentutf.db"
-
-        # Clean up any existing database file for SQLite
-        if "sqlite" in database_url:
-            db_file = "./test_violentutf.db"
+        # ALWAYS clean up existing database for SQLite to ensure fresh schema
+        if "sqlite" in self.database_url:
+            db_file = self.database_url.replace("sqlite+aiosqlite:///", "")
             if os.path.exists(db_file):
                 os.remove(db_file)
                 print(f"Removed existing test database: {db_file}")
 
-        # Import all models to ensure they're registered with Base
+        # Import ALL models to ensure they're registered with Base
+        # This is CRITICAL - must happen before create_all
         from app.models import (  # noqa: F401
             APIKey,
             AuditLog,
@@ -53,17 +52,16 @@ class DatabaseTestManager:
         )
 
         # Create async engine for testing
-        # For SQLite, we need special handling to ensure transaction visibility
         connect_args = {}
-        if "sqlite" in database_url:
+        if "sqlite" in self.database_url:
             connect_args = {
                 "check_same_thread": False,
                 "isolation_level": None,  # Use autocommit mode for SQLite
             }
 
         self.engine = create_async_engine(
-            database_url,
-            echo=False,  # Reduce noise in tests
+            self.database_url,
+            echo=False,
             pool_pre_ping=True,
             connect_args=connect_args,
         )
@@ -77,11 +75,12 @@ class DatabaseTestManager:
             autocommit=False,
         )
 
-        # Create all tables
+        # Create all tables with fresh schema
         async with self.engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
+            await connection.run_sync(Base.metadata.drop_all)  # Drop existing tables
+            await connection.run_sync(Base.metadata.create_all)  # Create fresh tables
 
-        print(f"Test database initialized: {database_url}")
+        print(f"Test database initialized with fresh schema: {self.database_url}")
 
     async def cleanup(self) -> None:
         """Clean up test database."""
@@ -94,9 +93,10 @@ class DatabaseTestManager:
             await self.engine.dispose()
 
         # Remove SQLite file if it exists
-        db_file = "./test_violentutf.db"
-        if os.path.exists(db_file):
-            os.remove(db_file)
+        if "sqlite" in self.database_url:
+            db_file = self.database_url.replace("sqlite+aiosqlite:///", "")
+            if os.path.exists(db_file):
+                os.remove(db_file)
 
         print("Test database cleaned up")
 
@@ -104,8 +104,23 @@ class DatabaseTestManager:
         """Get database session for testing."""
         if not self.session_maker:
             raise RuntimeError("Database not initialized")
-
         return self.session_maker()
+
+    @asynccontextmanager
+    async def session_scope(self) -> AsyncGenerator[AsyncSession, None]:
+        """Provide a transactional scope for a series of operations."""
+        if not self.session_maker:
+            raise RuntimeError("Database not initialized")
+
+        async with self.session_maker() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
     async def reset_database(self) -> None:
         """Reset database by truncating all tables."""
@@ -114,12 +129,12 @@ class DatabaseTestManager:
 
         async with self.engine.begin() as connection:
             # Get all table names
-            tables_result = await connection.execute(
+            result = await connection.execute(
                 text("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
             )
-            table_names = [row[0] for row in tables_result.fetchall()]
+            table_names = [row[0] for row in result]
 
-            # Disable foreign key constraints temporarily
+            # For SQLite, we need to disable foreign key constraints
             await connection.execute(text("PRAGMA foreign_keys = OFF"))
 
             # Truncate each table
@@ -132,12 +147,7 @@ class DatabaseTestManager:
         print("Test database reset completed")
 
 
-# Removed global singleton - each module gets its own manager
-async def get_test_db_manager() -> DatabaseTestManager:
-    """Create test database manager."""
-    manager = DatabaseTestManager()
-    await manager.initialize()
-    return manager
+# Create different scoped fixtures for different test needs
 
 
 @pytest.fixture(scope="session")
@@ -150,49 +160,41 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="module")
-async def test_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
-    """Provide test database manager per module for better test isolation."""
-    # Create fresh manager for each test module
-    manager = DatabaseTestManager()
+async def module_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
+    """Provide test database manager per module (for integration tests)."""
+    manager = TestDatabaseManager()
+    await manager.initialize()
+    yield manager
+    await manager.cleanup()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def function_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
+    """Provide test database manager per function (for unit tests with isolation)."""
+    manager = TestDatabaseManager()
     await manager.initialize()
     yield manager
     await manager.cleanup()
 
 
 @pytest_asyncio.fixture
-async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Provide database session with transaction rollback for test isolation.
-
-    Each test gets a fresh database state through transaction rollback.
-    """
-    session = await test_db_manager.get_session()
-
-    # Begin a transaction
-    transaction = await session.begin()
-
-    try:
+async def db_session(module_db_manager: TestDatabaseManager) -> AsyncGenerator[AsyncSession, None]:
+    """Provide database session with transaction rollback for test isolation."""
+    async with module_db_manager.session_scope() as session:
         yield session
-    finally:
-        # Always rollback the transaction to maintain test isolation
-        await transaction.rollback()
-        await session.close()
 
 
 @pytest_asyncio.fixture
-async def clean_db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Provide database session that commits changes (for setup fixtures).
-
-    Use this for creating test data that needs to persist across transactions.
-    """
-    session = await test_db_manager.get_session()
-
-    try:
+async def isolated_db_session(
+    function_db_manager: TestDatabaseManager,
+) -> AsyncGenerator[AsyncSession, None]:
+    """Provide completely isolated database session for critical tests."""
+    async with function_db_manager.session_scope() as session:
         yield session
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
+
+
+# For backward compatibility, provide test_db_manager as module-scoped
+@pytest_asyncio.fixture(scope="module")
+async def test_db_manager(module_db_manager: TestDatabaseManager) -> TestDatabaseManager:
+    """Backward compatible test database manager (module-scoped)."""
+    return module_db_manager

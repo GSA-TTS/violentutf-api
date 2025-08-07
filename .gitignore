@@ -189,6 +189,7 @@ Desktop.ini
 *.bak
 *.backup
 *.old
+backups/
 
 # Database
 *.db
@@ -250,3 +251,5 @@ attack_logs/
 model_artifacts/
 evaluation_results/
 red_team_outputs/
+.admin_credentials
+.api_credentials

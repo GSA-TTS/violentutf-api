@@ -12,7 +12,6 @@ from structlog.stdlib import get_logger
 
 from app.core.auth import get_current_user
 from app.core.errors import AuthenticationError, ForbiddenError, ValidationError
-from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.oauth import (
@@ -26,6 +25,8 @@ from app.schemas.oauth import (
     UserAuthorizationResponse,
 )
 from app.services.oauth_service import OAuth2Service
+
+from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -86,7 +87,7 @@ async def create_oauth_application(
     request: Request,
     app_data: OAuthApplicationCreate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Create new OAuth application."""
     try:
@@ -146,7 +147,7 @@ async def create_oauth_application(
 async def list_my_oauth_applications(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[OAuthApplicationResponse]]:
     """List user's OAuth applications."""
     try:
@@ -181,7 +182,7 @@ async def get_oauth_application(
     request: Request,
     client_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Get OAuth application details."""
     try:
@@ -231,7 +232,7 @@ async def oauth_authorize_page(
     code_challenge_method: Optional[str] = Query(None, description="PKCE method"),
     nonce: Optional[str] = Query(None, description="OpenID Connect nonce"),
     current_user: Optional[User] = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> HTMLResponse:
     """Display OAuth authorization page."""
     # If user not logged in, redirect to login with return URL
@@ -371,7 +372,7 @@ async def process_oauth_authorization(
     code_challenge_method: Optional[str] = Form(None),
     nonce: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> Union[RedirectResponse, HTMLResponse]:
     """Process OAuth authorization."""
     try:
@@ -460,7 +461,7 @@ async def oauth_token(
     refresh_token: Optional[str] = Form(None),
     scope: Optional[str] = Form(None),
     code_verifier: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> OAuthTokenResponse:
     """OAuth token endpoint."""
     try:
@@ -549,7 +550,7 @@ async def revoke_oauth_token(
     token_type_hint: Optional[str] = Form(None),
     client_id: Optional[str] = Form(None),
     client_secret: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> Dict[str, Any]:
     """Revoke OAuth token."""
     try:
@@ -583,7 +584,7 @@ async def revoke_oauth_token(
 async def list_my_authorizations(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[UserAuthorizationResponse]]:
     """List user's OAuth authorizations."""
     try:
@@ -620,7 +621,7 @@ async def revoke_authorization(
     request: Request,
     application_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[Dict[str, bool]]:
     """Revoke OAuth authorization."""
     try:

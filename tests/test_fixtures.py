@@ -97,54 +97,41 @@ class UserFactory:
         )
 
 
-# Global user cache for session-scoped fixtures
-_cached_admin_user: User | None = None
-_cached_test_user: User | None = None
-
-
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def admin_user(test_db_manager: DatabaseTestManager) -> User:
-    """Create admin user for the entire test session."""
-    global _cached_admin_user
+    """Create admin user for each test module."""
+    # Use clean session that commits changes
+    session = await test_db_manager.get_session()
 
-    if _cached_admin_user is None:
-        # Use clean session that commits changes
-        session = await test_db_manager.get_session()
-
-        try:
-            _cached_admin_user = await UserFactory.create_admin_user(session)
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-    return _cached_admin_user
+    try:
+        user = await UserFactory.create_admin_user(session)
+        await session.commit()
+        return user
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def test_user(test_db_manager: DatabaseTestManager) -> User:
-    """Create regular test user for the entire test session."""
-    global _cached_test_user
+    """Create regular test user for each test module."""
+    # Use clean session that commits changes
+    session = await test_db_manager.get_session()
 
-    if _cached_test_user is None:
-        # Use clean session that commits changes
-        session = await test_db_manager.get_session()
-
-        try:
-            _cached_test_user = await UserFactory.create_regular_user(session)
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-    return _cached_test_user
+    try:
+        user = await UserFactory.create_regular_user(session)
+        await session.commit()
+        return user
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def admin_token(admin_user: User, async_client: AsyncClient) -> str:
     """Generate authentication token for admin user."""
     # Login with admin credentials
@@ -168,7 +155,7 @@ async def admin_token(admin_user: User, async_client: AsyncClient) -> str:
     return access_token
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def auth_token(test_user: User, async_client: AsyncClient) -> str:
     """Generate authentication token for regular test user."""
     # Login with regular user credentials
