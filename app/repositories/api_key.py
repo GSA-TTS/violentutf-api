@@ -25,20 +25,26 @@ class APIKeyRepository(BaseRepository[APIKey]):
         """Initialize API key repository."""
         super().__init__(session, APIKey)
 
-    async def get_by_hash(self, key_hash: str) -> Optional[APIKey]:
+    async def get_by_hash(self, key_hash: str, organization_id: Optional[str] = None) -> Optional[APIKey]:
         """
-        Get API key by hash.
+        Get API key by hash with optional organization filtering.
 
         Args:
             key_hash: SHA256 hash of the API key
+            organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             APIKey if found and valid, None otherwise
         """
         try:
-            query = select(self.model).where(
-                and_(self.model.key_hash == key_hash, self.model.is_deleted == False)  # noqa: E712
-            )
+            # Build filters for key hash and soft delete
+            filters = [self.model.key_hash == key_hash, self.model.is_deleted == False]  # noqa: E712
+
+            # Add organization filtering if provided
+            if organization_id:
+                filters.append(self.model.organization_id == organization_id)
+
+            query = select(self.model).where(and_(*filters))
 
             result = await self.session.execute(query)
             api_key = result.scalar_one_or_none()

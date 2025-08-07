@@ -464,7 +464,12 @@ class AuditLogRepository(BaseRepository[AuditLog]):
             raise
 
     # Override delete methods to prevent audit log deletion
-    async def delete(self, entity_id: Union[str, uuid.UUID], hard_delete: bool = False) -> bool:
+    async def delete(
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        hard_delete: bool = False,
+    ) -> bool:
         """
         Audit logs are immutable and cannot be deleted.
 
@@ -474,7 +479,12 @@ class AuditLogRepository(BaseRepository[AuditLog]):
         raise ValueError("Audit logs are immutable and cannot be deleted")
 
     # Override update method to prevent audit log modification
-    async def update(self, entity_id: Union[str, uuid.UUID], **kwargs: object) -> Optional[AuditLog]:
+    async def update(
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        **kwargs: object,
+    ) -> Optional[AuditLog]:
         """
         Audit logs are immutable and cannot be updated.
 

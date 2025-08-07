@@ -12,6 +12,7 @@ from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user_role import UserRole
 from app.repositories.role import RoleRepository
+from app.repositories.user import UserRepository
 
 logger = get_logger(__name__)
 
@@ -23,6 +24,7 @@ class RBACService:
         """Initialize RBAC service."""
         self.session = session
         self.role_repository = RoleRepository(session)
+        self.user_repository = UserRepository(session)
 
     async def initialize_system_roles(self) -> List[Role]:
         """Initialize default system roles and permissions.
@@ -656,6 +658,158 @@ class RBACService:
                 "Failed to check role management permission",
                 manager_id=manager_id,
                 target_user_id=target_user_id,
+                error=str(e),
+            )
+            return False
+
+    async def check_organization_permission(
+        self,
+        user_id: str,
+        permission: str,
+        organization_id: Optional[str] = None,
+        resource_owner_id: Optional[str] = None,
+    ) -> bool:
+        """Check if user has permission with organization and ownership context.
+
+        This method provides secure multi-tenant permission validation by:
+        1. Checking basic permission (resource:action or resource:action:scope)
+        2. Validating organization context for :own scoped permissions
+        3. Ensuring ownership validation for :own scoped permissions
+
+        Args:
+            user_id: User requesting access
+            permission: Permission string (e.g., "users:read:own", "users:write")
+            organization_id: Organization context from JWT
+            resource_owner_id: Owner of the resource being accessed (for :own scoped permissions)
+
+        Returns:
+            True if user has permission with proper organization/ownership validation
+        """
+        try:
+            # First check basic permission without scope
+            base_permissions = await self.get_user_permissions(user_id)
+
+            # Check for global admin permission
+            if "*" in base_permissions:
+                return True
+
+            # Parse permission format: resource:action or resource:action:scope
+            parts = permission.split(":")
+            if len(parts) < 2:
+                logger.warning("Invalid permission format", permission=permission)
+                return False
+
+            resource = parts[0]
+            action = parts[1]
+            scope = parts[2] if len(parts) >= 3 else None
+
+            # Check for exact permission match
+            if permission in base_permissions:
+                # If it's an :own scoped permission, validate ownership
+                if scope == "own":
+                    return await self._validate_ownership_context(user_id, resource_owner_id, organization_id)
+                return True
+
+            # Check for resource wildcard (e.g., users:*)
+            resource_wildcard = f"{resource}:*"
+            if resource_wildcard in base_permissions:
+                # If requesting :own scope, validate ownership
+                if scope == "own":
+                    return await self._validate_ownership_context(user_id, resource_owner_id, organization_id)
+                return True
+
+            # Check for broader permissions (e.g., users:read covers users:read:own)
+            if scope:
+                broader_permission = f"{resource}:{action}"
+                if broader_permission in base_permissions:
+                    return True
+
+            return False
+
+        except Exception as e:
+            logger.error(
+                "Failed to check organization permission",
+                user_id=user_id,
+                permission=permission,
+                organization_id=organization_id,
+                error=str(e),
+            )
+            return False
+
+    async def _validate_ownership_context(
+        self,
+        user_id: str,
+        resource_owner_id: Optional[str],
+        organization_id: Optional[str],
+    ) -> bool:
+        """Validate ownership context for :own scoped permissions.
+
+        Args:
+            user_id: User requesting access
+            resource_owner_id: Owner of the resource being accessed
+            organization_id: Organization context from JWT
+
+        Returns:
+            True if ownership validation passes
+        """
+        try:
+            # Must have organization context for multi-tenant validation
+            if not organization_id:
+                logger.warning(
+                    "Missing organization context for ownership validation",
+                    user_id=user_id,
+                    resource_owner_id=resource_owner_id,
+                )
+                return False
+
+            # Must have resource owner for ownership validation
+            if not resource_owner_id:
+                logger.warning(
+                    "Missing resource owner for ownership validation",
+                    user_id=user_id,
+                    organization_id=organization_id,
+                )
+                return False
+
+            # User must own the resource
+            if str(user_id) != str(resource_owner_id):
+                logger.debug(
+                    "Ownership validation failed - user does not own resource",
+                    user_id=user_id,
+                    resource_owner_id=resource_owner_id,
+                    organization_id=organization_id,
+                )
+                return False
+
+            # Verify both user and resource belong to the same organization
+            user = await self.user_repository.get_by_id(user_id, organization_id)
+            if not user:
+                logger.warning(
+                    "User not found in specified organization",
+                    user_id=user_id,
+                    organization_id=organization_id,
+                )
+                return False
+
+            # If resource owner is different from user, verify they're in same organization
+            if str(user_id) != str(resource_owner_id):
+                resource_owner = await self.user_repository.get_by_id(resource_owner_id, organization_id)
+                if not resource_owner:
+                    logger.warning(
+                        "Resource owner not found in specified organization",
+                        resource_owner_id=resource_owner_id,
+                        organization_id=organization_id,
+                    )
+                    return False
+
+            return True
+
+        except Exception as e:
+            logger.error(
+                "Failed to validate ownership context",
+                user_id=user_id,
+                resource_owner_id=resource_owner_id,
+                organization_id=organization_id,
                 error=str(e),
             )
             return False

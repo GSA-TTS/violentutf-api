@@ -112,6 +112,9 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
 
             # Add user info to request state
             request.state.user_id = payload.get("sub")
+            request.state.organization_id = payload.get(
+                "organization_id"
+            )  # CRITICAL: Extract organization_id for multi-tenant isolation
             request.state.token_payload = payload
 
             # For testing or when user lookup is not needed, create a minimal user object
@@ -244,6 +247,18 @@ def get_current_user_id(request: Request) -> Optional[str]:
         User ID if authenticated, None otherwise
     """
     return getattr(request.state, "user_id", None)
+
+
+def get_current_organization_id(request: Request) -> Optional[str]:
+    """Get current authenticated user's organization ID from request state.
+
+    Args:
+        request: Current request
+
+    Returns:
+        Organization ID if authenticated, None otherwise
+    """
+    return getattr(request.state, "organization_id", None)
 
 
 def get_current_token_payload(request: Request) -> Optional[Dict[str, Any]]:

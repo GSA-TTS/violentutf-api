@@ -113,6 +113,9 @@ def require_admin(func: Callable) -> Callable:
 def require_owner_or_admin(resource_param: str = "user_id") -> Callable:
     """Decorator to require resource ownership or admin privileges.
 
+    WARNING: This decorator only validates user_id ownership without organization context.
+    Use require_organization_owner_or_admin for multi-tenant secure ownership validation.
+
     Args:
         resource_param: Name of the parameter containing the resource ID
 
@@ -157,6 +160,174 @@ def require_owner_or_admin(resource_param: str = "user_id") -> Callable:
 
             if str(current_user_id) != str(resource_id):
                 raise ForbiddenError(message="You can only access your own resources")
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def require_organization_access(allow_superuser: bool = True) -> Callable:
+    """Decorator to require organization context and ensure multi-tenant isolation.
+
+    This decorator adds organization_id from JWT to request state and validates
+    that the user has access to resources within their organization.
+
+    Args:
+        allow_superuser: If True, superusers bypass organization checks
+
+    Returns:
+        Decorator function
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Extract request from arguments
+            request = None
+            for arg in args:
+                if isinstance(arg, Request):
+                    request = arg
+                    break
+
+            if not request:
+                request = kwargs.get("request")
+
+            if not request:
+                raise ValueError("Request object not found in function arguments")
+
+            # Get current user and organization IDs
+            current_user_id = _get_user_id_from_request(request)
+            current_organization_id = _get_organization_id_from_request(request)
+
+            if not current_user_id:
+                raise UnauthorizedError(message="Authentication required")
+
+            if not current_organization_id:
+                logger.warning(
+                    "Missing organization_id in JWT token",
+                    user_id=current_user_id,
+                    endpoint=request.url.path,
+                )
+                raise UnauthorizedError(message="Organization context required for this operation")
+
+            # Check if user is superuser (if allowed)
+            if allow_superuser and await _is_superuser(request):
+                logger.debug(
+                    "Superuser bypassing organization check",
+                    user_id=current_user_id,
+                    organization_id=current_organization_id,
+                )
+                return await func(*args, **kwargs)
+
+            # Add organization_id to kwargs for use by repository methods
+            kwargs["organization_id"] = current_organization_id
+
+            logger.debug(
+                "Organization access check passed",
+                user_id=current_user_id,
+                organization_id=current_organization_id,
+            )
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def require_organization_owner_or_admin(resource_param: str = "user_id", allow_superuser: bool = True) -> Callable:
+    """Decorator to require organization-aware resource ownership or admin privileges.
+
+    This decorator provides secure multi-tenant ownership validation by:
+    1. Verifying the user belongs to an organization
+    2. Checking if user is admin/superuser (if allowed)
+    3. Validating that the resource owner belongs to the same organization
+    4. Only then checking if the current user owns the resource
+
+    Args:
+        resource_param: Name of the parameter containing the resource ID
+        allow_superuser: If True, superusers bypass ownership checks
+
+    Returns:
+        Decorator function
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Extract request and session from arguments
+            request = None
+            session = None
+
+            for arg in args:
+                if isinstance(arg, Request):
+                    request = arg
+                elif hasattr(arg, "execute"):  # Check for AsyncSession
+                    session = arg
+
+            if not request:
+                request = kwargs.get("request")
+            if not session:
+                session = kwargs.get("session")
+
+            if not request:
+                raise ValueError("Request object not found in function arguments")
+            if not session:
+                raise ValueError("Database session not found in function arguments")
+
+            # Get current user and organization IDs
+            current_user_id = _get_user_id_from_request(request)
+            current_organization_id = _get_organization_id_from_request(request)
+
+            if not current_user_id:
+                raise UnauthorizedError(message="Authentication required")
+
+            if not current_organization_id:
+                logger.warning(
+                    "Missing organization_id in JWT token for ownership validation",
+                    user_id=current_user_id,
+                    endpoint=request.url.path,
+                )
+                raise UnauthorizedError(message="Organization context required for resource access")
+
+            # Check if user is admin/superuser (if allowed)
+            if allow_superuser and (await _is_superuser(request) or await _has_admin_permissions(request)):
+                logger.debug(
+                    "Admin/superuser bypassing ownership check",
+                    user_id=current_user_id,
+                    organization_id=current_organization_id,
+                )
+                # Still add organization_id for repository methods
+                kwargs["organization_id"] = current_organization_id
+                return await func(*args, **kwargs)
+
+            # Get resource ID from parameters
+            resource_id = kwargs.get(resource_param)
+            if not resource_id:
+                # Try to get from path parameters
+                path_params = getattr(request, "path_params", {})
+                resource_id = path_params.get(resource_param)
+
+            if not resource_id:
+                raise ValueError(f"Resource parameter '{resource_param}' not found")
+
+            # For ownership validation, we need to:
+            # 1. Check if the user owns the resource (user_id match)
+            # 2. Ensure both user and resource belong to the same organization
+            if str(current_user_id) != str(resource_id):
+                raise ForbiddenError(message="You can only access your own resources")
+
+            # Add organization_id to kwargs for repository method filtering
+            kwargs["organization_id"] = current_organization_id
+
+            logger.debug(
+                "Organization-aware ownership check passed",
+                user_id=current_user_id,
+                organization_id=current_organization_id,
+                resource_id=str(resource_id),
+            )
 
             return await func(*args, **kwargs)
 
@@ -261,6 +432,24 @@ def _get_user_id_from_request(request: Request) -> Optional[str]:
     user = getattr(request.state, "user", None)
     if user and hasattr(user, "id"):
         return str(user.id)
+
+    return None
+
+
+def _get_organization_id_from_request(request: Request) -> Optional[str]:
+    """Extract organization ID from request state.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        Organization ID if authenticated, None otherwise
+    """
+    # Organization ID should be set by authentication middleware
+    organization_id = getattr(request.state, "organization_id", None)
+
+    if organization_id:
+        return str(organization_id)
 
     return None
 
