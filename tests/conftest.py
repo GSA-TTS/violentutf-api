@@ -197,6 +197,20 @@ async def clean_database(test_db_manager: "DatabaseTestManager") -> None:
     # since we clean before each test
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_database_connections() -> None:
+    """Automatically cleanup database connections between tests to prevent state contamination."""
+    yield
+    # Clean up database connections after each test
+    try:
+        from app.db.session import close_database_connections
+
+        await close_database_connections()
+    except Exception:
+        # Ignore cleanup errors to not interfere with test results
+        pass
+
+
 # Set pytest markers for better test organization
 pytest_plugins = ["asyncio"]
 

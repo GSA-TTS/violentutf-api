@@ -234,7 +234,7 @@ class User(Base, BaseModelMixin):
 
         # Use mixin email validation
         validated_value = self.validate_email_format(key, value)
-        assert validated_value is not None  # We already checked value is not None
+        assert validated_value is not None, f"Email validation failed for {key}"
         value = validated_value
 
         # Security validation

@@ -718,6 +718,15 @@ class RBACService:
                     return await self._validate_ownership_context(user_id, resource_owner_id, organization_id)
                 return True
 
+            # Check for scoped wildcard (e.g., api_keys:*:own matching api_keys:write:own)
+            if scope:
+                scoped_wildcard = f"{resource}:*:{scope}"
+                if scoped_wildcard in base_permissions:
+                    # If requesting :own scope, validate ownership
+                    if scope == "own":
+                        return await self._validate_ownership_context(user_id, resource_owner_id, organization_id)
+                    return True
+
             # Check for broader permissions (e.g., users:read covers users:read:own)
             if scope:
                 broader_permission = f"{resource}:{action}"

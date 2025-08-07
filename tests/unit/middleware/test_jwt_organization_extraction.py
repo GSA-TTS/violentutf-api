@@ -25,9 +25,14 @@ class TestJWTOrganizationExtraction:
     def mock_request(self):
         """Create mock request with proper state."""
         request = Mock(spec=Request)
-        request.state = Mock()
+
+        # Use a simple object for state that allows attribute assignment
+        class StateObject:
+            pass
+
+        request.state = StateObject()
         request.url = Mock()
-        request.url.path = "/api/v1/test"
+        request.url.path = "/api/v1/users"
         request.method = "GET"
         request.headers = {}
         request.client = Mock()
@@ -53,7 +58,7 @@ class TestJWTOrganizationExtraction:
     async def test_organization_id_extracted_from_valid_jwt(self, middleware, mock_request, valid_jwt_payload):
         """Test that organization_id is properly extracted from JWT payload."""
         # Setup
-        mock_request.headers["authorization"] = "Bearer valid.jwt.token"
+        mock_request.headers["Authorization"] = "Bearer valid.jwt.token"
         mock_call_next = AsyncMock(return_value=Response())
 
         with patch("app.middleware.authentication.decode_token", return_value=valid_jwt_payload):
@@ -68,7 +73,7 @@ class TestJWTOrganizationExtraction:
     async def test_organization_id_none_when_missing_from_jwt(self, middleware, mock_request, jwt_payload_without_org):
         """Test that organization_id is None when missing from JWT payload."""
         # Setup
-        mock_request.headers["authorization"] = "Bearer valid.jwt.token"
+        mock_request.headers["Authorization"] = "Bearer valid.jwt.token"
         mock_call_next = AsyncMock(return_value=Response())
 
         with patch("app.middleware.authentication.decode_token", return_value=jwt_payload_without_org):
@@ -120,7 +125,7 @@ class TestJWTOrganizationExtraction:
         isolation vulnerability identified in the security audit.
         """
         # Setup with organization_id in JWT
-        mock_request.headers["authorization"] = "Bearer secure.jwt.token"
+        mock_request.headers["Authorization"] = "Bearer secure.jwt.token"
         mock_call_next = AsyncMock(return_value=Response())
 
         with patch("app.middleware.authentication.decode_token", return_value=valid_jwt_payload):
@@ -164,7 +169,7 @@ class TestJWTOrganizationExtraction:
             "exp": 9999999999,
         }
 
-        mock_request.headers["authorization"] = "Bearer test.jwt.token"
+        mock_request.headers["Authorization"] = "Bearer test.jwt.token"
         mock_call_next = AsyncMock(return_value=Response())
 
         with patch("app.middleware.authentication.decode_token", return_value=jwt_payload):
@@ -178,7 +183,7 @@ class TestJWTOrganizationExtraction:
     async def test_backward_compatibility_with_existing_code(self, middleware, mock_request, valid_jwt_payload):
         """Test that existing code still works after organization_id addition."""
         # Setup
-        mock_request.headers["authorization"] = "Bearer compat.test.token"
+        mock_request.headers["Authorization"] = "Bearer compat.test.token"
         mock_call_next = AsyncMock(return_value=Response())
 
         with patch("app.middleware.authentication.decode_token", return_value=valid_jwt_payload):

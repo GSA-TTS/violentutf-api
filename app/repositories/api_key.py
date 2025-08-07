@@ -65,27 +65,33 @@ class APIKeyRepository(BaseRepository[APIKey]):
             self.logger.error("Failed to get API key by hash", key_hash=key_hash[:8] + "...", error=str(e))
             raise
 
-    async def get_by_prefix(self, key_prefix: str) -> List[APIKey]:
+    async def get_by_prefix(self, key_prefix: str, organization_id: Optional[str] = None) -> List[APIKey]:
         """
-        Get API keys by prefix (for identification purposes).
+        Get API keys by prefix with optional organization filtering.
 
         Args:
             key_prefix: Key prefix to search for
+            organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             List of matching API keys
         """
         try:
-            query = (
-                select(self.model)
-                .where(and_(self.model.key_prefix == key_prefix, self.model.is_deleted == False))  # noqa: E712
-                .order_by(self.model.created_at.desc())
-            )
+            # Build filters for prefix and soft delete
+            filters = [self.model.key_prefix == key_prefix, self.model.is_deleted == False]  # noqa: E712
+
+            # Add organization filtering if provided
+            if organization_id:
+                filters.append(self.model.organization_id == organization_id)
+
+            query = select(self.model).where(and_(*filters)).order_by(self.model.created_at.desc())
 
             result = await self.session.execute(query)
             api_keys = list(result.scalars().all())
 
-            self.logger.debug("API keys found by prefix", key_prefix=key_prefix, count=len(api_keys))
+            self.logger.debug(
+                "API keys found by prefix", key_prefix=key_prefix, organization_id=organization_id, count=len(api_keys)
+            )
             return api_keys
 
         except Exception as e:

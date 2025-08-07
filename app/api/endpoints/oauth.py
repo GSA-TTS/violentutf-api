@@ -436,8 +436,8 @@ async def process_oauth_authorization(
                 if state:
                     error_params["state"] = state
                 return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
-        except:
-            pass
+        except Exception as e:
+            logger.warning("Failed to build secure redirect URL", error=str(e), redirect_uri=redirect_uri)
 
         # Fallback to generic error page if redirect_uri validation fails
         return HTMLResponse(
