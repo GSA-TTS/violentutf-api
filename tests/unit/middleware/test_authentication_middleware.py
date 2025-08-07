@@ -189,7 +189,7 @@ class TestJWTAuthenticationMiddleware:
             if protected_path in ["/api/v1/users"]:  # Test available endpoints
                 response = client.get(protected_path)
                 assert response.status_code == 401
-                assert response.json()["detail"] == "Missing authentication token"
+                assert response.json()["detail"] == "Missing authentication token or API key"
                 assert response.headers["WWW-Authenticate"] == "Bearer"
 
     def test_protected_methods_always_require_auth(self, client: TestClient) -> None:
@@ -230,7 +230,7 @@ class TestJWTAuthenticationMiddleware:
         """Test that missing Authorization header is rejected."""
         response = client.get("/api/v1/users")
         assert response.status_code == 401
-        assert response.json()["detail"] == "Missing authentication token"
+        assert response.json()["detail"] == "Missing authentication token or API key"
         assert response.json()["type"] == "authentication_error"
         assert response.headers["WWW-Authenticate"] == "Bearer"
 
@@ -248,7 +248,7 @@ class TestJWTAuthenticationMiddleware:
         for headers in malformed_headers:
             response = client.get("/api/v1/users", headers=headers)
             assert response.status_code == 401, f"Failed for headers: {headers}"
-            assert response.json()["detail"] == "Missing authentication token"
+            assert response.json()["detail"] == "Missing authentication token or API key"
 
     def test_invalid_jwt_token_rejected(self, client: TestClient) -> None:
         """Test that invalid JWT tokens are rejected."""
@@ -373,9 +373,9 @@ class TestJWTAuthenticationMiddleware:
         """Test that WWW-Authenticate header is present in 401 responses."""
         # Test different authentication failure scenarios
         scenarios = [
-            (None, "Missing authentication token"),
+            (None, "Missing authentication token or API key"),
             ({"Authorization": "Bearer invalid"}, "Invalid authentication token"),
-            ({"Authorization": "Invalid scheme"}, "Missing authentication token"),
+            ({"Authorization": "Invalid scheme"}, "Missing authentication token or API key"),
         ]
 
         for headers, expected_detail in scenarios:

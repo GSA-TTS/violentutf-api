@@ -103,7 +103,7 @@ class TestAuthIntegration:
 
         response = await async_client.post("/api/v1/auth/login", json=login_data)
         assert response.status_code == 200
-        access_token = response.json()["data"]["access_token"]
+        access_token = response.json()["access_token"]
 
         # 2. Create API key
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -113,7 +113,7 @@ class TestAuthIntegration:
             "expires_in_days": 30,
         }
 
-        response = await async_client.post("/api/v1/api-keys", json=api_key_data, headers=headers)
+        response = await async_client.post("/api/v1/api-keys/", json=api_key_data, headers=headers)
         assert response.status_code == 201
         api_key_response = response.json()["data"]
         plain_api_key = api_key_response["key"]

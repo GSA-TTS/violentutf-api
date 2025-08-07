@@ -121,6 +121,9 @@ class JSONReportGenerator(ReportGenerator):
         self.encoder = OutputEncoder()
         self.hotspot_sanitizer = HotspotSanitizer(security_level=config.security_level.value)
 
+        # Override hotspot sanitizer to use JSON-safe encoding instead of HTML encoding
+        self.hotspot_sanitizer.encoder.encode_for_html = lambda x: str(x)  # No HTML encoding for JSON
+
         # Data processors
         self.data_processor = ReportDataProcessor()
         self.hotspot_transformer = HotspotDataTransformer()

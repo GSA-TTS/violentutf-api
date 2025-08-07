@@ -54,11 +54,18 @@ class APIKeyService:
         # Generate secure API key
         full_key, key_prefix, key_hash = self._generate_secure_key(entropy_bits, key_format)
 
-        # Prepare API key data (NO key_hash stored in database)
+        # Prepare API key data - decide hash storage strategy first
+        if self.secrets_manager:
+            # Use placeholder hash when using secrets manager
+            initial_key_hash = key_hash  # Will be moved to secrets manager after creation
+        else:
+            # Store hash directly in database for fallback/testing
+            initial_key_hash = key_hash
+
         api_key_data: Dict[str, Any] = {
             "name": key_data.name,
             "description": key_data.description,
-            "key_hash": "",  # Placeholder - actual hash stored in secrets manager
+            "key_hash": initial_key_hash,
             "key_prefix": key_prefix,
             "permissions": key_data.permissions,
             "expires_at": key_data.expires_at,
@@ -67,7 +74,7 @@ class APIKeyService:
             "updated_by": user_id,
         }
 
-        # Create API key first to get ID
+        # Create API key
         api_key = await self.repository.create(api_key_data)
 
         # Store hash in secrets manager (secure storage)
@@ -77,6 +84,10 @@ class APIKeyService:
                 # Rollback API key creation if secrets manager fails
                 await self.repository.delete(str(api_key.id))
                 raise ValidationError("Failed to securely store API key hash")
+
+            # Clear database hash since it's now in secrets manager
+            await self.repository.update(str(api_key.id), key_hash="")
+            api_key.key_hash = ""
 
             # Also store metadata for auditing and lifecycle management
             metadata = {
@@ -90,9 +101,7 @@ class APIKeyService:
 
             logger.info("API key hash stored in secrets manager", api_key_id=str(api_key.id))
         else:
-            # Fallback: store hash in database (for backwards compatibility)
-            api_key.key_hash = key_hash
-            await self.repository.update(str(api_key.id), key_hash=key_hash)
+            # Hash is already stored in database during creation
             logger.warning("No secrets manager configured - storing hash in database", api_key_id=str(api_key.id))
 
         logger.info(

@@ -218,7 +218,7 @@ class TestUserModel:
         db_session.flush()
 
         # to_dict() no longer takes parameters - it never includes sensitive data
-        data = user.to_dict()
+        data = user.to_dict(include_deprecated_fields=True)  # Include deprecated fields for test
         assert data["username"] == "testuser"
         assert data["email"] == "test@example.com"
         assert data["full_name"] == "Test User"
