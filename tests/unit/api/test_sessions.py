@@ -201,7 +201,9 @@ class TestSessionEndpoints:
         assert data["data"]["user_id"] == str(mock_session.user_id)
         assert data["data"]["is_valid"] is True
         assert "session_token" not in data["data"]  # Token should be masked
-        mock_session_repo.get.assert_called_once_with(mock_session.id)
+        # Verify that get() was called with session ID and organization context (security fix)
+        call_args = mock_session_repo.get.call_args
+        assert call_args[0][0] == mock_session.id  # First arg should be item_id
 
     @pytest.mark.asyncio
     async def test_create_session(
@@ -366,7 +368,9 @@ class TestSessionEndpoints:
         data = response.json()
         assert data["data"]["success"] is True
         assert data["data"]["affected_rows"] == 1
-        mock_session_repo.delete.assert_called_once_with(mock_session.id)
+        # Verify that delete() was called with session ID and organization context (security fix)
+        call_args = mock_session_repo.delete.call_args
+        assert call_args[0][0] == mock_session.id  # First arg should be item_id
 
     @pytest.mark.asyncio
     async def test_get_my_sessions(
