@@ -1,10 +1,10 @@
 {
-  "assessment_date": "2025-08-07T07:39:24.043496",
+  "assessment_date": "2025-08-07T13:01:26.043105",
   "github_issue": "#47",
   "summary": {
     "total_violations": 16,
-    "verified_violations": 16,
-    "exploitable_violations": 5,
+    "verified_violations": 14,
+    "exploitable_violations": 4,
     "severity_distribution": {
       "CRITICAL": 16,
       "HIGH": 0,
@@ -21,15 +21,15 @@
     },
     "exploitation_attempts": 0,
     "successful_exploits": 0,
-    "test_duration": "0:00:00.207440",
+    "test_duration": "0:00:00.222510",
     "compliance_standards_violated": {
-      "NIST_800-53": 16,
-      "ISO_27001": 16,
+      "NIST_800-53": 14,
+      "ISO_27001": 14,
       "OWASP_Top_10": 6,
-      "CIS_Controls": 16
+      "CIS_Controls": 14
     }
   },
-  "security_score": 0,
+  "security_score": 12.5,
   "violations": [
     {
       "violation_id": "SEC-001",
@@ -41,17 +41,17 @@
       "owasp_category": "A01:2021 - Broken Access Control",
       "file_location": "app/middleware/authentication.py:114",
       "exploitation_impact": "ANY USER CAN ACCESS ANY ORGANIZATION'S DATA",
-      "test_result": "VULNERABLE",
+      "test_result": "SECURE",
       "evidence": {
         "auth_middleware_exists": true,
-        "organization_id_in_code": false,
+        "organization_id_in_code": true,
         "jwt_has_org_claim": true,
         "jwt_claims": []
       },
       "remediation": "Add organization_id extraction and validation in JWT processing. Ensure all JWTs include organization_id claim.",
-      "verified": true,
+      "verified": false,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.907297"
+      "timestamp": "2025-08-07T13:01:25.885693"
     },
     {
       "violation_id": "SEC-002",
@@ -63,18 +63,15 @@
       "owasp_category": "A01:2021 - Broken Access Control",
       "file_location": "app/repositories/base.py:97",
       "exploitation_impact": "ANY USER CAN ACCESS ANY ORGANIZATION'S DATA",
-      "test_result": "VULNERABLE",
+      "test_result": "SECURE",
       "evidence": {
         "base_repo_exists": true,
-        "vulnerable_methods": [
-          "get_by_id",
-          "list"
-        ]
+        "vulnerable_methods": []
       },
       "remediation": "Implement mandatory organization_id filtering in all repository methods.",
-      "verified": true,
-      "exploitable": true,
-      "timestamp": "2025-08-07T07:39:23.918168"
+      "verified": false,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.894346"
     },
     {
       "violation_id": "SEC-003",
@@ -93,7 +90,7 @@
       "remediation": "Create Generator model for AI model tracking",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.927263"
+      "timestamp": "2025-08-07T13:01:25.903022"
     },
     {
       "violation_id": "SEC-004",
@@ -113,7 +110,7 @@
       "remediation": "Implement Docker-based sandboxing for model execution",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T07:39:23.937405"
+      "timestamp": "2025-08-07T13:01:25.911188"
     },
     {
       "violation_id": "SEC-005",
@@ -132,7 +129,7 @@
       "remediation": "Implement sandboxed Jinja2 templating",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T07:39:23.938355"
+      "timestamp": "2025-08-07T13:01:25.912111"
     },
     {
       "violation_id": "SEC-006",
@@ -151,7 +148,7 @@
       "remediation": "Create Evidence model for session tracking",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.939366"
+      "timestamp": "2025-08-07T13:01:25.913053"
     },
     {
       "violation_id": "SEC-007",
@@ -170,7 +167,7 @@
       "remediation": "Use dedicated secrets manager for API keys",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T07:39:23.952070"
+      "timestamp": "2025-08-07T13:01:25.924691"
     },
     {
       "violation_id": "SEC-008",
@@ -189,7 +186,7 @@
       "remediation": "Store API keys in secrets manager",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T07:39:23.953490"
+      "timestamp": "2025-08-07T13:01:25.926296"
     },
     {
       "violation_id": "SEC-009",
@@ -208,7 +205,7 @@
       "remediation": "Create orchestration_state.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.954477"
+      "timestamp": "2025-08-07T13:01:25.927741"
     },
     {
       "violation_id": "SEC-010",
@@ -227,7 +224,7 @@
       "remediation": "Create orchestration_secrets.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.955057"
+      "timestamp": "2025-08-07T13:01:25.928506"
     },
     {
       "violation_id": "SEC-011",
@@ -246,7 +243,7 @@
       "remediation": "Create orchestration_config.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.955556"
+      "timestamp": "2025-08-07T13:01:25.929361"
     },
     {
       "violation_id": "SEC-012",
@@ -265,7 +262,7 @@
       "remediation": "Create migration for vulnerability tables",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.965974"
+      "timestamp": "2025-08-07T13:01:25.942518"
     },
     {
       "violation_id": "SEC-013",
@@ -284,7 +281,7 @@
       "remediation": "Import vulnerability models in db/base.py",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.967085"
+      "timestamp": "2025-08-07T13:01:25.944531"
     },
     {
       "violation_id": "SEC-014",
@@ -303,7 +300,7 @@
       "remediation": "Export VulnerabilityTaxonomy in models/__init__.py",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.968007"
+      "timestamp": "2025-08-07T13:01:25.945914"
     },
     {
       "violation_id": "SEC-015",
@@ -322,7 +319,7 @@
       "remediation": "Create alembic migration for vulnerability tables",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.969127"
+      "timestamp": "2025-08-07T13:01:25.947253"
     },
     {
       "violation_id": "SEC-016",
@@ -341,7 +338,7 @@
       "remediation": "Add evidence storage to session model",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T07:39:23.976295"
+      "timestamp": "2025-08-07T13:01:25.955609"
     }
   ],
   "exploitation_attempts": [],

@@ -501,3 +501,100 @@ class TestSecretsManagerIntegration:
             # Verify valid keys remain
             assert await secrets_manager.get_api_key_metadata("valid_key1") is not None
             assert await secrets_manager.get_api_key_metadata("no_expiry_key") is not None
+
+
+class TestSecretsManagerEnhancedAPIMethods:
+    """Test enhanced API methods for secure hash storage."""
+
+    @pytest.fixture
+    def mock_provider(self):
+        """Create mock secrets manager provider."""
+        provider = Mock()
+        provider.get_secret = AsyncMock()
+        provider.store_secret = AsyncMock(return_value=True)
+        provider.delete_secret = AsyncMock()
+        provider.rotate_secret = AsyncMock()
+        provider.list_secrets = AsyncMock()
+        return provider
+
+    @pytest.fixture
+    def secrets_manager(self, mock_provider):
+        """Create secrets manager with mock provider."""
+        return SecretsManager(mock_provider)
+
+    async def test_store_api_key_hash_argon2(self, secrets_manager, mock_provider):
+        """Test storing Argon2 API key hash."""
+        key_id = "test-key-123"
+        key_hash = "$argon2id$v=19$m=65536,t=3,p=4$salt$hash"
+
+        result = await secrets_manager.store_api_key_hash(key_id, key_hash)
+
+        assert result is True
+        mock_provider.store_secret.assert_called_once()
+        args, kwargs = mock_provider.store_secret.call_args
+        assert args[0] == f"api_keys/{key_id}/hash"
+        assert args[1] == key_hash
+        assert args[2]["type"] == "api_key_hash"
+        assert args[2]["algorithm"] == "argon2"
+        assert "created_at" in args[2]
+
+    async def test_store_api_key_hash_sha256_legacy(self, secrets_manager, mock_provider):
+        """Test storing SHA256 API key hash (legacy support)."""
+        key_id = "legacy-key-456"
+        key_hash = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"
+
+        result = await secrets_manager.store_api_key_hash(key_id, key_hash)
+
+        assert result is True
+        mock_provider.store_secret.assert_called_once()
+        args, kwargs = mock_provider.store_secret.call_args
+        assert args[0] == f"api_keys/{key_id}/hash"
+        assert args[1] == key_hash
+        assert args[2]["type"] == "api_key_hash"
+        assert args[2]["algorithm"] == "sha256"
+
+    async def test_get_api_key_hash_success(self, secrets_manager, mock_provider):
+        """Test retrieving API key hash from secrets manager."""
+        key_id = "test-key-789"
+        expected_hash = "$argon2id$v=19$m=65536,t=3,p=4$salt$hash"
+
+        # Mock provider returns secret data
+        mock_secret = SecretData(value=expected_hash, metadata={"type": "api_key_hash", "algorithm": "argon2"})
+        mock_provider.get_secret.return_value = mock_secret
+
+        result = await secrets_manager.get_api_key_hash(key_id)
+
+        assert result == expected_hash
+        mock_provider.get_secret.assert_called_once_with(f"api_keys/{key_id}/hash")
+
+    async def test_get_api_key_hash_not_found(self, secrets_manager, mock_provider):
+        """Test retrieving non-existent API key hash."""
+        key_id = "nonexistent-key"
+        mock_provider.get_secret.return_value = None
+
+        result = await secrets_manager.get_api_key_hash(key_id)
+
+        assert result is None
+        mock_provider.get_secret.assert_called_once_with(f"api_keys/{key_id}/hash")
+
+    async def test_api_key_hash_storage_integration(self, secrets_manager, mock_provider):
+        """Test full integration of API key hash storage and retrieval."""
+        key_id = "integration-test-key"
+        original_hash = "$argon2id$v=19$m=65536,t=3,p=4$newsalt$newhash"
+
+        # Store hash
+        store_result = await secrets_manager.store_api_key_hash(key_id, original_hash)
+        assert store_result is True
+
+        # Mock the retrieval to return what we stored
+        mock_secret = SecretData(value=original_hash, metadata={"type": "api_key_hash"})
+        mock_provider.get_secret.return_value = mock_secret
+
+        # Retrieve hash
+        retrieved_hash = await secrets_manager.get_api_key_hash(key_id)
+        assert retrieved_hash == original_hash
+
+        # Verify correct secret paths were used
+        store_call = mock_provider.store_secret.call_args[0]
+        get_call = mock_provider.get_secret.call_args[0]
+        assert store_call[0] == get_call[0] == f"api_keys/{key_id}/hash"

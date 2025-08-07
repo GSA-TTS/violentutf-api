@@ -54,11 +54,11 @@ class APIKeyService:
         # Generate secure API key
         full_key, key_prefix, key_hash = self._generate_secure_key(entropy_bits, key_format)
 
-        # Prepare API key data
+        # Prepare API key data (NO key_hash stored in database)
         api_key_data: Dict[str, Any] = {
             "name": key_data.name,
             "description": key_data.description,
-            "key_hash": key_hash,
+            "key_hash": "",  # Placeholder - actual hash stored in secrets manager
             "key_prefix": key_prefix,
             "permissions": key_data.permissions,
             "expires_at": key_data.expires_at,
@@ -67,8 +67,33 @@ class APIKeyService:
             "updated_by": user_id,
         }
 
-        # Create API key
+        # Create API key first to get ID
         api_key = await self.repository.create(api_key_data)
+
+        # Store hash in secrets manager (secure storage)
+        if self.secrets_manager:
+            hash_stored = await self.secrets_manager.store_api_key_hash(str(api_key.id), key_hash)
+            if not hash_stored:
+                # Rollback API key creation if secrets manager fails
+                await self.repository.delete(str(api_key.id))
+                raise ValidationError("Failed to securely store API key hash")
+
+            # Also store metadata for auditing and lifecycle management
+            metadata = {
+                "user_id": user_id,
+                "name": key_data.name,
+                "permissions": key_data.permissions,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "expires_at": key_data.expires_at.isoformat() if key_data.expires_at else None,
+            }
+            await self.secrets_manager.store_api_key_metadata(str(api_key.id), metadata)
+
+            logger.info("API key hash stored in secrets manager", api_key_id=str(api_key.id))
+        else:
+            # Fallback: store hash in database (for backwards compatibility)
+            api_key.key_hash = key_hash
+            await self.repository.update(str(api_key.id), key_hash=key_hash)
+            logger.warning("No secrets manager configured - storing hash in database", api_key_id=str(api_key.id))
 
         logger.info(
             "api_key_created",
@@ -159,12 +184,34 @@ class APIKeyService:
         # Store old key hash for audit purposes
         old_key_hash = api_key.key_hash
 
-        # Update key with new values
-        update_data = {
-            "key_hash": key_hash,
-            "key_prefix": key_prefix,
-            "updated_by": user_id,
-        }
+        # Store new hash in secrets manager if available
+        if self.secrets_manager:
+            # Store hash in secrets manager (secure storage)
+            hash_success = await self.secrets_manager.store_api_key_hash(key_id, key_hash)
+            if hash_success:
+                # Update key with new values (no hash in database)
+                update_data = {
+                    "key_hash": "",  # Clear database hash for security
+                    "key_prefix": key_prefix,
+                    "updated_by": user_id,
+                }
+            else:
+                logger.warning(
+                    "Failed to store rotated hash in secrets manager, using database fallback", key_id=key_id
+                )
+                # Fallback to database storage
+                update_data = {
+                    "key_hash": key_hash,
+                    "key_prefix": key_prefix,
+                    "updated_by": user_id,
+                }
+        else:
+            # No secrets manager available, store in database (fallback)
+            update_data = {
+                "key_hash": key_hash,
+                "key_prefix": key_prefix,
+                "updated_by": user_id,
+            }
 
         updated_key = await self.repository.update(key_id, **update_data)
 
@@ -215,21 +262,57 @@ class APIKeyService:
 
         # Try to verify against each potential key
         for api_key in potential_keys:
-            if await self._verify_key_hash(key_value, api_key.key_hash):
+            stored_hash = None
+            hash_source = "database"
+
+            # Priority 1: Try to get hash from secrets manager (more secure)
+            if self.secrets_manager:
+                try:
+                    stored_hash = await self.secrets_manager.get_api_key_hash(str(api_key.id))
+                    if stored_hash:
+                        hash_source = "secrets_manager"
+                        logger.debug("Retrieved hash from secrets manager", key_id=str(api_key.id))
+                except Exception as e:
+                    logger.warning("Failed to retrieve hash from secrets manager", key_id=str(api_key.id), error=str(e))
+
+            # Priority 2: Fallback to database hash (for backward compatibility)
+            if not stored_hash and api_key.key_hash:
+                stored_hash = api_key.key_hash
+                hash_source = "database"
+                logger.debug("Using database hash (fallback)", key_id=str(api_key.id))
+
+            if not stored_hash:
+                logger.warning("No hash found for API key", key_id=str(api_key.id))
+                continue
+
+            # Verify the hash
+            if await self._verify_key_hash(key_value, stored_hash):
                 # Found matching key, check if it's active
                 if not api_key.is_active():
                     logger.debug("API key found but inactive", key_id=str(api_key.id))
                     return None
 
-                # Optionally migrate legacy SHA256 keys to Argon2 (async, non-blocking)
-                if len(api_key.key_hash) == 64 and all(c in "0123456789abcdef" for c in api_key.key_hash.lower()):
-                    # Schedule migration (don't wait for completion)
+                # Migration logic: Move database hashes to secrets manager
+                if hash_source == "database" and self.secrets_manager:
+                    # Migrate hash to secrets manager for better security
+                    import asyncio
+
+                    asyncio.create_task(self._migrate_hash_to_secrets_manager(api_key, stored_hash))
+
+                # Legacy SHA256 migration (if still needed)
+                if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
+                    # Schedule Argon2 migration (don't wait for completion)
                     import asyncio
 
                     asyncio.create_task(self._migrate_legacy_key(api_key, key_value))
 
                 # Log successful validation
-                logger.debug("API key validated successfully", key_id=str(api_key.id), user_id=str(api_key.user_id))
+                logger.info(
+                    "API key validated successfully",
+                    key_id=str(api_key.id),
+                    user_id=str(api_key.user_id),
+                    hash_source=hash_source,
+                )
                 return api_key
 
         logger.debug(
@@ -413,6 +496,41 @@ class APIKeyService:
             )
             return False
 
+    async def _migrate_hash_to_secrets_manager(self, api_key: APIKey, hash_value: str) -> bool:
+        """
+        Migrate API key hash from database to secrets manager.
+
+        Args:
+            api_key: API key model to migrate
+            hash_value: Hash value to migrate
+
+        Returns:
+            True if migration successful, False otherwise
+        """
+        try:
+            if not self.secrets_manager:
+                return False
+
+            # Store hash in secrets manager
+            success = await self.secrets_manager.store_api_key_hash(str(api_key.id), hash_value)
+            if success:
+                # Clear hash from database after successful migration
+                await self.repository.update(str(api_key.id), key_hash="")
+
+                logger.info(
+                    "Successfully migrated API key hash to secrets manager",
+                    key_id=str(api_key.id),
+                    algorithm="argon2" if hash_value.startswith("$argon2") else "sha256",
+                )
+                return True
+            else:
+                logger.error("Failed to migrate API key hash to secrets manager", key_id=str(api_key.id))
+                return False
+
+        except Exception as e:
+            logger.error("Exception during hash migration to secrets manager", key_id=str(api_key.id), error=str(e))
+            return False
+
     async def _migrate_legacy_key(self, api_key: APIKey, key_value: str) -> bool:
         """
         Migrate legacy SHA256 key to Argon2 on successful verification.
@@ -432,14 +550,26 @@ class APIKeyService:
             # Generate new Argon2 hash
             new_hash = argon2.hash(key_value)
 
-            # Update the key hash in database
+            # Preferred: Store in secrets manager if available
+            if self.secrets_manager:
+                success = await self.secrets_manager.store_api_key_hash(str(api_key.id), new_hash)
+                if success:
+                    # Clear hash from database after successful secrets manager storage
+                    await self.repository.update(str(api_key.id), key_hash="")
+                    logger.info("API key migrated to Argon2 in secrets manager", key_id=str(api_key.id))
+                    return True
+                else:
+                    logger.error("Failed to store migrated Argon2 hash in secrets manager", key_id=str(api_key.id))
+                    # Fall through to database storage
+
+            # Fallback: Update the key hash in database
             success = await self.repository.update(str(api_key.id), key_hash=new_hash)
 
             if success:
-                logger.info("API key migrated to Argon2", key_id=str(api_key.id))
+                logger.info("API key migrated to Argon2 in database (fallback)", key_id=str(api_key.id))
                 return True
             else:
-                logger.error("Failed to migrate API key", key_id=str(api_key.id))
+                logger.error("Failed to migrate API key to Argon2", key_id=str(api_key.id))
                 return False
 
         except Exception as e:

@@ -283,6 +283,22 @@ class SecretsManager:
         # Store metadata as JSON string
         return await self.provider.store_secret(secret_name, json.dumps(metadata), metadata)
 
+    async def store_api_key_hash(self, key_id: str, key_hash: str) -> bool:
+        """Store API key hash securely in secrets manager."""
+        secret_name = f"api_keys/{key_id}/hash"
+        metadata = {
+            "type": "api_key_hash",
+            "algorithm": "argon2" if key_hash.startswith("$argon2") else "sha256",
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        return await self.provider.store_secret(secret_name, key_hash, metadata)
+
+    async def get_api_key_hash(self, key_id: str) -> Optional[str]:
+        """Get API key hash from secrets manager."""
+        secret_name = f"api_keys/{key_id}/hash"
+        secret_data = await self.provider.get_secret(secret_name)
+        return secret_data.value if secret_data else None
+
     async def rotate_api_key(self, key_id: str, new_key_hash: str) -> bool:
         """Rotate API key in secrets manager."""
         secret_name = f"api_keys/{key_id}/hash"
