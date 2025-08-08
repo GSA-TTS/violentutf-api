@@ -156,6 +156,11 @@ disable_error_code = ["type-arg", "no-untyped-def", "assignment", "operator", "n
 module = "app.db.*"
 disable_error_code = ["attr-defined", "no-untyped-def", "no-untyped-call", "misc"]
 
+# Celery files with external library typing limitations
+[[tool.mypy.overrides]]
+module = "app.celery.*"
+disable_error_code = ["misc", "call-overload", "no-untyped-def"]
+
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv"]
 skips = ["B101", "B601"]

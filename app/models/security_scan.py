@@ -102,7 +102,7 @@ class SecurityScan(Base, AuditMixin, SoftDeleteMixin):
     def __table_args__(cls) -> Any:
         """Define table-specific indexes in addition to mixin indexes."""
         return (
-            Index("idx_scan_type_status", "scan_type", "status"),
+            Index("idx_security_scan_type_status", "scan_type", "status"),
             Index("idx_scan_timeline", "started_at", "completed_at"),
             Index("idx_scan_findings_summary", "total_findings", "critical_findings"),
             Index("idx_scan_initiator_type", "initiated_by", "scan_type"),

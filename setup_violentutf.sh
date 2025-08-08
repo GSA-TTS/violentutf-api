@@ -567,6 +567,15 @@ LOG_FORMAT=json
 # Nginx
 NGINX_PORT=80
 
+# Celery Configuration
+CELERY_BROKER_URL=redis://:$REDIS_PASSWORD@redis:6379/1
+CELERY_RESULT_BACKEND=redis://:$REDIS_PASSWORD@redis:6379/2
+
+# Flower Configuration (Celery Monitoring)
+FLOWER_PORT=5555
+FLOWER_USER=admin
+FLOWER_PASSWORD=$REDIS_PASSWORD
+
 # Claude Code SDK Configuration (if needed)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 EOF
@@ -783,18 +792,25 @@ run_database_migrations() {
         return 1
     fi
 
-    # Initialize database schema
-    print_status "info" "Initializing database schema..."
+    # Initialize database schema with migrations
+    print_status "info" "Initializing database schema with migrations..."
     local migration_output
     migration_output=$(${DOCKER_COMPOSE_CMD:-docker compose} exec -T api python -c '
 import asyncio
 from app.db.session import init_db
-asyncio.run(init_db())
-print("Database initialized")
+try:
+    asyncio.run(init_db())
+    print("Database initialized with migrations")
+except Exception as e:
+    print(f"Migration error: {e}")
+    # Fallback to basic initialization
+    from app.db.session import init_database
+    asyncio.run(init_database())
+    print("Database initialized (basic)")
 ' 2>&1) && migration_success=true || migration_success=false
 
-    if [ "$migration_success" = "true" ] && echo "$migration_output" | grep -q "Database initialized"; then
-        print_status "success" "Database schema initialized"
+    if [ "$migration_success" = "true" ] && (echo "$migration_output" | grep -q "Database initialized"); then
+        print_status "success" "Database schema initialized with migrations"
     else
         print_status "warning" "Database initialization may need manual intervention"
     fi

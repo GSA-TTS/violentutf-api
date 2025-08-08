@@ -14,8 +14,10 @@ from .endpoints import (
     mfa_policies,
     oauth,
     owasp_llm_classification,
+    scans,
     security_scans,
     sessions,
+    tasks,
     upload,
     users,
     vulnerability_findings,
@@ -144,5 +146,21 @@ api_router.include_router(
 api_router.include_router(
     owasp_llm_classification.router,
     tags=["OWASP LLM Classification"],
+    responses=crud_error_responses,
+)
+
+# Include Task Management endpoints
+api_router.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["Tasks"],
+    responses=crud_error_responses,
+)
+
+# Include Scan Management endpoints
+api_router.include_router(
+    scans.router,
+    prefix="/scans",
+    tags=["Scans"],
     responses=crud_error_responses,
 )

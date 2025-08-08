@@ -65,9 +65,12 @@ class TestAPIKeySecretsManagerIntegration:
         mock_api_key = Mock(spec=APIKey)
         mock_api_key.id = "new-key-123"
         mock_api_key.name = "Test Key"
+        mock_api_key.key_hash = ""  # Add key_hash attribute
         api_key_service_with_secrets.repository.create = AsyncMock(return_value=mock_api_key)
         api_key_service_with_secrets.repository.delete = AsyncMock(return_value=True)
         api_key_service_with_secrets.repository.list_user_keys = AsyncMock(return_value=[])
+        api_key_service_with_secrets.repository.update = AsyncMock(return_value=mock_api_key)
+        api_key_service_with_secrets.repository.get_by_id = AsyncMock(return_value=mock_api_key)
 
         # Test data
         key_data = APIKeyCreate(
@@ -101,9 +104,12 @@ class TestAPIKeySecretsManagerIntegration:
         # Mock repository
         mock_api_key = Mock(spec=APIKey)
         mock_api_key.id = "new-key-123"
+        mock_api_key.key_hash = ""  # Add key_hash attribute
         api_key_service_with_secrets.repository.create = AsyncMock(return_value=mock_api_key)
         api_key_service_with_secrets.repository.delete = AsyncMock(return_value=True)
         api_key_service_with_secrets.repository.list_user_keys = AsyncMock(return_value=[])
+        api_key_service_with_secrets.repository.update = AsyncMock(return_value=mock_api_key)
+        api_key_service_with_secrets.repository.get_by_id = AsyncMock(return_value=mock_api_key)
 
         # Mock secrets manager failure
         mock_secrets_manager.store_api_key_hash.return_value = False
@@ -131,6 +137,7 @@ class TestAPIKeySecretsManagerIntegration:
         api_key_service_without_secrets.repository.create = AsyncMock(return_value=mock_api_key)
         api_key_service_without_secrets.repository.update = AsyncMock(return_value=mock_api_key)
         api_key_service_without_secrets.repository.list_user_keys = AsyncMock(return_value=[])
+        api_key_service_without_secrets.repository.get_by_id = AsyncMock(return_value=mock_api_key)
 
         # Test data
         key_data = APIKeyCreate(
@@ -144,11 +151,14 @@ class TestAPIKeySecretsManagerIntegration:
             "12345678-1234-1234-1234-123456789abc", key_data
         )
 
-        # Verify fallback to database storage
-        api_key_service_without_secrets.repository.update.assert_called_once()
-        args, kwargs = api_key_service_without_secrets.repository.update.call_args
-        assert "key_hash" in kwargs
-        assert kwargs["key_hash"].startswith("$argon2")
+        # Verify fallback to database storage (hash stored directly in create, no update needed)
+        api_key_service_without_secrets.repository.create.assert_called_once()
+        args, kwargs = api_key_service_without_secrets.repository.create.call_args
+        assert "key_hash" in args[0]  # First argument contains the data dict
+        assert args[0]["key_hash"].startswith("$argon2")
+
+        # Verify no update call (hash stored directly during creation)
+        api_key_service_without_secrets.repository.update.assert_not_called()
 
     async def test_validate_api_key_from_secrets_manager(
         self, api_key_service_with_secrets, mock_secrets_manager, sample_api_key
