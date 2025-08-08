@@ -13,9 +13,13 @@ from .endpoints import (
     mfa,
     mfa_policies,
     oauth,
+    owasp_llm_classification,
+    security_scans,
     sessions,
     upload,
     users,
+    vulnerability_findings,
+    vulnerability_taxonomies,
 )
 
 api_router = APIRouter()
@@ -115,5 +119,30 @@ api_router.include_router(
 api_router.include_router(
     health_auth.router,
     tags=["Auth Health"],
+    responses=crud_error_responses,
+)
+
+# Include Vulnerability Management endpoints
+api_router.include_router(
+    vulnerability_taxonomies.router,
+    tags=["Vulnerability Taxonomies"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    vulnerability_findings.router,
+    tags=["Vulnerability Findings"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    security_scans.router,
+    tags=["Security Scans"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    owasp_llm_classification.router,
+    tags=["OWASP LLM Classification"],
     responses=crud_error_responses,
 )

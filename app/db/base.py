@@ -16,6 +16,11 @@ from app.models.oauth import (  # noqa
 )
 from app.models.permission import Permission  # noqa
 from app.models.role import Role  # noqa
+from app.models.security_scan import SecurityScan  # noqa
 from app.models.session import Session  # noqa
 from app.models.user import User  # noqa
 from app.models.user_role import UserRole  # noqa
+from app.models.vulnerability_finding import VulnerabilityFinding  # noqa
+
+# Import vulnerability management models
+from app.models.vulnerability_taxonomy import VulnerabilityTaxonomy  # noqa

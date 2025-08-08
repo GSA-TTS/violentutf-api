@@ -236,3 +236,19 @@ class AdvancedFilter(BaseFilter):
 
     # Logical operators for combining filters
     filter_logic: str = Field(default="and", pattern="^(and|or)$", description="Logic for combining filters (and/or)")
+
+
+class BaseEntityResponse(BaseSchema):
+    """Base response schema for database entities with string IDs."""
+
+    id: str = Field(..., description="Unique identifier")
+
+
+class TimestampMixin(BaseSchema):
+    """Mixin for timestamp fields."""
+
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    created_by: Optional[str] = Field(None, description="Creator identifier")
+    updated_by: Optional[str] = Field(None, description="Last updater identifier")
+    version: int = Field(..., description="Version for optimistic locking")

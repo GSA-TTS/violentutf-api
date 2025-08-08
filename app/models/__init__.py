@@ -14,9 +14,14 @@ from .oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, O
 # Import models in dependency order
 from .permission import Permission
 from .role import Role
+from .security_scan import SecurityScan
 from .session import Session
 from .user import User
 from .user_role import UserRole
+from .vulnerability_finding import VulnerabilityFinding
+
+# Import vulnerability management models
+from .vulnerability_taxonomy import VulnerabilityTaxonomy
 
 __all__ = [
     "BaseModelMixin",
@@ -38,4 +43,7 @@ __all__ = [
     "MFABackupCode",
     "MFAChallenge",
     "MFAEvent",
+    "VulnerabilityTaxonomy",
+    "VulnerabilityFinding",
+    "SecurityScan",
 ]
