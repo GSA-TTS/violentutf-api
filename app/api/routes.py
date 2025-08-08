@@ -14,10 +14,13 @@ from .endpoints import (
     mfa_policies,
     oauth,
     owasp_llm_classification,
+    plugins,
+    reports,
     scans,
     security_scans,
     sessions,
     tasks,
+    templates,
     upload,
     users,
     vulnerability_findings,
@@ -162,5 +165,29 @@ api_router.include_router(
     scans.router,
     prefix="/scans",
     tags=["Scans"],
+    responses=crud_error_responses,
+)
+
+# Include Report Management endpoints
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reports"],
+    responses=crud_error_responses,
+)
+
+# Include Template Management endpoints
+api_router.include_router(
+    templates.router,
+    prefix="/templates",
+    tags=["Templates"],
+    responses=crud_error_responses,
+)
+
+# Include Plugin Management endpoints
+api_router.include_router(
+    plugins.router,
+    prefix="/plugins",
+    tags=["Plugins"],
     responses=crud_error_responses,
 )

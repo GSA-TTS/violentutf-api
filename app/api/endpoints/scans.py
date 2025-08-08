@@ -137,10 +137,12 @@ async def create_scan(
             scan.status = ScanStatus.INITIALIZING
             scan.started_at = datetime.utcnow()
 
-            # TODO: Dispatch to Celery worker for execution
-            # celery_task = execute_scan_async.delay(scan.id, task.id)
-            # task.celery_task_id = celery_task.id
-            # task.status = TaskStatus.RUNNING
+            # Dispatch to Celery worker for execution
+            from app.celery.tasks import execute_scan_task
+
+            celery_task = execute_scan_task.delay(scan.id, task.id)
+            task.celery_task_id = celery_task.id
+            task.status = TaskStatus.PENDING
 
             await db.commit()
             await db.refresh(scan)
@@ -331,9 +333,12 @@ async def execute_scan(
         task.started_at = datetime.utcnow()
         task.updated_by = current_user.username
 
-        # TODO: Dispatch to Celery worker
-        # celery_task = execute_scan_async.delay(scan.id, task.id, config_override)
-        # task.celery_task_id = celery_task.id
+        # Dispatch to Celery worker
+        from app.celery.tasks import execute_scan_task
+
+        config_override = execution_request.config_override if execution_request else {}
+        celery_task = execute_scan_task.delay(scan.id, task.id, config_override)
+        task.celery_task_id = celery_task.id
 
         await db.commit()
         await db.refresh(scan)
@@ -396,9 +401,11 @@ async def cancel_scan(
                 task.progress_message = "Scan cancelled by user"
                 task.updated_by = current_user.username
 
-                # TODO: Cancel Celery task
-                # if task.celery_task_id:
-                #     celery_app.control.revoke(task.celery_task_id, terminate=True)
+                # Cancel Celery task
+                if task.celery_task_id:
+                    from app.celery.celery import celery_app
+
+                    celery_app.control.revoke(task.celery_task_id, terminate=True)
 
         await db.commit()
 

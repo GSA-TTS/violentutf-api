@@ -255,10 +255,12 @@ async def execute_task(
         task.started_at = datetime.utcnow()
         task.updated_by = current_user.username
 
-        # TODO: Dispatch to Celery worker
-        # For now, we'll just update the status
-        # celery_task = execute_task_async.delay(task_id, config_override)
-        # task.celery_task_id = celery_task.id
+        # Dispatch to Celery worker
+        from app.celery.tasks import execute_task
+
+        config_override = execution_request.config_override if execution_request else {}
+        celery_task = execute_task.delay(task_id, config_override)
+        task.celery_task_id = celery_task.id
 
         await db.commit()
         await db.refresh(task)
@@ -267,7 +269,7 @@ async def execute_task(
 
         return TaskExecutionResponse(
             task_id=task.id,
-            execution_id=task.id,  # For now, same as task ID
+            execution_id=None,  # Will be set when task is executed by orchestrator
             status=task.status,
             started_at=task.started_at,
             celery_task_id=task.celery_task_id,
@@ -309,9 +311,11 @@ async def cancel_task(
         task.progress_message = "Task cancelled by user"
         task.updated_by = current_user.username
 
-        # TODO: Cancel Celery task
-        # if task.celery_task_id:
-        #     celery_app.control.revoke(task.celery_task_id, terminate=True)
+        # Cancel Celery task
+        if task.celery_task_id:
+            from app.celery.celery import celery_app
+
+            celery_app.control.revoke(task.celery_task_id, terminate=True)
 
         await db.commit()
 
@@ -371,9 +375,12 @@ async def retry_task(
         if retry_request.config_override:
             task.config.update(retry_request.config_override)
 
-        # TODO: Dispatch to Celery worker
-        # celery_task = execute_task_async.delay(task_id, retry_request.config_override)
-        # task.celery_task_id = celery_task.id
+        # Dispatch to Celery worker for retry
+        from app.celery.tasks import execute_task
+
+        config_override = retry_request.config_override or {}
+        celery_task = execute_task.delay(task_id, config_override)
+        task.celery_task_id = celery_task.id
 
         await db.commit()
         await db.refresh(task)
