@@ -129,15 +129,15 @@ class APIKeyService:
         # Get existing key
         api_key = await self.repository.get(key_id)
         if not api_key:
-            raise NotFoundError(message=f"API key with ID {key_id} not found")
+            raise NotFoundError(detail=f"API key with ID {key_id} not found")
 
         # Check ownership
         if api_key.user_id != user_id:
-            raise ForbiddenError(message="You can only rotate your own API keys")
+            raise ForbiddenError(detail="You can only rotate your own API keys")
 
         # Check if key is active
         if not api_key.is_active():
-            raise ValidationError(message="Cannot rotate an inactive API key")
+            raise ValidationError(detail="Cannot rotate an inactive API key")
 
         # Generate new key
         full_key, key_prefix, key_hash = self._generate_secure_key()
@@ -177,15 +177,15 @@ class APIKeyService:
         # Get existing key
         api_key = await self.repository.get(key_id)
         if not api_key:
-            raise NotFoundError(message=f"API key with ID {key_id} not found")
+            raise NotFoundError(detail=f"API key with ID {key_id} not found")
 
         # Check ownership
         if api_key.user_id != user_id:
-            raise ForbiddenError(message="You can only rotate your own API keys")
+            raise ForbiddenError(detail="You can only rotate your own API keys")
 
         # Check if key is active
         if not api_key.is_active():
-            raise ValidationError(message="Cannot rotate an inactive API key")
+            raise ValidationError(detail="Cannot rotate an inactive API key")
 
         # Generate new key with enhanced entropy
         full_key, key_prefix, key_hash = self._generate_secure_key(entropy_bits=512, key_format="vutf")
@@ -396,11 +396,11 @@ class APIKeyService:
         # Get existing key
         api_key = await self.repository.get(key_id)
         if not api_key:
-            raise NotFoundError(message=f"API key with ID {key_id} not found")
+            raise NotFoundError(detail=f"API key with ID {key_id} not found")
 
         # Check ownership unless admin override
         if not admin_override and api_key.user_id != user_id:
-            raise ForbiddenError(message="You can only revoke your own API keys")
+            raise ForbiddenError(detail="You can only revoke your own API keys")
 
         # Revoke the key
         success = await self.repository.revoke(key_id)
@@ -599,7 +599,7 @@ class APIKeyService:
             permissions: Permissions dictionary to validate
         """
         if not isinstance(permissions, dict):
-            raise ValidationError(message="Permissions must be a dictionary")
+            raise ValidationError(detail="Permissions must be a dictionary")
 
         # Define valid permission scopes
         VALID_SCOPES = {
@@ -638,11 +638,11 @@ class APIKeyService:
         for scope, enabled in permissions.items():
             # Check if scope is valid or follows pattern
             if scope not in VALID_SCOPES and not scope.endswith(":*"):
-                raise ValidationError(message=f"Invalid permission scope: {scope}")
+                raise ValidationError(detail=f"Invalid permission scope: {scope}")
 
             # Permissions must be boolean
             if not isinstance(enabled, bool):
-                raise ValidationError(message=f"Permission value for '{scope}' must be boolean")
+                raise ValidationError(detail=f"Permission value for '{scope}' must be boolean")
 
     def _analyze_permissions(self, keys: List[APIKey]) -> Dict[str, int]:
         """Analyze permission distribution across keys."""

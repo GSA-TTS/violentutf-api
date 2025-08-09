@@ -1,12 +1,12 @@
 {
-  "assessment_date": "2025-08-07T13:01:26.043105",
+  "assessment_date": "2025-08-08T16:39:16.386675",
   "github_issue": "#47",
   "summary": {
-    "total_violations": 16,
-    "verified_violations": 14,
+    "total_violations": 12,
+    "verified_violations": 10,
     "exploitable_violations": 4,
     "severity_distribution": {
-      "CRITICAL": 16,
+      "CRITICAL": 12,
       "HIGH": 0,
       "MEDIUM": 0,
       "LOW": 0,
@@ -16,20 +16,20 @@
       "Multi-Tenant Isolation": 2,
       "AI Model Sandboxing": 4,
       "Secrets Management": 5,
-      "Vulnerability Classification": 4,
+      "Vulnerability Classification": 0,
       "Authentication/Authorization": 1
     },
     "exploitation_attempts": 0,
     "successful_exploits": 0,
-    "test_duration": "0:00:00.222510",
+    "test_duration": "0:00:00.194997",
     "compliance_standards_violated": {
-      "NIST_800-53": 14,
-      "ISO_27001": 14,
+      "NIST_800-53": 10,
+      "ISO_27001": 10,
       "OWASP_Top_10": 6,
-      "CIS_Controls": 14
+      "CIS_Controls": 10
     }
   },
-  "security_score": 12.5,
+  "security_score": 37.5,
   "violations": [
     {
       "violation_id": "SEC-001",
@@ -51,7 +51,7 @@
       "remediation": "Add organization_id extraction and validation in JWT processing. Ensure all JWTs include organization_id claim.",
       "verified": false,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.885693"
+      "timestamp": "2025-08-08T16:39:16.221197"
     },
     {
       "violation_id": "SEC-002",
@@ -71,7 +71,7 @@
       "remediation": "Implement mandatory organization_id filtering in all repository methods.",
       "verified": false,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.894346"
+      "timestamp": "2025-08-08T16:39:16.231149"
     },
     {
       "violation_id": "SEC-003",
@@ -90,7 +90,7 @@
       "remediation": "Create Generator model for AI model tracking",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.903022"
+      "timestamp": "2025-08-08T16:39:16.241464"
     },
     {
       "violation_id": "SEC-004",
@@ -110,7 +110,7 @@
       "remediation": "Implement Docker-based sandboxing for model execution",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T13:01:25.911188"
+      "timestamp": "2025-08-08T16:39:16.255134"
     },
     {
       "violation_id": "SEC-005",
@@ -129,7 +129,7 @@
       "remediation": "Implement sandboxed Jinja2 templating",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T13:01:25.912111"
+      "timestamp": "2025-08-08T16:39:16.256511"
     },
     {
       "violation_id": "SEC-006",
@@ -148,7 +148,7 @@
       "remediation": "Create Evidence model for session tracking",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.913053"
+      "timestamp": "2025-08-08T16:39:16.257852"
     },
     {
       "violation_id": "SEC-007",
@@ -167,7 +167,7 @@
       "remediation": "Use dedicated secrets manager for API keys",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T13:01:25.924691"
+      "timestamp": "2025-08-08T16:39:16.269710"
     },
     {
       "violation_id": "SEC-008",
@@ -186,7 +186,7 @@
       "remediation": "Store API keys in secrets manager",
       "verified": true,
       "exploitable": true,
-      "timestamp": "2025-08-07T13:01:25.926296"
+      "timestamp": "2025-08-08T16:39:16.271208"
     },
     {
       "violation_id": "SEC-009",
@@ -205,7 +205,7 @@
       "remediation": "Create orchestration_state.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.927741"
+      "timestamp": "2025-08-08T16:39:16.272657"
     },
     {
       "violation_id": "SEC-010",
@@ -224,7 +224,7 @@
       "remediation": "Create orchestration_secrets.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.928506"
+      "timestamp": "2025-08-08T16:39:16.273525"
     },
     {
       "violation_id": "SEC-011",
@@ -243,83 +243,7 @@
       "remediation": "Create orchestration_config.py for orchestration state management",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.929361"
-    },
-    {
-      "violation_id": "SEC-012",
-      "type": "Vulnerability Classification",
-      "severity": "CRITICAL",
-      "title": "Database Missing Vulnerability Tables",
-      "description": "Database migrations never created vulnerability classification tables.",
-      "cwe_id": "CWE-1209",
-      "owasp_category": "A09:2021 - Security Logging Failures",
-      "file_location": "alembic/versions/:194",
-      "exploitation_impact": "CANNOT TRACK OR CLASSIFY SECURITY VULNERABILITIES",
-      "test_result": "VULNERABLE",
-      "evidence": {
-        "has_vulnerability_tables": false
-      },
-      "remediation": "Create migration for vulnerability tables",
-      "verified": true,
-      "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.942518"
-    },
-    {
-      "violation_id": "SEC-013",
-      "type": "Vulnerability Classification",
-      "severity": "CRITICAL",
-      "title": "Models Not Imported",
-      "description": "Missing import for vulnerability_taxonomies model.",
-      "cwe_id": "CWE-1209",
-      "owasp_category": "A09:2021 - Security Logging Failures",
-      "file_location": "app/db/base.py:9",
-      "exploitation_impact": "Vulnerability tracking unavailable",
-      "test_result": "VULNERABLE",
-      "evidence": {
-        "imported": false
-      },
-      "remediation": "Import vulnerability models in db/base.py",
-      "verified": true,
-      "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.944531"
-    },
-    {
-      "violation_id": "SEC-014",
-      "type": "Vulnerability Classification",
-      "severity": "CRITICAL",
-      "title": "Models Not Exported",
-      "description": "VulnerabilityTaxonomy model missing from module exports.",
-      "cwe_id": "CWE-1209",
-      "owasp_category": "A09:2021 - Security Logging Failures",
-      "file_location": "app/models/__init__.py:12",
-      "exploitation_impact": "Cannot use vulnerability classification",
-      "test_result": "VULNERABLE",
-      "evidence": {
-        "exported": false
-      },
-      "remediation": "Export VulnerabilityTaxonomy in models/__init__.py",
-      "verified": true,
-      "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.945914"
-    },
-    {
-      "violation_id": "SEC-015",
-      "type": "Vulnerability Classification",
-      "severity": "CRITICAL",
-      "title": "Alembic Migration Missing",
-      "description": "No migration exists to create vulnerability classification tables.",
-      "cwe_id": "CWE-1209",
-      "owasp_category": "A09:2021 - Security Logging Failures",
-      "file_location": "alembic/versions/:Missing",
-      "exploitation_impact": "Cannot deploy vulnerability tracking",
-      "test_result": "VULNERABLE",
-      "evidence": {
-        "migration_exists": false
-      },
-      "remediation": "Create alembic migration for vulnerability tables",
-      "verified": true,
-      "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.947253"
+      "timestamp": "2025-08-08T16:39:16.274342"
     },
     {
       "violation_id": "SEC-016",
@@ -338,7 +262,7 @@
       "remediation": "Add evidence storage to session model",
       "verified": true,
       "exploitable": false,
-      "timestamp": "2025-08-07T13:01:25.955609"
+      "timestamp": "2025-08-08T16:39:16.296231"
     }
   ],
   "exploitation_attempts": [],
