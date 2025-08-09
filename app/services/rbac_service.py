@@ -75,7 +75,7 @@ class RBACService:
             # Check if role name already exists
             existing_role = await self.role_repository.get_by_name(name)
             if existing_role:
-                raise ConflictError(message=f"Role with name '{name}' already exists")
+                raise ConflictError(detail=f"Role with name '{name}' already exists")
 
             # Validate parent role if specified
             parent_role = None

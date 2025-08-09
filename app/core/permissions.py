@@ -170,7 +170,7 @@ def require_permissions(
 
             if not has_required_permissions:
                 permission_desc = " AND ".join(permission_list) if require_all else " OR ".join(permission_list)
-                raise ForbiddenError(message=f"Required permissions: {permission_desc}")
+                raise ForbiddenError(detail=f"Required permissions: {permission_desc}")
 
             logger.debug(
                 "Permission check passed",
@@ -287,7 +287,7 @@ def require_owner_or_admin(resource_param: str = "user_id") -> Callable:
                 raise ValueError(f"Resource parameter '{resource_param}' not found")
 
             if str(current_user_id) != str(resource_id):
-                raise ForbiddenError(message="You can only access your own resources")
+                raise ForbiddenError(detail="You can only access your own resources")
 
             return await func(*args, **kwargs)
 
@@ -463,7 +463,7 @@ def require_organization_owner_or_admin(resource_param: str = "user_id", allow_s
             # 1. Check if the user owns the resource (user_id match)
             # 2. Ensure both user and resource belong to the same organization
             if str(current_user_id) != str(resource_id):
-                raise ForbiddenError(message="You can only access your own resources")
+                raise ForbiddenError(detail="You can only access your own resources")
 
             # Add organization_id to kwargs for repository method filtering
             kwargs["organization_id"] = current_organization_id
@@ -815,7 +815,7 @@ class PermissionDependency:
 
         if not has_required_permissions:
             permission_desc = " AND ".join(self.permissions) if self.require_all else " OR ".join(self.permissions)
-            raise ForbiddenError(message=f"Required permissions: {permission_desc}")
+            raise ForbiddenError(detail=f"Required permissions: {permission_desc}")
 
 
 # Common permission dependencies

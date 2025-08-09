@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,16 +36,19 @@ class TestMultiTenantSecurityIntegration:
     @pytest_asyncio.fixture
     async def async_client(self) -> AsyncClient:
         """Create async HTTP client for live endpoint testing."""
-        async with AsyncClient(app=app, base_url="http://testserver") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
 
     @pytest_asyncio.fixture
     async def db_session(self) -> AsyncSession:
         """Create live database session."""
-        from app.db.session import get_session
-
-        async with get_session() as session:
-            yield session
+        # Use get_db as an async generator, not a context manager
+        async for session in get_db():
+            try:
+                yield session
+            finally:
+                await session.close()
 
     @pytest_asyncio.fixture
     async def org1_test_user(self, db_session: AsyncSession) -> Dict:
@@ -58,10 +61,10 @@ class TestMultiTenantSecurityIntegration:
             "id": user_id,
             "username": f"org1_user_{user_id[:8]}",
             "email": f"org1_user_{user_id[:8]}@example.com",
-            "organization_id": org_id,
+            "organization_id": uuid.UUID(org_id),  # Convert to UUID
             "is_active": True,
             "is_verified": True,
-            "hashed_password": "hashed_password_placeholder",
+            "password_hash": "$argon2id$v=19$m=102400,t=2,p=8$placeholder_hash_for_testing",
         }
 
         user = User(**user_data)
@@ -97,10 +100,10 @@ class TestMultiTenantSecurityIntegration:
             "id": user_id,
             "username": f"org2_user_{user_id[:8]}",
             "email": f"org2_user_{user_id[:8]}@example.com",
-            "organization_id": org_id,
+            "organization_id": uuid.UUID(org_id),  # Convert to UUID
             "is_active": True,
             "is_verified": True,
-            "hashed_password": "hashed_password_placeholder",
+            "password_hash": "$argon2id$v=19$m=102400,t=2,p=8$placeholder_hash_for_testing",
         }
 
         user = User(**user_data)

@@ -41,7 +41,7 @@ def _setup_basic_error_endpoints(app: FastAPI) -> None:
 
     @app.get("/test/api-error")
     async def raise_api_error() -> None:
-        raise APIError(status_code=418, error="teapot", message="I'm a teapot")
+        raise APIError(status_code=418, error_code="TEAPOT", title="Teapot Error", detail="I'm a teapot")
 
     @app.get("/test/bad-request")
     async def raise_bad_request() -> None:
@@ -104,10 +104,11 @@ class TestErrorHandling:
 
         assert response.status_code == 418
         data = response.json()
-        assert data["error"] == "teapot"
-        assert data["message"] == "I'm a teapot"
+        assert data["error_code"] == "TEAPOT"
+        assert data["detail"] == "I'm a teapot"
+        assert data["title"] == "Teapot Error"
         assert "timestamp" in data
-        assert "path" in data
+        assert "instance" in data
 
     def test_bad_request_error(self, error_app: FastAPI) -> None:
         """Test bad request error."""
@@ -116,8 +117,8 @@ class TestErrorHandling:
 
         assert response.status_code == 400
         data = response.json()
-        assert data["error"] == "bad_request"
-        assert data["message"] == "Invalid request data"
+        assert data["error_code"] == "VUTF_400_BAD_REQUEST"
+        assert data["detail"] == "Invalid request data"
 
     def test_unauthorized_error(self, error_app: FastAPI) -> None:
         """Test unauthorized error."""
@@ -127,8 +128,8 @@ class TestErrorHandling:
         assert response.status_code == 401
         assert response.headers["WWW-Authenticate"] == "Bearer"
         data = response.json()
-        assert data["error"] == "unauthorized"
-        assert data["message"] == "Invalid credentials"
+        assert data["error_code"] == "VUTF_401_UNAUTHORIZED"
+        assert data["detail"] == "Invalid credentials"
 
     def test_forbidden_error(self, error_app: FastAPI) -> None:
         """Test forbidden error."""
@@ -137,8 +138,8 @@ class TestErrorHandling:
 
         assert response.status_code == 403
         data = response.json()
-        assert data["error"] == "forbidden"
-        assert data["message"] == "Access denied"
+        assert data["error_code"] == "VUTF_403_FORBIDDEN"
+        assert data["detail"] == "Access denied"
 
     def test_not_found_error(self, error_app: FastAPI) -> None:
         """Test not found error."""
@@ -147,8 +148,8 @@ class TestErrorHandling:
 
         assert response.status_code == 404
         data = response.json()
-        assert data["error"] == "not_found"
-        assert data["message"] == "Item not found"
+        assert data["error_code"] == "VUTF_404_NOT_FOUND"
+        assert data["detail"] == "Item not found"
 
     def test_conflict_error(self, error_app: FastAPI) -> None:
         """Test conflict error."""
@@ -157,8 +158,8 @@ class TestErrorHandling:
 
         assert response.status_code == 409
         data = response.json()
-        assert data["error"] == "conflict"
-        assert data["message"] == "Resource already exists"
+        assert data["error_code"] == "VUTF_409_CONFLICT"
+        assert data["detail"] == "Resource already exists"
 
     def test_validation_error(self, error_app: FastAPI) -> None:
         """Test API validation error."""
@@ -167,8 +168,8 @@ class TestErrorHandling:
 
         assert response.status_code == 422
         data = response.json()
-        assert data["error"] == "validation_error"
-        assert data["message"] == "Invalid data format"
+        assert data["error_code"] == "VUTF_422_VALIDATION_ERROR"
+        assert data["detail"] == "Invalid data format"
 
     def test_internal_server_error(self, error_app: FastAPI) -> None:
         """Test internal server error."""
@@ -177,8 +178,8 @@ class TestErrorHandling:
 
         assert response.status_code == 500
         data = response.json()
-        assert data["error"] == "internal_error"
-        assert data["message"] == "Something went wrong"
+        assert data["error_code"] == "VUTF_500_INTERNAL_ERROR"
+        assert data["detail"] == "Something went wrong"
 
     def test_pydantic_validation_error(self, error_app: FastAPI) -> None:
         """Test Pydantic validation error handling."""
@@ -187,15 +188,15 @@ class TestErrorHandling:
 
         assert response.status_code == 422
         data = response.json()
-        assert data["error"] == "validation_error"
-        assert data["message"] == "Request validation failed"
-        assert "errors" in data
-        assert len(data["errors"]) > 0
+        assert data["error_code"] == "VUTF_422_VALIDATION_ERROR"
+        assert data["title"] == "Validation Error"
+        assert "invalid_params" in data
+        assert len(data["invalid_params"]) > 0
 
         # Check error structure
-        error = data["errors"][0]
+        error = data["invalid_params"][0]
         assert "field" in error
-        assert "message" in error
+        assert "reason" in error
         assert "type" in error
 
     def test_unhandled_exception(self, error_app: FastAPI) -> None:
@@ -205,9 +206,9 @@ class TestErrorHandling:
 
         assert response.status_code == 500
         data = response.json()
-        assert data["error"] == "internal_error"
+        assert data["error_code"] == "VUTF_500_INTERNAL_ERROR"
         # In development mode, should show actual error
-        assert "Unhandled exception" in data["message"]
+        assert "Unhandled exception" in data["detail"]
 
     def test_production_mode_error_masking(self) -> None:
         """Test that errors are masked in production mode."""
@@ -223,7 +224,7 @@ class TestErrorHandling:
 
         assert response.status_code == 500
         data = response.json()
-        assert data["error"] == "internal_error"
+        assert data["error_code"] == "VUTF_500_INTERNAL_ERROR"
         # Should not expose internal details
-        assert "Secret internal error" not in data["message"]
-        assert data["message"] == "An unexpected error occurred"
+        assert "Secret internal error" not in data["detail"]
+        assert data["detail"] == "An internal server error occurred. Please try again later."

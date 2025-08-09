@@ -30,7 +30,7 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
         test_dir,
         "-v",
         "--tb=short",
-        "--cov=violentutf_api",
+        "--cov=app",
         "--cov-report=xml",
         "--timeout=300",
         "-n",

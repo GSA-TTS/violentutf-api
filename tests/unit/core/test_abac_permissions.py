@@ -110,7 +110,7 @@ class TestRequireABACPermission:
         with pytest.raises(UnauthorizedError) as exc_info:
             await test_endpoint(request, mock_session)
 
-        assert "Authentication required" in str(exc_info.value)
+        assert "Authentication is required to access this resource." in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_resource_id_from_kwargs(self, mock_request, mock_session):
@@ -492,7 +492,7 @@ class TestABACPermissionChecker:
         with pytest.raises(UnauthorizedError) as exc_info:
             await permission_checker(request, mock_session)
 
-        assert "Authentication required" in str(exc_info.value)
+        assert "Authentication is required to access this resource." in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_dependency_resource_extraction(self, mock_request, mock_session):

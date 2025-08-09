@@ -169,7 +169,7 @@ def require_abac_permission(
                         reason=reason,
                     )
 
-                    raise ForbiddenError(message=error_detail)
+                    raise ForbiddenError(detail=error_detail)
 
                 logger.debug(
                     "ABAC permission granted",
@@ -208,7 +208,7 @@ def require_abac_permission(
                     action=action,
                     error=str(e),
                 )
-                raise ForbiddenError(message=f"Permission evaluation error: {str(e)}")
+                raise ForbiddenError(detail=f"Permission evaluation error: {str(e)}")
 
         return wrapper
 
@@ -378,7 +378,7 @@ class ABACPermissionChecker:
                 action=self.action,
                 reason=reason,
             )
-            raise ForbiddenError(message=f"Access denied: {reason}")
+            raise ForbiddenError(detail=f"Access denied: {reason}")
 
         return {
             "subject_id": subject_id,
