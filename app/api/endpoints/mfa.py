@@ -8,7 +8,6 @@ from structlog.stdlib import get_logger
 
 from app.core.auth import get_current_user
 from app.core.errors import AuthenticationError, NotFoundError, ValidationError
-from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.mfa import (
@@ -24,6 +23,8 @@ from app.schemas.mfa import (
 )
 from app.services.mfa_service import MFAService
 
+from ...db.session import get_db_dependency
+
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/mfa", tags=["mfa"])
@@ -33,7 +34,7 @@ router = APIRouter(prefix="/mfa", tags=["mfa"])
 async def setup_totp(
     setup_data: MFASetupStart,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFASetupResponse]:
     """
     Start TOTP setup for the current user.
@@ -64,7 +65,7 @@ async def setup_totp(
 async def verify_totp_setup(
     verification_data: MFASetupComplete,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFABackupCodesResponse]:
     """
     Verify TOTP setup with initial token.
@@ -92,7 +93,7 @@ async def verify_totp_setup(
 @router.post("/challenge", response_model=BaseResponse[MFAChallengeResponse])
 async def create_mfa_challenge(
     challenge_data: MFAChallengeCreate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFAChallengeResponse]:
     """
     Create an MFA challenge for authentication.
@@ -139,7 +140,7 @@ async def create_mfa_challenge(
 async def verify_mfa_challenge(
     verification_data: MFAChallengeVerify,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[Dict[str, str]]:
     """
     Verify an MFA challenge.
@@ -180,7 +181,7 @@ async def verify_mfa_challenge(
 @router.get("/devices", response_model=BaseResponse[MFADeviceList])
 async def list_mfa_devices(
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFADeviceList]:
     """List user's MFA devices."""
     try:
@@ -202,7 +203,7 @@ async def remove_mfa_device(
     device_id: str,
     backup_code: str = None,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[Dict[str, bool]]:
     """
     Remove an MFA device.
@@ -226,7 +227,7 @@ async def remove_mfa_device(
 @router.post("/backup-codes/regenerate", response_model=BaseResponse[MFABackupCodesResponse])
 async def regenerate_backup_codes(
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFABackupCodesResponse]:
     """Regenerate backup codes for the current user."""
     try:

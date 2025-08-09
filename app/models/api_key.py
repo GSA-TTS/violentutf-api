@@ -105,14 +105,23 @@ class APIKey(Base, BaseModelMixin):
     @validates("key_hash")
     def validate_key_hash(self: "APIKey", key: str, value: str) -> str:
         """Validate API key hash format."""
+        # Allow empty hash when using external secrets manager
         if not value:
-            raise ValueError("Key hash is required")
+            return value  # Empty string is valid when using secrets manager
 
-        # Should be a SHA256 hash (64 hex characters)
-        if len(value) != 64 or not all(c in "0123456789abcdef" for c in value.lower()):
-            raise ValueError("Key hash must be a valid SHA256 hash")
+        # Support both SHA256 (legacy) and Argon2 (new) hash formats
+        # SHA256: 64 hex characters
+        if len(value) == 64 and all(c in "0123456789abcdef" for c in value.lower()):
+            return value.lower()
 
-        return value.lower()
+        # Argon2: starts with $argon2 and contains proper structure
+        if value.startswith("$argon2") and "$" in value[1:]:
+            # Basic validation for Argon2 format: $argon2[id|i|d]$v=19$...
+            parts = value.split("$")
+            if len(parts) >= 6 and parts[1].startswith("argon2") and parts[2].startswith("v="):
+                return value
+
+        raise ValueError("Key hash must be a valid SHA256 hash (64 hex chars) or Argon2 hash")
 
     @validates("name")
     def validate_name(self: "APIKey", key: str, value: str) -> str:

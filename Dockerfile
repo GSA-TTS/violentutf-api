@@ -2,7 +2,7 @@
 
 # Build stage - uses full image with gcc pre-installed
 
-FROM python:3.13 as builder
+FROM python:3.13 AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Runtime base stage - uses slim image for security
 
-FROM python:3.13-slim as base
+FROM python:3.13-slim AS base
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* \
     && rm -rf /wheels
 
 # Copy application code
-COPY --chown=appuser:appuser violentutf_api/ ./violentutf_api/
+COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser tests/ ./tests/
 COPY --chown=appuser:appuser pytest.ini .
 
@@ -37,24 +37,24 @@ COPY --chown=appuser:appuser pytest.ini .
 USER appuser
 
 # Development stage
-FROM base as development
+FROM base AS development
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 USER root
 RUN pip install --no-cache-dir "uvicorn[standard]>=0.27.0,<0.31.0"
 USER appuser
-CMD ["uvicorn", "violentutf_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Test stage
-FROM base as test
+FROM base AS test
 USER root
 RUN pip install --no-cache-dir pytest==8.3.5 pytest-cov==6.2.1
 USER appuser
 CMD ["pytest", "-v"]
 
 # Production stage
-FROM base as production
+FROM base AS production
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
-CMD ["uvicorn", "violentutf_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

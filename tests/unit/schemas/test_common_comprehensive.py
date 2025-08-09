@@ -46,9 +46,9 @@ class TestErrorResponse:
 
     def test_error_response_auto_timestamp(self):
         """Test that timestamp is auto-generated if not provided."""
-        before = datetime.utcnow()
+        before = datetime.now(timezone.utc)
         error = ErrorResponse(error="Test error")
-        after = datetime.utcnow()
+        after = datetime.now(timezone.utc)
 
         assert before <= error.timestamp <= after
 
@@ -76,7 +76,7 @@ class TestErrorResponse:
             "error": "From dict",
             "detail": "Created from dictionary",
             "request_id": "dict-123",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
         }
 
         error = ErrorResponse(**data)
@@ -162,7 +162,7 @@ class TestHealthResponse:
     def test_health_response_unhealthy(self):
         """Test health response with unhealthy status."""
         health = HealthResponse(
-            status="unhealthy", timestamp=datetime.utcnow(), service="test-service", version="0.1.0"
+            status="unhealthy", timestamp=datetime.now(timezone.utc), service="test-service", version="0.1.0"
         )
 
         assert health.status == "unhealthy"
@@ -171,7 +171,7 @@ class TestHealthResponse:
         """Test that all fields are required."""
         # Missing status
         with pytest.raises(ValidationError):
-            HealthResponse(timestamp=datetime.utcnow(), service="test", version="1.0")
+            HealthResponse(timestamp=datetime.now(timezone.utc), service="test", version="1.0")
 
         # Missing timestamp
         with pytest.raises(ValidationError):
@@ -179,18 +179,18 @@ class TestHealthResponse:
 
         # Missing service
         with pytest.raises(ValidationError):
-            HealthResponse(status="healthy", timestamp=datetime.utcnow(), version="1.0")
+            HealthResponse(status="healthy", timestamp=datetime.now(timezone.utc), version="1.0")
 
         # Missing version
         with pytest.raises(ValidationError):
-            HealthResponse(status="healthy", timestamp=datetime.utcnow(), service="test")
+            HealthResponse(status="healthy", timestamp=datetime.now(timezone.utc), service="test")
 
     def test_health_response_various_statuses(self):
         """Test health response with various status values."""
         statuses = ["healthy", "unhealthy", "degraded", "maintenance", "starting", "stopping"]
 
         for status in statuses:
-            health = HealthResponse(status=status, timestamp=datetime.utcnow(), service="test", version="1.0")
+            health = HealthResponse(status=status, timestamp=datetime.now(timezone.utc), service="test", version="1.0")
             assert health.status == status
 
 

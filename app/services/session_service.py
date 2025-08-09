@@ -2,7 +2,7 @@
 
 import json
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import select
@@ -59,7 +59,7 @@ class SessionService:
 
         # Set expiration
         duration = self.DEFAULT_REMEMBER_ME_DURATION if remember_me else self.DEFAULT_SESSION_DURATION
-        expires_at = datetime.utcnow() + duration
+        expires_at = datetime.now(timezone.utc) + duration
 
         # Create session
         session = Session(
@@ -118,7 +118,7 @@ class SessionService:
         if cached_data:
             # Validate expiration
             expires_at = datetime.fromisoformat(cached_data["expires_at"])
-            if expires_at > datetime.utcnow():
+            if expires_at > datetime.now(timezone.utc):
                 if update_last_activity:
                     # Update last activity asynchronously
                     await self._update_last_activity(cached_data["session_id"])
@@ -142,7 +142,7 @@ class SessionService:
             return None
 
         # Check expiration
-        if session.expires_at <= datetime.utcnow():
+        if session.expires_at <= datetime.now(timezone.utc):
             session.is_active = False
             await self.db_session.flush()
             return None
@@ -156,7 +156,7 @@ class SessionService:
 
         # Update last activity
         if update_last_activity:
-            session.last_activity_at = datetime.utcnow()
+            session.last_activity_at = datetime.now(timezone.utc)
             await self.db_session.flush()
 
         # Cache session data
@@ -193,7 +193,7 @@ class SessionService:
 
         if session:
             session.is_active = False
-            session.invalidated_at = datetime.utcnow()
+            session.invalidated_at = datetime.now(timezone.utc)
             await self.db_session.flush()
 
             logger.info(
@@ -256,7 +256,7 @@ class SessionService:
 
         for session in sessions:
             session.is_active = False
-            session.invalidated_at = datetime.utcnow()
+            session.invalidated_at = datetime.now(timezone.utc)
 
         await self.db_session.flush()
 
@@ -311,7 +311,7 @@ class SessionService:
                 Session.user_id == user_id,
                 Session.is_active == True,
                 Session.is_deleted == False,
-                Session.expires_at > datetime.utcnow(),
+                Session.expires_at > datetime.now(timezone.utc),
             )
             .order_by(Session.created_at.desc())
         )
@@ -372,8 +372,8 @@ class SessionService:
             return False
 
         # Extend expiration
-        session.expires_at = datetime.utcnow() + duration
-        session.last_activity_at = datetime.utcnow()
+        session.expires_at = datetime.now(timezone.utc) + duration
+        session.last_activity_at = datetime.now(timezone.utc)
         await self.db_session.flush()
 
         # Update cache
@@ -398,7 +398,7 @@ class SessionService:
         """
         # Query expired sessions
         query = select(Session).where(
-            Session.expires_at <= datetime.utcnow(),
+            Session.expires_at <= datetime.now(timezone.utc),
             Session.is_active == True,
         )
         result = await self.db_session.execute(query)
@@ -451,7 +451,7 @@ class SessionService:
         session_data = self._build_session_data(session, user)
 
         # Calculate TTL based on expiration
-        ttl = int((session.expires_at - datetime.utcnow()).total_seconds())
+        ttl = int((session.expires_at - datetime.now(timezone.utc)).total_seconds())
         if ttl > 0:
             await cache.set(cache_key, session_data, ttl=ttl)
 
@@ -486,7 +486,7 @@ class SessionService:
             session = result.scalar_one_or_none()
 
             if session:
-                session.last_activity_at = datetime.utcnow()
+                session.last_activity_at = datetime.now(timezone.utc)
                 await self.db_session.flush()
         except Exception as e:
             logger.error("Failed to update last activity", session_id=session_id, error=str(e))

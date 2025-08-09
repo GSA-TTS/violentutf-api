@@ -1,6 +1,6 @@
 """Tests for enhanced filtering system."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import pytest
@@ -199,7 +199,7 @@ class TestEnhancedFilter:
 
     def test_enhanced_filter_with_date_range(self):
         """Test enhanced filter with date range filtering."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - timedelta(days=1)
 
         filter_obj = EnhancedFilter(created_after=yesterday, created_before=now)
@@ -381,7 +381,7 @@ class TestComplexFilteringScenarios:
             sort=sort_fields,
             search="experienced user",
             search_fields=["username", "email", "bio"],
-            created_after=datetime.utcnow() - timedelta(days=30),
+            created_after=datetime.now(timezone.utc) - timedelta(days=30),
             fields=["id", "username", "email", "status", "last_login"],
             use_cache=True,
             cache_ttl=300,
@@ -407,7 +407,7 @@ class TestComplexFilteringScenarios:
 
     def test_audit_log_filtering_scenario(self):
         """Test audit log filtering with date ranges and field selection."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         filters = {
             "action": FieldFilter(operator=FilterOperator.IN, value=["CREATE", "UPDATE", "DELETE"]),

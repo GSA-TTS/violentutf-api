@@ -23,7 +23,7 @@ from app.models.mixins import (
 TestBase = declarative_base()
 
 
-class TestModel(TestBase, BaseModelMixin):
+class SampleModel(TestBase, BaseModelMixin):
     """Test model with all mixins."""
 
     __tablename__ = "test_model"
@@ -39,7 +39,7 @@ class TestAuditMixin:
 
     def test_audit_fields_present(self) -> None:
         """Test that all audit fields are present."""
-        model = TestModel()
+        model = SampleModel()
 
         # Check all audit fields exist
         assert hasattr(model, "id")
@@ -53,8 +53,8 @@ class TestAuditMixin:
         """Test UUID generation for ID."""
         session = in_memory_db
 
-        model1 = TestModel()
-        model2 = TestModel()
+        model1 = SampleModel()
+        model2 = SampleModel()
 
         # Before saving, IDs are None (database defaults)
         assert model1.id is None
@@ -78,7 +78,7 @@ class TestAuditMixin:
         """Test timestamp generation."""
         session = in_memory_db
 
-        model = TestModel()
+        model = SampleModel()
 
         # Before saving, timestamps are None (database defaults)
         assert model.created_at is None
@@ -99,7 +99,7 @@ class TestSoftDeleteMixin:
 
     def test_soft_delete_fields(self) -> None:
         """Test that soft delete fields are present."""
-        model = TestModel()
+        model = SampleModel()
 
         assert hasattr(model, "is_deleted")
         assert hasattr(model, "deleted_at")
@@ -113,7 +113,7 @@ class TestSoftDeleteMixin:
 
     def test_soft_delete_method(self) -> None:
         """Test soft delete method."""
-        model = TestModel()
+        model = SampleModel()
 
         # Perform soft delete
         model.soft_delete(deleted_by="test_user")
@@ -125,7 +125,7 @@ class TestSoftDeleteMixin:
 
     def test_restore_method(self) -> None:
         """Test restore method."""
-        model = TestModel()
+        model = SampleModel()
 
         # First soft delete
         model.soft_delete(deleted_by="test_user")
@@ -144,7 +144,7 @@ class TestSecurityValidationMixin:
 
     def test_sql_injection_detection(self) -> None:
         """Test SQL injection pattern detection."""
-        model = TestModel()
+        model = SampleModel()
 
         # Test various SQL injection attempts
         sql_injection_attempts = [
@@ -160,7 +160,7 @@ class TestSecurityValidationMixin:
 
     def test_xss_detection(self) -> None:
         """Test XSS pattern detection."""
-        model = TestModel()
+        model = SampleModel()
 
         # Test various XSS attempts
         xss_attempts = [
@@ -176,7 +176,7 @@ class TestSecurityValidationMixin:
 
     def test_valid_strings_pass(self) -> None:
         """Test that valid strings pass validation."""
-        model = TestModel()
+        model = SampleModel()
 
         # Valid strings should pass
         valid_strings = [
@@ -192,7 +192,7 @@ class TestSecurityValidationMixin:
 
     def test_string_length_validation(self) -> None:
         """Test string length limits."""
-        model = TestModel()
+        model = SampleModel()
 
         # Test exceeding max length
         long_string = "a" * 10001
@@ -201,7 +201,7 @@ class TestSecurityValidationMixin:
 
     def test_email_validation(self) -> None:
         """Test email format validation."""
-        model = TestModel()
+        model = SampleModel()
 
         # Valid emails
         valid_emails = [
@@ -232,7 +232,7 @@ class TestOptimisticLockMixin:
 
     def test_version_field_present(self) -> None:
         """Test version field exists."""
-        model = TestModel()
+        model = SampleModel()
         assert hasattr(model, "version")
         # Version might be None until saved
         assert model.version is None or model.version == 1
@@ -242,7 +242,7 @@ class TestOptimisticLockMixin:
         """Test version increments on update."""
         # Create mock session
         mock_session = MagicMock()
-        mock_session.dirty = [TestModel()]
+        mock_session.dirty = [SampleModel()]
         mock_session.is_modified.return_value = True
 
         # Mock get_history to indicate no manual version change
@@ -266,7 +266,7 @@ class TestRowLevelSecurityMixin:
 
     def test_rls_fields_present(self) -> None:
         """Test RLS fields are present."""
-        model = TestModel()
+        model = SampleModel()
 
         assert hasattr(model, "owner_id")
         assert hasattr(model, "organization_id")
@@ -284,7 +284,7 @@ class TestBaseModelMixin:
 
     def test_all_mixins_included(self) -> None:
         """Test that all mixins are included in BaseModelMixin."""
-        model = TestModel()
+        model = SampleModel()
 
         # Audit fields
         assert hasattr(model, "id")
@@ -327,7 +327,7 @@ class TestMixinIntegration:
         session = in_memory_db
 
         # Create model
-        model = TestModel(
+        model = SampleModel(
             name="Test Model",
             email="test@example.com",
             description="Test description",
@@ -339,7 +339,7 @@ class TestMixinIntegration:
         session.commit()
 
         # Verify saved
-        saved = session.query(TestModel).first()
+        saved = session.query(SampleModel).first()
         assert saved is not None
         assert saved.name == "Test Model"
         assert saved.email == "test@example.com"
@@ -352,8 +352,8 @@ class TestMixinIntegration:
         session = in_memory_db
 
         # Create multiple models
-        model1 = TestModel(name="Active Model")
-        model2 = TestModel(name="Deleted Model")
+        model1 = SampleModel(name="Active Model")
+        model2 = SampleModel(name="Deleted Model")
 
         session.add_all([model1, model2])
         session.commit()
@@ -363,12 +363,12 @@ class TestMixinIntegration:
         session.commit()
 
         # Query only active models
-        active_models = session.query(TestModel).filter_by(is_deleted=False).all()
+        active_models = session.query(SampleModel).filter_by(is_deleted=False).all()
         assert len(active_models) == 1
         assert active_models[0].name == "Active Model"
 
         # Query all models
-        all_models = session.query(TestModel).all()
+        all_models = session.query(SampleModel).all()
         assert len(all_models) == 2
 
     def test_optimistic_locking_conflict(self, in_memory_db: Any) -> None:
@@ -376,7 +376,7 @@ class TestMixinIntegration:
         session = in_memory_db
 
         # Create and save model
-        model = TestModel(name="Original")
+        model = SampleModel(name="Original")
         session.add(model)
         session.commit()
 

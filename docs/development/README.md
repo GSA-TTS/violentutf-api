@@ -4,13 +4,44 @@
 
 ### Prerequisites
 
-- Python 3.11+
+- Docker 20.10.0+
+- Docker Compose 2.0+
 - Git
-- Virtual environment tool (venv, virtualenv, or conda)
-- PostgreSQL (optional, SQLite used by default)
-- Redis (optional, for caching)
+- Python 3.11+ (for local development)
+- Make (optional, for convenience commands)
 
-### Initial Setup
+### Quick Setup with Docker (Recommended)
+
+The easiest way to get started is using the automated setup script:
+
+```bash
+# Clone the repository
+git clone https://github.com/GSA-TTS/violentutf-api.git
+cd violentutf-api
+
+# Run automated setup
+./setup_violentutf.sh
+```
+
+This will:
+- Check all prerequisites
+- Create necessary configuration files
+- Build Docker images
+- Start all services (API, PostgreSQL, Redis, Nginx)
+- Run database migrations
+- Generate admin credentials and API keys
+- Display a complete setup summary with credentials
+
+📚 **See the [Setup Guide](../../SETUP_GUIDE.md) for detailed setup instructions and all available options.**
+
+After setup, you can:
+- Access the API at http://localhost:8000
+- View API documentation at http://localhost:8000/docs
+- Check health status at http://localhost:8000/api/v1/health
+
+### Manual Setup (Alternative)
+
+If you prefer to set up the environment manually:
 
 1. Clone the repository:
 ```bash
@@ -18,30 +49,44 @@ git clone https://github.com/GSA-TTS/violentutf-api.git
 cd violentutf-api
 ```
 
-2. Create and activate virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-```
-
-4. Set up pre-commit hooks:
-```bash
-pre-commit install
-```
-
-5. Copy environment variables:
+2. Copy environment variables:
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-6. Run the application:
+3. Build and start services:
+```bash
+docker compose up -d --build
+```
+
+4. Check service status:
+```bash
+docker compose ps
+```
+
+### Local Development Setup (Without Docker)
+
+For local development without Docker:
+
+1. Create and activate virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+3. Set up pre-commit hooks:
+```bash
+pre-commit install
+```
+
+4. Run the application:
 ```bash
 python -m app.main
 # Or use uvicorn directly:
@@ -147,6 +192,54 @@ class TestFeatureName:
 - Minimum 80% coverage required
 - Focus on business logic
 - Test edge cases and error conditions
+
+## Setup Script Management
+
+The `setup_violentutf.sh` script provides various management commands. See the [Setup Guide](../../SETUP_GUIDE.md) for complete documentation.
+
+```bash
+# Check prerequisites only
+./setup_violentutf.sh --precheck
+
+# Full setup (default)
+./setup_violentutf.sh
+
+# View service status
+./setup_violentutf.sh --status
+
+# View logs
+./setup_violentutf.sh --logs
+
+# Stop services
+./setup_violentutf.sh --stop
+
+# Start services
+./setup_violentutf.sh --start
+
+# Restart services
+./setup_violentutf.sh --restart
+
+# Create backup
+./setup_violentutf.sh --backup
+
+# Clean up project resources (preserves data)
+./setup_violentutf.sh --cleanup
+
+# Deep cleanup (removes everything including data)
+./setup_violentutf.sh --deepcleanup
+
+# Show help
+./setup_violentutf.sh --help
+```
+
+### View Saved Credentials
+
+After setup, you can view credentials and service information:
+
+```bash
+# Display saved credentials
+./show_credentials.sh
+```
 
 ## Common Tasks
 

@@ -1,7 +1,7 @@
 """Multi-Factor Authentication (MFA) models."""
 
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
@@ -127,7 +127,7 @@ class MFAChallenge(Base, AuditMixin):
     @property
     def is_expired(self) -> bool:
         """Check if challenge is expired."""
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(timezone.utc) > self.expires_at
 
     @property
     def is_valid(self) -> bool:

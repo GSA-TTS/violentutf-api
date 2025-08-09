@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, Union
 
 from fastapi import Request
@@ -489,7 +489,7 @@ class AuditService:
         Returns:
             Number of failed attempts
         """
-        since = datetime.utcnow() - time_window
+        since = datetime.now(timezone.utc) - time_window
 
         conditions = [
             AuditLog.action.in_(["auth.login_failed", "auth.mfa_failed"]),
@@ -759,7 +759,7 @@ class AuditService:
         Returns:
             Number of logs deleted
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
 
         # Count logs to be deleted
         count_query = select(func.count(AuditLog.id)).where(AuditLog.created_at < cutoff_date)

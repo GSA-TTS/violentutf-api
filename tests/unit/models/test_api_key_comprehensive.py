@@ -94,11 +94,27 @@ class TestAPIKeyValidations:
             assert result == hash_val.lower()  # Should be lowercased
 
     def test_validate_key_hash_empty(self):
-        """Test key hash validation with empty value."""
+        """Test key hash validation with empty value (allowed for secrets manager)."""
         api_key = APIKey()
 
-        with pytest.raises(ValueError, match="Key hash is required"):
-            api_key.validate_key_hash("key_hash", "")
+        # Empty hash is now allowed for secrets manager support
+        result = api_key.validate_key_hash("key_hash", "")
+        assert result == ""
+
+    def test_validate_key_hash_argon2_success(self):
+        """Test successful Argon2 hash validation."""
+        api_key = APIKey()
+
+        # Test valid Argon2 hashes
+        valid_argon2_hashes = [
+            "$argon2id$v=19$m=102400,t=2,p=8$tSm+JOWigOux9jMVyBOmXg$UBX2UfkqJHsD8BqHYPsCuKbyJGGLOwPLpOpJJC6YQ8s",
+            "$argon2i$v=19$m=4096,t=3,p=1$UhIMwzRMhkzLTGkWqj27vg$G2nHHmABV+OEJmkTjCcY7Eg8NUXdIKHKHAVdOULKaL4",
+            "$argon2d$v=19$m=8192,t=1,p=2$bTRsXdJuCYk8OwJ4AXm4ag$E8aYxB+6GYjW+4bQpZCfZI3YoV5mD9tEAjNCw4YXsOE",
+        ]
+
+        for hash_val in valid_argon2_hashes:
+            result = api_key.validate_key_hash("key_hash", hash_val)
+            assert result == hash_val  # Argon2 hashes are returned as-is
 
     def test_validate_key_hash_wrong_length(self):
         """Test key hash validation with wrong length."""

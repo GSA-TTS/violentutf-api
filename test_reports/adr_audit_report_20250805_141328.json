@@ -1,0 +1,283 @@
+{
+  "_report_metadata": {
+    "generator": "JSONReportGenerator",
+    "schema_version": "1.0.0",
+    "security_level": "internal",
+    "version": "2.0.0"
+  },
+  "adr_compliance": {},
+  "analysis_steps": [
+    {
+      "description": "Analyzed git history and code complexity to identify risk hotspots",
+      "duration": null,
+      "findings": [
+        "Identified 2 architectural hotspots",
+        "Critical risk files: 1"
+      ],
+      "name": "Architectural Hotspot Analysis"
+    },
+    {
+      "description": "All analysis dimensions completed",
+      "duration": 42.7,
+      "findings": [
+        "Total execution time: 42.70 seconds"
+      ],
+      "name": "Analysis Complete"
+    }
+  ],
+  "hotspot_analysis": {
+    "hotspots": [
+      {
+        "churn_score": 85.0,
+        "complexity_score": 78.0,
+        "file_path": "app&#x2F;api&#x2F;endpoints&#x2F;admin.py",
+        "recommendations": [],
+        "risk_category": "Critical",
+        "risk_score": 92.0,
+        "violation_history": [
+          {
+            "message": "ADR-002"
+          },
+          {
+            "message": "ADR-003"
+          },
+          {
+            "message": "ADR-008"
+          }
+        ]
+      },
+      {
+        "churn_score": 68.0,
+        "complexity_score": 62.0,
+        "file_path": "app&#x2F;core&#x2F;auth.py",
+        "recommendations": [],
+        "risk_category": "Critical",
+        "risk_score": 75.0,
+        "violation_history": [
+          {
+            "message": "ADR-001"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "analysis_timestamp": "2025-08-05T14:13:28.810168",
+      "confidence_threshold": 0.95,
+      "statistical_analysis_available": true,
+      "temporal_window_months": 6,
+      "total_files_analyzed": 2
+    },
+    "risk_distribution": {
+      "critical": 2,
+      "high": 0,
+      "low": 0,
+      "medium": 0,
+      "minimal": 0
+    },
+    "statistics": {
+      "average_risk": 0.835,
+      "confidence_statistics": {
+        "available": true,
+        "average_effect_size": null,
+        "average_p_value": null,
+        "confidence_distribution": {
+          "moderate": 0,
+          "strong": 0,
+          "very_strong": 0,
+          "weak": 0
+        },
+        "high_confidence_percentage": 0.0
+      },
+      "critical_count": 1,
+      "high_risk_count": 1,
+      "median_risk": 0.835,
+      "risk_distribution": {
+        "critical": 1,
+        "high": 1,
+        "low": 0,
+        "medium": 0,
+        "minimal": 0
+      },
+      "risk_std_dev": 0.08500000000000002,
+      "temporal_trends": {
+        "counts": {
+          "degrading": 0,
+          "improving": 0,
+          "stable": 0,
+          "unknown": 2
+        },
+        "percentages": {
+          "degrading": 0.0,
+          "improving": 0.0,
+          "stable": 0.0,
+          "unknown": 100.0
+        },
+        "summary": "Mixed: 0% improving, 0% degrading"
+      },
+      "top_risk_areas": [
+        {
+          "area": "app/api",
+          "average_risk": 0.92,
+          "file_count": 1,
+          "hotspot_count": 1
+        },
+        {
+          "area": "app/core",
+          "average_risk": 0.75,
+          "file_count": 1,
+          "hotspot_count": 1
+        }
+      ],
+      "total_hotspots": 2
+    },
+    "temporal_trends": {
+      "counts": {
+        "degrading": 0,
+        "improving": 0,
+        "stable": 0,
+        "unknown": 2
+      },
+      "percentages": {
+        "degrading": 0.0,
+        "improving": 0.0,
+        "stable": 0.0,
+        "unknown": 100.0
+      },
+      "summary": "Mixed: 0% improving, 0% degrading"
+    }
+  },
+  "hotspots": [
+    {
+      "churn_score": 85,
+      "complexity_score": 78,
+      "file_path": "app/api/endpoints/admin.py",
+      "risk_category": "Critical",
+      "risk_score": 92,
+      "violation_history": [
+        "ADR-002",
+        "ADR-003",
+        "ADR-008"
+      ]
+    },
+    {
+      "churn_score": 68,
+      "complexity_score": 62,
+      "file_path": "app/core/auth.py",
+      "risk_category": "High",
+      "risk_score": 75,
+      "violation_history": [
+        "ADR-001"
+      ]
+    }
+  ],
+  "metadata": {
+    "analysis_duration": 42.7,
+    "analysis_mode": "comprehensive",
+    "audit_version": "2.0.1",
+    "report_generator_version": "2.0.0",
+    "report_id": "8e5fa975-8c3e-4c5e-b7f7-efc44292c80b",
+    "repository_path": "/Users/test/violentutf-api",
+    "selected_adr": null,
+    "timestamp": "2025-08-05T14:13:28.809993",
+    "total_files_analyzed": 156
+  },
+  "metrics": {
+    "average_violations_per_file": 1.0,
+    "compliance_percentage": 73.5,
+    "files_with_violations": 3,
+    "total_hotspots": 2,
+    "total_violations": 3
+  },
+  "recommendations": [
+    {
+      "category": "Security",
+      "description": "Implement role-based access control for all admin endpoints",
+      "effort": "1 week",
+      "impact": "Prevents unauthorized access to sensitive operations",
+      "priority": "critical"
+    },
+    {
+      "category": "Security",
+      "description": "Add authentication to all API endpoints",
+      "effort": "3 days",
+      "impact": "Ensures all APIs are properly secured",
+      "priority": "high"
+    },
+    {
+      "category": "Architecture",
+      "description": "Refactor authentication module to reduce complexity",
+      "effort": "5 days",
+      "impact": "Improves maintainability and reduces bugs",
+      "priority": "medium"
+    }
+  ],
+  "summary": {
+    "compliance_score": 73.5,
+    "critical_violations": 1,
+    "high_violations": 1,
+    "key_findings": [
+      "Warning: Overall compliance score is 73.5%, improvements needed",
+      "Found 1 critical violations requiring immediate remediation"
+    ],
+    "low_violations": 0,
+    "medium_violations": 1,
+    "risk_assessment": "MEDIUM",
+    "technical_debt_days": 1.625,
+    "technical_debt_hours": 13,
+    "total_violations": 3
+  },
+  "trends": {
+    "total_affected_files": 3,
+    "total_unique_adrs": 2,
+    "violations_by_adr": {
+      "ADR-001": 2,
+      "ADR-002": 1
+    },
+    "violations_by_file": {
+      "app/api/endpoints/admin.py": 1,
+      "app/api/endpoints/users.py": 1,
+      "app/core/auth.py": 1
+    }
+  },
+  "violations": [
+    {
+      "adr_id": "ADR-002",
+      "adr_title": "RBAC Authorization Model",
+      "category": "Authentication",
+      "evidence": "# TODO: Add role validation",
+      "file_path": "app/api/endpoints/admin.py",
+      "fix_complexity": "Low - Straightforward fix",
+      "impact_assessment": "Severe - Potential security breach or compliance failure",
+      "line_number": 78,
+      "remediation_guidance": "Implement role-based access control",
+      "risk_level": "critical",
+      "technical_debt_hours": 8
+    },
+    {
+      "adr_id": "ADR-001",
+      "adr_title": "API Authentication Strategy",
+      "category": "API Design",
+      "evidence": "@app.get('/users/{user_id}') # No auth decorator",
+      "file_path": "app/api/endpoints/users.py",
+      "fix_complexity": "Low - Straightforward fix",
+      "impact_assessment": "High - Significant operational or security risk",
+      "line_number": 45,
+      "remediation_guidance": "Add @require_auth decorator to endpoint",
+      "risk_level": "high",
+      "technical_debt_hours": 4
+    },
+    {
+      "adr_id": "ADR-001",
+      "adr_title": "API Authentication Strategy",
+      "category": "API Design",
+      "evidence": "expires_delta=timedelta(minutes=60)",
+      "file_path": "app/core/auth.py",
+      "fix_complexity": "Low - Straightforward fix",
+      "impact_assessment": "Moderate - May impact system reliability or maintainability",
+      "line_number": 123,
+      "remediation_guidance": "[Content sanitized]",
+      "risk_level": "medium",
+      "technical_debt_hours": 1
+    }
+  ]
+}

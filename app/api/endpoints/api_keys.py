@@ -11,7 +11,6 @@ from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
-from app.db.session import get_db
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
 from app.schemas.api_key import (
@@ -25,6 +24,8 @@ from app.schemas.api_key import (
 )
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult, PaginatedResponse
 from app.services.api_key_service import APIKeyService
+
+from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -66,7 +67,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         async def list_items(
             request: Request,
             filters: APIKeyFilter = Depends(APIKeyFilter),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> PaginatedResponse[APIKeyResponse]:
             return await self._list_items(request, filters, session)
 
@@ -81,7 +82,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
             return await self._get_item(request, item_id, session)
 
@@ -98,7 +99,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             },
         )
         async def create_item(
-            request: Request, item_data: APIKeyCreate, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, item_data: APIKeyCreate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[APIKeyCreateResponse]:
             return await self._create_item(request, item_data, session)
 
@@ -118,7 +119,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             item_data: APIKeyUpdate,
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
             return await self._update_item(request, item_id, item_data, session)
 
@@ -138,7 +139,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             item_data: APIKeyUpdate,
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
             return await self._patch_item(request, item_id, item_data, session)
 
@@ -156,7 +157,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             permanent: bool = Query(False, description="Whether to permanently delete the item"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             return await self._delete_item(request, item_id, permanent, session)
 
@@ -318,7 +319,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         async def get_my_api_keys(
             request: Request,
             include_revoked: bool = Query(False, description="Include revoked keys"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[List[APIKeyResponse]]:
             """Get current user's API keys."""
             current_user_id = self._get_current_user_id(request)
@@ -345,7 +346,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Revoke an API key, making it permanently unusable.",
         )
         async def revoke_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Revoke an API key."""
             try:
@@ -400,7 +401,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Generate a new key value for an existing API key.",
         )
         async def rotate_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[APIKeyCreateResponse]:
             """Rotate an API key to generate a new key value."""
             try:
@@ -451,7 +452,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Validate an API key and return its status.",
         )
         async def validate_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Validate an API key."""
             repo = APIKeyRepository(session)
@@ -477,7 +478,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get analytics and usage statistics for current user's API keys.",
         )
         async def get_my_analytics(
-            request: Request, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[Dict[str, Any]]:
             """Get analytics for current user's API keys."""
             try:
@@ -524,7 +525,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get usage statistics for API keys (admin only).",
         )
         async def get_usage_stats(
-            request: Request, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[APIKeyUsageStats]:
             """Get API key usage statistics (admin only)."""
             # Check admin permissions
@@ -570,7 +571,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             key_id: uuid.UUID,
             ip_address: Optional[str] = Query(None, description="IP address of the request"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Record API key usage (internal endpoint)."""
             try:

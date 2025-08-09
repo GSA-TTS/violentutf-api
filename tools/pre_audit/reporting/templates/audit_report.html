@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Architectural Audit Report - {{ metadata.timestamp|format_timestamp }}{% endblock %}
+
+{% block content %}
+    <!-- Compliance Score Hero -->
+    <section class="hero-section">
+        <div class="compliance-score-container">
+            <div class="score-circle" data-score="{{ summary.compliance_score }}">
+                <svg viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" class="score-bg"/>
+                    <circle cx="100" cy="100" r="90" class="score-progress"
+                            style="stroke-dashoffset: {{ 565 - (565 * summary.compliance_score / 100) }}"/>
+                </svg>
+                <div class="score-text">
+                    <span class="score-value">{{ summary.compliance_score|format_percentage }}</span>
+                    <span class="score-label">Compliance</span>
+                </div>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ metadata.total_files_analyzed|format_number }}</div>
+                    <div class="stat-label">Files Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ summary.total_violations|format_number }}</div>
+                    <div class="stat-label">Total Violations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ summary.technical_debt_days|format_number }}</div>
+                    <div class="stat-label">Technical Debt (Days)</div>
+                </div>
+                <div class="stat-card risk-{{ summary.risk_assessment|lower }}">
+                    <div class="stat-value">{{ summary.risk_assessment }}</div>
+                    <div class="stat-label">Risk Level</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Executive Summary -->
+    {% if config.include_executive_summary %}
+        {% include 'sections/executive_summary.html' %}
+    {% endif %}
+
+    <!-- Risk Overview -->
+    <section id="risk-overview" class="report-section">
+        <h2 class="section-title">Risk Overview</h2>
+
+        <div class="risk-distribution">
+            <div class="chart-wrapper">
+                <canvas id="risk-distribution-chart"></canvas>
+            </div>
+
+            <div class="risk-breakdown">
+                <table class="risk-table">
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="risk-critical">
+                            <td><span class="risk-indicator"></span> Critical</td>
+                            <td>{{ summary.critical_violations|format_number }}</td>
+                            <td>{{ (summary.critical_violations / summary.total_violations * 100)|format_percentage if summary.total_violations > 0 else '0%' }}</td>
+                        </tr>
+                        <tr class="risk-high">
+                            <td><span class="risk-indicator"></span> High</td>
+                            <td>{{ summary.high_violations|format_number }}</td>
+                            <td>{{ (summary.high_violations / summary.total_violations * 100)|format_percentage if summary.total_violations > 0 else '0%' }}</td>
+                        </tr>
+                        <tr class="risk-medium">
+                            <td><span class="risk-indicator"></span> Medium</td>
+                            <td>{{ summary.medium_violations|format_number }}</td>
+                            <td>{{ (summary.medium_violations / summary.total_violations * 100)|format_percentage if summary.total_violations > 0 else '0%' }}</td>
+                        </tr>
+                        <tr class="risk-low">
+                            <td><span class="risk-indicator"></span> Low</td>
+                            <td>{{ summary.low_violations|format_number }}</td>
+                            <td>{{ (summary.low_violations / summary.total_violations * 100)|format_percentage if summary.total_violations > 0 else '0%' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADR Analysis Details -->
+    {% if adr_compliance %}
+        {% include 'sections/adr_analysis_details.html' %}
+    {% endif %}
+
+    <!-- Hotspot Analysis -->
+    {% if hotspot_analysis %}
+        {% include 'sections/hotspot_analysis.html' %}
+    {% endif %}
+
+    <!-- Violations Detail -->
+    {% include 'sections/violations.html' %}
+
+    <!-- Recommendations -->
+    {% if config.include_recommendations and recommendations %}
+        {% include 'sections/recommendations.html' %}
+    {% endif %}
+
+    <!-- Visualizations -->
+    {% if config.include_charts and charts %}
+        {% include 'sections/visualizations.html' %}
+    {% endif %}
+
+    <!-- Metadata -->
+    <section id="metadata" class="report-section">
+        <h2 class="section-title">Report Metadata</h2>
+        <div class="metadata-grid">
+            <div class="metadata-item">
+                <label>Report ID</label>
+                <value>{{ metadata.report_id }}</value>
+            </div>
+            <div class="metadata-item">
+                <label>Repository</label>
+                <value>{{ metadata.repository_path }}</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Mode</label>
+                <value>{{ metadata.analysis_mode|default('comprehensive')|title }}</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Duration</label>
+                <value>{{ metadata.analysis_duration|format_number }}s</value>
+            </div>
+            {% if metadata.selected_adr %}
+            <div class="metadata-item">
+                <label>Selected ADR</label>
+                <value>{{ metadata.selected_adr }}</value>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize risk distribution chart
+    {% if charts and charts.violation_pie %}
+    (function() {
+        const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
+        // Parse JSON data safely
+        const configData = document.createElement('script');
+        configData.type = 'application/json';
+        configData.id = 'chart-config-data';
+        configData.textContent = {{ charts.violation_pie.json|tojson }};
+        document.head.appendChild(configData);
+        const config = JSON.parse(document.getElementById('chart-config-data').textContent);
+        new Chart(ctx, config);
+        configData.remove();
+    })();
+    {% endif %}
+
+    // Animate compliance score
+    document.addEventListener('DOMContentLoaded', function() {
+        const scoreCircle = document.querySelector('.score-progress');
+        if (scoreCircle) {
+            scoreCircle.style.animation = 'scoreAnimation 1.5s ease-out forwards';
+        }
+    });
+</script>
+{% endblock %}

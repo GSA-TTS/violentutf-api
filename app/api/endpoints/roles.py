@@ -1,7 +1,7 @@
 """Role management API endpoints."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -10,9 +10,10 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.core.permissions import RequireAdmin, RequireRoleRead, RequireRoleWrite
-from app.db.session import get_db
 from app.schemas.base import BaseResponse, OperationResult, PaginatedResponse
 from app.services.rbac_service import RBACService
+
+from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -72,7 +73,7 @@ def check_admin_permission(request: Request) -> None:
 
 @router.post("/initialize", response_model=BaseResponse[List[Dict[str, Any]]])
 async def initialize_system_roles(
-    request: Request, session: AsyncSession = Depends(get_db), _: None = Depends(RequireAdmin)
+    request: Request, session: AsyncSession = Depends(get_db_dependency), _: None = Depends(RequireAdmin)
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Initialize system roles and permissions."""
 
@@ -98,7 +99,7 @@ async def list_roles(
     request: Request,
     include_system: bool = Query(True, description="Include system roles"),
     include_custom: bool = Query(True, description="Include custom roles"),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
     _: None = Depends(RequireRoleRead),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all roles."""
@@ -131,7 +132,7 @@ async def list_roles(
 
 @router.get("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def get_role(
-    role_id: str, request: Request, session: AsyncSession = Depends(get_db)
+    role_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[Dict[str, Any]]:
     """Get a specific role by ID."""
     try:
@@ -157,7 +158,7 @@ async def get_role(
 async def create_role(
     role_data: Dict[str, Any],
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
     _: None = Depends(RequireRoleWrite),
 ) -> BaseResponse[Dict[str, Any]]:
     """Create a new role."""
@@ -190,7 +191,7 @@ async def create_role(
 
 @router.put("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def update_role(
-    role_id: str, role_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db)
+    role_id: str, role_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[Dict[str, Any]]:
     """Update an existing role."""
     check_admin_permission(request)
@@ -223,7 +224,7 @@ async def update_role(
 
 @router.delete("/{role_id}", response_model=BaseResponse[OperationResult])
 async def delete_role(
-    role_id: str, request: Request, session: AsyncSession = Depends(get_db)
+    role_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[OperationResult]:
     """Delete a role."""
     check_admin_permission(request)
@@ -257,7 +258,7 @@ async def delete_role(
 
 @router.post("/assign", response_model=BaseResponse[Dict[str, Any]])
 async def assign_role_to_user(
-    assignment_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db)
+    assignment_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[Dict[str, Any]]:
     """Assign a role to a user."""
     check_admin_permission(request)
@@ -297,7 +298,7 @@ async def assign_role_to_user(
 
 @router.post("/revoke", response_model=BaseResponse[OperationResult])
 async def revoke_role_from_user(
-    revocation_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db)
+    revocation_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[OperationResult]:
     """Revoke a role from a user."""
     check_admin_permission(request)
@@ -339,7 +340,7 @@ async def get_user_roles(
     user_id: str,
     request: Request,
     include_expired: bool = Query(False, description="Include expired assignments"),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all roles assigned to a user."""
     current_user_id = get_current_user_id(request)
@@ -371,7 +372,7 @@ async def get_user_roles(
 
 @router.get("/user/{user_id}/permissions", response_model=BaseResponse[List[str]])
 async def get_user_permissions(
-    user_id: str, request: Request, session: AsyncSession = Depends(get_db)
+    user_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[List[str]]:
     """Get all effective permissions for a user."""
     current_user_id = get_current_user_id(request)
@@ -403,7 +404,7 @@ async def get_user_permissions(
 
 @router.post("/user/{user_id}/check-permission", response_model=BaseResponse[Dict[str, Any]])
 async def check_user_permission(
-    user_id: str, permission_data: Dict[str, str], request: Request, session: AsyncSession = Depends(get_db)
+    user_id: str, permission_data: Dict[str, str], request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[Dict[str, Any]]:
     """Check if a user has a specific permission."""
     current_user_id = get_current_user_id(request)
@@ -429,7 +430,7 @@ async def check_user_permission(
             "user_id": user_id,
             "permission": permission,
             "has_permission": has_permission,
-            "checked_at": datetime.utcnow().isoformat(),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
         }
 
         return BaseResponse(
@@ -447,7 +448,7 @@ async def get_role_assignments(
     request: Request,
     include_inactive: bool = Query(False, description="Include inactive assignments"),
     include_expired: bool = Query(False, description="Include expired assignments"),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all assignments for a specific role."""
     check_admin_permission(request)
@@ -472,7 +473,7 @@ async def get_role_assignments(
 
 @router.get("/statistics", response_model=BaseResponse[Dict[str, Any]])
 async def get_rbac_statistics(
-    request: Request, session: AsyncSession = Depends(get_db)
+    request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[Dict[str, Any]]:
     """Get RBAC system statistics."""
     check_admin_permission(request)
@@ -496,7 +497,7 @@ async def get_rbac_statistics(
 
 @router.post("/cleanup-expired", response_model=BaseResponse[OperationResult])
 async def cleanup_expired_assignments(
-    request: Request, session: AsyncSession = Depends(get_db)
+    request: Request, session: AsyncSession = Depends(get_db_dependency)
 ) -> BaseResponse[OperationResult]:
     """Clean up expired role assignments."""
     check_admin_permission(request)

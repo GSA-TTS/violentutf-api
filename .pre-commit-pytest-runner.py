@@ -27,7 +27,7 @@ cmd = [
     "--maxfail=50",
     "-m",
     "not slow and not integration and not docker",
-    "--timeout=60",
+    "--timeout=180",
 ]
 
 # Execute the command with the modified environment

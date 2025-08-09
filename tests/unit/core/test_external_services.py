@@ -28,15 +28,15 @@ from app.utils.circuit_breaker import CircuitBreakerException, CircuitState
 def create_test_service_response() -> type[BaseModel]:
     """Create test response model."""
 
-    class TestServiceResponse(BaseModel):
+    class ServiceResponseModel(BaseModel):
         id: int
         name: str
         value: float
 
-    return TestServiceResponse
+    return ServiceResponseModel
 
 
-TestServiceResponse = create_test_service_response()
+ServiceResponseModel = create_test_service_response()
 
 
 class TestExternalServiceConfig:
@@ -186,9 +186,9 @@ class TestExternalServiceClient:
         with patch.object(httpx.AsyncClient, "request", return_value=mock_response):
             request = ServiceRequest(method="GET", path="/item/123")
 
-            result = await client.request(request, response_model=TestServiceResponse)
+            result = await client.request(request, response_model=ServiceResponseModel)
 
-            assert isinstance(result, TestServiceResponse)
+            assert isinstance(result, ServiceResponseModel)
             assert result.id == 123
             assert result.name == "test"
             assert result.value == 45.6
@@ -514,9 +514,9 @@ class TestIntegration:
                 headers={"X-Custom": "header"},
             )
 
-            result = await client.request(request, response_model=TestServiceResponse)
+            result = await client.request(request, response_model=ServiceResponseModel)
 
-            assert isinstance(result, TestServiceResponse)
+            assert isinstance(result, ServiceResponseModel)
             assert result.id == 1
             assert result.name == "Integration Test"
             assert result.value == 99.9

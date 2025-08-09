@@ -13,9 +13,18 @@ from .endpoints import (
     mfa,
     mfa_policies,
     oauth,
+    owasp_llm_classification,
+    plugins,
+    reports,
+    scans,
+    security_scans,
     sessions,
+    tasks,
+    templates,
     upload,
     users,
+    vulnerability_findings,
+    vulnerability_taxonomies,
 )
 
 api_router = APIRouter()
@@ -115,5 +124,70 @@ api_router.include_router(
 api_router.include_router(
     health_auth.router,
     tags=["Auth Health"],
+    responses=crud_error_responses,
+)
+
+# Include Vulnerability Management endpoints
+api_router.include_router(
+    vulnerability_taxonomies.router,
+    tags=["Vulnerability Taxonomies"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    vulnerability_findings.router,
+    tags=["Vulnerability Findings"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    security_scans.router,
+    tags=["Security Scans"],
+    responses=crud_error_responses,
+)
+
+api_router.include_router(
+    owasp_llm_classification.router,
+    tags=["OWASP LLM Classification"],
+    responses=crud_error_responses,
+)
+
+# Include Task Management endpoints
+api_router.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["Tasks"],
+    responses=crud_error_responses,
+)
+
+# Include Scan Management endpoints
+api_router.include_router(
+    scans.router,
+    prefix="/scans",
+    tags=["Scans"],
+    responses=crud_error_responses,
+)
+
+# Include Report Management endpoints
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reports"],
+    responses=crud_error_responses,
+)
+
+# Include Template Management endpoints
+api_router.include_router(
+    templates.router,
+    prefix="/templates",
+    tags=["Templates"],
+    responses=crud_error_responses,
+)
+
+# Include Plugin Management endpoints
+api_router.include_router(
+    plugins.router,
+    prefix="/plugins",
+    tags=["Plugins"],
     responses=crud_error_responses,
 )

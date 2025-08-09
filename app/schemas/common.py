@@ -1,6 +1,6 @@
 """Common schemas used across the API."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
@@ -14,7 +14,7 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Detailed error description")
     request_id: Optional[str] = Field(None, description="Request ID for tracking")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Error timestamp")
 
 
 class ValidationErrorResponse(BaseModel):
@@ -23,7 +23,7 @@ class ValidationErrorResponse(BaseModel):
     error: str = Field(default="Validation Error", description="Error type")
     detail: List[Dict[str, Any]] = Field(..., description="Validation error details")
     request_id: Optional[str] = Field(None, description="Request ID for tracking")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Error timestamp")
 
 
 class HealthResponse(BaseModel):

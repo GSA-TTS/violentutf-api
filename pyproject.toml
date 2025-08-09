@@ -8,6 +8,24 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+fastapi = ">=0.116.0,<0.117.0"
+uvicorn = {extras = ["standard"], version = ">=0.27.0,<0.36.0"}
+pydantic = {extras = ["email"], version = ">=2.5.0,<3.0.0"}
+sqlalchemy = ">=2.0.25,<3.0.0"
+alembic = ">=1.13.0,<2.0.0"
+pyjwt = {extras = ["crypto"], version = ">=2.8.0,<3.0.0"}
+cryptography = ">=44.0.1,<46.0.0"
+passlib = {extras = ["argon2"], version = ">=1.7.4,<2.0.0"}
+redis = {extras = ["hiredis"], version = ">=5.0.0,<6.0.0"}
+httpx = ">=0.27.0,<0.29.0"
+python-dotenv = ">=1.0.0,<2.0.0"
+pyyaml = ">=6.0.0,<7.0.0"
+gitpython = ">=3.1.40,<4.0.0"
+# Statistical analysis dependencies for GitHub Issue #43
+numpy = ">=1.24.0,<2.0.0"
+pandas = ">=2.0.0,<3.0.0"
+scipy = ">=1.10.0,<2.0.0"
+scikit-learn = ">=1.3.0,<2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -83,6 +101,10 @@ disable_error_code = ["unused-ignore"]
 module = "backups.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "tools.pre_audit.reporting.*"
+ignore_errors = true
+
 # Temporary overrides for SQLAlchemy 1.x model compatibility issues
 # These models use Column-based syntax that conflicts with Mapped-based mixins
 [[tool.mypy.overrides]]
@@ -133,6 +155,11 @@ disable_error_code = ["type-arg", "no-untyped-def", "assignment", "operator", "n
 [[tool.mypy.overrides]]
 module = "app.db.*"
 disable_error_code = ["attr-defined", "no-untyped-def", "no-untyped-call", "misc"]
+
+# Celery files with external library typing limitations
+[[tool.mypy.overrides]]
+module = "app.celery.*"
+disable_error_code = ["misc", "call-overload", "no-untyped-def"]
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv"]

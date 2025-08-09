@@ -2,6 +2,25 @@
 
 Welcome to the ViolentUTF API documentation. This directory contains comprehensive documentation for developers, operators, and users of the API.
 
+## Quick Start
+
+Get the API running in minutes with our automated setup:
+
+```bash
+# Clone and enter the repository
+git clone https://github.com/GSA-TTS/violentutf-api.git
+cd violentutf-api
+
+# Run automated setup
+./setup_violentutf.sh
+```
+
+This will set up everything including Docker containers, database, and generate credentials.
+
+📚 **See the [Setup Guide](../SETUP_GUIDE.md) for detailed setup instructions and all available options.**
+
+For development workflow details, see the [Development Guide](./development/).
+
 ## Documentation Structure
 
 ### 📁 [API Documentation](./api/)

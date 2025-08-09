@@ -11,7 +11,7 @@ repos:
       - id: black
         language_version: python3.12
         # Using same args as CI: black --check --diff .
-        args: ['--check', '--diff']
+        args: ['--check', '--quiet']
 
   # Import sorting - PyCQA maintained (matches CI)
   - repo: https://github.com/PyCQA/isort
@@ -20,7 +20,7 @@ repos:
       - id: isort
         # Using same args as CI: isort --check-only --diff .
         # But need profile to match existing code style
-        args: ['--check-only', '--diff', '--profile=black']
+        args: ['--check-only', '--quiet', '--profile=black']
 
   # Critical linting only - matches CI exactly
   - repo: https://github.com/PyCQA/flake8
@@ -29,7 +29,7 @@ repos:
       - id: flake8
         name: flake8-critical-errors
         # Exact match for CI: flake8 . --count --select=E9,F63,F7,F82,F841 --show-source --statistics
-        args: ['--count', '--select=E9,F63,F7,F82,F841', '--show-source', '--statistics']
+        args: ['--count', '--select=E9,F63,F7,F82,F841', '--quiet']
         # CI runs on all files including tests
         # No additional dependencies to match CI minimal setup
 
@@ -38,7 +38,7 @@ repos:
     rev: v1.17.0
     hooks:
       - id: mypy
-        args: ['--ignore-missing-imports', '--strict']
+        args: ['--ignore-missing-imports', '--strict', '--no-error-summary', '--no-pretty']
         exclude: '^(tests/|alembic/|backups/|docs/)'
         additional_dependencies:
           - types-requests
@@ -60,7 +60,7 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/']
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/', '--quiet']
         exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
         pass_filenames: false
 
@@ -136,6 +136,24 @@ repos:
         files: '\.json$'
         pass_filenames: false
 
+  # Architectural Analysis Hook (Smart Triggers)
+  - repo: local
+    hooks:
+      - id: architectural-analysis
+        name: 🏛️ Architectural Compliance Check (Smart Triggers)
+        entry: python tools/pre_audit/smart_analyzer.py
+        language: python
+        types: [python]
+        pass_filenames: true
+        stages: [pre-commit]
+        additional_dependencies:
+          - pyyaml>=6.0
+          - anthropic>=0.25.0  # Optional, for Claude analysis
+        verbose: false  # Reduced verbosity for cleaner output
+        args: ['--quiet']  # Further reduce output
+        # Hook only runs when smart triggers are activated
+        # Configure triggers in .architectural-triggers.yml
+
   # Custom hooks
   - repo: local
     hooks:
@@ -168,33 +186,25 @@ repos:
         pass_filenames: true
 
       - id: comprehensive-security-check
-        name: 🔍 Comprehensive Security Check (ALL DIRS)
+        name: 🔍 Comprehensive Security Check
         entry: |
           python3 -c "
           import subprocess, sys, json, os
-          print('🔍 Running comprehensive security check across ALL directories...')
-          print('📁 Scanning .github/ directory...')
           result = subprocess.run(['bandit', '-r', '.github/', '-f', 'json'], capture_output=True, text=True)
           if result.returncode != 0:
               if result.stdout:
                   try:
                       report = json.loads(result.stdout)
                       if report.get('results'):
-                          print('❌ Security issues found in .github/ directory:')
-                          for issue in report['results']:
-                              print(f'   {issue[\"filename\"]}:{issue[\"line_number\"]}: {issue[\"issue_text\"]}')
+                          print('❌ Security issues found')
                           sys.exit(1)
                   except: pass
-              print('❌ Bandit scan failed on .github/ directory')
+              print('❌ Security scan failed')
               sys.exit(1)
-          print('✅ .github/ directory security check passed')
-          print('📁 Verifying no dangerous patterns in CI/CD files...')
           masking_result = subprocess.run(['python3', '.github/scripts/ban-test-masking.py', '--strict'], capture_output=True)
           if masking_result.returncode != 0:
-              print('❌ Dangerous test masking patterns detected')
+              print('❌ Dangerous patterns detected')
               sys.exit(1)
-          print('✅ No dangerous test masking patterns found')
-          print('✅ Comprehensive security check completed successfully')
           "
         language: system
         files: '\.(py|yml|yaml|sh|bash)$'

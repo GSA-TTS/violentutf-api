@@ -94,7 +94,7 @@ def test_settings() -> Settings:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def app(test_settings: Settings, test_db_manager: DatabaseTestManager) -> FastAPI:
     """Create application for testing."""
     from app.db.session import get_db
@@ -104,11 +104,12 @@ def app(test_settings: Settings, test_db_manager: DatabaseTestManager) -> FastAP
         return test_settings
 
     # Override database dependency to use test database
+    from contextlib import asynccontextmanager
     from typing import AsyncGenerator
-    from unittest.mock import AsyncMock
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    @asynccontextmanager
     async def get_test_db() -> AsyncGenerator[AsyncSession, None]:
         """Test database dependency that yields a session directly."""
         session = await test_db_manager.get_session()
@@ -124,9 +125,27 @@ def app(test_settings: Settings, test_db_manager: DatabaseTestManager) -> FastAP
         finally:
             await session.close()
 
+    # Also create a non-context-manager version for get_db_dependency
+    async def get_test_db_dependency() -> AsyncGenerator[AsyncSession, None]:
+        """Test database dependency for direct generator use."""
+        session = await test_db_manager.get_session()
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+    # Import the actual dependencies we need to override
+    from app.db.session import get_db_dependency
+
     app = create_application(custom_settings=test_settings)
     app.dependency_overrides[get_settings] = get_settings_override
+    # Override BOTH get_db and get_db_dependency to ensure all endpoints use test database
     app.dependency_overrides[get_db] = get_test_db
+    app.dependency_overrides[get_db_dependency] = get_test_db_dependency
     return app
 
 
@@ -138,7 +157,7 @@ def client(app: FastAPI) -> Generator[TestClient, None, None]:
         yield test_client
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
     """Create async test client."""
     transport = ASGITransport(app=app)
@@ -150,12 +169,13 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 def reset_dependency_overrides(app: FastAPI) -> None:
     """Reset dependency overrides after each test, but preserve core test dependencies."""
     from app.core.config import get_settings
-    from app.db.session import get_db
+    from app.db.session import get_db, get_db_dependency
 
     # Store the original overrides that should be preserved across tests
     preserved_overrides = {
         get_settings: app.dependency_overrides.get(get_settings),
         get_db: app.dependency_overrides.get(get_db),
+        get_db_dependency: app.dependency_overrides.get(get_db_dependency),
     }
 
     yield
@@ -175,6 +195,20 @@ async def clean_database(test_db_manager: "DatabaseTestManager") -> None:
     yield
     # Optionally clean after test too, but not strictly necessary
     # since we clean before each test
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_database_connections() -> None:
+    """Automatically cleanup database connections between tests to prevent state contamination."""
+    yield
+    # Clean up database connections after each test
+    try:
+        from app.db.session import close_database_connections
+
+        await close_database_connections()
+    except Exception:
+        # Ignore cleanup errors to not interfere with test results
+        pass
 
 
 # Set pytest markers for better test organization

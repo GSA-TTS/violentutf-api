@@ -1,7 +1,7 @@
 """Role repository for RBAC system."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, delete, func, or_, select
@@ -132,7 +132,7 @@ class RoleRepository(BaseRepository[Role]):
             ]
 
             if not include_expired:
-                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.utcnow()))
+                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)))
 
             query = (
                 select(Role)
@@ -199,11 +199,11 @@ class RoleRepository(BaseRepository[Role]):
                     existing_assignment.is_active = True
                     existing_assignment.expires_at = expires_at
                     existing_assignment.assigned_by = assigned_by
-                    existing_assignment.assigned_at = datetime.utcnow()
+                    existing_assignment.assigned_at = datetime.now(timezone.utc)
                     existing_assignment.assignment_reason = reason
                     existing_assignment.assignment_context = context
                     existing_assignment.updated_by = assigned_by
-                    existing_assignment.updated_at = datetime.utcnow()
+                    existing_assignment.updated_at = datetime.now(timezone.utc)
 
                     logger.info(
                         "Role assignment reactivated",
@@ -218,7 +218,7 @@ class RoleRepository(BaseRepository[Role]):
                 "user_id": user_uuid,
                 "role_id": role_uuid,
                 "assigned_by": assigned_by,
-                "assigned_at": datetime.utcnow(),
+                "assigned_at": datetime.now(timezone.utc),
                 "expires_at": expires_at,
                 "assignment_reason": reason,
                 "assignment_context": context,
@@ -322,7 +322,7 @@ class RoleRepository(BaseRepository[Role]):
                 conditions.append(UserRole.is_active == True)  # noqa: E712
 
             if not include_expired:
-                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.utcnow()))
+                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)))
 
             query = select(UserRole).where(and_(*conditions)).order_by(UserRole.assigned_at.desc())
 
@@ -471,7 +471,7 @@ class RoleRepository(BaseRepository[Role]):
             active_assignments_query = select(func.count(UserRole.id)).where(
                 and_(
                     UserRole.is_active == True,  # noqa: E712
-                    or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.utcnow()),
+                    or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)),
                 )
             )
             active_assignments_result = await self.session.execute(active_assignments_query)

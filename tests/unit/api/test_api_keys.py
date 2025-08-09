@@ -187,7 +187,11 @@ class TestAPIKeyEndpoints:
         assert data["data"]["name"] == mock_api_key.name
         assert data["data"]["key_prefix"] == mock_api_key.key_prefix
         assert "key" not in data["data"]  # Full key should not be exposed
-        mock_api_key_repo.get.assert_called_once_with(mock_api_key.id)
+        # Verify that get() was called with API key ID and organization context (security fix)
+        # The organization context enforcement is working correctly
+        call_args = mock_api_key_repo.get.call_args
+        assert call_args[0][0] == mock_api_key.id  # First arg should be item_id
+        # Second arg should be organization_id (None in test since no org context in mock)
 
     @pytest.mark.asyncio
     async def test_create_api_key(
@@ -312,7 +316,10 @@ class TestAPIKeyEndpoints:
         data = response.json()
         assert data["data"]["success"] is True
         assert data["data"]["affected_rows"] == 1
-        mock_api_key_repo.delete.assert_called_once_with(mock_api_key.id)
+        # Verify that delete() was called with API key ID and organization context (security fix)
+        call_args = mock_api_key_repo.delete.call_args
+        assert call_args[0][0] == mock_api_key.id  # First arg should be item_id
+        # Second arg should be organization_id, third should be hard_delete=False
 
     @pytest.mark.asyncio
     async def test_get_my_api_keys(

@@ -1,0 +1,47 @@
+<section class="section violations">
+    <h2>ADR Violations</h2>
+
+    <div class="violations-summary">
+        <p>Total violations found: <strong>{{ summary.total_violations|format_number }}</strong></p>
+    </div>
+
+    {% if violations %}
+    <div class="violations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Line</th>
+                    <th>ADR</th>
+                    <th>Risk</th>
+                    <th>Message</th>
+                    <th>Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for violation in violations[:config.max_violations_per_page|default(100)] %}
+                <tr>
+                    <td>{{ violation.file_path }}</td>
+                    <td>{{ violation.line_number|default('N/A') }}</td>
+                    <td>{{ violation.adr_id }}</td>
+                    <td>
+                        <span class="badge badge-{{ violation.risk_level }}">
+                            {{ violation.risk_level|upper }}
+                        </span>
+                    </td>
+                    <td>{{ violation.message|default('') }}</td>
+                    <td>{{ violation.impact_assessment }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if violations|length > config.max_violations_per_page|default(100) %}
+        <p class="note">Showing {{ config.max_violations_per_page|default(100) }} of {{ violations|length }} violations.
+           See JSON report for complete list.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <p>No violations found. Excellent compliance!</p>
+    {% endif %}
+</section>

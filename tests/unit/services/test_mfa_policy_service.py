@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -35,7 +35,7 @@ def mock_user():
     user.is_superuser = False
     user.roles = ["user"]
     user.organization_id = uuid.uuid4()
-    user.created_at = datetime.utcnow() - timedelta(days=30)
+    user.created_at = datetime.now(timezone.utc) - timedelta(days=30)
     return user
 
 
@@ -198,7 +198,7 @@ class TestMFAPolicyService:
     async def test_check_mfa_requirement_grace_period(self, mfa_policy_service, mock_user):
         """Test MFA requirement check with grace period."""
         # Arrange
-        mock_user.created_at = datetime.utcnow() - timedelta(days=5)  # 5 days old account
+        mock_user.created_at = datetime.now(timezone.utc) - timedelta(days=5)  # 5 days old account
 
         policy = MagicMock(spec=MFAPolicy)
         policy.name = "New User Policy"
@@ -276,7 +276,7 @@ class TestMFAPolicyService:
         policy1.conditions = json.dumps({"roles": ["admin"]})
         policy1.required_methods = json.dumps(["totp"])
         policy1.bypass_permissions = None
-        policy1.created_at = datetime.utcnow()
+        policy1.created_at = datetime.now(timezone.utc)
         policy1.updated_at = None
 
         mock_result = MagicMock()

@@ -9,7 +9,6 @@ from structlog.stdlib import get_logger
 from app.core.auth import get_current_user
 from app.core.errors import NotFoundError, ValidationError
 from app.core.permissions import require_permission
-from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.mfa_policy import (
@@ -21,6 +20,8 @@ from app.schemas.mfa_policy import (
 )
 from app.services.mfa_policy_service import MFAPolicyService
 
+from ...db.session import get_db_dependency
+
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/mfa/policies", tags=["mfa-policies"])
@@ -30,7 +31,7 @@ router = APIRouter(prefix="/mfa/policies", tags=["mfa-policies"])
 async def create_mfa_policy(
     policy_data: MFAPolicyCreate,
     current_user: User = Depends(require_permission("mfa.policy.create")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Create a new MFA policy.
@@ -86,7 +87,7 @@ async def list_mfa_policies(
     limit: int = 100,
     offset: int = 0,
     current_user: User = Depends(require_permission("mfa.policy.read")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFAPolicyList]:
     """
     List MFA policies.
@@ -111,7 +112,7 @@ async def list_mfa_policies(
 async def get_mfa_policy(
     policy_id: str,
     current_user: User = Depends(require_permission("mfa.policy.read")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Get a specific MFA policy.
@@ -139,7 +140,7 @@ async def update_mfa_policy(
     policy_id: str,
     policy_data: MFAPolicyUpdate,
     current_user: User = Depends(require_permission("mfa.policy.update")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Update an MFA policy.
@@ -195,7 +196,7 @@ async def update_mfa_policy(
 async def delete_mfa_policy(
     policy_id: str,
     current_user: User = Depends(require_permission("mfa.policy.delete")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[Dict[str, bool]]:
     """
     Delete an MFA policy.
@@ -222,7 +223,7 @@ async def delete_mfa_policy(
 async def check_user_mfa_requirement(
     user_id: str,
     current_user: User = Depends(require_permission("mfa.policy.check")),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[UserMFARequirement]:
     """
     Check MFA requirements for a specific user.

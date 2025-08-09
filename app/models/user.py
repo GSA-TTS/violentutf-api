@@ -1,14 +1,23 @@
-"""User model with comprehensive audit and security features - SQLAlchemy 2.0 Compatible."""
+"""User model with comprehensive audit and security features - SQLAlchemy 2.0 Compatible.
+
+This model has been updated to address critical security vulnerabilities identified in the
+authentication audit report. The is_superuser boolean field is deprecated in favor of
+the new hierarchical authority system.
+"""
 
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import JSON, Boolean, DateTime, String, UniqueConstraint
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+from structlog.stdlib import get_logger
 
 from app.db.base_class import Base
 from app.models.mixins import BaseModelMixin
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from app.models.api_key import APIKey
@@ -58,7 +67,7 @@ class User(Base, BaseModelMixin):
         default=False,
         nullable=False,
         server_default="false",
-        comment="Whether the user has administrative privileges",
+        comment="DEPRECATED: Whether the user has administrative privileges - use authority levels instead",
     )
 
     is_verified: Mapped[bool] = mapped_column(
@@ -87,11 +96,13 @@ class User(Base, BaseModelMixin):
         comment="IP address of the user's last successful login",
     )
 
+    # Use JSON type that works with both PostgreSQL and SQLite
+    # SQLAlchemy will handle the JSON serialization/deserialization
     roles: Mapped[List[str]] = mapped_column(
         JSON,
         nullable=False,
-        default=lambda: ["viewer"],
-        server_default='["viewer"]',
+        default=list,  # Empty list by default
+        server_default="[]",
         comment="User roles for RBAC authorization (viewer, tester, admin)",
     )
 
@@ -186,6 +197,13 @@ class User(Base, BaseModelMixin):
             kwargs["is_active"] = True
         if "is_superuser" not in kwargs:
             kwargs["is_superuser"] = False
+        elif kwargs.get("is_superuser", False):
+            # Log warning when creating new superuser accounts
+            logger.warning(
+                "DEPRECATED: Creating user with is_superuser=True - migrate to role-based authority",
+                username=kwargs.get("username"),
+                migration_needed=True,
+            )
         if "is_verified" not in kwargs:
             kwargs["is_verified"] = False
         if "roles" not in kwargs:
@@ -231,7 +249,7 @@ class User(Base, BaseModelMixin):
 
         # Use mixin email validation
         validated_value = self.validate_email_format(key, value)
-        assert validated_value is not None  # We already checked value is not None
+        assert validated_value is not None, f"Email validation failed for {key}"
         value = validated_value
 
         # Security validation
@@ -300,20 +318,35 @@ class User(Base, BaseModelMixin):
             f"<User(id={str(self.id)[:8]}, username='{self.username}', email='{self.email}', active={self.is_active})>"
         )
 
-    def to_dict(self: "User") -> Dict[str, Any]:
-        """Convert user to dictionary for serialization."""
-        return {
+    def to_dict(self: "User", include_deprecated_fields: bool = True) -> Dict[str, Any]:
+        """Convert user to dictionary for serialization.
+
+        Args:
+            include_deprecated_fields: Whether to include deprecated fields like is_superuser
+        """
+        result = {
             "id": str(self.id),
             "username": self.username,
             "email": self.email,
             "full_name": self.full_name,
             "is_active": self.is_active,
-            "is_superuser": self.is_superuser,
             "roles": self.roles,
             "organization_id": str(self.organization_id) if self.organization_id else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+        # Include deprecated fields by default for backward compatibility
+        if include_deprecated_fields:
+            result["is_superuser"] = self.is_superuser
+            if self.is_superuser:
+                logger.warning(
+                    "DEPRECATED: is_superuser field accessed in serialization",
+                    user_id=str(self.id),
+                    migration_needed=True,
+                )
+
+        return result
 
     def get_display_name(self: "User") -> str:
         """Get display-friendly name for the user."""
@@ -342,3 +375,72 @@ class User(Base, BaseModelMixin):
             self.last_login_ip = ip_address
 
         # Update timestamp (login count tracking could be added later)
+
+    def has_deprecated_superuser_flag(self: "User") -> bool:
+        """Check if user has deprecated superuser flag set.
+
+        This method helps identify users still using the old boolean
+        superuser system for migration purposes.
+
+        Returns:
+            True if user has deprecated superuser flag
+        """
+        if self.is_superuser:
+            logger.warning(
+                "DEPRECATED: User has is_superuser flag set - migration to authority levels recommended",
+                user_id=str(self.id),
+                username=self.username,
+                migration_needed=True,
+            )
+        return self.is_superuser
+
+    def get_authority_migration_recommendation(self: "User") -> Optional[str]:
+        """Get recommended authority level for migrating from is_superuser.
+
+        Returns:
+            Recommended role for migration, or None if no migration needed
+        """
+        if not self.is_superuser:
+            return None
+
+        # Analyze current roles to recommend appropriate authority level
+        if "admin" in self.roles:
+            return "admin"  # Already has proper admin role
+        elif "tester" in self.roles:
+            return "admin"  # Upgrade tester to admin for superusers
+        elif "viewer" in self.roles:
+            return "admin"  # Upgrade viewer to admin for superusers
+        else:
+            return "admin"  # Default recommendation for superusers
+
+    def migrate_from_superuser(self: "User") -> bool:
+        """Migrate user from deprecated superuser flag to role-based system.
+
+        Returns:
+            True if migration was performed, False if no migration needed
+        """
+        if not self.is_superuser:
+            return False
+
+        # Get migration recommendation
+        recommended_role = self.get_authority_migration_recommendation()
+        if not recommended_role:
+            return False
+
+        # Add admin role if not already present
+        if "admin" not in self.roles:
+            self.roles = list(set(self.roles + ["admin"]))
+
+        # Log successful migration but keep superuser flag for backward compatibility
+        logger.info(
+            "User migrated from is_superuser to role-based system",
+            user_id=str(self.id),
+            username=self.username,
+            new_roles=self.roles,
+            migration_completed=True,
+        )
+
+        # Note: We don't set is_superuser=False here to maintain backward compatibility
+        # The authority system will handle proper evaluation
+
+        return True

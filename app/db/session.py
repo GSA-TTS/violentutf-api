@@ -505,6 +505,29 @@ def get_engine() -> Optional[AsyncEngine]:
     return _engine
 
 
+async def get_db_dependency() -> AsyncGenerator[AsyncSession, None]:
+    """
+    FastAPI dependency for database session.
+
+    This is a generator function that yields the session for use with FastAPI's Depends.
+    """
+    # Use circuit breaker to protect session creation
+    session: AsyncSession = await db_circuit_breaker.call(_create_database_session)
+
+    try:
+        yield session
+    except SQLAlchemyError as e:
+        logger.error("Database SQLAlchemy error", error=str(e))
+        await session.rollback()
+        raise
+    except Exception as e:
+        logger.error("Database session error", error=str(e))
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
 async def recreate_database_pool() -> bool:
     """
     Recreate the database connection pool.
@@ -547,3 +570,47 @@ def reset_engine() -> None:
     _engine = None
     _async_session_maker = None
     engine = None
+
+
+async def init_db() -> None:
+    """
+    Initialize database with Alembic migrations.
+    This function is used by the setup script to initialize the database schema.
+    """
+    import os
+
+    from alembic import command
+    from alembic.config import Config
+
+    logger.info("Initializing database with migrations...")
+
+    # First ensure basic database connection
+    await init_database()
+
+    # Run Alembic migrations
+    try:
+        # Get the alembic.ini path
+        alembic_cfg_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "alembic.ini")
+
+        if os.path.exists(alembic_cfg_path):
+            logger.info("Running Alembic migrations...")
+            alembic_cfg = Config(alembic_cfg_path)
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Database migrations completed successfully")
+        else:
+            logger.warning(f"Alembic configuration not found at {alembic_cfg_path}")
+            logger.info("Creating database tables directly...")
+            # Fallback to direct table creation if Alembic config not found
+            from app.db.base_class import Base
+
+            engine = get_engine()
+            if engine:
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                logger.info("Database tables created successfully")
+
+    except Exception as e:
+        logger.error(f"Error during database migration: {e}")
+        raise RuntimeError(f"Database migration failed: {e}")
+
+    logger.info("Database initialization completed")

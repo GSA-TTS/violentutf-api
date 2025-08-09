@@ -1,7 +1,7 @@
 """MFA Policy Service for enforcement of MFA requirements."""
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, desc, or_, select
@@ -136,7 +136,7 @@ class MFAPolicyService:
         # Check account age conditions
         if "min_account_age_days" in conditions:
             min_age = conditions["min_account_age_days"]
-            account_age = datetime.utcnow() - user.created_at
+            account_age = datetime.now(timezone.utc) - user.created_at
             if account_age.days < min_age:
                 return False
 
@@ -191,7 +191,7 @@ class MFAPolicyService:
 
         # Check grace period for new users
         if policy.grace_period_days > 0:
-            account_age = datetime.utcnow() - user.created_at
+            account_age = datetime.now(timezone.utc) - user.created_at
             if account_age.days < policy.grace_period_days:
                 remaining_days = policy.grace_period_days - account_age.days
                 return (
@@ -260,7 +260,7 @@ class MFAPolicyService:
                         value = json.dumps(value)
                 setattr(policy, field, value)
 
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = datetime.now(timezone.utc)
         policy.updated_by = kwargs.get("updated_by", "system")
 
         await self.session.flush()
@@ -284,7 +284,7 @@ class MFAPolicyService:
             return False
 
         policy.is_active = False
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = datetime.now(timezone.utc)
         policy.updated_by = deleted_by
 
         await self.session.flush()

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Architectural Audit Report - Code quality and compliance analysis">
+    <title>Architectural Audit Report - 2025-08-05 14:18:02</title>
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+    <!-- Custom styles -->
+    <style>
+/* Main styles */    </style>
+
+</head>
+<body>
+    <div class="report-container">
+        <!-- Header -->
+        <header class="report-header">
+            <div class="header-content">
+                <h1 class="report-title">Architectural Audit Report</h1>
+                <div class="header-meta">
+                    <span class="meta-item">
+                        <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        </svg>
+                        2025-08-05 14:18:02
+                    </span>
+                    <span class="meta-item">
+                        <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        Version 2.0.1
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="report-nav" id="report-nav">
+            <ul class="nav-list">
+                <li><a href="#summary" class="nav-link">Summary</a></li>
+                <li><a href="#executive" class="nav-link">Executive Summary</a></li>
+                <li><a href="#analysis-timeline" class="nav-link">Analysis Timeline</a></li>
+                <li><a href="#hotspots" class="nav-link">Hotspots</a></li>
+                <li><a href="#violations" class="nav-link">Violations</a></li>
+                <li><a href="#recommendations" class="nav-link">Recommendations</a></li>
+                <li><a href="#visualizations" class="nav-link">Visualizations</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="report-content">
+    <!-- Compliance Score Hero -->
+    <section class="hero-section">
+        <div class="compliance-score-container">
+            <div class="score-circle" data-score="73.5">
+                <svg viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" class="score-bg"/>
+                    <circle cx="100" cy="100" r="90" class="score-progress"
+                            style="stroke-dashoffset: 149.72500000000002"/>
+                </svg>
+                <div class="score-text">
+                    <span class="score-value">73.5%</span>
+                    <span class="score-label">Compliance</span>
+                </div>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-value">156</div>
+                    <div class="stat-label">Files Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Total Violations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">1</div>
+                    <div class="stat-label">Technical Debt (Days)</div>
+                </div>
+                <div class="stat-card risk-medium">
+                    <div class="stat-value">MEDIUM</div>
+                    <div class="stat-label">Risk Level</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Executive Summary -->
+<div class="executive-summary section">
+    <h2>Executive Summary</h2>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h3>Compliance Score</h3>
+            <div class="score-display">
+                <span class="score-value">73.5%</span>
+                <div class="score-indicator warning"></div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Total Violations</h3>
+            <div class="violations-breakdown">
+                <div class="total">3</div>
+                <div class="breakdown">
+                    <span class="critical">Critical: 1</span>
+                    <span class="high">High: 1</span>
+                    <span class="medium">Medium: 1</span>
+                    <span class="low">Low: 0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Technical Debt</h3>
+            <div class="debt-display">
+                <span class="debt-days">1.6 days</span>
+                <span class="debt-hours">(13 hours)</span>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>Risk Assessment</h3>
+            <div class="risk-level ">
+
+            </div>
+            <div class="risk-description"></div>
+        </div>
+    </div>
+
+    <div class="key-findings">
+        <h3>Key Findings</h3>
+        <ul>
+            <li>Warning: Overall compliance score is 73.5%, improvements needed</li>
+            <li>Found 1 critical violations requiring immediate remediation</li>
+        </ul>
+    </div>
+</div>
+    <!-- Risk Overview -->
+    <section id="risk-overview" class="report-section">
+        <h2 class="section-title">Risk Overview</h2>
+
+        <div class="risk-distribution">
+            <div class="chart-wrapper">
+                <canvas id="risk-distribution-chart"></canvas>
+            </div>
+
+            <div class="risk-breakdown">
+                <table class="risk-table">
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="risk-critical">
+                            <td><span class="risk-indicator"></span> Critical</td>
+                            <td>1</td>
+                            <td>33.3%</td>
+                        </tr>
+                        <tr class="risk-high">
+                            <td><span class="risk-indicator"></span> High</td>
+                            <td>1</td>
+                            <td>33.3%</td>
+                        </tr>
+                        <tr class="risk-medium">
+                            <td><span class="risk-indicator"></span> Medium</td>
+                            <td>1</td>
+                            <td>33.3%</td>
+                        </tr>
+                        <tr class="risk-low">
+                            <td><span class="risk-indicator"></span> Low</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADR Analysis Details -->
+
+    <!-- Hotspot Analysis -->
+<section class="section hotspot-analysis">
+    <h2>Architectural Hotspots</h2>
+
+    <div class="hotspot-summary">
+        <h3>Summary</h3>
+        <p>Mixed: 0% improving, 0% degrading</p>
+
+        <div class="stats-grid">
+            <div class="stat">
+                <label>Total Hotspots</label>
+                <div class="value">2</div>
+            </div>
+            <div class="stat">
+                <label>Critical Risk</label>
+                <div class="value risk-critical">1</div>
+            </div>
+            <div class="stat">
+                <label>Average Risk</label>
+                <div class="value">83.5%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hotspot-list">
+        <h3>Top Risk Areas</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Risk Score</th>
+                    <th>Confidence</th>
+                    <th>Violations</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>app&amp;#x2F;api&amp;#x2F;endpoints&amp;#x2F;admin.py</td>
+                    <td class="risk-critical">
+                        9200.0%
+                    </td>
+                    <td>N/A</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            Critical
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>app&amp;#x2F;core&amp;#x2F;auth.py</td>
+                    <td class="risk-critical">
+                        7500.0%
+                    </td>
+                    <td>N/A</td>
+                    <td></td>
+                    <td>
+                        <span class="badge badge-critical">
+                            Critical
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-container" id="temporal-trends-chart"></div>
+    <div class="chart-container" id="hotspot-heatmap"></div>
+</section>
+    <!-- Violations Detail -->
+<section class="section violations">
+    <h2>ADR Violations</h2>
+
+    <div class="violations-summary">
+        <p>Total violations found: <strong>3</strong></p>
+    </div>
+
+    <div class="violations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Line</th>
+                    <th>ADR</th>
+                    <th>Risk</th>
+                    <th>Message</th>
+                    <th>Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>app/api/endpoints/admin.py</td>
+                    <td>78</td>
+                    <td>ADR-002</td>
+                    <td>
+                        <span class="badge badge-critical">
+                            CRITICAL
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Severe - Potential security breach or compliance failure</td>
+                </tr>
+                <tr>
+                    <td>app/api/endpoints/users.py</td>
+                    <td>45</td>
+                    <td>ADR-001</td>
+                    <td>
+                        <span class="badge badge-high">
+                            HIGH
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>High - Significant operational or security risk</td>
+                </tr>
+                <tr>
+                    <td>app/core/auth.py</td>
+                    <td>123</td>
+                    <td>ADR-001</td>
+                    <td>
+                        <span class="badge badge-medium">
+                            MEDIUM
+                        </span>
+                    </td>
+                    <td></td>
+                    <td>Moderate - May impact system reliability or maintainability</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</section>
+    <!-- Recommendations -->
+<!-- Recommendations Section -->
+<section id="recommendations" class="report-section">
+    <h2 class="section-title">Recommendations</h2>
+
+    <div class="recommendations-container">
+        <div class="recommendation-card priority-critical">
+            <div class="rec-header">
+                <span class="priority-badge">CRITICAL</span>
+                <span class="category">Security</span>
+            </div>
+
+            <div class="rec-content">
+                <h4>Implement role-based access control for all admin endpoints</h4>
+
+                <div class="effort">
+                    <label>Estimated Effort:</label>
+                    <span>1 week</span>
+                </div>
+
+                <div class="impact">
+                    <label>Impact:</label>
+                    <span>Prevents unauthorized access to sensitive operations</span>
+                </div>
+
+            </div>
+        </div>
+        <div class="recommendation-card priority-high">
+            <div class="rec-header">
+                <span class="priority-badge">HIGH</span>
+                <span class="category">Security</span>
+            </div>
+
+            <div class="rec-content">
+                <h4>Add authentication to all API endpoints</h4>
+
+                <div class="effort">
+                    <label>Estimated Effort:</label>
+                    <span>3 days</span>
+                </div>
+
+                <div class="impact">
+                    <label>Impact:</label>
+                    <span>Ensures all APIs are properly secured</span>
+                </div>
+
+            </div>
+        </div>
+        <div class="recommendation-card priority-medium">
+            <div class="rec-header">
+                <span class="priority-badge">MEDIUM</span>
+                <span class="category">Architecture</span>
+            </div>
+
+            <div class="rec-content">
+                <h4>Refactor authentication module to reduce complexity</h4>
+
+                <div class="effort">
+                    <label>Estimated Effort:</label>
+                    <span>5 days</span>
+                </div>
+
+                <div class="impact">
+                    <label>Impact:</label>
+                    <span>Improves maintainability and reduces bugs</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.recommendations-container {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.recommendation-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid;
+}
+
+.recommendation-card.priority-critical {
+    border-left-color: #f44336;
+}
+
+.recommendation-card.priority-high {
+    border-left-color: #ff9800;
+}
+
+.recommendation-card.priority-medium {
+    border-left-color: #ffc107;
+}
+
+.recommendation-card.priority-low {
+    border-left-color: #4caf50;
+}
+
+.rec-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: white;
+}
+
+.priority-badge:has-text("CRITICAL") {
+    background-color: #f44336;
+}
+
+.priority-badge:has-text("HIGH") {
+    background-color: #ff9800;
+}
+
+.priority-badge:has-text("MEDIUM") {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.priority-badge:has-text("LOW") {
+    background-color: #4caf50;
+}
+
+.category {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.rec-content h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+}
+
+.effort, .impact {
+    margin-bottom: 0.75rem;
+}
+
+.effort label, .impact label {
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.steps {
+    margin-top: 1rem;
+}
+
+.steps label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.steps ol {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+}
+</style>
+    <!-- Visualizations -->
+<!-- Visualizations Section -->
+<section id="visualizations" class="report-section">
+    <h2 class="section-title">Visualizations</h2>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3>Temporal Trends</h3>
+            <canvas id="temporal-trends-chart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>Top Violated Files</h3>
+            <canvas id="top-files-chart"></canvas>
+        </div>
+
+        <div class="chart-container full-width">
+            <h3>Risk Hotspot Heatmap</h3>
+            <canvas id="hotspot-heatmap"></canvas>
+        </div>
+    </div>
+</section>
+
+<style>
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.chart-container {
+    background: var(--card-bg, #fff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.chart-container.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-container h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Temporal Trends Chart
+    (function() {
+        const ctx = document.getElementById('temporal-trends-chart').getContext('2d');
+        const data = {"colors": ["#4caf50", "#ff9800", "#f44336"], "labels": ["Improving", "Stable", "Degrading"], "values": [0.0, 0.0, 0.0]};
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: data.colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    })();
+
+    // Top Files Bar Chart
+    (function() {
+        const ctx = document.getElementById('top-files-chart').getContext('2d');
+        const data = {"color": "#1976d2", "labels": ["app/api/endpoints/users.py", "app/core/auth.py", "app/api/endpoints/admin.py"], "values": [1, 1, 1]};
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Violations',
+                    data: data.values,
+                    backgroundColor: data.color,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })();
+
+    // Hotspot Heatmap
+    (function() {
+        const ctx = document.getElementById('hotspot-heatmap').getContext('2d');
+        const data = {"colorScale": "Reds", "labels": ["app\u0026#x2F;api\u0026#x2F;endpoints\u0026#x2F;admin.py", "app\u0026#x2F;core\u0026#x2F;auth.py"], "values": [92.0, 75.0]};
+
+        // Create gradient colors based on risk scores
+        const colors = data.values.map(value => {
+            const intensity = value / 100;
+            return `rgba(255, ${Math.floor(255 * (1 - intensity))}, ${Math.floor(255 * (1 - intensity))}, 0.8)`;
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Risk Score',
+                    data: data.values,
+                    backgroundColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    })();
+});
+</script>
+    <!-- Metadata -->
+    <section id="metadata" class="report-section">
+        <h2 class="section-title">Report Metadata</h2>
+        <div class="metadata-grid">
+            <div class="metadata-item">
+                <label>Report ID</label>
+                <value>322d48af-4f96-48d8-a692-640cfff72d4a</value>
+            </div>
+            <div class="metadata-item">
+                <label>Repository</label>
+                <value>/Users/test/violentutf-api</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Mode</label>
+                <value>Comprehensive</value>
+            </div>
+            <div class="metadata-item">
+                <label>Analysis Duration</label>
+                <value>42s</value>
+            </div>
+        </div>
+    </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="report-footer">
+            <div class="footer-content">
+                <p class="security-level">
+                    Security Level: <span class="badge badge-internal">INTERNAL</span>
+                </p>
+                <p class="generation-info">
+                    Generated by Enhanced Reporting Module v2.0.0
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+// Main JS    </script>
+
+<script>
+    // Initialize risk distribution chart
+    (function() {
+        const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
+        const config = {\"type\": \"pie\", \"data\": {\"labels\": [\"Critical\", \"High\", \"Medium\", \"Low\"], \"values\": [1, 1, 1, 0], \"colors\": [\"#d32f2f\", \"#f57c00\", \"#fbc02d\", \"#388e3c\"]}};
+        new Chart(ctx, config);
+    })();
+
+    // Animate compliance score
+    document.addEventListener('DOMContentLoaded', function() {
+        const scoreCircle = document.querySelector('.score-progress');
+        if (scoreCircle) {
+            scoreCircle.style.animation = 'scoreAnimation 1.5s ease-out forwards';
+        }
+    });
+</script>
+</body>
+</html>

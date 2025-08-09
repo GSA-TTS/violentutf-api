@@ -1,0 +1,145 @@
+<!-- Recommendations Section -->
+<section id="recommendations" class="report-section">
+    <h2 class="section-title">Recommendations</h2>
+
+    {% if recommendations %}
+    <div class="recommendations-container">
+        {% for rec in recommendations %}
+        <div class="recommendation-card priority-{{ rec.priority|default('medium') }}">
+            <div class="rec-header">
+                <span class="priority-badge">{{ rec.priority|default('medium')|upper }}</span>
+                <span class="category">{{ rec.category|default('General') }}</span>
+            </div>
+
+            <div class="rec-content">
+                <h4>{{ rec.description }}</h4>
+
+                {% if rec.effort %}
+                <div class="effort">
+                    <label>Estimated Effort:</label>
+                    <span>{{ rec.effort }}</span>
+                </div>
+                {% endif %}
+
+                {% if rec.impact %}
+                <div class="impact">
+                    <label>Impact:</label>
+                    <span>{{ rec.impact }}</span>
+                </div>
+                {% endif %}
+
+                {% if rec.implementation_steps %}
+                <div class="steps">
+                    <label>Implementation Steps:</label>
+                    <ol>
+                        {% for step in rec.implementation_steps %}
+                        <li>{{ step }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="no-data">No recommendations generated.</p>
+    {% endif %}
+</section>
+
+<style>
+.recommendations-container {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.recommendation-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid;
+}
+
+.recommendation-card.priority-critical {
+    border-left-color: #f44336;
+}
+
+.recommendation-card.priority-high {
+    border-left-color: #ff9800;
+}
+
+.recommendation-card.priority-medium {
+    border-left-color: #ffc107;
+}
+
+.recommendation-card.priority-low {
+    border-left-color: #4caf50;
+}
+
+.rec-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: white;
+}
+
+.priority-badge:has-text("CRITICAL") {
+    background-color: #f44336;
+}
+
+.priority-badge:has-text("HIGH") {
+    background-color: #ff9800;
+}
+
+.priority-badge:has-text("MEDIUM") {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.priority-badge:has-text("LOW") {
+    background-color: #4caf50;
+}
+
+.category {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.rec-content h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+}
+
+.effort, .impact {
+    margin-bottom: 0.75rem;
+}
+
+.effort label, .impact label {
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.steps {
+    margin-top: 1rem;
+}
+
+.steps label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.steps ol {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+}
+</style>

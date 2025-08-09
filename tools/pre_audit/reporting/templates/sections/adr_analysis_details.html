@@ -1,0 +1,562 @@
+<!-- ADR Analysis Details Section -->
+<section id="adr-analysis-details" class="report-section">
+    <h2 class="section-title">ADR Compliance Analysis Details</h2>
+
+    {% if adr_compliance %}
+    <div class="adr-analysis-container">
+        {% for adr_id, compliance_data in adr_compliance.items() %}
+        <div class="adr-detail-card" data-adr-id="{{ adr_id }}">
+            <div class="adr-header">
+                <h3>{{ adr_id }}: {{ compliance_data.adr_title|default(adr_id) }}</h3>
+                <div class="adr-score">
+                    <span class="score-badge score-{{ (compliance_data.compliance_score|default(0) / 20)|int }}">
+                        {{ compliance_data.compliance_score|default(0) }}%
+                    </span>
+                </div>
+            </div>
+
+            <div class="adr-content">
+                <!-- Analysis Methods Used -->
+                {% if compliance_data.analysis_metadata %}
+                <div class="analysis-methods">
+                    <h4>Analysis Methods</h4>
+                    <div class="method-badges">
+                        {% for method in compliance_data.analysis_metadata.analysis_methods|default([]) %}
+                        <span class="method-badge method-{{ method|lower|replace(' ', '-') }}">
+                            {{ method|title }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% if compliance_data.analysis_metadata.composite_confidence %}
+                    <div class="confidence-indicator">
+                        <label>Composite Confidence:</label>
+                        <span class="confidence-value">{{ (compliance_data.analysis_metadata.composite_confidence * 100)|format_percentage }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Requirements Analysis -->
+                {% if compliance_data.requirements %}
+                <div class="requirements-section">
+                    <h4>Requirements ({{ compliance_data.requirements|length }})</h4>
+                    <ul class="requirements-list">
+                        {% for req in compliance_data.requirements[:5] %}
+                        <li class="requirement-item">
+                            <span class="req-text">{{ req|e }}</span>
+                        </li>
+                        {% endfor %}
+                        {% if compliance_data.requirements|length > 5 %}
+                        <li class="more-items">... and {{ compliance_data.requirements|length - 5 }} more</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Violations Summary -->
+                <div class="violations-summary">
+                    <h4>Violations ({{ compliance_data.violations|length|default(0) }})</h4>
+                    {% if compliance_data.violations %}
+                    <div class="violation-breakdown">
+                        <div class="risk-counts">
+                            <span class="risk-count critical">
+                                Critical: {{ compliance_data.violations|selectattr('risk_level', 'equalto', 'critical')|list|length }}
+                            </span>
+                            <span class="risk-count high">
+                                High: {{ compliance_data.violations|selectattr('risk_level', 'equalto', 'high')|list|length }}
+                            </span>
+                            <span class="risk-count medium">
+                                Medium: {{ compliance_data.violations|selectattr('risk_level', 'equalto', 'medium')|list|length }}
+                            </span>
+                            <span class="risk-count low">
+                                Low: {{ compliance_data.violations|selectattr('risk_level', 'equalto', 'low')|list|length }}
+                            </span>
+                        </div>
+
+                        <!-- Top Violations -->
+                        <div class="top-violations">
+                            {% for violation in compliance_data.violations[:3] %}
+                            <div class="violation-item risk-{{ violation.risk_level|default('medium') }}">
+                                <div class="violation-header">
+                                    <span class="risk-badge">{{ violation.risk_level|default('medium')|upper }}</span>
+                                    <span class="violation-file">{{ violation.file_path|default('Unknown') }}</span>
+                                    {% if violation.line_number %}
+                                    <span class="line-number">Line {{ violation.line_number }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="violation-description">
+                                    {{ violation.description|default('No description')|e }}
+                                </div>
+                                {% if violation.evidence %}
+                                <div class="violation-evidence">
+                                    <label>Evidence:</label>
+                                    <code>{{ violation.evidence|e|truncate(100) }}</code>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="no-violations">✅ No violations detected for this ADR</p>
+                    {% endif %}
+                </div>
+
+                <!-- Compliant Areas -->
+                {% if compliance_data.compliant_areas %}
+                <div class="compliant-areas">
+                    <h4>Compliant Areas ({{ compliance_data.compliant_areas|length }})</h4>
+                    <ul class="compliant-list">
+                        {% for area in compliance_data.compliant_areas[:3] %}
+                        <li class="compliant-item">
+                            <span class="check-icon">✓</span>
+                            {{ area|e }}
+                        </li>
+                        {% endfor %}
+                        {% if compliance_data.compliant_areas|length > 3 %}
+                        <li class="more-items">... and {{ compliance_data.compliant_areas|length - 3 }} more</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Multi-dimensional Insights -->
+                {% if compliance_data.insights %}
+                <div class="insights-section">
+                    <h4>Multi-dimensional Insights</h4>
+                    <div class="insights-list">
+                        {% for insight in compliance_data.insights %}
+                        <div class="insight-item">
+                            <span class="insight-type">{{ insight.type|default('General')|title }}:</span>
+                            <span class="insight-text">{{ insight.text|default(insight)|e }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Performance Metrics -->
+                {% if compliance_data.performance_metrics %}
+                <div class="performance-metrics">
+                    <h4>Analysis Performance</h4>
+                    <div class="metrics-grid">
+                        {% if compliance_data.performance_metrics.execution_time %}
+                        <div class="metric">
+                            <label>Execution Time:</label>
+                            <value>{{ compliance_data.performance_metrics.execution_time|format_number }}s</value>
+                        </div>
+                        {% endif %}
+                        {% if compliance_data.performance_metrics.cache_hit_rate %}
+                        <div class="metric">
+                            <label>Cache Hit Rate:</label>
+                            <value>{{ (compliance_data.performance_metrics.cache_hit_rate * 100)|format_percentage }}</value>
+                        </div>
+                        {% endif %}
+                        {% if compliance_data.performance_metrics.tools_executed %}
+                        <div class="metric">
+                            <label>Tools Executed:</label>
+                            <value>{{ compliance_data.performance_metrics.tools_executed|length }}</value>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="adr-actions">
+                <button class="btn btn-secondary" onclick="toggleADRDetails('{{ adr_id }}')">
+                    Show More Details
+                </button>
+                {% if compliance_data.remediation_plan %}
+                <button class="btn btn-primary" onclick="showRemediationPlan('{{ adr_id }}')">
+                    View Remediation Plan
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="no-data">No ADR-specific analysis data available</p>
+    {% endif %}
+</section>
+
+<!-- Detailed Analysis Timeline -->
+{% if analysis_steps %}
+<section id="analysis-timeline" class="report-section">
+    <h2 class="section-title">Analysis Process Timeline</h2>
+
+    <div class="timeline-container">
+        {% for step in analysis_steps %}
+        <div class="timeline-item">
+            <div class="timeline-marker">
+                <span class="step-number">{{ loop.index }}</span>
+            </div>
+            <div class="timeline-content">
+                <h4>{{ step.name }}</h4>
+                <p>{{ step.description }}</p>
+                {% if step.duration %}
+                <span class="duration">Duration: {{ step.duration|format_number }}s</span>
+                {% endif %}
+                {% if step.findings %}
+                <div class="step-findings">
+                    <label>Key Findings:</label>
+                    <ul>
+                        {% for finding in step.findings %}
+                        <li>{{ finding|e }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<style>
+.adr-analysis-container {
+    display: grid;
+    gap: 2rem;
+}
+
+.adr-detail-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.adr-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color, #e0e0e0);
+}
+
+.adr-header h3 {
+    margin: 0;
+    color: var(--heading-color, #333);
+}
+
+.score-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.score-badge.score-4 { background-color: #4caf50; color: white; }
+.score-badge.score-3 { background-color: #8bc34a; color: white; }
+.score-badge.score-2 { background-color: #ffc107; color: #333; }
+.score-badge.score-1 { background-color: #ff9800; color: white; }
+.score-badge.score-0 { background-color: #f44336; color: white; }
+
+.analysis-methods {
+    margin-bottom: 1.5rem;
+}
+
+.method-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.method-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #1976d2;
+}
+
+.method-badge.method-semantic-claude-code { background-color: #f3e5f5; color: #7b1fa2; border-color: #7b1fa2; }
+.method-badge.method-git-forensics { background-color: #e8f5e9; color: #388e3c; border-color: #388e3c; }
+.method-badge.method-static-analysis { background-color: #fff3e0; color: #f57c00; border-color: #f57c00; }
+.method-badge.method-rag-enhanced { background-color: #fce4ec; color: #c2185b; border-color: #c2185b; }
+
+.confidence-indicator {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.confidence-value {
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.requirements-section,
+.violations-summary,
+.compliant-areas,
+.insights-section,
+.performance-metrics {
+    margin-bottom: 1.5rem;
+}
+
+.requirements-section h4,
+.violations-summary h4,
+.compliant-areas h4,
+.insights-section h4,
+.performance-metrics h4 {
+    margin-bottom: 0.75rem;
+    color: var(--heading-color, #555);
+}
+
+.requirements-list,
+.compliant-list {
+    list-style: none;
+    padding: 0;
+}
+
+.requirement-item,
+.compliant-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.compliant-item .check-icon {
+    color: #4caf50;
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+
+.risk-counts {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.risk-count {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+}
+
+.risk-count.critical { background-color: #ffebee; color: #c62828; }
+.risk-count.high { background-color: #fff3e0; color: #e65100; }
+.risk-count.medium { background-color: #fff8e1; color: #f9a825; }
+.risk-count.low { background-color: #f1f8e9; color: #558b2f; }
+
+.violation-item {
+    background-color: #f5f5f5;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid;
+}
+
+.violation-item.risk-critical { border-left-color: #f44336; }
+.violation-item.risk-high { border-left-color: #ff9800; }
+.violation-item.risk-medium { border-left-color: #ffc107; }
+.violation-item.risk-low { border-left-color: #8bc34a; }
+
+.violation-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.risk-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.violation-evidence {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.violation-evidence code {
+    background-color: #f0f0f0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: block;
+    margin-top: 0.25rem;
+    overflow-x: auto;
+}
+
+.insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.insight-item {
+    padding: 0.75rem;
+    background-color: #e8f5e9;
+    border-radius: 4px;
+    border-left: 3px solid #4caf50;
+}
+
+.insight-type {
+    font-weight: bold;
+    color: #2e7d32;
+    margin-right: 0.5rem;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.metric {
+    background-color: #f5f5f5;
+    padding: 0.75rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.metric label {
+    display: block;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.metric value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.timeline-container {
+    position: relative;
+    padding-left: 3rem;
+}
+
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e0e0e0;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    width: 3rem;
+    height: 3rem;
+    background-color: #1976d2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.timeline-content {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.timeline-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.duration {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+}
+
+.step-findings {
+    margin-top: 0.75rem;
+}
+
+.step-findings ul {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+}
+
+.adr-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #1976d2;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1565c0;
+}
+
+.btn-secondary {
+    background-color: #757575;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #616161;
+}
+
+.no-violations {
+    color: #4caf50;
+    font-weight: 500;
+}
+
+.more-items {
+    font-style: italic;
+    color: #666;
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+function toggleADRDetails(adrId) {
+    const card = document.querySelector(`[data-adr-id="${adrId}"]`);
+    const content = card.querySelector('.adr-content');
+    const button = card.querySelector('.btn-secondary');
+
+    if (content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        button.textContent = 'Show More Details';
+    } else {
+        content.classList.add('expanded');
+        button.textContent = 'Show Less Details';
+    }
+}
+
+function showRemediationPlan(adrId) {
+    // This would open a modal or navigate to remediation details
+    console.log('Show remediation plan for:', adrId);
+}
+</script>

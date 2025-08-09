@@ -1,7 +1,9 @@
 """OAuth2 endpoints for third-party application authorization."""
 
+import html
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,7 +12,6 @@ from structlog.stdlib import get_logger
 
 from app.core.auth import get_current_user
 from app.core.errors import AuthenticationError, ForbiddenError, ValidationError
-from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.oauth import (
@@ -25,6 +26,8 @@ from app.schemas.oauth import (
 )
 from app.services.oauth_service import OAuth2Service
 
+from ...db.session import get_db_dependency
+
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
@@ -32,6 +35,46 @@ router = APIRouter(prefix="/oauth", tags=["OAuth2"])
 # Constants to avoid hardcoded strings flagged by security scanners
 BEARER_TOKEN_TYPE = "Bearer"  # nosec B105 - Standard OAuth2 token type
 REFRESH_TOKEN_GRANT = "refresh_token"  # nosec B105 - Standard OAuth2 grant type
+
+
+def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> bool:
+    """
+    Validate that redirect_uri is in the application's registered redirect URIs.
+
+    Args:
+        redirect_uri: The redirect URI to validate
+        app_redirect_uris: List of registered redirect URIs for the application
+
+    Returns:
+        True if redirect_uri is valid, False otherwise
+    """
+    if not redirect_uri or not app_redirect_uris:
+        return False
+
+    # Exact match check for security
+    return redirect_uri in app_redirect_uris
+
+
+def _build_secure_redirect_url(base_uri: str, params: Dict[str, str]) -> str:
+    """
+    Build a secure redirect URL with proper parameter encoding.
+
+    Args:
+        base_uri: The base redirect URI (already validated)
+        params: Parameters to append
+
+    Returns:
+        Complete redirect URL
+    """
+    if not params:
+        return base_uri
+
+    separator = "&" if "?" in base_uri else "?"
+    # Use proper URL encoding for parameters
+    from urllib.parse import urlencode
+
+    params_str = urlencode(params)
+    return f"{base_uri}{separator}{params_str}"
 
 
 @router.post(
@@ -44,7 +87,7 @@ async def create_oauth_application(
     request: Request,
     app_data: OAuthApplicationCreate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Create new OAuth application."""
     try:
@@ -104,7 +147,7 @@ async def create_oauth_application(
 async def list_my_oauth_applications(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[OAuthApplicationResponse]]:
     """List user's OAuth applications."""
     try:
@@ -139,7 +182,7 @@ async def get_oauth_application(
     request: Request,
     client_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Get OAuth application details."""
     try:
@@ -189,7 +232,7 @@ async def oauth_authorize_page(
     code_challenge_method: Optional[str] = Query(None, description="PKCE method"),
     nonce: Optional[str] = Query(None, description="OpenID Connect nonce"),
     current_user: Optional[User] = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> HTMLResponse:
     """Display OAuth authorization page."""
     # If user not logged in, redirect to login with return URL
@@ -221,15 +264,40 @@ async def oauth_authorize_page(
         if not app:
             return HTMLResponse("<h1>Invalid client</h1>", status_code=400)
 
+        # Validate redirect URI against registered URIs to prevent open redirects
+        if not _validate_redirect_uri(redirect_uri, app.redirect_uris):
+            logger.warning("Invalid redirect URI", client_id=client_id, redirect_uri=redirect_uri)
+            return HTMLResponse("<h1>Invalid redirect URI</h1>", status_code=400)
+
         # Parse scopes
         requested_scopes = scope.split(" ")
 
-        # Build authorization page HTML
+        # Escape all user-provided data to prevent XSS
+        app_name_escaped = html.escape(str(app.name))
+        app_description_escaped = html.escape(str(app.description) if app.description else "No description provided")
+        homepage_url_escaped = html.escape(str(app.homepage_url)) if app.homepage_url else None
+
+        # Escape form field values
+        response_type_escaped = html.escape(response_type)
+        client_id_escaped = html.escape(client_id)
+        redirect_uri_escaped = html.escape(redirect_uri)
+        scope_escaped = html.escape(scope)
+        state_escaped = html.escape(state or "")
+        code_challenge_escaped = html.escape(code_challenge or "")
+        code_challenge_method_escaped = html.escape(code_challenge_method or "")
+        nonce_escaped = html.escape(nonce or "")
+
+        # Escape scope items
+        scopes_html = "".join(
+            f'<div class="scope-item">{html.escape(scope_item)}</div>' for scope_item in requested_scopes
+        )
+
+        # Build authorization page HTML with escaped content
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Authorize {app.name}</title>
+            <title>Authorize {app_name_escaped}</title>
             <style>
                 body {{ font-family: Arial, sans-serif; margin: 40px; }}
                 .container {{ max-width: 600px; margin: 0 auto; }}
@@ -244,30 +312,30 @@ async def oauth_authorize_page(
         </head>
         <body>
             <div class="container">
-                <h1>Authorize {app.name}</h1>
+                <h1>Authorize {app_name_escaped}</h1>
 
                 <div class="app-info">
-                    <h2>{app.name}</h2>
-                    <p>{app.description or 'No description provided'}</p>
-                    {f'<p><a href="{app.homepage_url}" target="_blank">Visit website</a></p>' if app.homepage_url else ''}
+                    <h2>{app_name_escaped}</h2>
+                    <p>{app_description_escaped}</p>
+                    {f'<p><a href="{homepage_url_escaped}" target="_blank" rel="noopener noreferrer">Visit website</a></p>' if homepage_url_escaped else ''}
                 </div>
 
-                <p><strong>{app.name}</strong> is requesting access to your account:</p>
+                <p><strong>{app_name_escaped}</strong> is requesting access to your account:</p>
 
                 <div class="scopes">
                     <h3>Permissions requested:</h3>
-                    {''.join(f'<div class="scope-item">{scope}</div>' for scope in requested_scopes)}
+                    {scopes_html}
                 </div>
 
                 <form method="POST" action="/api/v1/oauth/authorize">
-                    <input type="hidden" name="response_type" value="{response_type}">
-                    <input type="hidden" name="client_id" value="{client_id}">
-                    <input type="hidden" name="redirect_uri" value="{redirect_uri}">
-                    <input type="hidden" name="scope" value="{scope}">
-                    <input type="hidden" name="state" value="{state or ''}">
-                    <input type="hidden" name="code_challenge" value="{code_challenge or ''}">
-                    <input type="hidden" name="code_challenge_method" value="{code_challenge_method or ''}">
-                    <input type="hidden" name="nonce" value="{nonce or ''}">
+                    <input type="hidden" name="response_type" value="{response_type_escaped}">
+                    <input type="hidden" name="client_id" value="{client_id_escaped}">
+                    <input type="hidden" name="redirect_uri" value="{redirect_uri_escaped}">
+                    <input type="hidden" name="scope" value="{scope_escaped}">
+                    <input type="hidden" name="state" value="{state_escaped}">
+                    <input type="hidden" name="code_challenge" value="{code_challenge_escaped}">
+                    <input type="hidden" name="code_challenge_method" value="{code_challenge_method_escaped}">
+                    <input type="hidden" name="nonce" value="{nonce_escaped}">
 
                     <div class="buttons">
                         <button type="submit" name="action" value="approve" class="approve">Approve</button>
@@ -288,7 +356,7 @@ async def oauth_authorize_page(
 
 @router.post(
     "/authorize",
-    response_class=RedirectResponse,
+    response_model=None,
     summary="Process OAuth Authorization",
     description="Process user's authorization decision.",
 )
@@ -304,34 +372,31 @@ async def process_oauth_authorization(
     code_challenge_method: Optional[str] = Form(None),
     nonce: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
-) -> RedirectResponse:
+    session: AsyncSession = Depends(get_db_dependency),
+) -> Union[RedirectResponse, HTMLResponse]:
     """Process OAuth authorization."""
     try:
-        # Check if user denied
-        if action == "deny":
-            # Redirect with error
-            error_params = {"error": "access_denied"}
-            if state:
-                error_params["state"] = state
-
-            # Build redirect URL
-            separator = "&" if "?" in redirect_uri else "?"
-            params_str = "&".join(f"{k}={v}" for k, v in error_params.items())
-            return RedirectResponse(url=f"{redirect_uri}{separator}{params_str}")
-
-        # User approved - create authorization code
+        # Get application and validate redirect URI FIRST
         oauth_service = OAuth2Service(session)
-
-        # Get application
         app = await oauth_service.get_application(client_id)
         if not app:
             raise ValidationError("Invalid client")
 
-        # Validate redirect URI
-        allowed_uris = json.loads(app.redirect_uris)
-        if redirect_uri not in allowed_uris:
+        # Validate redirect URI against registered URIs to prevent open redirects
+        if not _validate_redirect_uri(redirect_uri, app.redirect_uris):
+            logger.warning("Invalid redirect URI in authorization", client_id=client_id, redirect_uri=redirect_uri)
             raise ValidationError("Invalid redirect URI")
+
+        # Check if user denied
+        if action == "deny":
+            # Redirect with error using secure redirect URL construction
+            error_params = {"error": "access_denied"}
+            if state:
+                error_params["state"] = state
+
+            return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+
+        # User approved - create authorization code
 
         # Create authorization code
         scopes = scope.split(" ")
@@ -348,14 +413,12 @@ async def process_oauth_authorization(
 
         await session.commit()
 
-        # Build success redirect
+        # Build success redirect using secure URL construction
         success_params = {"code": code}
         if state:
             success_params["state"] = state
 
-        separator = "&" if "?" in redirect_uri else "?"
-        params_str = "&".join(f"{k}={v}" for k, v in success_params.items())
-        return RedirectResponse(url=f"{redirect_uri}{separator}{params_str}")
+        return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, success_params))
 
     except Exception as e:
         logger.error(
@@ -363,14 +426,23 @@ async def process_oauth_authorization(
             user_id=str(current_user.id),
             error=str(e),
         )
-        # Redirect with error
-        error_params = {"error": "server_error"}
-        if state:
-            error_params["state"] = state
+        # Redirect with error using secure URL construction
+        # Note: redirect_uri should have been validated earlier, but add safety check
+        try:
+            oauth_service = OAuth2Service(session)
+            app = await oauth_service.get_application(client_id)
+            if app and _validate_redirect_uri(redirect_uri, app.redirect_uris):
+                error_params = {"error": "server_error"}
+                if state:
+                    error_params["state"] = state
+                return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+        except Exception as e:
+            logger.warning("Failed to build secure redirect URL", error=str(e), redirect_uri=redirect_uri)
 
-        separator = "&" if "?" in redirect_uri else "?"
-        params_str = "&".join(f"{k}={v}" for k, v in error_params.items())
-        return RedirectResponse(url=f"{redirect_uri}{separator}{params_str}")
+        # Fallback to generic error page if redirect_uri validation fails
+        return HTMLResponse(
+            "<h1>Authorization Error</h1><p>An error occurred during authorization.</p>", status_code=500
+        )
 
 
 @router.post(
@@ -389,7 +461,7 @@ async def oauth_token(
     refresh_token: Optional[str] = Form(None),
     scope: Optional[str] = Form(None),
     code_verifier: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> OAuthTokenResponse:
     """OAuth token endpoint."""
     try:
@@ -478,7 +550,7 @@ async def revoke_oauth_token(
     token_type_hint: Optional[str] = Form(None),
     client_id: Optional[str] = Form(None),
     client_secret: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> Dict[str, Any]:
     """Revoke OAuth token."""
     try:
@@ -512,7 +584,7 @@ async def revoke_oauth_token(
 async def list_my_authorizations(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[List[UserAuthorizationResponse]]:
     """List user's OAuth authorizations."""
     try:
@@ -549,7 +621,7 @@ async def revoke_authorization(
     request: Request,
     application_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db_dependency),
 ) -> BaseResponse[Dict[str, bool]]:
     """Revoke OAuth authorization."""
     try:

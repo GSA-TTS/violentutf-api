@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.core.context import get_organization_id
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.db.base_class import Base
 from app.db.session import get_db
@@ -216,11 +217,17 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             # Create repository instance
             repo = self.repository(session)
 
+            # Build filters with organization context for multi-tenant isolation
+            filter_dict = self._build_filters(filters)
+            organization_id = get_organization_id(request)
+            if organization_id and hasattr(self.model, "organization_id"):
+                filter_dict["organization_id"] = organization_id
+
             # Apply filters and get paginated results
             items, total_count = await repo.list_paginated(
                 page=filters.page,
                 per_page=filters.per_page,
-                filters=self._build_filters(filters),
+                filters=filter_dict,
                 sort_by=filters.sort_by,
                 sort_order=filters.sort_order,
                 include_deleted=filters.include_deleted,
@@ -284,8 +291,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             # Create repository instance
             repo = self.repository(session)
 
-            # Get item
-            item = await repo.get(item_id)
+            # Get organization context for multi-tenant isolation
+            organization_id = get_organization_id(request)
+
+            # Get item with organization filtering for security
+            item = await repo.get(item_id, organization_id)
             if not item:
                 raise NotFoundError(message=f"{self.model.__name__} with ID {item_id} not found")
 
@@ -337,6 +347,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             if user_id:
                 create_data["created_by"] = str(user_id)
                 create_data["updated_by"] = str(user_id)
+
+            # Add organization context for multi-tenant isolation
+            organization_id = get_organization_id(request)
+            if organization_id and hasattr(self.model, "organization_id"):
+                create_data["organization_id"] = organization_id
 
             # Create item
             item = await repo.create(create_data)
@@ -404,8 +419,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             # Create repository instance
             repo = self.repository(session)
 
-            # Get existing item
-            existing_item = await repo.get(item_id)
+            # Get organization context for multi-tenant isolation
+            organization_id = get_organization_id(request)
+
+            # Get existing item with organization filtering
+            existing_item = await repo.get(item_id, organization_id)
             if not existing_item:
                 raise NotFoundError(message=f"{self.model.__name__} with ID {item_id} not found")
 
@@ -469,17 +487,21 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             # Create repository instance
             repo = self.repository(session)
 
-            # Check if item exists
-            existing_item = await repo.get(item_id)
+            # Get organization context for multi-tenant isolation
+            organization_id = get_organization_id(request)
+
+            # Check if item exists with organization filtering
+            existing_item = await repo.get(item_id, organization_id)
             if not existing_item:
                 raise NotFoundError(message=f"{self.model.__name__} with ID {item_id} not found")
 
-            # Delete item
+            # Delete item with organization context
             if permanent:
-                success = await repo.delete_permanent(item_id)
+                # Use hard delete with organization filtering for security
+                success = await repo.delete(item_id, organization_id, hard_delete=True)
                 operation_type = "permanently deleted"
             else:
-                success = await repo.delete(item_id)
+                success = await repo.delete(item_id, organization_id, hard_delete=False)
                 operation_type = "soft deleted"
 
             logger.info(
@@ -533,9 +555,39 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
         if not user:
             raise ForbiddenError(message="Authentication required")
 
-        # Check admin requirement
-        if self.require_admin and not getattr(user, "is_superuser", False):
-            raise ForbiddenError(message="Administrator privileges required")
+        # Check admin requirement using authority system (replacing deprecated is_superuser)
+        if self.require_admin:
+            from app.core.authority import is_deprecated_superuser
+
+            # Check for deprecated superuser flag with warning
+            if is_deprecated_superuser(user):
+                logger.warning(
+                    "DEPRECATED: Boolean is_superuser flag used in admin check",
+                    user_id=getattr(user, "id", None),
+                    migration_needed=True,
+                )
+                # Still allow for backward compatibility but log the warning
+                return
+
+            # For admin requirement without session access, we need to evaluate authority
+            # Since we're in a permission check context and don't have easy session access,
+            # we'll use a simplified authority check based on user roles if available
+            user_roles = getattr(user, "roles", []) or []
+
+            # Check for admin-level roles
+            admin_roles = {"admin", "global_admin", "super_admin"}
+            has_admin_role = any(role in admin_roles for role in user_roles)
+
+            if not has_admin_role:
+                # Fallback: check deprecated superuser flag with warning
+                if hasattr(user, "is_superuser") and user.is_superuser:
+                    logger.warning(
+                        "DEPRECATED: Using is_superuser flag in admin check - migrate to proper roles",
+                        user_id=getattr(user, "id", None),
+                        migration_needed=True,
+                    )
+                else:
+                    raise ForbiddenError(message="Administrator privileges required")
 
         # Additional permission checks can be implemented here
         # This is where you'd check specific permissions based on:

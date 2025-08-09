@@ -142,56 +142,39 @@ class TestUserEndpoints:
     async def test_get_user_by_id(
         self,
         async_client: AsyncClient,
-        mock_user: User,
-        mock_user_repo: AsyncMock,
+        test_user: User,  # Use the real test user that matches the auth token
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting a user by ID."""
-        # Patch the repository class attribute on the router (base CRUD endpoint)
-        original_repo = user_crud_router.repository
-        user_crud_router.repository = lambda session: mock_user_repo
-        try:
-            response = await async_client.get(
-                f"/api/v1/users/{mock_user.id}",
-                headers=auth_headers,
-            )
-        finally:
-            # Restore original repository
-            user_crud_router.repository = original_repo
+        # Get own user - no need to mock since we're testing the real endpoint
+        response = await async_client.get(
+            f"/api/v1/users/{test_user.id}",
+            headers=auth_headers,
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["data"]["id"] == str(mock_user.id)
-        assert data["data"]["username"] == mock_user.username
-        assert data["data"]["email"] == mock_user.email
-        mock_user_repo.get.assert_called_once()
+        assert data["data"]["id"] == str(test_user.id)
+        assert data["data"]["username"] == test_user.username
+        assert data["data"]["email"] == test_user.email
 
     @pytest.mark.asyncio
     async def test_get_user_not_found(
         self,
         async_client: AsyncClient,
-        mock_user_repo: AsyncMock,
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting a non-existent user."""
-        mock_user_repo.get.return_value = None
+        # Try to get a random user ID (not owned by auth user)
         user_id = uuid.uuid4()
+        response = await async_client.get(
+            f"/api/v1/users/{user_id}",
+            headers=auth_headers,
+        )
 
-        # Patch the repository class attribute on the router (base CRUD endpoint)
-        original_repo = user_crud_router.repository
-        user_crud_router.repository = lambda session: mock_user_repo
-        try:
-            response = await async_client.get(
-                f"/api/v1/users/{user_id}",
-                headers=auth_headers,
-            )
-        finally:
-            # Restore original repository
-            user_crud_router.repository = original_repo
-
+        # Due to ownership check, non-owned users return 404
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["message"]
-        mock_user_repo.get.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_user(
@@ -258,34 +241,25 @@ class TestUserEndpoints:
     async def test_update_user(
         self,
         async_client: AsyncClient,
-        mock_user: User,
-        mock_user_repo: AsyncMock,
+        test_user: User,  # Use the real test user that matches the auth token
         auth_headers: Dict[str, str],
     ) -> None:
         """Test updating a user."""
         update_data = {
             "full_name": "Updated Name",
-            "email": "updated@example.com",
+            "email": f"updated_{test_user.email}",  # Keep email unique
         }
 
-        # Patch the repository class attribute on the router
-        original_repo = user_crud_router.repository
-        user_crud_router.repository = lambda session: mock_user_repo
-        try:
-            response = await async_client.put(
-                f"/api/v1/users/{mock_user.id}",
-                json=update_data,
-                headers=auth_headers,
-            )
-
-        finally:
-            # Restore original repository
-            user_crud_router.repository = original_repo
+        # Update own user - no need to mock since we're testing the real endpoint
+        response = await async_client.put(
+            f"/api/v1/users/{test_user.id}",
+            json=update_data,
+            headers=auth_headers,
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "User updated successfully"
-        mock_user_repo.update.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_delete_user(

@@ -80,12 +80,15 @@ class BaseRepository(Generic[T]):
             raise ValueError("Model must be provided either in constructor or as class attribute")
         self.logger = logger.bind(repository=self.__class__.__name__, model=self.model.__name__)
 
-    async def get_by_id(self, entity_id: Union[str, uuid.UUID]) -> Optional[T]:
+    async def get_by_id(
+        self, entity_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> Optional[T]:
         """
-        Get entity by ID.
+        Get entity by ID with optional organization filtering for multi-tenant isolation.
 
         Args:
             entity_id: Entity identifier
+            organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             Entity if found, None otherwise
@@ -93,13 +96,19 @@ class BaseRepository(Generic[T]):
         try:
             entity_id_str = str(entity_id)
 
-            # Build query with soft delete filter if model has is_deleted field
+            # Start with base filters
+            filters = [self.model.id == entity_id_str]
+
+            # Add soft delete filter if model supports it
             if hasattr(self.model, "is_deleted"):
-                query = select(self.model).where(
-                    and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == False)  # noqa: E712
-                )
-            else:
-                query = select(self.model).where(self.model.id == entity_id_str)
+                filters.append(getattr(self.model, "is_deleted") == False)  # noqa: E712
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                filters.append(getattr(self.model, "organization_id") == str(organization_id))
+
+            # Build query with all filters
+            query = select(self.model).where(and_(*filters))
 
             result = await self.session.execute(query)
             entity = result.scalar_one_or_none()
@@ -115,12 +124,18 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to get entity by ID", entity_id=str(entity_id), error=str(e))
             raise
 
-    async def update(self, entity_id: Union[str, uuid.UUID], **kwargs: object) -> Optional[T]:
+    async def update(
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        **kwargs: object,
+    ) -> Optional[T]:
         """
-        Update entity by ID.
+        Update entity by ID with optional organization filtering for multi-tenant isolation.
 
         Args:
             entity_id: Entity identifier
+            organization_id: Optional organization ID for multi-tenant filtering
             **kwargs: Fields to update
 
         Returns:
@@ -142,32 +157,34 @@ class BaseRepository(Generic[T]):
             # Ensure we have something to update
             if not kwargs or (len(kwargs) == 1 and "updated_by" in kwargs):
                 self.logger.warning("No fields to update", entity_id=entity_id_str)
-                return await self.get_by_id(entity_id_str)
+                return await self.get_by_id(entity_id_str, organization_id)
 
             # Increment version for optimistic locking
             if hasattr(self.model, "version"):
-                # Get current version first
-                current_entity = await self.get_by_id(entity_id_str)
+                # Get current version first (with organization filtering)
+                current_entity = await self.get_by_id(entity_id_str, organization_id)
                 if current_entity and hasattr(current_entity, "version"):
                     kwargs["version"] = getattr(current_entity, "version") + 1
 
-            # Update entity with soft delete filter if model has is_deleted field
+            # Build update filters
+            update_filters = [self.model.id == entity_id_str]
+
+            # Add soft delete filter if model supports it
             if hasattr(self.model, "is_deleted"):
-                query = (
-                    update(self.model)
-                    .where(
-                        and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == False)
-                    )  # noqa: E712
-                    .values(**kwargs)
-                )
-            else:
-                query = update(self.model).where(self.model.id == entity_id_str).values(**kwargs)
+                update_filters.append(getattr(self.model, "is_deleted") == False)  # noqa: E712
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                update_filters.append(getattr(self.model, "organization_id") == str(organization_id))
+
+            # Build update query
+            query = update(self.model).where(and_(*update_filters)).values(**kwargs)
 
             result = await self.session.execute(query)
 
             if result.rowcount > 0:
-                # Fetch updated entity
-                updated_entity = await self.get_by_id(entity_id_str)
+                # Fetch updated entity (with organization filtering)
+                updated_entity = await self.get_by_id(entity_id_str, organization_id)
                 self.logger.info("Entity updated", entity_id=entity_id_str, updated_fields=list(kwargs.keys()))
                 return updated_entity
             else:
@@ -178,12 +195,18 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to update entity", entity_id=str(entity_id), error=str(e))
             raise
 
-    async def delete(self, entity_id: Union[str, uuid.UUID], hard_delete: bool = False) -> bool:
+    async def delete(
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        hard_delete: bool = False,
+    ) -> bool:
         """
-        Delete entity by ID (soft delete by default).
+        Delete entity by ID (soft delete by default) with optional organization filtering.
 
         Args:
             entity_id: Entity identifier
+            organization_id: Optional organization ID for multi-tenant filtering
             hard_delete: If True, permanently delete; if False, soft delete
 
         Returns:
@@ -192,9 +215,16 @@ class BaseRepository(Generic[T]):
         try:
             entity_id_str = str(entity_id)
 
+            # Build delete filters
+            delete_filters = [self.model.id == entity_id_str]
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                delete_filters.append(getattr(self.model, "organization_id") == str(organization_id))
+
             if hard_delete:
                 # Hard delete - permanently remove from database
-                delete_query = delete(self.model).where(self.model.id == entity_id_str)
+                delete_query = delete(self.model).where(and_(*delete_filters))
                 result = await self.session.execute(delete_query)
                 deleted = result.rowcount > 0
 
@@ -205,13 +235,10 @@ class BaseRepository(Generic[T]):
                 if hasattr(self.model, "is_deleted"):
                     deleted_kwargs = {"is_deleted": True, "deleted_by": "system", "deleted_at": func.now()}
 
-                    update_query = (
-                        update(self.model)
-                        .where(
-                            and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == False)
-                        )  # noqa: E712
-                        .values(**deleted_kwargs)
-                    )
+                    # Add soft delete filter to delete_filters
+                    soft_delete_filters = delete_filters + [getattr(self.model, "is_deleted") == False]  # noqa: E712
+
+                    update_query = update(self.model).where(and_(*soft_delete_filters)).values(**deleted_kwargs)
 
                     result = await self.session.execute(update_query)
                     deleted = result.rowcount > 0
@@ -237,6 +264,7 @@ class BaseRepository(Generic[T]):
         page: int = 1,
         size: int = 20,
         filters: Optional[Dict[str, object]] = None,
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
         include_deleted: bool = False,
         eager_load: Optional[List[str]] = None,
         order_by: Optional[str] = "created_at",
@@ -268,6 +296,10 @@ class BaseRepository(Generic[T]):
             # Apply soft delete filter if model has is_deleted field
             if not include_deleted and hasattr(self.model, "is_deleted"):
                 query = query.where(getattr(self.model, "is_deleted") == False)  # noqa: E712
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                query = query.where(getattr(self.model, "organization_id") == str(organization_id))
 
             # Apply custom filters
             if filters:
@@ -455,9 +487,27 @@ class BaseRepository(Generic[T]):
 
     # Enhanced methods for CRUD router compatibility
 
-    async def get(self, entity_id: Union[str, uuid.UUID]) -> Optional[T]:
+    async def get(
+        self, entity_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> Optional[T]:
         """Alias for get_by_id for consistency with CRUD router."""
-        return await self.get_by_id(entity_id)
+        return await self.get_by_id(entity_id, organization_id)
+
+    def _add_organization_filter(
+        self, query: Select[Tuple[T]], organization_id: Optional[Union[str, uuid.UUID]]
+    ) -> Select[Tuple[T]]:
+        """Add organization filtering to query if model supports multi-tenancy.
+
+        Args:
+            query: SQLAlchemy select query
+            organization_id: Organization ID to filter by
+
+        Returns:
+            Query with organization filter applied if applicable
+        """
+        if organization_id and hasattr(self.model, "organization_id"):
+            query = query.where(getattr(self.model, "organization_id") == str(organization_id))
+        return query
 
     async def create(self, data: Dict[str, object]) -> T:
         """

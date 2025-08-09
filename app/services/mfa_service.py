@@ -4,7 +4,7 @@ import base64
 import io
 import json
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 import pyotp
@@ -125,7 +125,7 @@ class MFAService:
             raise AuthenticationError("Invalid TOTP token")
 
         # Mark as verified and active
-        device.verified_at = datetime.utcnow()
+        device.verified_at = datetime.now(timezone.utc)
         device.is_active = True
         device.is_primary = True  # Make primary if first device
 
@@ -172,7 +172,7 @@ class MFAService:
             device_id=device.id,
             challenge_id=challenge_id,
             method=device.method,
-            expires_at=datetime.utcnow() + timedelta(minutes=self.CHALLENGE_EXPIRY_MINUTES),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=self.CHALLENGE_EXPIRY_MINUTES),
             max_attempts=self.MAX_CHALLENGE_ATTEMPTS,
         )
 
@@ -232,10 +232,10 @@ class MFAService:
         if verified:
             # Mark challenge as verified
             challenge.is_verified = True
-            challenge.verified_at = datetime.utcnow()
+            challenge.verified_at = datetime.now(timezone.utc)
 
             # Update device usage
-            device.last_used_at = datetime.utcnow()
+            device.last_used_at = datetime.now(timezone.utc)
             device.use_count += 1
 
             await self.session.flush()
@@ -297,7 +297,7 @@ class MFAService:
 
         # Soft delete device
         device.is_deleted = True
-        device.deleted_at = datetime.utcnow()
+        device.deleted_at = datetime.now(timezone.utc)
         device.is_active = False
 
         await self.session.flush()
@@ -363,7 +363,7 @@ class MFAService:
 
         for code in existing_codes:
             code.is_used = True
-            code.used_at = datetime.utcnow()
+            code.used_at = datetime.now(timezone.utc)
 
         # Generate new codes
         new_codes = await self._generate_backup_codes(user.id)
@@ -455,7 +455,7 @@ class MFAService:
         if backup_code:
             # Mark as used
             backup_code.is_used = True
-            backup_code.used_at = datetime.utcnow()
+            backup_code.used_at = datetime.now(timezone.utc)
             await self.session.flush()
             return True
 

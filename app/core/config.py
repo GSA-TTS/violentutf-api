@@ -22,6 +22,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",  # Ignore extra environment variables
     )
 
     # Project Info
@@ -40,6 +41,18 @@ class Settings(BaseSettings):  # type: ignore[misc]
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, ge=1, le=30)
     ALGORITHM: str = Field(default="HS256")
     BCRYPT_ROUNDS: int = Field(default=12, ge=10, le=15)
+
+    # Secrets Manager Configuration
+    SECRETS_MANAGER_PROVIDER: str = Field(default="file", pattern="^(file|vault|aws)$")
+    SECRETS_MANAGER_DIR: str = Field(default="./data/secrets")
+    # Vault configuration (if using HashiCorp Vault)
+    VAULT_URL: Optional[str] = Field(default=None)
+    VAULT_TOKEN: Optional[SecretStr] = Field(default=None)
+    VAULT_MOUNT_PATH: str = Field(default="secret")
+    # AWS configuration (if using AWS Secrets Manager)
+    AWS_REGION: Optional[str] = Field(default=None)
+    AWS_ACCESS_KEY_ID: Optional[str] = Field(default=None)
+    AWS_SECRET_ACCESS_KEY: Optional[SecretStr] = Field(default=None)
 
     # CORS settings
     ALLOWED_ORIGINS: List[str] = Field(default=[])

@@ -1,0 +1,347 @@
+{
+  "assessment_date": "2025-08-07T13:01:26.043105",
+  "github_issue": "#47",
+  "summary": {
+    "total_violations": 16,
+    "verified_violations": 14,
+    "exploitable_violations": 4,
+    "severity_distribution": {
+      "CRITICAL": 16,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0,
+      "INFO": 0
+    },
+    "type_distribution": {
+      "Multi-Tenant Isolation": 2,
+      "AI Model Sandboxing": 4,
+      "Secrets Management": 5,
+      "Vulnerability Classification": 4,
+      "Authentication/Authorization": 1
+    },
+    "exploitation_attempts": 0,
+    "successful_exploits": 0,
+    "test_duration": "0:00:00.222510",
+    "compliance_standards_violated": {
+      "NIST_800-53": 14,
+      "ISO_27001": 14,
+      "OWASP_Top_10": 6,
+      "CIS_Controls": 14
+    }
+  },
+  "security_score": 12.5,
+  "violations": [
+    {
+      "violation_id": "SEC-001",
+      "type": "Multi-Tenant Isolation",
+      "severity": "CRITICAL",
+      "title": "JWT Missing Organization Claims",
+      "description": "JWT payload missing 'organization_id' claim required for multi-tenant isolation. Only 'sub' and 'roles' claims are extracted.",
+      "cwe_id": "CWE-863",
+      "owasp_category": "A01:2021 - Broken Access Control",
+      "file_location": "app/middleware/authentication.py:114",
+      "exploitation_impact": "ANY USER CAN ACCESS ANY ORGANIZATION'S DATA",
+      "test_result": "SECURE",
+      "evidence": {
+        "auth_middleware_exists": true,
+        "organization_id_in_code": true,
+        "jwt_has_org_claim": true,
+        "jwt_claims": []
+      },
+      "remediation": "Add organization_id extraction and validation in JWT processing. Ensure all JWTs include organization_id claim.",
+      "verified": false,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.885693"
+    },
+    {
+      "violation_id": "SEC-002",
+      "type": "Multi-Tenant Isolation",
+      "severity": "CRITICAL",
+      "title": "Repository Layer Missing ABAC Enforcement",
+      "description": "Base repository missing ABAC enforcement - queries do not filter by organization_id.",
+      "cwe_id": "CWE-284",
+      "owasp_category": "A01:2021 - Broken Access Control",
+      "file_location": "app/repositories/base.py:97",
+      "exploitation_impact": "ANY USER CAN ACCESS ANY ORGANIZATION'S DATA",
+      "test_result": "SECURE",
+      "evidence": {
+        "base_repo_exists": true,
+        "vulnerable_methods": []
+      },
+      "remediation": "Implement mandatory organization_id filtering in all repository methods.",
+      "verified": false,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.894346"
+    },
+    {
+      "violation_id": "SEC-003",
+      "type": "AI Model Sandboxing",
+      "severity": "CRITICAL",
+      "title": "Missing Generator Database Model",
+      "description": "Missing Generator database model required for tracking AI model plugins.",
+      "cwe_id": "CWE-693",
+      "owasp_category": "A04:2021 - Insecure Design",
+      "file_location": "app/models/:1",
+      "exploitation_impact": "Cannot track or audit AI model usage",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "generator_model_exists": false
+      },
+      "remediation": "Create Generator model for AI model tracking",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.903022"
+    },
+    {
+      "violation_id": "SEC-004",
+      "type": "AI Model Sandboxing",
+      "severity": "CRITICAL",
+      "title": "No Container Sandboxing Infrastructure",
+      "description": "No container-based sandboxing for untrusted model execution.",
+      "cwe_id": "CWE-94",
+      "owasp_category": "A03:2021 - Injection",
+      "file_location": "app/main.py:238",
+      "exploitation_impact": "UNTRUSTED AI MODELS CAN EXECUTE ARBITRARY CODE",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "docker_available": true,
+        "sandboxing_in_code": false
+      },
+      "remediation": "Implement Docker-based sandboxing for model execution",
+      "verified": true,
+      "exploitable": true,
+      "timestamp": "2025-08-07T13:01:25.911188"
+    },
+    {
+      "violation_id": "SEC-005",
+      "type": "AI Model Sandboxing",
+      "severity": "CRITICAL",
+      "title": "Missing Templating Service Sandboxing",
+      "description": "No sandboxed Jinja2 implementation for attack payload generation.",
+      "cwe_id": "CWE-94",
+      "owasp_category": "A03:2021 - Injection",
+      "file_location": "app/services/:None",
+      "exploitation_impact": "Template injection attacks possible",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "templating_service_exists": false
+      },
+      "remediation": "Implement sandboxed Jinja2 templating",
+      "verified": true,
+      "exploitable": true,
+      "timestamp": "2025-08-07T13:01:25.912111"
+    },
+    {
+      "violation_id": "SEC-006",
+      "type": "AI Model Sandboxing",
+      "severity": "CRITICAL",
+      "title": "Evidence Storage Model Missing",
+      "description": "Missing evidence document storage for prompt/response pairs.",
+      "cwe_id": "CWE-778",
+      "owasp_category": "A09:2021 - Security Logging Failures",
+      "file_location": "app/models/session.py:1",
+      "exploitation_impact": "Cannot track AI model interactions",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "evidence_model_exists": false
+      },
+      "remediation": "Create Evidence model for session tracking",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.913053"
+    },
+    {
+      "violation_id": "SEC-007",
+      "type": "Secrets Management",
+      "severity": "CRITICAL",
+      "title": "API Keys Stored in Application Database",
+      "description": "API keys stored as SHA256 hashes in main database.",
+      "cwe_id": "CWE-256",
+      "owasp_category": "A02:2021 - Cryptographic Failures",
+      "file_location": "app/models/api_key.py:27",
+      "exploitation_impact": "DATABASE BREACH EXPOSES ALL API CREDENTIALS",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "stores_hashes_in_db": true
+      },
+      "remediation": "Use dedicated secrets manager for API keys",
+      "verified": true,
+      "exploitable": true,
+      "timestamp": "2025-08-07T13:01:25.924691"
+    },
+    {
+      "violation_id": "SEC-008",
+      "type": "Secrets Management",
+      "severity": "CRITICAL",
+      "title": "API Key Generation Stores Hashes",
+      "description": "API key generation creates SHA256 hash for database storage.",
+      "cwe_id": "CWE-256",
+      "owasp_category": "A02:2021 - Cryptographic Failures",
+      "file_location": "app/services/api_key_service.py:288",
+      "exploitation_impact": "Insecure credential storage pattern",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "generates_hashes": true
+      },
+      "remediation": "Store API keys in secrets manager",
+      "verified": true,
+      "exploitable": true,
+      "timestamp": "2025-08-07T13:01:25.926296"
+    },
+    {
+      "violation_id": "SEC-009",
+      "type": "Secrets Management",
+      "severity": "CRITICAL",
+      "title": "Missing Orchestration State Model",
+      "description": "No orchestration_state.py for storing orchestration secrets and state.",
+      "cwe_id": "CWE-522",
+      "owasp_category": "A04:2021 - Insecure Design",
+      "file_location": "app/models/orchestration_state.py:Missing",
+      "exploitation_impact": "Cannot securely manage orchestration state",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "model_exists": false
+      },
+      "remediation": "Create orchestration_state.py for orchestration state management",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.927741"
+    },
+    {
+      "violation_id": "SEC-010",
+      "type": "Secrets Management",
+      "severity": "CRITICAL",
+      "title": "Missing Orchestration Secrets Model",
+      "description": "No orchestration_secrets.py for storing orchestration secrets and state.",
+      "cwe_id": "CWE-522",
+      "owasp_category": "A04:2021 - Insecure Design",
+      "file_location": "app/models/orchestration_secrets.py:Missing",
+      "exploitation_impact": "Cannot securely manage orchestration state",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "model_exists": false
+      },
+      "remediation": "Create orchestration_secrets.py for orchestration state management",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.928506"
+    },
+    {
+      "violation_id": "SEC-011",
+      "type": "Secrets Management",
+      "severity": "CRITICAL",
+      "title": "Missing Orchestration Config Model",
+      "description": "No orchestration_config.py for storing orchestration secrets and state.",
+      "cwe_id": "CWE-522",
+      "owasp_category": "A04:2021 - Insecure Design",
+      "file_location": "app/models/orchestration_config.py:Missing",
+      "exploitation_impact": "Cannot securely manage orchestration state",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "model_exists": false
+      },
+      "remediation": "Create orchestration_config.py for orchestration state management",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.929361"
+    },
+    {
+      "violation_id": "SEC-012",
+      "type": "Vulnerability Classification",
+      "severity": "CRITICAL",
+      "title": "Database Missing Vulnerability Tables",
+      "description": "Database migrations never created vulnerability classification tables.",
+      "cwe_id": "CWE-1209",
+      "owasp_category": "A09:2021 - Security Logging Failures",
+      "file_location": "alembic/versions/:194",
+      "exploitation_impact": "CANNOT TRACK OR CLASSIFY SECURITY VULNERABILITIES",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "has_vulnerability_tables": false
+      },
+      "remediation": "Create migration for vulnerability tables",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.942518"
+    },
+    {
+      "violation_id": "SEC-013",
+      "type": "Vulnerability Classification",
+      "severity": "CRITICAL",
+      "title": "Models Not Imported",
+      "description": "Missing import for vulnerability_taxonomies model.",
+      "cwe_id": "CWE-1209",
+      "owasp_category": "A09:2021 - Security Logging Failures",
+      "file_location": "app/db/base.py:9",
+      "exploitation_impact": "Vulnerability tracking unavailable",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "imported": false
+      },
+      "remediation": "Import vulnerability models in db/base.py",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.944531"
+    },
+    {
+      "violation_id": "SEC-014",
+      "type": "Vulnerability Classification",
+      "severity": "CRITICAL",
+      "title": "Models Not Exported",
+      "description": "VulnerabilityTaxonomy model missing from module exports.",
+      "cwe_id": "CWE-1209",
+      "owasp_category": "A09:2021 - Security Logging Failures",
+      "file_location": "app/models/__init__.py:12",
+      "exploitation_impact": "Cannot use vulnerability classification",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "exported": false
+      },
+      "remediation": "Export VulnerabilityTaxonomy in models/__init__.py",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.945914"
+    },
+    {
+      "violation_id": "SEC-015",
+      "type": "Vulnerability Classification",
+      "severity": "CRITICAL",
+      "title": "Alembic Migration Missing",
+      "description": "No migration exists to create vulnerability classification tables.",
+      "cwe_id": "CWE-1209",
+      "owasp_category": "A09:2021 - Security Logging Failures",
+      "file_location": "alembic/versions/:Missing",
+      "exploitation_impact": "Cannot deploy vulnerability tracking",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "migration_exists": false
+      },
+      "remediation": "Create alembic migration for vulnerability tables",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.947253"
+    },
+    {
+      "violation_id": "SEC-016",
+      "type": "Authentication/Authorization",
+      "severity": "CRITICAL",
+      "title": "Evidence Document Storage Missing",
+      "description": "Missing secure storage for authentication evidence and session tracking.",
+      "cwe_id": "CWE-778",
+      "owasp_category": "A07:2021 - Identification and Authentication Failures",
+      "file_location": "app/models/session.py:1",
+      "exploitation_impact": "Cannot track authentication evidence",
+      "test_result": "VULNERABLE",
+      "evidence": {
+        "has_evidence_storage": false
+      },
+      "remediation": "Add evidence storage to session model",
+      "verified": true,
+      "exploitable": false,
+      "timestamp": "2025-08-07T13:01:25.955609"
+    }
+  ],
+  "exploitation_attempts": [],
+  "fisma_compliant": false,
+  "fedramp_ato_possible": false
+}

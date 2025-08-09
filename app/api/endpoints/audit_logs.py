@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ForbiddenError, NotFoundError, ValidationError
-from app.db.session import get_db
 from app.models.audit_log import AuditLog
 from app.repositories.audit_log import AuditLogRepository
 from app.schemas.audit_log import (
@@ -20,6 +19,8 @@ from app.schemas.audit_log import (
     AuditLogSummary,
 )
 from app.schemas.base import BaseResponse, PaginatedResponse, PaginationInfo
+
+from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -213,7 +214,7 @@ class AuditLogRouter:
             resource_id: Optional[str] = Query(None, description="Filter by resource ID"),  # noqa: B008
             user_id: Optional[uuid.UUID] = Query(None, description="Filter by user ID"),  # noqa: B008
             status: Optional[str] = Query(None, description="Filter by status"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> PaginatedResponse[AuditLogResponse]:
             """List audit logs with filtering and pagination."""
             self._check_admin_permission(request)
@@ -269,7 +270,7 @@ class AuditLogRouter:
             description="Get a specific audit log by ID (admin only).",
         )
         async def get_audit_log(
-            request: Request, log_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, log_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[AuditLogResponse]:
             """Get a specific audit log."""
             self._check_admin_permission(request)
@@ -313,7 +314,7 @@ class AuditLogRouter:
             per_page: int = Query(20, ge=1, le=100, description="Items per page"),  # noqa: B008
             action: Optional[str] = Query(None, description="Filter by action"),  # noqa: B008
             resource_type: Optional[str] = Query(None, description="Filter by resource type"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> PaginatedResponse[AuditLogResponse]:
             """Get audit logs for a specific user."""
             self._check_user_access_permission(request, user_id)
@@ -374,7 +375,7 @@ class AuditLogRouter:
             page: int = Query(1, ge=1, description="Page number"),  # noqa: B008
             per_page: int = Query(20, ge=1, le=100, description="Items per page"),  # noqa: B008
             action: Optional[str] = Query(None, description="Filter by action"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> PaginatedResponse[AuditLogResponse]:
             """Get audit logs for a specific resource."""
             self._check_admin_permission(request)
@@ -438,7 +439,7 @@ class AuditLogRouter:
             resource_type: Optional[str] = Query(None, description="Filter by resource type"),  # noqa: B008
             user_id: Optional[uuid.UUID] = Query(None, description="Filter by user ID"),  # noqa: B008
             status: Optional[str] = Query(None, description="Filter by status"),  # noqa: B008
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> PaginatedResponse[AuditLogResponse]:
             """Search audit logs with advanced filtering."""
             self._check_admin_permission(request)
@@ -507,7 +508,7 @@ class AuditLogRouter:
             description="Get audit log statistics (admin only).",
         )
         async def get_audit_log_statistics(
-            request: Request, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[AuditLogStatistics]:
             """Get audit log statistics."""
             self._check_admin_permission(request)
@@ -544,7 +545,7 @@ class AuditLogRouter:
             request: Request,
             resource_type: str,
             resource_id: str,
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[AuditLogSummary]:
             """Get audit summary for a specific resource."""
             self._check_admin_permission(request)
@@ -586,7 +587,7 @@ class AuditLogRouter:
         async def export_audit_logs(
             request: Request,
             export_request: AuditLogExportRequest,
-            session: AsyncSession = Depends(get_db),  # noqa: B008
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> Response:
             """Export audit logs in specified format."""
             self._check_admin_permission(request)

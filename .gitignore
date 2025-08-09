@@ -106,6 +106,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.claude_audit
 .venv
 env/
 venv/
@@ -144,7 +145,7 @@ cython_debug/
 .vscode/
 
 # Security scan reports
-security/
+/security/
 *.sarif
 bandit-report.json
 safety-report.json
@@ -188,6 +189,7 @@ Desktop.ini
 *.bak
 *.backup
 *.old
+backups/
 
 # Database
 *.db
@@ -236,6 +238,7 @@ yarn-error.log*
 .env.*
 !.env.example
 secrets/
+credentials.txt
 
 # Performance profiling
 *.prof
@@ -248,3 +251,5 @@ attack_logs/
 model_artifacts/
 evaluation_results/
 red_team_outputs/
+.admin_credentials
+.api_credentials

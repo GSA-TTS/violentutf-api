@@ -1,0 +1,221 @@
+name: Claude Code Architectural Audit
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'  # Daily comprehensive audit at 2 AM UTC
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  architectural-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for comprehensive analysis
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Setup Node.js (for Claude Code CLI)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Claude Code CLI and Dependencies
+      run: |
+        npm install -g @anthropic/claude-code
+        pip install python-dotenv pyyaml claude-code-sdk
+
+    - name: Setup Claude Code Authentication
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        # Setup authentication for Claude Code CLI
+        echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> $GITHUB_ENV
+
+    - name: Create reports directory
+      run: |
+        mkdir -p docs/reports/ADRaudit-claudecode/ci
+
+    - name: Determine audit mode
+      id: audit-mode
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "mode=pull-request" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" = "schedule" ]; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+        else
+          echo "mode=incremental" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run Claude Code Architectural Audit
+      id: audit
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        REPORTS_OUTPUT_DIR: ./docs/reports/ADRaudit-claudecode/
+        ENABLE_SARIF_OUTPUT: true
+      run: |
+        python tools/pre_audit/claude_code_ci_auditor.py \
+          --mode=${{ steps.audit-mode.outputs.mode }} \
+          --output-format=github-actions \
+          ${{ github.event_name == 'pull_request' && '--fail-on-critical-violations' || '' }}
+
+    - name: Upload Audit Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: claude-code-audit-results-${{ github.run_number }}
+        path: docs/reports/ADRaudit-claudecode/
+        retention-days: 30
+
+    - name: Upload SARIF results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      if: always() && hashFiles('docs/reports/ADRaudit-claudecode/ci/architectural-violations.sarif') != ''
+      with:
+        sarif_file: docs/reports/ADRaudit-claudecode/ci/architectural-violations.sarif
+        category: architectural-audit
+
+    - name: Post PR Comment
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+
+          const summaryPath = 'docs/reports/ADRaudit-claudecode/ci/pr-summary.json';
+
+          if (!fs.existsSync(summaryPath)) {
+            console.log('No PR summary found, skipping comment');
+            return;
+          }
+
+          const auditResults = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+
+          const complianceScore = auditResults.compliance_score || 0;
+          const criticalCount = auditResults.critical_violations?.length || 0;
+          const highCount = auditResults.high_violations?.length || 0;
+          const mediumCount = auditResults.medium_violations?.length || 0;
+          const executionTime = auditResults.execution_time || 0;
+
+          const statusEmoji = criticalCount === 0 ? '✅' : '❌';
+          const statusText = criticalCount === 0
+            ? 'No critical architectural violations detected'
+            : `${criticalCount} critical architectural violations must be fixed before merging`;
+
+          const topIssues = (auditResults.top_issues || [])
+            .slice(0, 5)
+            .map(issue => `- **${issue.adr_id || 'Unknown'}**: ${issue.description || 'No description'} (\`${issue.file_path || 'unknown'}:${issue.line_number || '?'}\`)`)
+            .join('\n');
+
+          const recommendations = (auditResults.recommendations || [])
+            .slice(0, 3)
+            .map(rec => `- ${rec}`)
+            .join('\n');
+
+          const comment = `## 🏗️ Architectural Audit Results ${statusEmoji}
+
+          **Overall Compliance Score**: ${complianceScore.toFixed(1)}%
+          **Analysis Time**: ${executionTime.toFixed(2)}s
+
+          ### Violation Summary
+          | Risk Level | Count |
+          |------------|-------|
+          | Critical   | ${criticalCount} |
+          | High       | ${highCount} |
+          | Medium     | ${mediumCount} |
+
+          ### Status
+          ${statusEmoji} **${statusText}**
+
+          ### Top Issues
+          ${topIssues || 'No issues detected'}
+
+          ### Recommendations
+          ${recommendations || 'No specific recommendations'}
+
+          ---
+          <details>
+          <summary>📊 View full audit report</summary>
+
+          Full audit results are available in the [Actions artifacts](${context.payload.pull_request.html_url}/checks).
+
+          **Audit Configuration:**
+          - Mode: pull-request
+          - Repository: ${context.repo.owner}/${context.repo.repo}
+          - SHA: ${context.sha.substring(0, 7)}
+          </details>`;
+
+          // Find existing comment to update or create new one
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const existingComment = comments.find(comment =>
+            comment.body.includes('🏗️ Architectural Audit Results')
+          );
+
+          if (existingComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existingComment.id,
+              body: comment
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          }
+
+    - name: Generate Job Summary
+      if: always()
+      run: |
+        echo "## 🏗️ Claude Code Architectural Audit Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f "docs/reports/ADRaudit-claudecode/ci/github-summary.md" ]; then
+          cat docs/reports/ADRaudit-claudecode/ci/github-summary.md >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Audit results not available" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📁 Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- Full audit results: Available in Actions artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- SARIF security results: Uploaded to Security tab" >> $GITHUB_STEP_SUMMARY
+
+    - name: Set audit status
+      if: always()
+      run: |
+        if [ -f "docs/reports/ADRaudit-claudecode/ci/pr-summary.json" ]; then
+          CRITICAL_COUNT=$(jq -r '.critical_violations | length' docs/reports/ADRaudit-claudecode/ci/pr-summary.json)
+          if [ "$CRITICAL_COUNT" -gt "0" ]; then
+            echo "AUDIT_STATUS=failed" >> $GITHUB_ENV
+            echo "CRITICAL_VIOLATIONS=$CRITICAL_COUNT" >> $GITHUB_ENV
+          else
+            echo "AUDIT_STATUS=passed" >> $GITHUB_ENV
+            echo "CRITICAL_VIOLATIONS=0" >> $GITHUB_ENV
+          fi
+        else
+          echo "AUDIT_STATUS=error" >> $GITHUB_ENV
+          echo "CRITICAL_VIOLATIONS=unknown" >> $GITHUB_ENV
+        fi

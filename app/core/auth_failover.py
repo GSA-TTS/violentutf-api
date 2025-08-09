@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from structlog.stdlib import get_logger
@@ -60,7 +60,7 @@ class FallbackAuthProvider:
             "roles": user.roles or [],
             "organization_id": str(user.organization_id) if user.organization_id else None,
             "password_hash": password_hash,
-            "cached_at": datetime.utcnow().isoformat(),
+            "cached_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Cache by username and email for multiple lookup paths
@@ -113,17 +113,16 @@ class FallbackAuthProvider:
         # Verify password if hash is cached
         password_hash = user_data.get("password_hash")
         if password_hash:
-            # Use bcrypt if available, otherwise simple hash comparison
+            # Use bcrypt for secure password verification
             try:
                 import bcrypt
 
                 if not bcrypt.checkpw(password.encode(), password_hash.encode()):
                     return None
             except ImportError:
-                # Fallback to simple hash comparison (less secure)
-                simple_hash = hashlib.sha256(password.encode()).hexdigest()
-                if simple_hash != password_hash:
-                    return None
+                # bcrypt is required for secure password verification
+                logger.error("bcrypt library not available for secure password verification")
+                raise AuthenticationError("Password verification not available - system misconfiguration")
         else:
             # No password hash cached, can't verify
             logger.warning("No password hash cached for fallback auth", username=username_or_email)
@@ -162,7 +161,7 @@ class FallbackAuthProvider:
             "user_id": user_id,
             "permissions": permissions,
             "metadata": metadata or {},
-            "cached_at": datetime.utcnow().isoformat(),
+            "cached_at": datetime.now(timezone.utc).isoformat(),
         }
 
         cache_key = f"{self.API_KEY_CACHE_PREFIX}:{api_key}"
@@ -236,14 +235,14 @@ class FallbackAuthProvider:
         import secrets
 
         token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + duration
+        expires_at = datetime.now(timezone.utc) + duration
 
         token_data = {
             "user_id": user_id,
             "permissions": permissions,
             "expires_at": expires_at,
             "reason": reason,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
         }
 
         # Store in memory and cache
@@ -296,7 +295,7 @@ class FallbackAuthProvider:
         if isinstance(expires_at, str):
             expires_at = datetime.fromisoformat(expires_at)
 
-        if expires_at <= datetime.utcnow():
+        if expires_at <= datetime.now(timezone.utc):
             # Token expired, clean up
             self._emergency_tokens.pop(token, None)
             cache = await get_cache()
@@ -327,7 +326,7 @@ class FallbackAuthProvider:
                 password_hash=password_hash,
             )
 
-        self._last_sync = datetime.utcnow()
+        self._last_sync = datetime.now(timezone.utc)
 
         logger.info(
             "Critical users synced to fallback cache",

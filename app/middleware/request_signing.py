@@ -6,7 +6,7 @@ import secrets
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
-from fastapi import Request, Response, status
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -83,11 +83,10 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Request signing required"},
             )
 
-        # Type narrowing for mypy
-        assert signature is not None
-        assert timestamp is not None
-        assert api_key is not None
-        assert nonce is not None
+        # Type narrowing and validation
+        if signature is None or timestamp is None or api_key is None or nonce is None:
+            logger.warning("Missing required request signing parameters")
+            raise HTTPException(status_code=400, detail="Missing required request signing parameters")
 
         # Validate timestamp
         try:

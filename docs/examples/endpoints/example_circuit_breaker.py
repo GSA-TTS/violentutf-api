@@ -377,11 +377,13 @@ async def demo_cascade_failure() -> Dict[str, Any]:
             }
         )
     except Exception as e:
+        # Log full error details securely
+        logger.error("weather_service_failed_in_demo", error=str(e), error_type=type(e).__name__)
         results["failures"].append(
             {
                 "service": "weather",
-                "error": str(e),
-                "type": type(e).__name__,
+                "error_type": type(e).__name__,  # Only expose error type
+                "message": "Weather service unavailable",
             }
         )
 
@@ -410,11 +412,13 @@ async def demo_cascade_failure() -> Dict[str, Any]:
             }
         )
     except Exception as e:
+        # Log full error details securely
+        logger.error("payment_service_failed_in_demo", error=str(e), error_type=type(e).__name__)
         results["failures"].append(
             {
                 "service": "payment",
-                "error": str(e),
-                "type": type(e).__name__,
+                "error_type": type(e).__name__,  # Only expose error type
+                "message": "Payment service unavailable",
             }
         )
 
@@ -463,12 +467,14 @@ async def demo_recovery_behavior() -> Dict[str, Any]:
             }
         )
     except Exception as e:
+        # Log full error details securely
+        logger.error("normal_operation_failed", error=str(e), error_type=type(e).__name__)
         timeline.append(
             {
                 "phase": "normal_operation",
                 "state": circuit.state.value,
                 "result": "failure",
-                "error": str(e),
+                "error_type": type(e).__name__,
             }
         )
 
@@ -520,13 +526,15 @@ async def demo_recovery_behavior() -> Dict[str, Any]:
                 }
             )
         except Exception as e:
+            # Log the actual error securely
+            logger.error("recovery_attempt_failed", attempt=i + 1, error_type=type(e).__name__)
             timeline.append(
                 {
                     "phase": "recovery",
                     "attempt": i + 1,
                     "state": circuit.state.value,
                     "result": "failure",
-                    "error": str(e),
+                    "error_type": type(e).__name__,  # Only expose error type, not details
                 }
             )
 

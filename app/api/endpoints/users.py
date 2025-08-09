@@ -12,11 +12,12 @@ from app.core.config import settings
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.core.rate_limiting import rate_limit
 from app.core.security import hash_password
-from app.db.session import get_db
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
+
+from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -112,6 +113,30 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
 
         return update_data
 
+    async def _check_permissions(
+        self,
+        request: Request,
+        operation: str,
+        item_id: Optional[uuid.UUID] = None,
+    ) -> None:
+        """Override permission check to implement user ownership validation."""
+        # First, call the parent permission check for basic auth
+        await super()._check_permissions(request, operation, item_id)
+
+        # For user endpoints, implement additional ownership checks
+        if item_id and operation in ["read", "update", "delete"]:
+            current_user = getattr(request.state, "user", None)
+            current_user_id = getattr(request.state, "user_id", None)
+
+            # Admins can access any user
+            if current_user and getattr(current_user, "is_superuser", False):
+                return
+
+            # Regular users can only access their own data
+            if current_user_id and str(item_id) != str(current_user_id):
+                # Return 404 instead of 403 to not reveal that the user exists
+                raise NotFoundError(message=f"User with ID {item_id} not found")
+
     def _register_endpoints(self) -> None:
         """Register CRUD endpoints, excluding create endpoint (custom implementation)."""
         # Register custom endpoints first to avoid routing conflicts
@@ -122,8 +147,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         from fastapi import Depends
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        from app.db.session import get_db
         from app.schemas.base import PaginatedResponse
+
+        from ...db.session import get_db_dependency
 
         # List endpoint (from base router)
         @self.router.get(
@@ -135,7 +161,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         async def list_items(
             request: Request,
             filters: UserFilter = Depends(UserFilter),
-            session: AsyncSession = Depends(get_db),
+            session: AsyncSession = Depends(get_db_dependency),
         ) -> PaginatedResponse[UserResponse]:
             return await self._list_items(request, filters, session)
 
@@ -150,7 +176,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
         ) -> BaseResponse[UserResponse]:
             return await self._get_item(request, item_id, session)
 
@@ -172,7 +198,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             request: Request,
             item_id: uuid.UUID,
             item_data: UserUpdate,
-            session: AsyncSession = Depends(get_db),
+            session: AsyncSession = Depends(get_db_dependency),
         ) -> BaseResponse[UserResponse]:
             return await self._update_item(request, item_id, item_data, session)
 
@@ -192,7 +218,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             request: Request,
             item_id: uuid.UUID,
             item_data: UserUpdate,
-            session: AsyncSession = Depends(get_db),
+            session: AsyncSession = Depends(get_db_dependency),
         ) -> BaseResponse[UserResponse]:
             return await self._patch_item(request, item_id, item_data, session)
 
@@ -208,7 +234,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def delete_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
         ) -> BaseResponse[OperationResult]:
             # Check admin permission before proceeding
             self._check_admin_permission(request)
@@ -240,7 +266,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def create_user_endpoint(
-            request: Request, user_data: UserCreate, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, user_data: UserCreate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Create a new user with enhanced validation."""
             try:
@@ -296,7 +322,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Get the current authenticated user's profile.",
         )
         async def get_current_user(
-            request: Request, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get current user profile."""
             current_user_id = self._get_current_user_id(request)
@@ -319,7 +345,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Update the current authenticated user's profile.",
         )
         async def update_current_user(
-            request: Request, user_data: UserUpdate, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, user_data: UserUpdate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Update current user profile."""
             current_user_id = self._get_current_user_id(request)
@@ -378,7 +404,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Change the current user's password.",
         )
         async def change_password(
-            request: Request, password_data: UserUpdatePassword, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request,
+            password_data: UserUpdatePassword,
+            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Change current user's password."""
             current_user_id = self._get_current_user_id(request)
@@ -430,7 +458,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_user_by_username(
-            request: Request, username: str, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, username: str, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get user by username."""
             repo = UserRepository(session)
@@ -451,7 +479,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Verify a user's email address (admin only).",
         )
         async def verify_user_email(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Verify user email (admin only)."""
             self._check_admin_permission(request)
@@ -496,7 +524,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Deactivate a user account (admin only).",
         )
         async def deactivate_user(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Deactivate user account (admin only)."""
             self._check_admin_permission(request)
@@ -541,7 +569,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Activate a user account (admin only).",
         )
         async def activate_user(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Activate user account (admin only)."""
             self._check_admin_permission(request)

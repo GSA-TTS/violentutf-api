@@ -26,6 +26,32 @@ class DatabaseTestManager:
         if database_url is None:
             database_url = "sqlite+aiosqlite:///./test_violentutf.db"
 
+        # Clean up any existing database file for SQLite
+        if "sqlite" in database_url:
+            db_file = "./test_violentutf.db"
+            if os.path.exists(db_file):
+                os.remove(db_file)
+                print(f"Removed existing test database: {db_file}")
+
+        # Import all models to ensure they're registered with Base
+        from app.models import (  # noqa: F401
+            APIKey,
+            AuditLog,
+            MFABackupCode,
+            MFAChallenge,
+            MFADevice,
+            MFAEvent,
+            OAuthAccessToken,
+            OAuthApplication,
+            OAuthAuthorizationCode,
+            OAuthRefreshToken,
+            Permission,
+            Role,
+            Session,
+            User,
+            UserRole,
+        )
+
         # Create async engine for testing
         # For SQLite, we need special handling to ensure transaction visibility
         connect_args = {}
@@ -106,19 +132,12 @@ class DatabaseTestManager:
         print("Test database reset completed")
 
 
-# Global test database manager
-_test_db_manager: DatabaseTestManager | None = None
-
-
+# Removed global singleton - each module gets its own manager
 async def get_test_db_manager() -> DatabaseTestManager:
-    """Get or create test database manager."""
-    global _test_db_manager
-
-    if _test_db_manager is None:
-        _test_db_manager = DatabaseTestManager()
-        await _test_db_manager.initialize()
-
-    return _test_db_manager
+    """Create test database manager."""
+    manager = DatabaseTestManager()
+    await manager.initialize()
+    return manager
 
 
 @pytest.fixture(scope="session")
@@ -130,10 +149,12 @@ def event_loop():
     loop.close()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="module")
 async def test_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
-    """Provide test database manager for the entire test session."""
-    manager = await get_test_db_manager()
+    """Provide test database manager per module for better test isolation."""
+    # Create fresh manager for each test module
+    manager = DatabaseTestManager()
+    await manager.initialize()
     yield manager
     await manager.cleanup()
 
