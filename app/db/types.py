@@ -166,3 +166,7 @@ class JSONType(TypeDecorator[Union[Dict[str, Any], List[Any]]]):
 
         # Unexpected type
         raise ValueError(f"Unexpected type from database: {type(value)}")
+
+
+# Alias for compatibility
+JSON = JSONType
