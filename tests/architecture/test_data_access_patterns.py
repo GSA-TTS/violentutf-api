@@ -368,17 +368,44 @@ class TestRepositoryPattern:
         """
         violations = data_access_validator.find_direct_database_access()
 
-        assert len(violations) == 0, (
-            f"Found {len(violations)} direct database access violations outside repositories:\n"
-            + "\n".join(
-                [
-                    f"  - {file_path.relative_to(data_access_validator.project_root)}:"
-                    f"{line_no} - {func_name}(): {violation_type}"
-                    for file_path, func_name, line_no, violation_type in violations[:10]
-                ]
-            )
-            + (f"\n  ... and {len(violations) - 10} more" if len(violations) > 10 else "")
-        )
+        if len(violations) > 0:
+            # Group violations by category for better guidance
+            by_category = {}
+            for file_path, func_name, line_no, violation_type in violations:
+                category = "API Endpoints" if "/api/" in str(file_path) else "Services"
+                if category not in by_category:
+                    by_category[category] = []
+                by_category[category].append((file_path, func_name, line_no, violation_type))
+
+            error_msg = f"Found {len(violations)} repository pattern violations:\n\n"
+            error_msg += "REPOSITORY PATTERN VIOLATIONS DETECTED\n"
+            error_msg += "=" * 50 + "\n\n"
+
+            for category, cat_violations in by_category.items():
+                error_msg += f"{category} ({len(cat_violations)} violations):\n"
+                error_msg += f"Problem: Direct database access instead of using repository pattern\n"
+                if category == "API Endpoints":
+                    error_msg += "Solution: API endpoints should call services, services should call repositories\n"
+                else:
+                    error_msg += "Solution: Services should use repository classes for database operations\n"
+                error_msg += "Examples:\n"
+
+                for file_path, func_name, line_no, violation_type in cat_violations[:3]:
+                    rel_path = file_path.relative_to(data_access_validator.project_root)
+                    error_msg += f"  - {rel_path}:{line_no} - {func_name}(): {violation_type}\n"
+
+                if len(cat_violations) > 3:
+                    error_msg += f"  ... and {len(cat_violations) - 3} more in {category}\n"
+                error_msg += "\n"
+
+            error_msg += "REFACTORING GUIDANCE:\n"
+            error_msg += "1. Create repository classes in app/repositories/ for database operations\n"
+            error_msg += "2. Services should inject repositories and call repository methods\n"
+            error_msg += "3. API endpoints should only call service methods, never database directly\n"
+            error_msg += "4. See app/repositories/base.py for repository base class\n"
+            error_msg += "5. Example: app/services/health_service.py shows repository pattern usage\n"
+
+            assert len(violations) == 0, error_msg
 
     def test_repository_naming_conventions(self, data_access_validator):
         """Validate repository methods follow naming conventions."""

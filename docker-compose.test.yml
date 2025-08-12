@@ -76,7 +76,7 @@ services:
       # Security settings for test
       SECRET_KEY: "test_secret_key_only_for_testing"
       JWT_SECRET_KEY: "test_jwt_secret"
-      JWT_ALGORITHM: "HS256"
+      JWT_ALGORITHM: "RS256"  # ADR-002: Use RS256 for JWT signing
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
 
       # API configuration

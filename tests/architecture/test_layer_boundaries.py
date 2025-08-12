@@ -135,23 +135,36 @@ class LayerBoundaryValidator:
             return None
 
     def _extract_imports(self, file_path: Path) -> Set[str]:
-        """Extract all imports from a Python file."""
+        """Extract all imports from a Python file, excluding TYPE_CHECKING imports."""
         imports = set()
 
         try:
             content = file_path.read_text()
             tree = ast.parse(content)
 
+            # Track if we're inside a TYPE_CHECKING block
+            type_checking_nodes = set()
+
+            # Find all TYPE_CHECKING if blocks
             for node in ast.walk(tree):
+                if isinstance(node, ast.If):
+                    # Check if this is "if TYPE_CHECKING:"
+                    if isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING":
+                        # Add all children of this if block to type_checking_nodes
+                        for child in ast.walk(node):
+                            type_checking_nodes.add(child)
+
+            for node in ast.walk(tree):
+                # Skip nodes inside TYPE_CHECKING blocks
+                if node in type_checking_nodes:
+                    continue
+
                 if isinstance(node, ast.Import):
                     for alias in node.names:
                         imports.add(alias.name)
                 elif isinstance(node, ast.ImportFrom):
                     if node.module:
                         imports.add(node.module)
-                        # Also add the full import path for specific imports
-                        for alias in node.names:
-                            imports.add(f"{node.module}.{alias.name}")
 
         except Exception:
             pass

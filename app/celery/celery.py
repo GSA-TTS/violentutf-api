@@ -58,15 +58,12 @@ celery_config: Dict[str, Any] = {
 # Apply configuration
 celery_app.config_from_object(celery_config)
 
-# Auto-discover tasks
+# Auto-discover tasks - this will automatically register tasks without circular import
 celery_app.autodiscover_tasks(
     [
         "app.celery.tasks",
     ]
 )
-
-# Import tasks to register them
-from app.celery import tasks  # noqa: E402
 
 # Configure logging
 if not os.getenv("CELERY_WORKER_HIJACK_ROOT_LOGGER", "False").lower() == "true":

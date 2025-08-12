@@ -4,14 +4,14 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from structlog.stdlib import get_logger
 
 from app.core.cache import get_cache
 from app.core.circuit_breaker import get_all_circuit_stats
 from app.core.config import settings
 from app.db.session import get_db
+from app.repositories.health import HealthRepository
 
 logger = get_logger(__name__)
 
@@ -97,7 +97,7 @@ class HealthCheckService:
 
     async def check_database(self) -> Dict[str, Any]:
         """
-        Check database health.
+        Check database health using repository pattern.
 
         Returns:
             Database health status
@@ -106,31 +106,17 @@ class HealthCheckService:
             start_time = datetime.now(timezone.utc)
 
             async with get_db() as session:
-                # Simple query to test connection
-                result = await session.execute(text("SELECT 1"))
-                result.scalar()
-
-                # Check for active connections
-                if settings.DATABASE_URL and settings.DATABASE_URL.startswith("postgresql"):
-                    conn_query = text(
-                        """
-                        SELECT count(*) as active_connections
-                        FROM pg_stat_activity
-                        WHERE state = 'active'
-                    """
-                    )
-                    conn_result = await session.execute(conn_query)
-                    active_connections = conn_result.scalar() or 0
-                else:
-                    active_connections = 1
+                health_repo = HealthRepository(session)
+                connectivity_result = await health_repo.check_database_connectivity()
+                db_stats = await health_repo.get_database_stats()
 
             response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             return {
-                "status": HealthStatus.HEALTHY,
+                "status": connectivity_result.get("status", HealthStatus.HEALTHY),
                 "response_time_ms": response_time * 1000,
-                "active_connections": active_connections,
                 "pool_size": settings.DATABASE_POOL_SIZE,
+                **db_stats,  # Include database statistics from repository
             }
 
         except Exception as e:
