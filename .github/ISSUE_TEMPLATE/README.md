@@ -5,18 +5,18 @@ This directory contains UAT (Unified Agentic Task) compliant issue templates for
 ## Available Templates
 
 ### Core Development Templates
-1. **🎯 Epic** (`01-epic.yml`) - Large-scale initiatives spanning multiple sprints
-2. **📖 User Story** (`02-story.yml`) - User-facing features with acceptance criteria
-3. **✅ Task** (`03-task.yml`) - Technical implementation tasks
-4. **🐛 Bug Report** (`04-bug.yml`) - Defect reports with debugging information
+1. **🎯 Epic** (`epic.yml`) - Large-scale initiatives spanning multiple sprints
+2. **📖 User Story** (`story.yml`) - User-facing features with acceptance criteria
+3. **✅ Task** (`task.yml`) - Technical implementation tasks
+4. **🐛 Bug Report** (`bug.yml`) - Defect reports with debugging information
 
 ### Specialized Templates
-5. **🔒 Security Issue** (`05-security.yml`) - Security vulnerabilities and fixes
-6. **⚡ Performance Issue** (`06-performance.yml`) - Performance problems and optimizations
-7. **📚 Documentation** (`07-documentation.yml`) - Documentation creation and updates
-8. **🔧 Refactor** (`08-refactor.yml`) - Code improvement without functional changes
-9. **🧹 Chore** (`09-chore.yml`) - Maintenance tasks and housekeeping
-10. **🔬 Research/Spike** (`10-research.yml`) - Technical investigations and evaluations
+5. **🔒 Security Issue** (`security.yml`) - Security vulnerabilities and fixes
+6. **⚡ Performance Issue** (`performance.yml`) - Performance problems and optimizations
+7. **📚 Documentation** (`documentation.yml`) - Documentation creation and updates
+8. **🔧 Refactor** (`refactor.yml`) - Code improvement without functional changes
+9. **🧹 Chore** (`chore.yml`) - Maintenance tasks and housekeeping
+10. **🔬 Research/Spike** (`research.yml`) - Technical investigations and evaluations
 
 ## UAT Schema
 
