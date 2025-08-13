@@ -1,11 +1,14 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Critical Security Vulnerability
+  - name: 🔐 Security Vulnerability
     url: https://github.com/GSA-TTS/violentutf-api/security/advisories/new
-    about: Please report critical security vulnerabilities here instead of creating a public issue
-  - name: Community Support
+    about: Please report security vulnerabilities through our Security Advisory system
+  - name: 💬 Discussions
     url: https://github.com/GSA-TTS/violentutf-api/discussions
-    about: Please ask and answer questions here
-  - name: Documentation
+    about: Ask questions and discuss ideas with the community
+  - name: 📖 Documentation
     url: https://github.com/GSA-TTS/violentutf-api/wiki
-    about: Check our documentation for common questions and setup guides
+    about: Check our documentation for guides and tutorials
+  - name: 🚨 Critical Production Issue
+    url: https://github.com/GSA-TTS/violentutf-api/issues/new?labels=priority:critical,type:incident
+    about: Report critical production incidents requiring immediate attention

@@ -104,14 +104,14 @@ jobs:
           bandit -r .github/ -f json -o bandit-ci-report.json
 
           # Custom secret patterns for CI files
-          python3 -c "
+          python3 << 'EOF'
           import os, re, sys
 
           secret_patterns = [
-              r'(?i)(password|passwd|pwd|secret|key|token)\\s*[:=]\\s*[\\\"\\x27\\x60]([^\\\"\\x27\\x60\\s]{8,})[\\\"\\x27\\x60]',
-              r'(?i)bearer\\s+[a-zA-Z0-9\\-\\._~\\+\\/]+=*',
+              r'(?i)(password|passwd|pwd|secret|key|token)\s*[:=]\s*["\'\`]([^"\'\`\s]{8,})["\'\`]',
+              r'(?i)bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*',
               r'sk_live_[a-zA-Z0-9]+',
-              r'xox[baprs]-[a-zA-Z0-9\\-]+',
+              r'xox[baprs]-[a-zA-Z0-9\-]+',
               r'ghp_[a-zA-Z0-9]{36}',
               r'AKIA[0-9A-Z]{16}',
           ]
@@ -136,14 +136,14 @@ jobs:
               sys.exit(1)
           else:
               print('✅ No hardcoded secrets detected in CI files')
-          "
+          EOF
 
       - name: 🔍 Validate Test Command Integrity
         run: |
           echo "🔍 Validating that test commands fail properly..."
 
           # Extract and validate all test commands from workflows
-          python3 -c "
+          python3 << 'EOF'
           import os, re, sys, yaml
 
           test_commands = []
@@ -191,7 +191,7 @@ jobs:
           if len(safe_commands) != len(test_commands):
               print(f'❌ {len(test_commands) - len(safe_commands)} commands have dangerous masking patterns')
               sys.exit(1)
-          "
+          EOF
 
       - name: 📊 Generate Security Report
         if: always()
@@ -219,7 +219,7 @@ jobs:
             comment += '### Test Masking Check\n';
             comment += '✅ **PASSED**: No dangerous test masking patterns detected\n\n';
             comment += '### Security Summary\n';
-            comment += '- No pipe-true patterns found\\n';  // ALLOW_MASK: Safe reference in documentation
+            comment += '- No pipe-true patterns found\n';  // ALLOW_MASK: Safe reference in documentation
             comment += '- No hardcoded secrets in CI files\n';
             comment += '- All test commands properly configured\n';
             comment += '- Workflow security validated\n\n';

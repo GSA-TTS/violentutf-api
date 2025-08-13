@@ -39,7 +39,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
     SECRET_KEY: SecretStr = Field(..., min_length=32)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, ge=5, le=1440)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, ge=1, le=30)
-    ALGORITHM: str = Field(default="HS256")
+    ALGORITHM: str = Field(default="HS256")  # Temporarily using HS256 until proper RSA keys are implemented
     BCRYPT_ROUNDS: int = Field(default=12, ge=10, le=15)
 
     # Secrets Manager Configuration

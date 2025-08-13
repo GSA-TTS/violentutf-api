@@ -1,0 +1,205 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Test Database
+  db:
+    image: postgres:15-alpine
+    container_name: violentutf_test_db
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: testdb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"  # Different port to avoid conflict with local PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d testdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test_network
+    # Ephemeral storage - no volumes for test data
+    tmpfs:
+      - /var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Redis Test Cache
+  redis:
+    image: redis:7-alpine
+    container_name: violentutf_test_redis
+    ports:
+      - "6380:6379"  # Different port to avoid conflict with local Redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - test_network
+    # Ephemeral storage
+    command: redis-server --save ""  # Disable persistence for tests
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # API Test Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - TESTING=true
+    container_name: violentutf_test_api
+    environment:
+      # Test mode configuration
+      TESTING: "true"
+      ENV: "test"
+      DEBUG: "false"
+
+      # Database configuration
+      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      DATABASE_POOL_SIZE: "5"
+      DATABASE_MAX_OVERFLOW: "10"
+
+      # Redis configuration
+      REDIS_URL: "redis://redis:6379/1"  # Use Redis DB 1 for tests
+
+      # Security settings for test
+      SECRET_KEY: "test_secret_key_only_for_testing"
+      JWT_SECRET_KEY: "test_jwt_secret"
+      JWT_ALGORITHM: "RS256"  # ADR-002: Use RS256 for JWT signing
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+
+      # API configuration
+      API_V1_STR: "/api/v1"
+      PROJECT_NAME: "ViolentUTF API Test"
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000", "http://localhost:8000"]'
+
+      # Test API keys
+      TEST_API_KEY: "test_api_key_123"
+      TEST_ADMIN_API_KEY: "test_admin_key_456"
+
+      # Disable external services for tests
+      KEYCLOAK_ENABLED: "false"
+      OAUTH_ENABLED: "false"
+
+      # Logging
+      LOG_LEVEL: "DEBUG"
+      STRUCTURED_LOGGING: "true"
+
+      # Rate limiting for tests
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_PER_MINUTE: "100"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8000/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - test_network
+    volumes:
+      # Mount source code for development (optional, can be removed for CI/CD)
+      - ./app:/app/app:ro
+      - ./alembic:/app/alembic:ro
+      - ./tests:/app/tests:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        python -c 'import time; time.sleep(2)' &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting API server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # Celery Worker for Async Tasks (ADR-007 compliance)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: violentutf_test_celery
+    environment:
+      # Inherit most environment from API
+      TESTING: "true"
+      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      REDIS_URL: "redis://redis:6379/1"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+      LOG_LEVEL: "DEBUG"
+    command: celery -A app.celery.celery worker --loglevel=debug --concurrency=2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.celery.celery", "inspect", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - test_network
+    volumes:
+      - ./app:/app/app:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Optional: Celery Beat for scheduled tasks
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: violentutf_test_celery_beat
+    environment:
+      TESTING: "true"
+      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      REDIS_URL: "redis://redis:6379/1"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+    command: celery -A app.celery.celery beat --loglevel=debug
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - test_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+networks:
+  test_network:
+    driver: bridge
+    name: violentutf_test_network
+    # Enable isolation from other Docker networks
+    internal: false
+    attachable: true
+
+# No persistent volumes for test environment - all data is ephemeral
