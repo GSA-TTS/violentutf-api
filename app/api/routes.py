@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from .endpoints import (
     api_keys,
+    architectural_metrics,
     audit_logs,
     auth,
     health,
@@ -189,5 +190,13 @@ api_router.include_router(
     plugins.router,
     prefix="/plugins",
     tags=["Plugins"],
+    responses=crud_error_responses,
+)
+
+# Include Architectural Metrics endpoints
+api_router.include_router(
+    architectural_metrics.router,
+    prefix="/metrics/architectural",
+    tags=["Architectural Metrics"],
     responses=crud_error_responses,
 )

@@ -59,7 +59,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
         }
 
         # SQLite-specific optimizations
-        if settings.DATABASE_URL and settings.DATABASE_URL.startswith(("sqlite", "sqlite+aiosqlite")):
+        if database_url and database_url.startswith(("sqlite", "sqlite+aiosqlite")):
             # SQLite doesn't support connection pooling parameters
             pool_settings = {
                 "pool_pre_ping": True,  # Validate connections before use
@@ -69,11 +69,11 @@ def create_database_engine() -> Optional[AsyncEngine]:
             logger.debug("Using SQLite-optimized connection settings")
 
         # Create async engine with enhanced settings
-        if not settings.DATABASE_URL:
+        if not database_url:
             raise ValueError("DATABASE_URL is not configured")
 
         db_engine = create_async_engine(
-            settings.DATABASE_URL,
+            database_url,
             echo=settings.DEBUG,
             **pool_settings,
             # Additional resilience settings
@@ -81,7 +81,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
                 {
                     "check_same_thread": False,  # For SQLite async compatibility
                 }
-                if settings.DATABASE_URL and settings.DATABASE_URL.startswith("sqlite")
+                if database_url and database_url.startswith("sqlite")
                 else {}
             ),
         )
@@ -90,7 +90,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
             "Database engine created successfully",
             pool_size=pool_settings.get("pool_size", "N/A"),
             max_overflow=pool_settings.get("max_overflow", "N/A"),
-            database_type="sqlite" if settings.DATABASE_URL and "sqlite" in settings.DATABASE_URL else "postgresql",
+            database_type="sqlite" if database_url and "sqlite" in database_url else "postgresql",
         )
 
         # Sync public engine attribute for testing compatibility

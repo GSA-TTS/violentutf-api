@@ -58,7 +58,8 @@ class TestExportManager:
         config = ReportConfig(output_dir=temp_dir, export_formats=["html", "json", "pdf"])
 
         with patch(
-            "tools.pre_audit.reporting.exporters.PDFReportGenerator", side_effect=ImportError("ReportLab not installed")
+            "tools.pre_audit.reporting.export_manager.PDFReportGenerator",
+            side_effect=ImportError("ReportLab not installed"),
         ):
             manager = ExportManager(config)
 
@@ -70,12 +71,14 @@ class TestExportManager:
         # Disable parallel export
         manager.config.enable_parallel_export = False
 
-        # Mock generators
+        # Mock generators and track which ones we mocked
+        mocked_generators = {}
         for format_name in ["html", "json"]:
             if format_name in manager.generators:
                 mock_gen = MagicMock()
                 mock_gen.generate.return_value = temp_dir / f"report.{format_name}"
                 manager.generators[format_name] = mock_gen
+                mocked_generators[format_name] = mock_gen
 
         results = manager.export_all(sample_audit_data)
 
@@ -84,10 +87,9 @@ class TestExportManager:
         assert "json" in results
         assert all(isinstance(p, Path) for p in results.values() if p)
 
-        # Verify generators were called
-        for format_name, generator in manager.generators.items():
-            if hasattr(generator, "generate"):
-                generator.generate.assert_called_once()
+        # Verify only mocked generators were called
+        for format_name, generator in mocked_generators.items():
+            generator.generate.assert_called_once()
 
     def test_export_all_parallel(self, manager, sample_audit_data, temp_dir):
         """Test parallel export of all formats."""

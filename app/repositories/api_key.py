@@ -393,8 +393,6 @@ class APIKeyRepository(BaseRepository[APIKey]):
             # Special handling for setting expires_at to None (remove expiration)
             # We can't use the base update method because it filters out None values
             if new_expires_at is None:
-                from sqlalchemy import update
-                from sqlalchemy.sql import func
 
                 update_query = (
                     update(self.model)
