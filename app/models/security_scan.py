@@ -112,6 +112,7 @@ class SecurityScan(Base, AuditMixin, SoftDeleteMixin):
         )
 
     def __repr__(self) -> str:
+        """Return string representation of SecurityScan."""
         return f"<SecurityScan(name='{self.name}', type='{self.scan_type}', status='{self.status}')>"
 
     @property

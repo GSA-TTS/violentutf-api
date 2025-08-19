@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class OAuthApplicationCreate(BaseModel):
@@ -21,14 +21,16 @@ class OAuthApplicationCreate(BaseModel):
     privacy_policy_url: Optional[HttpUrl] = Field(None, description="Privacy policy URL")
     terms_of_service_url: Optional[HttpUrl] = Field(None, description="Terms of service URL")
 
-    @validator("application_type")
+    @field_validator("application_type")
+    @classmethod
     def validate_application_type(cls, v: str) -> str:
         """Validate application type."""
         if v not in ["web", "mobile", "spa"]:
             raise ValueError("Invalid application type")
         return v
 
-    @validator("redirect_uris")
+    @field_validator("redirect_uris")
+    @classmethod
     def validate_redirect_uris(cls, v: List[str]) -> List[str]:
         """Validate redirect URIs list with proper URL parsing."""
         if not v or len(v) == 0:
@@ -63,7 +65,8 @@ class OAuthApplicationCreate(BaseModel):
 
         return v
 
-    @validator("allowed_scopes")
+    @field_validator("allowed_scopes")
+    @classmethod
     def validate_allowed_scopes(cls, v: List[str]) -> List[str]:
         """Validate allowed scopes list."""
         if not v or len(v) == 0:
@@ -157,14 +160,16 @@ class OAuthAuthorizeRequest(BaseModel):
     code_challenge_method: Optional[str] = Field(None, description="PKCE method (S256 or plain)")
     nonce: Optional[str] = Field(None, description="OpenID Connect nonce")
 
-    @validator("response_type")
+    @field_validator("response_type")
+    @classmethod
     def validate_response_type(cls, v: str) -> str:
         """Validate response type."""
         if v not in ["code", "token"]:
             raise ValueError("Invalid response type")
         return v
 
-    @validator("code_challenge_method")
+    @field_validator("code_challenge_method")
+    @classmethod
     def validate_code_challenge_method(cls, v: Optional[str]) -> Optional[str]:
         """Validate PKCE method."""
         if v and v not in ["S256", "plain"]:
@@ -184,7 +189,8 @@ class OAuthTokenRequest(BaseModel):
     scope: Optional[str] = Field(None, description="Requested scopes")
     code_verifier: Optional[str] = Field(None, description="PKCE code verifier")
 
-    @validator("grant_type")
+    @field_validator("grant_type")
+    @classmethod
     def validate_grant_type(cls, v: str) -> str:
         """Validate grant type."""
         if v not in ["authorization_code", "refresh_token", "client_credentials"]:
@@ -210,7 +216,8 @@ class OAuthTokenRevoke(BaseModel):
     client_id: Optional[str] = Field(None, description="Client ID")
     client_secret: Optional[str] = Field(None, description="Client secret")
 
-    @validator("token_type_hint")
+    @field_validator("token_type_hint")
+    @classmethod
     def validate_token_type_hint(cls, v: Optional[str]) -> Optional[str]:
         """Validate token type hint."""
         if v and v not in ["access_token", "refresh_token"]:

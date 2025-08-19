@@ -17,7 +17,7 @@ from app.repositories.base import BaseRepository, Page
 
 
 # Test model for comprehensive testing
-class TestModel(Base):
+class RepositoryTestModel(Base):
     """Test model with all features for comprehensive testing."""
 
     __tablename__ = "test_models"
@@ -174,10 +174,10 @@ class TestBaseRepositoryInitialization:
 
     def test_initialization_with_model(self, test_session):
         """Test repository initialization with model provided."""
-        repo = BaseRepository(test_session, TestModel)
+        repo = BaseRepository(test_session, RepositoryTestModel)
 
         assert repo.session == test_session
-        assert repo.model == TestModel
+        assert repo.model == RepositoryTestModel
         assert repo.logger is not None
 
     def test_initialization_without_model_raises_error(self, test_session):
@@ -189,10 +189,10 @@ class TestBaseRepositoryInitialization:
         """Test repository initialization with model as class attribute."""
 
         class CustomRepository(BaseRepository):
-            model = TestModel
+            model = RepositoryTestModel
 
         repo = CustomRepository(test_session)
-        assert repo.model == TestModel
+        assert repo.model == RepositoryTestModel
 
 
 class TestBaseRepositoryCRUD:
@@ -209,13 +209,13 @@ class TestBaseRepositoryCRUD:
     @pytest.fixture
     def repository(self, test_session):
         """Create a repository for testing."""
-        return BaseRepository(test_session, TestModel)
+        return BaseRepository(test_session, RepositoryTestModel)
 
     @pytest.mark.asyncio
     async def test_get_by_id_found(self, repository, test_session):
         """Test get_by_id when entity is found."""
         test_id = str(uuid.uuid4())
-        test_entity = TestModel(id=test_id, name="Test Entity")
+        test_entity = RepositoryTestModel(id=test_id, name="Test Entity")
 
         test_result = MagicMock()
         test_result.scalar_one_or_none.return_value = test_entity
@@ -245,7 +245,7 @@ class TestBaseRepositoryCRUD:
         """Test get_by_id with organization filtering."""
         test_id = str(uuid.uuid4())
         org_id = str(uuid.uuid4())
-        test_entity = TestModel(id=test_id, name="Test", organization_id=org_id)
+        test_entity = RepositoryTestModel(id=test_id, name="Test", organization_id=org_id)
 
         test_result = MagicMock()
         test_result.scalar_one_or_none.return_value = test_entity
@@ -343,8 +343,8 @@ class TestBaseRepositoryCRUD:
     async def test_update_existing_entity(self, repository, test_session):
         """Test update of existing entity."""
         test_id = str(uuid.uuid4())
-        original_entity = TestModel(id=test_id, name="Original", version=1, is_deleted=False)
-        updated_entity = TestModel(id=test_id, name="Updated", version=2, is_deleted=False)
+        original_entity = RepositoryTestModel(id=test_id, name="Original", version=1, is_deleted=False)
+        updated_entity = RepositoryTestModel(id=test_id, name="Updated", version=2, is_deleted=False)
 
         # Mock get_by_id for version check
         test_result_get = MagicMock()
@@ -390,7 +390,7 @@ class TestBaseRepositoryCRUD:
         test_id = str(uuid.uuid4())
         org_id = str(uuid.uuid4())
 
-        entity = TestModel(id=test_id, name="Original", organization_id=org_id, version=1, is_deleted=False)
+        entity = RepositoryTestModel(id=test_id, name="Original", organization_id=org_id, version=1, is_deleted=False)
 
         test_result_get = MagicMock()
         test_result_get.scalar_one_or_none.return_value = entity
@@ -409,7 +409,7 @@ class TestBaseRepositoryCRUD:
         """Test update filters out None values."""
         test_id = str(uuid.uuid4())
 
-        entity = TestModel(id=test_id, name="Original", is_deleted=False)
+        entity = RepositoryTestModel(id=test_id, name="Original", is_deleted=False)
 
         test_result_get = MagicMock()
         test_result_get.scalar_one_or_none.return_value = entity
@@ -427,7 +427,7 @@ class TestBaseRepositoryCRUD:
     async def test_update_with_no_fields_to_update(self, repository, test_session):
         """Test update when no fields to update."""
         test_id = str(uuid.uuid4())
-        entity = TestModel(id=test_id, name="Original", is_deleted=False)
+        entity = RepositoryTestModel(id=test_id, name="Original", is_deleted=False)
 
         test_result = MagicMock()
         test_result.scalar_one_or_none.return_value = entity
@@ -443,7 +443,7 @@ class TestBaseRepositoryCRUD:
     async def test_update_increments_version(self, repository, test_session):
         """Test update increments version for optimistic locking."""
         test_id = str(uuid.uuid4())
-        entity = TestModel(id=test_id, name="Original", version=5, is_deleted=False)
+        entity = RepositoryTestModel(id=test_id, name="Original", version=5, is_deleted=False)
 
         test_result_get = MagicMock()
         test_result_get.scalar_one_or_none.return_value = entity
@@ -718,7 +718,7 @@ class TestBaseRepositoryCRUD:
     async def test_get_alias_method(self, repository, test_session):
         """Test get method (alias for get_by_id)."""
         test_id = str(uuid.uuid4())
-        test_entity = TestModel(id=test_id, name="Test")
+        test_entity = RepositoryTestModel(id=test_id, name="Test")
 
         test_result = MagicMock()
         test_result.scalar_one_or_none.return_value = test_entity
@@ -766,7 +766,7 @@ class TestBaseRepositoryPagination:
     @pytest.fixture
     def repository(self, test_session):
         """Create a repository for testing."""
-        return BaseRepository(test_session, TestModel)
+        return BaseRepository(test_session, RepositoryTestModel)
 
     @pytest.mark.asyncio
     async def test_list_with_pagination_basic(self, repository, test_session):
@@ -778,7 +778,7 @@ class TestBaseRepositoryPagination:
         # Mock data query
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(20)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(20)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -803,7 +803,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(20)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(20)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -823,7 +823,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(5)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(5)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -865,7 +865,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}", is_active=True) for i in range(10)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}", is_active=True) for i in range(10)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -888,7 +888,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}", organization_id=org_id) for i in range(15)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}", organization_id=org_id) for i in range(15)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -907,7 +907,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(20)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(20)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -925,14 +925,14 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(10)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(10)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
         test_session.execute = AsyncMock(side_effect=[test_count_result, test_data_result])
 
         # Mock the model to have a relationship attribute
-        with patch.object(TestModel, "related_items", create=True):
+        with patch.object(RepositoryTestModel, "related_items", create=True):
             result = await repository.list_with_pagination(page=1, size=10, eager_load=["related_items"])
 
         assert len(result.items) == 10
@@ -945,7 +945,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(20)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(20)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -997,7 +997,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(20)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(20)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1016,7 +1016,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(10)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(10)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1035,7 +1035,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(10)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(10)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1053,7 +1053,7 @@ class TestBaseRepositoryPagination:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(100)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(100)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1083,7 +1083,7 @@ class TestBaseRepositoryFiltering:
     @pytest.fixture
     def repository(self, test_session):
         """Create a repository for testing."""
-        return BaseRepository(test_session, TestModel)
+        return BaseRepository(test_session, RepositoryTestModel)
 
     @pytest.mark.asyncio
     async def test_apply_filters_search(self, repository, test_session):
@@ -1093,7 +1093,7 @@ class TestBaseRepositoryFiltering:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Search {i}") for i in range(5)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Search {i}") for i in range(5)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1111,7 +1111,7 @@ class TestBaseRepositoryFiltering:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(10)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(10)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1142,7 +1142,7 @@ class TestBaseRepositoryFiltering:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(3)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(3)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1168,7 +1168,7 @@ class TestBaseRepositoryFiltering:
 
         test_data_result = MagicMock()
         test_scalars = MagicMock()
-        test_items = [TestModel(id=str(i), name=f"Item {i}") for i in range(8)]
+        test_items = [RepositoryTestModel(id=str(i), name=f"Item {i}") for i in range(8)]
         test_scalars.all.return_value = test_items
         test_data_result.scalars.return_value = test_scalars
 
@@ -1221,7 +1221,7 @@ class TestBaseRepositoryFiltering:
         type(email_col.type).__str__ = lambda self: "VARCHAR(100)"
         test_columns.append(email_col)
 
-        with patch.object(TestModel.__table__, "columns", test_columns):
+        with patch.object(RepositoryTestModel.__table__, "columns", test_columns):
             fields = repository._get_searchable_fields()
 
         # Should include VARCHAR and TEXT fields
@@ -1233,7 +1233,7 @@ class TestBaseRepositoryFiltering:
     def test_build_filter_condition_simple_operators(self, repository):
         """Test building filter conditions with simple operators."""
         # Use an actual model field that supports operators
-        test_field = TestModel.name
+        test_field = RepositoryTestModel.name
 
         # Test equality
         condition = repository._build_filter_condition(test_field, "eq", "test")
@@ -1342,7 +1342,7 @@ class TestBaseRepositoryEdgeCases:
     @pytest.fixture
     def repository(self, test_session):
         """Create a repository for testing."""
-        return BaseRepository(test_session, TestModel)
+        return BaseRepository(test_session, RepositoryTestModel)
 
     @pytest.mark.asyncio
     async def test_apply_filters_with_non_dict_advanced_filters(self, repository, test_session):

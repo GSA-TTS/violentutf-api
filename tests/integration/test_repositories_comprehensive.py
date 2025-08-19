@@ -18,7 +18,7 @@ from app.models.api_key import APIKey
 from app.models.audit_log import AuditLog
 from app.models.role import Role
 from app.models.security_scan import SecurityScan
-from app.models.session import UserSession
+from app.models.session import Session as UserSession
 from app.models.user import User
 from app.models.vulnerability_finding import VulnerabilityFinding
 from app.models.vulnerability_taxonomy import VulnerabilityTaxonomy
