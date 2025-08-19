@@ -54,113 +54,67 @@ def prevent_sql_injection(
         block_on_detection=True,
     )
 
+    def _validate_parameters(sig, bound_args, func_name) -> list:
+        """Extract parameter validation logic to reduce complexity."""
+        unsafe_params = []
+
+        for param_name, param_value in bound_args.arguments.items():
+            param = sig.parameters.get(param_name)
+            if not param or isinstance(param_value, Request):
+                continue
+
+            # Check path parameters
+            if check_path_params and isinstance(param_value, str):
+                if not middleware.check_value(param_value, param_name):
+                    unsafe_params.append(f"path parameter '{param_name}'")
+
+            # Check query parameters
+            if check_query_params and param_name not in ["self", "cls", "request"]:
+                if isinstance(param_value, str):
+                    if not middleware.check_value(param_value, param_name):
+                        unsafe_params.append(f"query parameter '{param_name}'")
+                elif isinstance(param_value, list):
+                    for i, item in enumerate(param_value):
+                        if isinstance(item, str) and not middleware.check_value(item, f"{param_name}[{i}]"):
+                            unsafe_params.append(f"query parameter '{param_name}[{i}]'")
+
+            # Check request body
+            if check_body and isinstance(param_value, BaseModel):
+                data = param_value.model_dump()
+                is_safe, unsafe_fields = middleware.check_request_data(data)
+                if not is_safe:
+                    unsafe_params.extend([f"body field '{field}'" for field in unsafe_fields])
+
+        return unsafe_params
+
+    def _handle_unsafe_params(unsafe_params, func_name) -> None:
+        """Handle detected unsafe parameters."""
+        if unsafe_params:
+            error_msg = custom_error_message or f"SQL injection attempt detected in: {', '.join(unsafe_params)}"
+            if log_attempts:
+                logger.warning("sql_injection_blocked", endpoint=func_name, unsafe_params=unsafe_params)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Get function signature
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
 
-            unsafe_params = []
+            unsafe_params = _validate_parameters(sig, bound_args, func.__name__)
+            _handle_unsafe_params(unsafe_params, func.__name__)
 
-            # Check different parameter types
-            for param_name, param_value in bound_args.arguments.items():
-                param = sig.parameters.get(param_name)
-                if not param:
-                    continue
-
-                # Skip Request object
-                if isinstance(param_value, Request):
-                    continue
-
-                # Check path parameters (usually simple strings)
-                if check_path_params and isinstance(param_value, str):
-                    if not middleware.check_value(param_value, param_name):
-                        unsafe_params.append(f"path parameter '{param_name}'")
-
-                # Check query parameters
-                if check_query_params and param_name not in ["self", "cls", "request"]:
-                    if isinstance(param_value, str):
-                        if not middleware.check_value(param_value, param_name):
-                            unsafe_params.append(f"query parameter '{param_name}'")
-                    elif isinstance(param_value, list):
-                        for i, item in enumerate(param_value):
-                            if isinstance(item, str) and not middleware.check_value(item, f"{param_name}[{i}]"):
-                                unsafe_params.append(f"query parameter '{param_name}[{i}]'")
-
-                # Check request body (Pydantic models)
-                if check_body and isinstance(param_value, BaseModel):
-                    data = param_value.model_dump()
-                    is_safe, unsafe_fields = middleware.check_request_data(data)
-                    if not is_safe:
-                        unsafe_params.extend([f"body field '{field}'" for field in unsafe_fields])
-
-            # If SQL injection detected, raise exception
-            if unsafe_params:
-                error_msg = custom_error_message or f"SQL injection attempt detected in: {', '.join(unsafe_params)}"
-                if log_attempts:
-                    logger.warning(
-                        "sql_injection_blocked",
-                        endpoint=func.__name__,
-                        unsafe_params=unsafe_params,
-                    )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=error_msg,
-                )
-
-            # Call original function
             return await func(*bound_args.args, **bound_args.kwargs)
 
         @functools.wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Similar logic for sync functions
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
 
-            unsafe_params = []
-
-            for param_name, param_value in bound_args.arguments.items():
-                param = sig.parameters.get(param_name)
-                if not param:
-                    continue
-
-                if isinstance(param_value, Request):
-                    continue
-
-                if check_path_params and isinstance(param_value, str):
-                    if not middleware.check_value(param_value, param_name):
-                        unsafe_params.append(f"path parameter '{param_name}'")
-
-                if check_query_params and param_name not in ["self", "cls", "request"]:
-                    if isinstance(param_value, str):
-                        if not middleware.check_value(param_value, param_name):
-                            unsafe_params.append(f"query parameter '{param_name}'")
-                    elif isinstance(param_value, list):
-                        for i, item in enumerate(param_value):
-                            if isinstance(item, str) and not middleware.check_value(item, f"{param_name}[{i}]"):
-                                unsafe_params.append(f"query parameter '{param_name}[{i}]'")
-
-                if check_body and isinstance(param_value, BaseModel):
-                    data = param_value.model_dump()
-                    is_safe, unsafe_fields = middleware.check_request_data(data)
-                    if not is_safe:
-                        unsafe_params.extend([f"body field '{field}'" for field in unsafe_fields])
-
-            if unsafe_params:
-                error_msg = custom_error_message or f"SQL injection attempt detected in: {', '.join(unsafe_params)}"
-                if log_attempts:
-                    logger.warning(
-                        "sql_injection_blocked",
-                        endpoint=func.__name__,
-                        unsafe_params=unsafe_params,
-                    )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=error_msg,
-                )
+            unsafe_params = _validate_parameters(sig, bound_args, func.__name__)
+            _handle_unsafe_params(unsafe_params, func.__name__)
 
             return func(*bound_args.args, **bound_args.kwargs)
 

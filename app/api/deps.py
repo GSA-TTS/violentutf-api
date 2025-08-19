@@ -17,6 +17,9 @@ from app.core.auth import (
     get_optional_current_user,
 )
 
+# Import db session dependency for backward compatibility
+from app.db.session import get_db
+
 if TYPE_CHECKING:
     from app.models.user import User
 else:
@@ -60,8 +63,4 @@ async def get_optional_user(request: Request) -> Optional["User"]:
 
 # Legacy aliases for backward compatibility
 get_current_user_dep = get_current_user
-
-# Import db session dependency for backward compatibility
-from app.db.session import get_db
-
 get_db_dep = get_db

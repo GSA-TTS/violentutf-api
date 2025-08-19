@@ -112,7 +112,7 @@ async def create_default_policies(session: AsyncSession) -> List[str]:
     return created_policies
 
 
-async def main():
+async def main() -> None:
     """Main function to create default policies."""
     async with AsyncSessionLocal() as session:
         print("Creating default MFA policies...")

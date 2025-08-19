@@ -462,7 +462,7 @@ class ABACPolicyEngine:
         self.rules: List[ABACRule] = []
         self._initialize_default_rules()
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default ABAC rules."""
         # Add rules in priority order (lower priority number = higher precedence)
         self.rules.extend(
@@ -477,7 +477,7 @@ class ABACPolicyEngine:
         # Sort rules by priority
         self.rules.sort(key=lambda r: r.priority)
 
-    def add_rule(self, rule: ABACRule):
+    def add_rule(self, rule: ABACRule) -> None:
         """Add a custom rule to the policy engine."""
         self.rules.append(rule)
         # Re-sort rules by priority

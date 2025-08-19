@@ -40,7 +40,7 @@ def audit_action(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
             request = None
             session = None
@@ -142,7 +142,7 @@ def audit_auth_event(event_type: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             request = None
             session = None
 
@@ -231,7 +231,7 @@ def audit_security_event(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             request = None
             session = None
 

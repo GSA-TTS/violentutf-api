@@ -234,7 +234,6 @@ class ADRPatternMatcher:
 
     def _compile_patterns(self) -> None:
         """Pre-compile pattern matching for performance."""
-        import fnmatch
 
         for adr in self.patterns_config.get("adrs", []):
             adr_id = adr["id"]
@@ -454,7 +453,6 @@ class ADRPatternMatcher:
 
     def _matches_glob_pattern(self, file_path: str, pattern: str) -> bool:
         """Check if file path matches glob pattern."""
-        import fnmatch
 
         try:
             return fnmatch.fnmatch(file_path, pattern) or fnmatch.fnmatch(file_path.lower(), pattern.lower())
@@ -463,7 +461,6 @@ class ADRPatternMatcher:
 
     def _should_exclude_file_for_diff(self, file_path: str) -> bool:
         """Check if file should be excluded from diff analysis."""
-        import fnmatch
 
         exclude_patterns = [
             "test*",
@@ -728,7 +725,6 @@ class HistoricalAnalyzer:
 
     def _should_exclude_file(self, file_path: str) -> bool:
         """Check if file should be excluded from analysis with security validation."""
-        import fnmatch
 
         # Security: Validate file path doesn't contain path traversal
         if not self._is_safe_path(file_path):

@@ -49,7 +49,7 @@ except ImportError:
         """Dummy colors module for when reportlab is not available."""
 
         @staticmethod
-        def HexColor(color_str):
+        def HexColor(color_str: str) -> str:
             return color_str
 
     colors = DummyColors()
