@@ -5,6 +5,7 @@ description = "Standalone AI red-teaming API service"
 authors = ["ViolentUTF Team"]
 license = "MIT"
 readme = "README.md"
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"

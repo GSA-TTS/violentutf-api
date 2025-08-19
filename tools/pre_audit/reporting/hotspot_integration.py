@@ -39,6 +39,8 @@ except ImportError:
 
     # Create a mock np module
     class MockNp:
+        """Mock numpy module for when numpy is not available."""
+
         mean = staticmethod(mean)
         median = staticmethod(median)
         std = staticmethod(std)
@@ -60,6 +62,8 @@ except ImportError:
 
     # Create dummy class for type hints
     class TemporalWeightingResult:
+        """Dummy class for temporal weighting results when statistical analysis is not available."""
+
         pass
 
 

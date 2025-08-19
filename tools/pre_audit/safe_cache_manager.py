@@ -41,6 +41,7 @@ class CacheEntry:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Initialize last_accessed if not provided."""
         if not self.last_accessed:
             self.last_accessed = datetime.now().isoformat()
 

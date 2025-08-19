@@ -46,6 +46,8 @@ except ImportError:
 
     # Create dummy colors module with HexColor class
     class DummyColors:
+        """Dummy colors module for when reportlab is not available."""
+
         @staticmethod
         def HexColor(color_str):
             return color_str
