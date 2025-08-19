@@ -623,19 +623,21 @@ async def _execute_scan_phase(scan: Scan, phase: str, config: Dict[str, Any]) ->
             "Security Headers Missing",
         ]
 
-        import random
+        import secrets
 
-        num_findings = random.randint(0, 5)
+        num_findings = secrets.randbelow(6)  # 0-5
         for i in range(num_findings):
             phase_findings.append(
                 {
-                    "severity": random.choice(severities),
-                    "title": random.choice(finding_types),
-                    "confidence": round(random.uniform(0.6, 1.0), 2),
+                    "severity": secrets.choice(severities),
+                    "title": secrets.choice(finding_types),
+                    "confidence": round(0.6 + (secrets.randbelow(41) / 100), 2),  # 0.6-1.0
                     "phase": phase,
                     "description": f"Finding detected in {phase}",
                     "remediation": "Apply security best practices",
-                    "cve_id": f"CVE-2024-{random.randint(1000, 9999)}" if random.random() > 0.7 else None,
+                    "cve_id": (
+                        f"CVE-2024-{1000 + secrets.randbelow(9000)}" if secrets.randbelow(10) > 6 else None
+                    ),  # 30% chance
                 }
             )
 

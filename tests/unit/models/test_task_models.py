@@ -1,6 +1,6 @@
 """Unit tests for Task models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -126,7 +126,7 @@ class TestTaskResultModel:
             result_type="output",
             name="Test Result",
             data={"key": "value"},
-            result_metadata={"generated_at": datetime.utcnow().isoformat()},
+            result_metadata={"generated_at": datetime.now(timezone.utc).isoformat()},
             is_primary=True,
             created_by="testuser",
         )

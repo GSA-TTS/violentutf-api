@@ -1,9 +1,8 @@
-import functools
-
-"""Circuit breaker pattern implementation for resilient service calls."""
+"""Circuit breaker pattern implementation for fault tolerance."""
 
 import asyncio
 import enum
+import functools
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Coroutine, Dict, Optional, TypeVar, Union, cast

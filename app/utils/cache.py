@@ -11,6 +11,8 @@ from ..core.config import settings
 if TYPE_CHECKING:
     # Define a protocol that matches the Redis interface we use
     class RedisProtocol(Protocol):
+        """Protocol definition for Redis client interface."""
+
         async def ping(self) -> bool: ...  # noqa: E704
 
         async def get(self, key: str) -> Optional[str]: ...  # noqa: E704

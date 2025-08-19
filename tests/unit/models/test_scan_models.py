@@ -1,6 +1,6 @@
 """Unit tests for Scan models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -375,7 +375,7 @@ class TestScanReportModel:
             content=content,
             summary=summary,
             template_name="standard_template",
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
 
@@ -399,7 +399,7 @@ class TestScanReportModel:
                 report_type="security_scan",
                 format=fmt,
                 summary={},
-                generated_at=datetime.utcnow(),
+                generated_at=datetime.now(timezone.utc),
                 created_by="testuser",
             )
             assert report.format == fmt
@@ -417,7 +417,7 @@ class TestScanReportModel:
             file_path="/reports/scan_123_report.pdf",
             file_size=1048576,  # 1MB
             file_hash="sha256:abcdef123456",
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
 
@@ -439,7 +439,7 @@ class TestScanReportModel:
             summary={},
             is_public=True,
             expires_at=expiration,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
 
@@ -451,7 +451,7 @@ class TestScanReportModel:
             format="json",
             summary={},
             is_public=False,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
 
@@ -503,7 +503,7 @@ class TestScanReportModel:
             format="json",
             content=complex_content,
             summary=complex_summary,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
 
@@ -521,7 +521,7 @@ class TestScanReportModel:
             report_type="test_report",
             format="json",
             summary={},
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             created_by="testuser",
         )
         report.id = "report-id-123"
