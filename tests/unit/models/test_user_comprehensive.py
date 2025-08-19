@@ -179,8 +179,8 @@ class TestUserValidations:
         user = User()
 
         with patch.object(user, "validate_email_format", return_value=None):
-            # This should trigger the assertion error in the code
-            with pytest.raises(AssertionError):
+            # This should trigger a ValueError after our fix
+            with pytest.raises(ValueError, match="Email validation failed"):
                 user.validate_email_field("email", "test@example.com")
 
     def test_validate_password_hash_success(self):

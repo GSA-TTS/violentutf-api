@@ -1,6 +1,4 @@
-"""
-Unit tests for the git history parser module.
-"""
+"""Unit tests for the git history parser module."""
 
 import json
 from datetime import datetime, timedelta, timezone

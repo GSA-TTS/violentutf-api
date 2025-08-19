@@ -1,24 +1,25 @@
 """Authentication dependencies for FastAPI endpoints."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.db.session import get_db
-from app.middleware.authentication import get_current_user_id
-from app.middleware.oauth import get_oauth_user
-from app.models.user import User
-from app.repositories.user import UserRepository
+from app.core.auth_utils import get_current_user_id_from_request, get_oauth_user_from_request
+from app.dependencies.auth import get_auth_service
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.services.auth_service import AuthService
 
 logger = get_logger(__name__)
 
 
 async def get_current_user(
     request: Request,
-    session: AsyncSession = Depends(get_db),
-) -> User:
+    auth_service: "AuthService" = Depends(get_auth_service),
+) -> "User":
     """Get current authenticated user.
 
     This dependency tries multiple authentication methods:
@@ -28,7 +29,7 @@ async def get_current_user(
 
     Args:
         request: FastAPI request
-        session: Database session
+        auth_service: Authentication service
 
     Returns:
         Current user object
@@ -37,20 +38,16 @@ async def get_current_user(
         HTTPException: If user is not authenticated
     """
     # Try JWT authentication first
-    user_id = get_current_user_id(request)
-
-    if user_id:
-        # Load user from database
-        user_repo = UserRepository(session)
-        user = await user_repo.get(user_id)
-
-        if user and user.is_active:
-            return user
+    user_id = get_current_user_id_from_request(request)
 
     # Try OAuth2 authentication
-    oauth_user = await get_oauth_user(request)
-    if oauth_user and oauth_user.is_active:
-        return oauth_user
+    oauth_user = get_oauth_user_from_request(request)
+
+    # Authenticate using service
+    user = await auth_service.authenticate_user(user_id=user_id, oauth_user=oauth_user)
+
+    if user:
+        return user
 
     # No valid authentication found
     raise HTTPException(
@@ -61,8 +58,8 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
-) -> User:
+    current_user: "User" = Depends(get_current_user),
+) -> "User":
     """Get current active user.
 
     Args:
@@ -83,8 +80,8 @@ async def get_current_active_user(
 
 
 async def get_current_superuser(
-    current_user: User = Depends(get_current_user),
-) -> User:
+    current_user: "User" = Depends(get_current_user),
+) -> "User":
     """Get current superuser.
 
     Args:
@@ -106,18 +103,18 @@ async def get_current_superuser(
 
 async def get_optional_current_user(
     request: Request,
-    session: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+    auth_service: "AuthService" = Depends(get_auth_service),
+) -> Optional["User"]:
     """Get current user if authenticated, None otherwise.
 
     Args:
         request: FastAPI request
-        session: Database session
+        auth_service: Authentication service
 
     Returns:
         Current user or None
     """
     try:
-        return await get_current_user(request, session)
+        return await get_current_user(request, auth_service)
     except HTTPException:
         return None

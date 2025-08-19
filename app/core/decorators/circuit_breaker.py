@@ -1,5 +1,6 @@
 """Decorators for circuit breaker protection."""
 
+import asyncio
 import functools
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
@@ -307,5 +308,4 @@ def message_queue(
     )
 
 
-# Import asyncio for type checking
-import asyncio
+# asyncio is now imported at the top of the file

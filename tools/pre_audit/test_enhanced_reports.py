@@ -12,10 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-# Add project root to path
+# Add project root to path before importing project modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel
+# Project imports must come after path manipulation
+from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel  # noqa: E402
 
 
 def create_sample_audit_data() -> dict[str, Any]:

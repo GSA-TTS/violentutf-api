@@ -240,8 +240,8 @@ class DiskCacheTier(CacheTier):
                 with open(self.index_file, "r") as f:
                     data = json.load(f)
                     return data if isinstance(data, dict) else {}
-            except:
-                self.logger.warning("Failed to load cache index, starting fresh")
+            except Exception as e:
+                self.logger.warning(f"Failed to load cache index, starting fresh: {e}")
         return {}
 
     def _save_index(self) -> None:
@@ -387,8 +387,8 @@ class DiskCacheTier(CacheTier):
             try:
                 if cache_path.exists():
                     cache_path.unlink()
-            except:
-                pass
+            except Exception:
+                pass  # File deletion failures are non-critical
 
             # Update index
             del self.index[key]
@@ -529,8 +529,8 @@ class RedisCacheTier(CacheTier):
             info = self.redis_client.info("memory")
             used_memory = info.get("used_memory", 0) if isinstance(info, dict) else 0
             return int(used_memory)
-        except:
-            return 0
+        except Exception:
+            return 0  # Return 0 if Redis info is unavailable
 
     def exists(self, key: str) -> bool:
         """Check if key exists"""
@@ -541,8 +541,8 @@ class RedisCacheTier(CacheTier):
 
         try:
             return bool(self.redis_client.exists(full_key))
-        except:
-            return False
+        except Exception:
+            return False  # Return False if Redis operation fails
 
 
 class MultiTierCacheManager:
@@ -586,8 +586,8 @@ class MultiTierCacheManager:
                     ttl_hours=redis_config.get("ttl_hours", 168),
                 )
                 self.tiers.append(self.redis_tier)
-            except:
-                self.logger.warning("Failed to initialize Redis tier")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize Redis tier: {e}")
                 self.redis_tier = None
         else:
             self.redis_tier = None
@@ -676,8 +676,8 @@ class MultiTierCacheManager:
         try:
             with open(file_path, "rb") as f:
                 return hashlib.sha256(f.read()).hexdigest()[:16]
-        except:
-            return "unknown"
+        except Exception:
+            return "unknown"  # Return placeholder if file cannot be read
 
 
 # Example usage

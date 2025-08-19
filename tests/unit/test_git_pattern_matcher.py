@@ -1,6 +1,4 @@
-"""
-Unit tests for the git pattern matcher module.
-"""
+"""Unit tests for the git pattern matcher module."""
 
 from typing import List
 

@@ -14,6 +14,8 @@ from app.core.errors import AuthenticationError
 
 # Create mock class for the model
 class User:
+    """Mock user model for testing."""
+
     pass
 
 
