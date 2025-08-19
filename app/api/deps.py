@@ -5,22 +5,29 @@ This module provides common dependency injection functions for FastAPI endpoints
 It consolidates authentication, database access, and other shared dependencies.
 """
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import existing authentication functions
 from app.core.auth import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,
+    get_optional_current_user,
 )
+
+# Import db session dependency for backward compatibility
 from app.db.session import get_db
-from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.user import User
+else:
+    # Import User for runtime to maintain backward compatibility
+    from app.models.user import User
 
 
-async def get_current_verified_user(current_user: User = Depends(get_current_active_user)) -> User:
+async def get_current_verified_user(current_user: "User" = Depends(get_current_active_user)) -> "User":
     """Get verified user dependency injection.
 
     Ensures the current user is verified (email verified).
@@ -39,7 +46,7 @@ async def get_current_verified_user(current_user: User = Depends(get_current_act
     return current_user
 
 
-async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> Optional[User]:
+async def get_optional_user(request: Request) -> Optional["User"]:
     """Get optional user dependency injection.
 
     Attempts to get current user but doesn't fail if not authenticated.
@@ -47,17 +54,11 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
 
     Args:
         request: FastAPI request object
-        db: Database session
 
     Returns:
         Optional[User]: User object if authenticated, None otherwise
     """
-    try:
-        return await get_current_user(request, db)
-    except HTTPException:
-        return None
-    except Exception:
-        return None
+    return await get_optional_current_user(request)
 
 
 # Legacy aliases for backward compatibility

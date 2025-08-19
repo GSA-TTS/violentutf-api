@@ -39,10 +39,37 @@ try:
 except ImportError:
     HAS_REPORTLAB = False
     # Create dummy classes to prevent NameError during class definition
-    ParagraphStyle = type("ParagraphStyle", (), {})
+    ParagraphStyle = type("ParagraphStyle", (), {"__init__": lambda *args, **kwargs: None})
     TableStyle = type("TableStyle", (), {})
     Paragraph = type("Paragraph", (), {})
     Table = type("Table", (), {})
+
+    # Create dummy colors module with HexColor class
+    class DummyColors:
+        """Dummy colors module for when reportlab is not available."""
+
+        @staticmethod
+        def HexColor(color_str: str) -> str:
+            return color_str
+
+    colors = DummyColors()
+    A4 = (595.27, 841.89)  # A4 dimensions in points
+    # Dummy enums
+    TA_CENTER = 1
+    TA_JUSTIFY = 2
+    TA_RIGHT = 3
+
+    # Dummy function to return styles
+    def getSampleStyleSheet():
+        class DummyStyleSheet:
+            def __getitem__(self, key):
+                return ParagraphStyle()
+
+            def add(self, style):
+                pass
+
+        return DummyStyleSheet()
+
     logger = logging.getLogger(__name__)
     logger.warning("ReportLab not available - PDF generation disabled")
 
@@ -80,9 +107,8 @@ class PDFReportGenerator(ReportGenerator):
 
         # PDF settings
         self.page_size = A4
-        self.styles = self._create_custom_styles()
 
-        # Color scheme
+        # Color scheme (must be set before styles)
         self.colors = {
             "primary": colors.HexColor("#1976d2"),
             "success": colors.HexColor("#4caf50"),
@@ -92,6 +118,9 @@ class PDFReportGenerator(ReportGenerator):
             "light_gray": colors.HexColor("#f5f5f5"),
             "medium_gray": colors.HexColor("#666666"),
         }
+
+        # Create styles after colors are set
+        self.styles = self._create_custom_styles()
 
     def generate(self, audit_data: Dict[str, Any]) -> Path:
         """
@@ -268,22 +297,32 @@ class PDFReportGenerator(ReportGenerator):
             )
         )
 
-        # Custom heading styles
+        # Custom heading styles - use unique names to avoid conflicts
         styles.add(
             ParagraphStyle(
-                name="Heading1", parent=styles["Heading1"], fontSize=18, textColor=self.colors["primary"], spaceAfter=12
+                name="CustomHeading1",
+                parent=styles["Heading1"],
+                fontSize=18,
+                textColor=self.colors["primary"],
+                spaceAfter=12,
             )
         )
 
         styles.add(
             ParagraphStyle(
-                name="Heading2", parent=styles["Heading2"], fontSize=14, textColor=self.colors["text"], spaceAfter=8
+                name="CustomHeading2",
+                parent=styles["Heading2"],
+                fontSize=14,
+                textColor=self.colors["text"],
+                spaceAfter=8,
             )
         )
 
         # Custom body text
         styles.add(
-            ParagraphStyle(name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6)
+            ParagraphStyle(
+                name="CustomBodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6
+            )
         )
 
         # Risk level styles

@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # Add project root to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from alembic import context  # type: ignore[attr-defined]  # noqa: E402
+from alembic import context  # noqa: E402
 
 # Import settings and models
 from app.core.config import settings  # noqa: E402
@@ -74,7 +74,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode with async engine."""
-    configuration = config.get_section(config.config_ini_section)
+    configuration = config.get_section(config.config_ini_section) or {}
     configuration["sqlalchemy.url"] = settings.DATABASE_URL or "sqlite+aiosqlite:///./test.db"
 
     connectable = async_engine_from_config(

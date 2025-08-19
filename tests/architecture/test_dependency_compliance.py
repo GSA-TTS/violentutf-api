@@ -6,6 +6,7 @@ ensuring only approved and secure dependencies are used per ADR-010.
 """
 
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timedelta
@@ -485,9 +486,10 @@ class TestLicenseCompliance:
 class TestVulnerabilityScanning:
     """Test suite for vulnerability scanning integration."""
 
+    @pytest.mark.timeout(300)  # 5 minutes for vulnerability scanning
     @pytest.mark.skipif(
-        not Path("/usr/local/bin/pip-audit").exists() and not Path("/usr/bin/pip-audit").exists(),
-        reason="pip-audit not installed",
+        os.environ.get("SKIP_VULNERABILITY_SCAN", "false").lower() == "true",
+        reason="Vulnerability scanning explicitly skipped",
     )
     def test_no_critical_vulnerabilities(self, dependency_validator):
         """

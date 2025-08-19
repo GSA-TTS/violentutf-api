@@ -70,6 +70,7 @@ class FileChangePattern:
 
 
 class GitHistoryParser:
+    """Parser for analyzing git repository history and extracting commit data."""
 
     def _validate_path_input(self, path: Union[str, Path]) -> Path:
         """Validate path input to prevent directory traversal."""

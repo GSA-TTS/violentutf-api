@@ -5,11 +5,10 @@ from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ForbiddenError, UnauthorizedError
-from app.db.session import get_db
+from app.dependencies.middleware import get_middleware_service
 from app.services.rbac_service import RBACService
 
 logger = get_logger(__name__)
@@ -468,16 +467,9 @@ class PermissionChecker:
             True if user owns the API key
         """
         try:
-            session = await self._get_db_session(request)
-            if not session:
-                return False
-
-            from app.repositories.api_key import APIKeyRepository
-
-            api_key_repo = APIKeyRepository(session)
-            api_key = await api_key_repo.get(key_id)
-
-            return api_key and str(api_key.user_id) == user_id
+            async for middleware_service in get_middleware_service():
+                api_key = await middleware_service.api_key_repo.get(key_id)
+                return api_key and str(api_key.user_id) == user_id
 
         except Exception as e:
             logger.error(
@@ -500,16 +492,9 @@ class PermissionChecker:
             True if user owns the session
         """
         try:
-            session = await self._get_db_session(request)
-            if not session:
-                return False
-
-            from app.repositories.session import SessionRepository
-
-            session_repo = SessionRepository(session)
-            user_session = await session_repo.get(session_id)
-
-            return user_session and str(user_session.user_id) == user_id
+            async for middleware_service in get_middleware_service():
+                user_session = await middleware_service.session_repo.get(session_id)
+                return user_session and str(user_session.user_id) == user_id
 
         except Exception as e:
             logger.error(
@@ -520,7 +505,7 @@ class PermissionChecker:
             )
             return False
 
-    async def _get_db_session(self, request: Request) -> Optional[AsyncSession]:
+    async def _get_db_session(self, request: Request) -> Optional[object]:
         """Get database session from request dependency injection.
 
         Args:
@@ -532,7 +517,7 @@ class PermissionChecker:
         try:
             # Try to get session from request state (if set by dependency)
             session = getattr(request.state, "db_session", None)
-            if session and isinstance(session, AsyncSession):
+            if session:
                 return session
 
             # For testing or when database is not available, skip permission checks

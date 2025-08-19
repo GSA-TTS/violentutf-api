@@ -247,8 +247,8 @@ def check_regex_patterns_safety() -> List[Tuple[str, str]]:
 
             if elapsed > 0.1:  # More than 100ms is suspicious
                 unsafe_patterns.append((pattern, f"Slow execution: {elapsed:.2f}s"))
-        except:
-            unsafe_patterns.append((pattern, "Failed to compile or test"))
+        except Exception as e:
+            unsafe_patterns.append((pattern, f"Failed to compile or test: {e}"))
 
     return unsafe_patterns
 

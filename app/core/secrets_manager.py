@@ -87,7 +87,7 @@ class FileSecretsManager(SecretsManagerProvider):
         # Reverse the safe encoding
         return base_name.replace("__SLASH__", "/").replace("__BACKSLASH__", "\\")
 
-    def _rebuild_name_mapping(self):
+    def _rebuild_name_mapping(self) -> None:
         """Rebuild name mapping by reading existing files (for recovery)."""
         try:
             for filename in os.listdir(self.secrets_dir):

@@ -255,5 +255,5 @@ red_team_outputs/
 .api_credentials
 tools/agent_orchestrator/
 temp.md
-agent_orchestrator
 /.implement_checkpoints
+/agent_orchestrator

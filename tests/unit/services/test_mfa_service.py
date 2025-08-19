@@ -15,19 +15,27 @@ from app.services.mfa_service import MFAService
 
 # Create mock classes for the models
 class MFADevice:
+    """Mock MFA device model."""
+
     pass
 
 
 class MFAChallenge:
+    """Mock MFA challenge model."""
+
     pass
 
 
 class MFAMethod:
+    """Mock MFA method enum."""
+
     TOTP = "totp"  # Changed to lowercase to match actual enum
     BACKUP_CODE = "backup_code"  # Added for other tests
 
 
 class User:
+    """Mock user model."""
+
     pass
 
 
