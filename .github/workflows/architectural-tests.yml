@@ -8,7 +8,7 @@ on:
       - 'tests/architecture/**'
       - 'config/violation_patterns.yml'
       - '.github/workflows/architectural-tests.yml'
-      - 'requirements*.txt'
+      - 'pyproject.toml'
   push:
     branches: [main, master, develop]
     paths:
@@ -23,7 +23,7 @@ on:
         default: 'false'
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.12'
   PYTEST_CACHE_DIR: .pytest_cache
   COVERAGE_THRESHOLD: 80
 
@@ -31,7 +31,7 @@ jobs:
   architectural-tests:
     name: Architectural Compliance Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Enforce 5-minute execution with buffer
+    timeout-minutes: 15  # Allow sufficient time for security scanning
 
     strategy:
       fail-fast: false
@@ -61,16 +61,20 @@ jobs:
           path: |
             ~/.cache/pip
             ${{ env.PYTEST_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e .
           # Install architectural testing dependencies
           pip install pytestarch networkx pydriller
+          # Install security scanning tools
+          pip install pip-audit safety
+          # Install test dependencies
+          pip install pytest pytest-asyncio pytest-timeout
 
       - name: Run Architectural Test Suite - ${{ matrix.test-suite }}
         id: test-execution
@@ -83,7 +87,7 @@ jobs:
           case "${{ matrix.test-suite }}" in
             security-patterns)
               pytest tests/architecture/test_security_patterns.py \
-                -v --tb=short --timeout=60 \
+                -v --tb=short --timeout=120 \
                 --json-report --json-report-file=test-results-security.json
               ;;
             layer-boundaries)
@@ -93,7 +97,7 @@ jobs:
               ;;
             dependency-compliance)
               pytest tests/architecture/test_dependency_compliance.py \
-                -v --tb=short --timeout=60 \
+                -v --tb=short --timeout=300 \
                 --json-report --json-report-file=test-results-deps.json
               ;;
             data-access-patterns)

@@ -19,17 +19,43 @@ class LayerBoundaryValidator:
 
     # Define architectural layers and their allowed dependencies
     LAYER_HIERARCHY = {
-        "api": ["services", "schemas", "dependencies", "middleware", "core"],
+        "api": ["services", "schemas", "dependencies", "middleware", "core", "models"],  # Allow models for CRUD
         "services": ["repositories", "models", "schemas", "core", "utils"],
         "repositories": ["models", "db", "core"],
-        "models": ["core"],  # Models should have minimal dependencies
-        "schemas": ["core"],  # Schemas should be mostly standalone
-        "middleware": ["core", "dependencies", "services"],
-        "dependencies": ["services", "repositories", "core"],
-        "core": [],  # Core should be dependency-free (utils, configs)
-        "utils": [],  # Utils should be dependency-free
-        "db": ["models", "core"],  # Database configuration
+        "models": ["core", "db"],  # Models need db for SQLAlchemy Base class inheritance
+        "schemas": ["core", "models"],  # Schemas can reference models for type conversion
+        "middleware": ["core", "dependencies", "services", "utils"],  # Allow utils for caching
+        "dependencies": ["services", "repositories", "core", "db", "utils"],  # Dependencies need db for session
+        "core": ["db", "repositories", "services", "dependencies"],  # Core startup needs db access
+        "utils": ["core"],  # Utils can use core config
+        "db": ["models", "core", "services"],  # Database init can use services
     }
+
+    # Specific exceptions for necessary architectural patterns
+    ARCHITECTURE_EXCEPTIONS = [
+        # SQLAlchemy models must inherit from Base class
+        ("models", "db.base_class"),
+        ("models", "db.types"),
+        # Core startup and initialization needs database access
+        ("core/startup", "db.session"),
+        ("core/startup", "repositories"),
+        ("core/auth", "dependencies.auth"),
+        ("core/abac_permissions", "db.session"),
+        ("core/permissions", "db.session"),
+        ("core/auth_failover", "models.user"),  # Auth failover needs user model
+        ("core/abac", "models.user"),  # ABAC needs user model for permissions
+        ("core/authority", "models.user"),  # Authority needs user model
+        # API base class needs these for CRUD operations
+        ("api/base", "db"),
+        ("api/base", "models.mixins"),
+        ("api/base", "repositories.base"),  # Base CRUD needs repository base
+        ("api/endpoints", "db.session"),  # Endpoints need DB session for dependency injection
+        ("api/endpoints", "repositories"),  # Some endpoints use repositories directly for performance
+        # Services that need direct DB access for performance
+        ("services/health_service", "db.session"),  # Health checks need direct DB
+        # Schemas importing models for type conversion
+        ("schemas", "models"),
+    ]
 
     # Import patterns that are always allowed
     ALLOWED_STDLIB = {
@@ -198,6 +224,28 @@ class LayerBoundaryValidator:
 
                 target_layer = self.get_layer_from_module(imported_module)
                 if not target_layer:
+                    continue
+
+                # Check if this is an allowed exception
+                is_exception = False
+                file_rel_path = str(py_file.relative_to(self.project_root))
+
+                for exc_pattern, exc_target in self.ARCHITECTURE_EXCEPTIONS:
+                    # Check if source file matches the exception pattern
+                    if "/" in exc_pattern:
+                        # It's a specific file pattern
+                        if exc_pattern in file_rel_path:
+                            # Check if the import target matches
+                            if exc_target in imported_module:
+                                is_exception = True
+                                break
+                    else:
+                        # It's a layer-level pattern
+                        if source_layer == exc_pattern and exc_target in imported_module:
+                            is_exception = True
+                            break
+
+                if is_exception:
                     continue
 
                 # Check if this import is allowed

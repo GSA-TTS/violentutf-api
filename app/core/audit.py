@@ -8,7 +8,6 @@ from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.db.session import get_db
 from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)

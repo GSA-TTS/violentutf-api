@@ -162,8 +162,8 @@ class SafeDiskCacheTier(ABC):
                 with open(self.index_file, "r") as f:
                     data = json.load(f)
                     return data if isinstance(data, dict) else {}
-            except:
-                self.logger.warning("Failed to load cache index, starting fresh")
+            except Exception as e:
+                self.logger.warning(f"Failed to load cache index, starting fresh: {e}")
         return {}
 
     def _save_index(self) -> None:
@@ -276,8 +276,8 @@ class SafeDiskCacheTier(ABC):
             try:
                 if cache_path.exists():
                     cache_path.unlink()
-            except:
-                pass
+            except Exception:
+                pass  # File deletion failures are non-critical
 
             # Update index
             del self.index[key]

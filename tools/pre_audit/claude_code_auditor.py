@@ -28,16 +28,11 @@ import hashlib
 import json
 import logging
 import os
-import sys
-from pathlib import Path
-
-# Add the project root to Python path for imports
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 import pickle
 import random
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import traceback
@@ -54,12 +49,16 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
+# Add the project root to Python path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 # Import git history parser and pattern matcher
-from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, GitHistoryParser
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixType
+from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, GitHistoryParser  # noqa: E402
+from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixType  # noqa: E402
 
 # Import enhanced reporting module
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel
+from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel  # noqa: E402
 
 # Import statistical hotspot analysis components (GitHub Issue #43)
 try:
@@ -734,8 +733,6 @@ Output Format:
             return {"error": "No ADRs found"}
 
         # Step 2: Select random ADR
-        import random
-
         selected_adr = random.choice(adrs)
         adr_id = selected_adr["adr_id"]
 
@@ -1901,9 +1898,7 @@ class GitForensicsAnalyzer:
         """Find patterns of violations and fixes related to the ADR using advanced pattern matching."""
         patterns = []
 
-        # Import the pattern matcher
-        from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher
-
+        # Create pattern matcher instance
         pattern_matcher = ArchitecturalFixPatternMatcher()
 
         # Search for commits that mention the ADR or related fixes
