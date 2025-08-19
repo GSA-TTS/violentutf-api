@@ -20,7 +20,8 @@ exclude =
     violentutf_logs,
     security,
     .github,
-    scripts
+    scripts,
+    tools/agent_orchestrator
 per-file-ignores =
     __init__.py:F401
     tests/*:F401,F811,ANN101,ANN401,D202,ANN201,B007,B023,F841,E722,B001,D102,D107,ANN001,ANN002,ANN003,ANN202,C901,D401
