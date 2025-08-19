@@ -84,8 +84,8 @@ class DataAccessPatternValidator:
         return self._api_files_cache
 
     def find_direct_database_access(self) -> List[Tuple[Path, str, int, str]]:
-        """
-        Find direct database access outside of repository classes.
+        """Find direct database access outside of repository classes.
+
         Returns list of (file_path, function_name, line_number, violation_type) tuples.
         """
         violations = []
@@ -141,8 +141,8 @@ class DataAccessPatternValidator:
         return "module_level"
 
     def validate_query_parameterization(self) -> List[Tuple[Path, int, str]]:
-        """
-        Validate that all queries use parameterized statements.
+        """Validate that all queries use parameterized statements.
+
         Returns list of (file_path, line_number, issue) tuples.
         """
         violations = []
@@ -177,8 +177,8 @@ class DataAccessPatternValidator:
         return violations
 
     def validate_transaction_boundaries(self) -> List[Tuple[Path, str, str]]:
-        """
-        Validate proper transaction scope usage.
+        """Validate proper transaction scope usage.
+
         Returns list of (file_path, function_name, issue) tuples.
         """
         violations = []
@@ -225,8 +225,8 @@ class DataAccessPatternValidator:
         return violations
 
     def validate_tenant_isolation(self) -> List[Tuple[Path, str, int]]:
-        """
-        Validate multi-tenant data isolation.
+        """Validate multi-tenant data isolation.
+
         Returns list of (file_path, function_name, line_number) tuples.
         """
         violations = []
@@ -294,8 +294,8 @@ class DataAccessPatternValidator:
         return violations
 
     def validate_repository_naming(self) -> List[Tuple[Path, str, str]]:
-        """
-        Validate repository method naming conventions.
+        """Validate repository method naming conventions.
+
         Returns list of (file_path, method_name, issue) tuples.
         """
         violations = []
@@ -358,8 +358,8 @@ class DataAccessPatternValidator:
         return violations
 
     def validate_orm_usage(self) -> List[Tuple[Path, int, str]]:
-        """
-        Validate proper SQLAlchemy ORM usage.
+        """Validate proper SQLAlchemy ORM usage.
+
         Returns list of (file_path, line_number, issue) tuples.
         """
         violations = []
@@ -404,12 +404,13 @@ class TestRepositoryPattern:
     """Test suite for repository pattern compliance."""
 
     def test_all_database_access_through_repositories(self, data_access_validator):
-        """
+        """Test all database access goes through repository classes.
+
         Given the repository pattern requirements from ADRs
         When the architectural test suite runs
         Then the test must verify all database access goes through repository classes
         And the test must detect any direct database queries outside repositories
-        And the test must validate repository method naming conventions
+        And the test must validate repository method naming conventions.
         """
         violations = data_access_validator.find_direct_database_access()
 
@@ -475,12 +476,13 @@ class TestQueryParameterization:
     """Test suite for query parameterization verification."""
 
     def test_all_queries_parameterized(self, data_access_validator):
-        """
+        """Test all queries use parameterized statements.
+
         Given the SQL injection prevention requirements
         When the architectural test suite runs
         Then the test must verify all queries use parameterized statements
         And the test must detect any string formatting in SQL queries
-        And the test must validate proper use of SQLAlchemy ORM
+        And the test must validate proper use of SQLAlchemy ORM.
         """
         violations = data_access_validator.validate_query_parameterization()
 
@@ -511,12 +513,13 @@ class TestTransactionManagement:
     """Test suite for transaction boundary validation."""
 
     def test_proper_transaction_boundaries(self, data_access_validator):
-        """
+        """Test proper transaction scope usage.
+
         Given the transaction management requirements
         When the architectural test suite runs
         Then the test must verify proper transaction scope usage
         And the test must detect any missing transaction boundaries
-        And the test must validate rollback handling in error cases
+        And the test must validate rollback handling in error cases.
         """
         violations = data_access_validator.validate_transaction_boundaries()
 
@@ -533,12 +536,13 @@ class TestMultiTenantIsolation:
     """Test suite for multi-tenant data isolation."""
 
     def test_organization_isolation_enforced(self, data_access_validator):
-        """
+        """Test organization_id filtering in all queries.
+
         Given the multi-tenant requirements from ADR-003
         When the architectural test suite runs
         Then the test must verify organization_id filtering in all queries
         And the test must detect any missing tenant isolation
-        And the test must validate cross-tenant data access prevention
+        And the test must validate cross-tenant data access prevention.
         """
         violations = data_access_validator.validate_tenant_isolation()
 
