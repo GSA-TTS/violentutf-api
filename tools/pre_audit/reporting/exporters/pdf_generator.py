@@ -80,9 +80,8 @@ class PDFReportGenerator(ReportGenerator):
 
         # PDF settings
         self.page_size = A4
-        self.styles = self._create_custom_styles()
 
-        # Color scheme
+        # Color scheme - must be defined before creating styles
         self.colors = {
             "primary": colors.HexColor("#1976d2"),
             "success": colors.HexColor("#4caf50"),
@@ -92,6 +91,8 @@ class PDFReportGenerator(ReportGenerator):
             "light_gray": colors.HexColor("#f5f5f5"),
             "medium_gray": colors.HexColor("#666666"),
         }
+
+        self.styles = self._create_custom_styles()
 
     def generate(self, audit_data: Dict[str, Any]) -> Path:
         """
@@ -268,23 +269,14 @@ class PDFReportGenerator(ReportGenerator):
             )
         )
 
-        # Custom heading styles
-        styles.add(
-            ParagraphStyle(
-                name="Heading1", parent=styles["Heading1"], fontSize=18, textColor=self.colors["primary"], spaceAfter=12
+        # Note: Using built-in styles to avoid conflicts
+        # Only add BodyText style if it doesn't exist
+        if "BodyText" not in styles:
+            styles.add(
+                ParagraphStyle(
+                    name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6
+                )
             )
-        )
-
-        styles.add(
-            ParagraphStyle(
-                name="Heading2", parent=styles["Heading2"], fontSize=14, textColor=self.colors["text"], spaceAfter=8
-            )
-        )
-
-        # Custom body text
-        styles.add(
-            ParagraphStyle(name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6)
-        )
 
         # Risk level styles
         for level, color in [

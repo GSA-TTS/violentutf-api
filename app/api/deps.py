@@ -53,7 +53,7 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
         Optional[User]: User object if authenticated, None otherwise
     """
     try:
-        return await get_current_user(request, db)
+        return await get_current_user(request)
     except HTTPException:
         return None
     except Exception:

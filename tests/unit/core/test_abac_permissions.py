@@ -69,7 +69,6 @@ class TestRequireABACPermission:
                 subject_id="user-123",
                 resource_type="users",
                 action="read",
-                session=mock_session,
                 organization_id="org-456",
                 resource_id=None,
                 resource_owner_id=None,

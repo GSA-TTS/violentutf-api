@@ -131,7 +131,6 @@ def require_permissions(
                             subject_id=user_id,
                             resource_type=resource_type,
                             action=action,
-                            session=session,
                             organization_id=organization_id,
                         )
 
@@ -157,7 +156,6 @@ def require_permissions(
                             subject_id=user_id,
                             resource_type=resource_type,
                             action=action,
-                            session=session,
                             organization_id=organization_id,
                         )
 

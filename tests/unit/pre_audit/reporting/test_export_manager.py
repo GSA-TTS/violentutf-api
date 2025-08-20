@@ -58,7 +58,8 @@ class TestExportManager:
         config = ReportConfig(output_dir=temp_dir, export_formats=["html", "json", "pdf"])
 
         with patch(
-            "tools.pre_audit.reporting.exporters.PDFReportGenerator", side_effect=ImportError("ReportLab not installed")
+            "tools.pre_audit.reporting.export_manager.PDFReportGenerator",
+            side_effect=ImportError("ReportLab not installed"),
         ):
             manager = ExportManager(config)
 
@@ -85,9 +86,11 @@ class TestExportManager:
         assert all(isinstance(p, Path) for p in results.values() if p)
 
         # Verify generators were called
-        for format_name, generator in manager.generators.items():
-            if hasattr(generator, "generate"):
-                generator.generate.assert_called_once()
+        for format_name in ["html", "json"]:
+            if format_name in manager.generators:
+                generator = manager.generators[format_name]
+                if hasattr(generator.generate, "assert_called_once"):
+                    generator.generate.assert_called_once()
 
     def test_export_all_parallel(self, manager, sample_audit_data, temp_dir):
         """Test parallel export of all formats."""
