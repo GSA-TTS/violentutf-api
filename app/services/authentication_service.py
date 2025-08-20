@@ -10,9 +10,8 @@ from typing import Optional
 from fastapi import Request
 from structlog.stdlib import get_logger
 
+from app.core.auth_utils import get_current_user_id, get_oauth_user
 from app.core.interfaces.auth_interface import IAuthenticationService
-from app.middleware.authentication import get_current_user_id
-from app.middleware.oauth import get_oauth_user
 
 logger = get_logger(__name__)
 
