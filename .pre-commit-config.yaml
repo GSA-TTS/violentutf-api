@@ -60,8 +60,8 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/agent_orchestrator/implement_issue_venv/,/agent_orchestrator/venv/', '--quiet']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|agent_orchestrator/implement_issue_venv/|agent_orchestrator/venv/)'
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/', '--quiet']
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/)'
         pass_filenames: false
 
   # Secret detection - Yelp maintained - ALL FILES
@@ -71,7 +71,7 @@ repos:
       - id: detect-secrets
         name: detect-secrets-comprehensive
         args: ['--baseline', '.secrets.baseline']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
         pass_filenames: false
 
   # YAML formatting - Using stable v3 instead of alpha
@@ -131,7 +131,7 @@ repos:
 
       - id: validate-json-ci
         name: Validate JSON (matches CI)
-        entry: python3 -c "import json, sys, glob, os; files = [f for f in glob.glob('**/*.json', recursive=True) if not any(x in f for x in ['venv/', 'node_modules/', '__pycache__/', '.git/', 'agent_orchestrator/', 'htmlcov/', 'backups/'])]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
+        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
         language: system
         files: '\.json$'
         pass_filenames: false

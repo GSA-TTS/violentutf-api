@@ -22,7 +22,7 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(project_root)
 
-    # Run pytest
+    # Run pytest with Windows-specific adjustments
     cmd = [
         sys.executable,
         "-m",
@@ -33,9 +33,14 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
         "--cov=app",
         "--cov-report=xml",
         "--timeout=300",
-        "-n",
-        "auto",
     ]
+
+    # Only add parallel execution if not on Windows or if explicitly enabled
+    if os.name != "nt":
+        cmd.extend(["-n", "auto"])
+    else:
+        # On Windows, use fewer workers to avoid process creation issues
+        cmd.extend(["-n", "2"])
 
     print(f"Running tests in {test_dir}...")
     result = subprocess.run(cmd, env=env)
