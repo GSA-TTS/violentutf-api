@@ -124,6 +124,12 @@ class InputValidator:
                         logger.debug(f"Skipping field '{key}' due to validation error: {str(e)}")
                         self._validation_stats["fields_removed"] += 1
 
+            # Check if we have any recognizable audit data at all
+            if not any(key in validated for key in ["all_violations", "architectural_hotspots", "audit_metadata"]):
+                raise ValidationError(
+                    "Audit data must contain at least one of: all_violations, architectural_hotspots, audit_metadata"
+                )
+
             self._validation_stats["passed"] += 1
             return validated
 
@@ -302,6 +308,10 @@ class InputValidator:
 
     def _validate_violations(self, violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Validate violation entries."""
+        # First validate that violations is actually a list
+        if not isinstance(violations, list):
+            raise ValidationError(f"violations must be a list, got {type(violations).__name__}")
+
         # Check collection size
         ValidationRules.validate_collection_size(violations, ValidationRules.MAX_VIOLATIONS_COUNT, "violations")
 

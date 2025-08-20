@@ -6,6 +6,7 @@ from structlog.stdlib import get_logger
 
 from .config import settings
 from .container import get_cache_service, get_user_service
+from .service_registry import initialize_di_container
 
 logger = get_logger(__name__)
 
@@ -15,6 +16,7 @@ async def on_startup() -> None:
     Application startup handler using dependency injection.
 
     Initializes:
+    - Dependency injection container
     - Cache connections via service
     - Health monitoring
     - Background tasks
@@ -24,6 +26,14 @@ async def on_startup() -> None:
         environment=settings.ENVIRONMENT,
         debug=settings.DEBUG,
     )
+
+    # Initialize dependency injection container first
+    try:
+        await initialize_di_container()
+        logger.info("Dependency injection container initialized successfully")
+    except Exception as e:
+        logger.error("Failed to initialize DI container", error=str(e))
+        # Continue startup even if DI initialization fails to allow graceful degradation
 
     # Initialize cache via service
     try:

@@ -52,6 +52,9 @@ EXEMPT_PATHS: List[str] = [
     "/docs",
     "/redoc",
     "/openapi.json",
+    "/api/v1/docs",  # API documentation
+    "/api/v1/redoc",  # ReDoc documentation
+    "/api/v1/openapi.json",  # OpenAPI schema
     "/metrics",
 ]
 
