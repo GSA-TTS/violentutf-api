@@ -2,14 +2,17 @@
 
 import time
 import uuid
-from typing import Any, Callable, Dict, Optional
+
+# Type imports for type hints only
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 from fastapi import Request, Response
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.db.session import get_db
-from app.services.audit_service import AuditService
+from app.dependencies.middleware import get_middleware_service
+
+if TYPE_CHECKING:
+    from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)
 
@@ -230,9 +233,9 @@ class AuditLoggingMiddleware:
             duration_ms: Request duration
         """
         try:
-            # Use database session within context manager
-            async with get_db() as session:
-                audit_service = AuditService(session)
+            # Use middleware service for database operations
+            async for middleware_service in get_middleware_service():
+                audit_service = middleware_service.audit_service
 
                 # Determine action and resource from path
                 action, resource_type, resource_id = self._parse_endpoint(request)
@@ -282,9 +285,6 @@ class AuditLoggingMiddleware:
                         duration_ms=duration_ms,
                     )
 
-                # Commit the audit log
-                await session.commit()
-
         except Exception as e:
             logger.error(
                 "Failed to log audit event",
@@ -295,7 +295,7 @@ class AuditLoggingMiddleware:
 
     async def _log_auth_event(
         self,
-        audit_service: AuditService,
+        audit_service: "AuditService",
         request: Request,
         user_id: Optional[str],
         user_email: Optional[str],
@@ -339,7 +339,7 @@ class AuditLoggingMiddleware:
 
     async def _log_api_key_event(
         self,
-        audit_service: AuditService,
+        audit_service: "AuditService",
         request: Request,
         api_key_id: Optional[str],
         user_id: Optional[str],

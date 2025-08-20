@@ -37,6 +37,7 @@ async def get_current_user_data(request: Request) -> UserData:
         raise HTTPException(status_code=500, detail="Authentication services not configured")
 
     # Try JWT authentication first
+
     user_id = await auth_service.get_user_id_from_request(request)
 
     if user_id:
@@ -87,7 +88,6 @@ def validate_active_user(user_data: UserData) -> UserData:
             detail="Inactive user",
         )
     return user_data
-
 
 def validate_superuser(user_data: UserData) -> UserData:
     """Validate that user is a superuser.

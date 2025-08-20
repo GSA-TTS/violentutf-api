@@ -156,7 +156,8 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
     setup_error_handlers(app, development_mode=app_settings.is_development)
 
     # Add exception handler for rate limiting
-    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+    # Type ignore needed for mypy strict mode in CI environment
+    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)  # type: ignore[arg-type,unused-ignore]
 
     # Setup middleware (order matters!)
     # 1. Request ID (needs to be first)

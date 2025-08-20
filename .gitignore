@@ -258,3 +258,4 @@ red_team_outputs/
 tools/agent_orchestrator/
 temp.md
 /.implement_checkpoints
+/agent_orchestrator

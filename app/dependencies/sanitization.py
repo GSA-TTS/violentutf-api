@@ -8,7 +8,7 @@ import json
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from app.utils.sanitization import sanitize_dict, sanitize_string
 
@@ -66,12 +66,18 @@ class SanitizedModel(BaseModel):
         # This ensures validators run even when assigning values
         validate_assignment = True
 
-    @validator("*", pre=True)
-    def sanitize_strings(cls, v: Any) -> Any:
+    @model_validator(mode="before")
+    @classmethod
+    def sanitize_strings(cls, values: Any) -> Any:
         """Sanitize all string fields."""
-        if isinstance(v, str):
-            return sanitize_string(v, strip_js=True, max_length=10000)
-        return v
+        if isinstance(values, dict):
+            return {
+                k: sanitize_string(v, strip_js=True, max_length=10000) if isinstance(v, str) else v
+                for k, v in values.items()
+            }
+        elif isinstance(values, str):
+            return sanitize_string(values, strip_js=True, max_length=10000)
+        return values
 
 
 # Example usage models
@@ -89,7 +95,8 @@ class MessageInput(SanitizedModel):
     content: str
     metadata: Optional[Dict[str, Any]] = None
 
-    @validator("metadata")
+    @field_validator("metadata")
+    @classmethod
     def sanitize_metadata(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """Sanitize metadata dictionary."""
         if v is not None:

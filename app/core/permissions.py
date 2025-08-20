@@ -59,7 +59,7 @@ def require_permissions(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from function arguments
             request = None
             session = None
@@ -221,7 +221,7 @@ def require_owner_or_admin(resource_param: str = "user_id") -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request from arguments
             request = None
             for arg in args:
@@ -309,7 +309,7 @@ def require_organization_access(allow_superuser: bool = True) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request from arguments
             request = None
             for arg in args:
@@ -382,7 +382,7 @@ def require_organization_owner_or_admin(resource_param: str = "user_id", allow_s
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from arguments
             request = None
             session = None

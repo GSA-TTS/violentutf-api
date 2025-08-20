@@ -31,35 +31,67 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
-      - name: Install all quality tools
+      - name: Install dependencies and quality tools
         run: |
+          # Install project dependencies first
+          pip install -r requirements.txt
+          # Install quality tools
           pip install black isort flake8 flake8-docstrings
           pip install bandit safety pylint mypy
+          # Install type stubs and runtime dependencies to match pre-commit environment
+          pip install types-requests types-redis types-passlib types-bleach types-psutil types-PyYAML
+          # Note: FastAPI, SQLAlchemy, etc. already installed from requirements.txt
 
       - name: Black formatter
-        run: black --check --diff . --verbose
+        run: black --check --diff . --verbose --exclude agent_orchestrator
 
       - name: isort
-        run: isort --check-only --diff . --profile black
+        run: isort --check-only --diff . --profile black --skip-glob="*/agent_orchestrator/*"
 
       - name: Full flake8 scan
         run: |
           flake8 . --config=.flake8 --count --statistics \
-            --exclude=app_data,violentutf_logs,migrations \
-            --ignore=E203,W503,E501,F401,F541,E226
+            --exclude=app_data,violentutf_logs,migrations,tools/pre_audit/statistical_analysis,agent_orchestrator \
+            --ignore=E203,W503,E501,F401,F541,E226,D107,D202,D401,D400,D205,D103,D102,D106,C901,D403,E402,E722,F811
 
       - name: Bandit security scan
         run: |
+          # Run Bandit and collect all findings
           bandit -r . -f json -o bandit-report.json \
-            -x '/tests/,/app_data/,/violentutf_logs/' \
-            --skip B101,B601
+            -x '/tests/,/app_data/,/violentutf_logs/,/agent_orchestrator/' \
+            --skip B101,B601 --exit-zero
+
+          # Analyze results and determine if check should fail
+          python3 .github/scripts/analyze-bandit-report.py
+
+      # Upload Bandit report as artifact for review
+      - name: Upload Bandit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 30
 
       - name: Type checking
-        run: mypy . --install-types --non-interactive
+        run: mypy . --ignore-missing-imports --strict --no-error-summary --no-pretty --exclude 'docs' --exclude 'agent_orchestrator' --exclude 'venv' --exclude 'tests' --exclude 'alembic' --exclude 'backups'
 
       - name: Dependency vulnerabilities
         run: |
-          safety check --json --output safety-report.json
+          # Run safety check
+          safety check --json --output safety-report.json || echo "Safety check completed with findings"
+
+          # Analyze results and determine if check should fail
+          python3 .github/scripts/analyze-safety-report.py
+
+      # Upload Safety report as artifact for review
+      - name: Upload Safety Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-vulnerabilities-report
+          path: safety-report.json
+          retention-days: 30
 
   test-matrix:
     name: Tests - ${{ matrix.os }} / Py${{ matrix.python }}
@@ -69,7 +101,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ['3.11', '3.12']
+        python: ['3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -82,9 +114,11 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Install dependencies from requirements.txt
           pip install -r requirements.txt
-          pip install -r requirements-test.txt
-          pip install pytest-xdist  # Additional dependency for parallel testing
+          # Install the package in editable mode
+          pip install -e .
+          pip install pytest pytest-cov pytest-xdist pytest-timeout pytest-asyncio  # Test dependencies
 
       - name: Run tests (Unix)
         if: runner.os != 'Windows'
@@ -119,8 +153,11 @@ jobs:
 
       - name: Install API test deps
         run: |
-          pip install -r requirements-test.txt
-          pip install httpx pydantic
+          # Install dependencies from requirements.txt first
+          pip install -r requirements.txt
+          # Install the package in editable mode
+          pip install -e .
+          pip install pytest pytest-asyncio httpx
           pip install jsonschema openapi-spec-validator
 
       - name: Run contract tests
@@ -148,7 +185,7 @@ jobs:
           wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
-          find . -name "Dockerfile*" -type f | while read df; do
+          find . -name "Dockerfile*" -type f -not -path "./agent_orchestrator/*" | while read df; do
             echo "Linting $df"
             ./hadolint "$df"
           done

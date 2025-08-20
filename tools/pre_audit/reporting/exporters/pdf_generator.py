@@ -39,10 +39,37 @@ try:
 except ImportError:
     HAS_REPORTLAB = False
     # Create dummy classes to prevent NameError during class definition
-    ParagraphStyle = type("ParagraphStyle", (), {})
+    ParagraphStyle = type("ParagraphStyle", (), {"__init__": lambda *args, **kwargs: None})
     TableStyle = type("TableStyle", (), {})
     Paragraph = type("Paragraph", (), {})
     Table = type("Table", (), {})
+
+    # Create dummy colors module with HexColor class
+    class DummyColors:
+        """Dummy colors module for when reportlab is not available."""
+
+        @staticmethod
+        def HexColor(color_str: str) -> str:
+            return color_str
+
+    colors = DummyColors()
+    A4 = (595.27, 841.89)  # A4 dimensions in points
+    # Dummy enums
+    TA_CENTER = 1
+    TA_JUSTIFY = 2
+    TA_RIGHT = 3
+
+    # Dummy function to return styles
+    def getSampleStyleSheet():
+        class DummyStyleSheet:
+            def __getitem__(self, key):
+                return ParagraphStyle()
+
+            def add(self, style):
+                pass
+
+        return DummyStyleSheet()
+
     logger = logging.getLogger(__name__)
     logger.warning("ReportLab not available - PDF generation disabled")
 

@@ -36,8 +36,9 @@ jobs:
 
     - name: Install Claude Code CLI and Dependencies
       run: |
-        npm install -g @anthropic/claude-code
-        pip install python-dotenv pyyaml claude-code-sdk
+        # Note: Claude Code CLI is not available as npm package
+        # Install Python dependencies only
+        pip install python-dotenv pyyaml
 
     - name: Setup Claude Code Authentication
       env:

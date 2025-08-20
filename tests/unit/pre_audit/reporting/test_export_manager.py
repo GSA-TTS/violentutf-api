@@ -71,12 +71,14 @@ class TestExportManager:
         # Disable parallel export
         manager.config.enable_parallel_export = False
 
-        # Mock generators
+        # Mock generators and track which ones we mocked
+        mocked_generators = {}
         for format_name in ["html", "json"]:
             if format_name in manager.generators:
                 mock_gen = MagicMock()
                 mock_gen.generate.return_value = temp_dir / f"report.{format_name}"
                 manager.generators[format_name] = mock_gen
+                mocked_generators[format_name] = mock_gen
 
         results = manager.export_all(sample_audit_data)
 

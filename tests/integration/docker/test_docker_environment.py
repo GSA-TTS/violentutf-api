@@ -226,9 +226,7 @@ class TestDockerTestEnvironment:
         subprocess.run(["docker-compose", "-f", str(docker_compose_file), "down", "-v"], capture_output=True)
 
     def test_env_test_file_exists(self):
-        """
-        Test that .env.test template exists for test configuration.
-        """
+        """Test that .env.test template exists for test configuration."""
         project_root = Path(__file__).parent.parent.parent.parent
         env_test_file = project_root / ".env.test"
 

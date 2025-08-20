@@ -50,7 +50,7 @@ def require_abac_permission(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from function arguments
             request = None
             session = None
