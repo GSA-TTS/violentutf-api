@@ -14,7 +14,7 @@ from app.core.auth import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,
-    get_optional_current_user,
+    get_optional_current_user_data,
 )
 
 # Import db session dependency for backward compatibility
@@ -58,7 +58,12 @@ async def get_optional_user(request: Request) -> Optional["User"]:
     Returns:
         Optional[User]: User object if authenticated, None otherwise
     """
-    return await get_optional_current_user(request)
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+    except Exception:
+        return None
 
 
 # Legacy aliases for backward compatibility

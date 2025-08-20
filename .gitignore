@@ -113,6 +113,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+implement_issue_venv/
+agent_orchestrator/implement_issue_venv/
 
 # Spyder project settings
 .spyderproject

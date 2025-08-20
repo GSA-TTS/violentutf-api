@@ -371,8 +371,16 @@ class TestReportingIntegration:
         # Mock the chart generation to verify it's called
         with patch.object(html_gen, "_generate_chart_data") as mock_charts:
             mock_charts.return_value = {
-                "compliance_gauge": {"type": "gauge", "data": {"value": 82.5}},
-                "violation_pie": {"type": "pie", "data": {"labels": ["Critical"], "values": [1]}},
+                "compliance_gauge": {
+                    "type": "gauge",
+                    "data": {"value": 82.5},
+                    "json": '{"type": "gauge", "data": {"value": 82.5}}',
+                },
+                "violation_pie": {
+                    "type": "pie",
+                    "data": {"labels": ["Critical"], "values": [1]},
+                    "json": '{"type": "pie", "data": {"labels": ["Critical"], "values": [1]}}',
+                },
             }
 
             output_path = html_gen.generate(complete_audit_data)

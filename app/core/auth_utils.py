@@ -59,3 +59,15 @@ async def get_oauth_user_from_request(request: Request) -> Optional[object]:
         return user
 
     return None
+
+
+# Aliases for backward compatibility and architectural compliance
+def get_current_user_id(request: Request) -> Optional[str]:
+    """Alias for get_current_user_id_from_request that returns string ID for compatibility."""
+    user_id = get_current_user_id_from_request(request)
+    return str(user_id) if user_id is not None else None
+
+
+async def get_oauth_user(request: Request) -> Optional[object]:
+    """Alias for get_oauth_user_from_request."""
+    return await get_oauth_user_from_request(request)
