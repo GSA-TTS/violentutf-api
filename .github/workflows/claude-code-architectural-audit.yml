@@ -13,6 +13,8 @@ env:
 jobs:
   architectural-audit:
     runs-on: ubuntu-latest
+    # Skip this job in CI/CD as Claude Code CLI is not available in online environments
+    if: false  # Disabled for online CI/CD - Claude Code setup not available
     permissions:
       contents: read
       pull-requests: write
