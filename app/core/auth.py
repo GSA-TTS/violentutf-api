@@ -89,6 +89,7 @@ def validate_active_user(user_data: UserData) -> UserData:
         )
     return user_data
 
+
 def validate_superuser(user_data: UserData) -> UserData:
     """Validate that user is a superuser.
 
