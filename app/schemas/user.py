@@ -164,10 +164,7 @@ class UserResponse(UserBase):
     login_count: int = Field(0, description="Total login count")
     failed_login_count: int = Field(0, description="Failed login attempts")
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreateResponse(UserResponse):

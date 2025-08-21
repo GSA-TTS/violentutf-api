@@ -55,7 +55,7 @@ class TestSanitizationDependencies:
 
         @app.post("/users")
         async def create_user(user: UserInput):
-            return {"created": user.dict()}
+            return {"created": user.model_dump()}
 
         client = TestClient(app)
 
@@ -70,4 +70,4 @@ class TestSanitizationDependencies:
         created = data["created"]
         assert "&lt;h1&gt;" in created["name"]
         assert created["email"] == "test@test.com"
-        assert created["bio"] == "[FILTERED]"  # javascript: filtered
+        assert created["bio"] == "[FILTERED][FILTERED]"  # javascript:alert(1) triggers two patterns

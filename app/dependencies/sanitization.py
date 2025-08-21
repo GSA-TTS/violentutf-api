@@ -8,7 +8,7 @@ import json
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.utils.sanitization import sanitize_dict, sanitize_string
 
@@ -62,17 +62,23 @@ get_sanitized_body_no_js_strip = SanitizedBody(strip_js=False)
 class SanitizedModel(BaseModel):
     """Base model that automatically sanitizes string fields."""
 
-    class Config:
+    model_config = ConfigDict(
         # This ensures validators run even when assigning values
-        validate_assignment = True
+        validate_assignment=True
+    )
 
-    @field_validator("*", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def sanitize_strings(cls, v: Any) -> Any:
+    def sanitize_strings(cls, values: Any) -> Any:
         """Sanitize all string fields."""
-        if isinstance(v, str):
-            return sanitize_string(v, strip_js=True, max_length=10000)
-        return v
+        if isinstance(values, dict):
+            return {
+                k: sanitize_string(v, strip_js=True, max_length=10000) if isinstance(v, str) else v
+                for k, v in values.items()
+            }
+        elif isinstance(values, str):
+            return sanitize_string(values, strip_js=True, max_length=10000)
+        return values
 
 
 # Example usage models

@@ -12,7 +12,7 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
 from app.models.audit_log import AuditLog
-from app.repositories.base import BaseRepository
+from app.repositories.audit_log import AuditLogRepository
 
 logger = get_logger(__name__)
 
@@ -80,7 +80,7 @@ class AuditService:
             session: Database session
         """
         self.session = session
-        self.repository: BaseRepository[AuditLog] = BaseRepository(session, AuditLog)
+        self.repository = AuditLogRepository(session)
 
     async def log_event(
         self,

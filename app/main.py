@@ -37,18 +37,20 @@ setup_logging()
 logger = get_logger(__name__)
 
 
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+async def rate_limit_handler(request: Request, exc: Exception) -> Response:
     """Handle rate limit exceptions with enhanced logging."""
+    # Extract rate limit details safely
+    detail = getattr(exc, "detail", "Rate limit exceeded")
     logger.warning(
         "rate_limit_exceeded",
         path=request.url.path,
         client_ip=request.client.host if request.client else "unknown",
-        rate_limit_detail=exc.detail,
+        rate_limit_detail=detail,
     )
 
     return JSONResponse(
         status_code=429,
-        content={"detail": f"Rate limit exceeded: {exc.detail}", "type": "rate_limit_exceeded"},
+        content={"detail": f"Rate limit exceeded: {detail}", "type": "rate_limit_exceeded"},
         headers={"Retry-After": "60"},  # Default retry after 60 seconds
     )
 

@@ -101,15 +101,11 @@ async def create_mfa_challenge(
     This is typically called after username/password verification.
     """
     try:
-        # Get user (in real implementation, this would come from partial auth state)
-        # For now, we'll require the user_id in the request
-        from sqlalchemy import select
+        # Get user using UserRepository instead of direct database access
+        from app.repositories.user import UserRepository
 
-        from app.models.user import User
-
-        query = select(User).where(User.id == challenge_data.user_id)
-        result = await session.execute(query)
-        user = result.scalar_one_or_none()
+        user_repo = UserRepository(session)
+        user = await user_repo.get_by_id(challenge_data.user_id)
 
         if not user:
             raise NotFoundError("User not found")

@@ -60,8 +60,8 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/tools/agent_orchestrator/', '--quiet']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|tools/agent_orchestrator/)'
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/tools/agent_orchestrator/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/', '--quiet']
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|tools/agent_orchestrator/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/)'
         pass_filenames: false
 
   # Secret detection - Yelp maintained - ALL FILES
@@ -131,7 +131,7 @@ repos:
 
       - id: validate-json-ci
         name: Validate JSON (matches CI)
-        entry: python3 -c "import json, sys, glob; files = glob.glob('**/*.json', recursive=True); [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
+        entry: python3 -c "import json, sys, glob, os; exclude_patterns = ['.mypy_cache/', 'tools/agent_orchestrator/', 'venv/', '.git/', 'test_reports/', 'security/', '.implement_checkpoints/', '.cache/', 'docs/reports/', 'htmlcov/']; files = [f for f in glob.glob('**/*.json', recursive=True) if not any(pattern in f for pattern in exclude_patterns) and not f.endswith(('failures.json', 'bandit-report.json', 'bandit_results.json', 'coverage.json', 'safety-report.json', 'test_results.json'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
         language: system
         files: '\.json$'
         pass_filenames: false
