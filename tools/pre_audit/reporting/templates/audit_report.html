@@ -145,7 +145,7 @@
 {% block extra_scripts %}
 <script>
     // Initialize risk distribution chart
-    {% if charts and charts.violation_pie %}
+    {% if charts and charts.violation_pie and charts.violation_pie.json %}
     (function() {
         const ctx = document.getElementById('risk-distribution-chart').getContext('2d');
         // Parse JSON data safely

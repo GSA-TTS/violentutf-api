@@ -16,22 +16,32 @@ from app.services.oauth_service import OAuth2Service
 
 # Create mock classes for the models
 class OAuthApplication:
+    """Mock OAuth application model."""
+
     pass
 
 
 class OAuthAccessToken:
+    """Mock OAuth access token model."""
+
     pass
 
 
 class OAuthRefreshToken:
+    """Mock OAuth refresh token model."""
+
     pass
 
 
 class OAuthAuthorizationCode:
+    """Mock OAuth authorization code model."""
+
     pass
 
 
 class User:
+    """Mock user model."""
+
     pass
 
 

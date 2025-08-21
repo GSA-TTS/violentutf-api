@@ -165,7 +165,9 @@ class BaseRepository(Generic[T], IBaseRepository[T]):
                 # Get current version first (with organization filtering)
                 current_entity = await self.get_by_id(entity_id_str, organization_id)
                 if current_entity and hasattr(current_entity, "version"):
-                    kwargs["version"] = getattr(current_entity, "version") + 1
+                    current_version = getattr(current_entity, "version")
+                    # Handle None version by starting at 1
+                    kwargs["version"] = (current_version or 0) + 1
 
             # Build update filters
             update_filters = [self.model.id == entity_id_str]
@@ -317,7 +319,12 @@ class BaseRepository(Generic[T], IBaseRepository[T]):
             if eager_load:
                 for relationship in eager_load:
                     if hasattr(self.model, relationship):
-                        query = query.options(selectinload(getattr(self.model, relationship)))
+                        try:
+                            query = query.options(selectinload(getattr(self.model, relationship)))
+                        except Exception as e:
+                            self.logger.warning(
+                                "Failed to apply eager loading", relationship=relationship, error=str(e)
+                            )
 
             # Count total items before pagination
             count_query = select(func.count()).select_from(query.subquery())

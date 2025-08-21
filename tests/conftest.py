@@ -16,16 +16,16 @@ for module_name in list(sys.modules.keys()):
 for module_name in modules_to_remove:
     del sys.modules[module_name]
 
-import pytest
-import pytest_asyncio
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+    from fastapi.testclient import TestClient  # noqa: E402
 
-from app.core.config import Settings, get_settings
-from app.main import create_application
+from app.core.config import Settings, get_settings  # noqa: E402
+from app.main import create_application  # noqa: E402
 
 # Import test fixtures - this makes them available to all tests
 from tests.test_database import DatabaseTestManager, clean_db_session, db_session, test_db_manager  # noqa
@@ -41,7 +41,7 @@ from tests.test_fixtures import (  # noqa
 )
 
 # Import our safe TestClient
-from tests.utils.testclient import SafeTestClient
+from tests.utils.testclient import SafeTestClient  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

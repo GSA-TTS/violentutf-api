@@ -1,3 +1,6 @@
 [submodule "tools/agent_orchestrator"]
 	path = tools/agent_orchestrator
 	url = https://github.com/cybonto/agent_orchestrator.git
+[submodule "agent_orchestrator"]
+	path = agent_orchestrator
+	url = https://github.com/Cybonto/agent_orchestrator.git

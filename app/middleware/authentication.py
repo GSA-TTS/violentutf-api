@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from structlog.stdlib import get_logger
@@ -51,6 +52,9 @@ EXEMPT_PATHS: List[str] = [
     "/docs",
     "/redoc",
     "/openapi.json",
+    "/api/v1/docs",  # API documentation
+    "/api/v1/redoc",  # ReDoc documentation
+    "/api/v1/openapi.json",  # OpenAPI schema
     "/metrics",
 ]
 
@@ -491,7 +495,7 @@ def get_current_authority_level(request: Request) -> Optional[AuthorityLevel]:
     return getattr(request.state, "authority_level", None)
 
 
-def get_current_full_user(request: Request):
+def get_current_full_user(request: Request) -> Any:
     """Get current full user model from request state.
 
     This provides access to the complete user model for ABAC evaluation.
@@ -505,7 +509,7 @@ def get_current_full_user(request: Request):
     return getattr(request.state, "full_user", None)
 
 
-def get_current_db_session(request: Request):
+def get_current_db_session(request: Request) -> Optional[AsyncSession]:
     """Get current database session from request state.
 
     This provides access to the database session established during authentication

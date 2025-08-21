@@ -310,7 +310,7 @@ class TestMultiTenantSecurityIntegration:
         # Each organization should get consistent results
         if org1_results[0]["response"] and org1_results[1]["response"]:
             # Compare response structure (should be consistent)
-            assert type(org1_results[0]["response"]) == type(org1_results[1]["response"])
+            assert type(org1_results[0]["response"]) is type(org1_results[1]["response"])
 
     @pytest.mark.asyncio
     async def test_jwt_token_manipulation_prevention(self, async_client: AsyncClient, org1_test_user: Dict):

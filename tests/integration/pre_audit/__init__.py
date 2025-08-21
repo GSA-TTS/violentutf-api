@@ -1,1 +1,1 @@
-# This file makes this directory a Python package
+"""Integration tests for pre-audit functionality."""

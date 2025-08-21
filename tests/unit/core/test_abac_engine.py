@@ -72,34 +72,41 @@ class TestABACContext:
     @pytest.mark.asyncio
     async def test_load_subject_attributes_with_session(self):
         """Test loading subject attributes with database session."""
-        # Mock database session and repositories
-        mock_session = MagicMock(spec=AsyncSession)
-        mock_user_repo = AsyncMock()
-        mock_rbac_service = AsyncMock()
+        from typing import List, Set
 
-        # Create mock user
-        mock_user = MagicMock(spec=User)
-        mock_user.username = "testuser"
-        mock_user.email = "test@example.com"
-        mock_user.is_active = True
-        mock_user.is_verified = True
-        mock_user.roles = ["admin", "tester"]
-        mock_user.organization_id = uuid.uuid4()
+        from app.core.interfaces.user_interface import IUserPermissionProvider, UserData
 
-        mock_user_repo.get_by_id.return_value = mock_user
-        mock_rbac_service.get_user_permissions.return_value = {"users:*", "api_keys:read"}
+        # Create mock permission provider that implements the full interface
+        class MockPermissionProvider(IUserPermissionProvider):
+            async def get_user_permissions(self, user_id: str) -> Set[str]:
+                return {"users:*", "api_keys:read"}
+
+            async def get_user_roles(self, user_id: str) -> List[str]:
+                return ["admin", "tester"]
+
+            async def get_user_data(self, user_id: str) -> UserData:
+                return UserData(
+                    id=user_id,
+                    username="testuser",
+                    email="test@example.com",
+                    is_active=True,
+                    is_verified=True,
+                    is_superuser=False,
+                    roles=["admin", "tester"],
+                    organization_id=str(uuid.uuid4()),
+                )
+
+        mock_provider = MockPermissionProvider()
 
         context = ABACContext(
             subject_id="user-123",
             resource_type="users",
             action="read",
             organization_id="org-456",
-            session=mock_session,
+            permission_provider=mock_provider,
         )
 
-        with patch("app.repositories.user.UserRepository", return_value=mock_user_repo):
-            with patch("app.services.rbac_service.RBACService", return_value=mock_rbac_service):
-                attrs = await context.get_subject_attributes()
+        attrs = await context.get_subject_attributes()
 
         assert attrs["subject_id"] == "user-123"
         assert attrs["organization_id"] == "org-456"
@@ -125,66 +132,42 @@ class TestABACContext:
     @pytest.mark.asyncio
     async def test_load_resource_attributes_users(self):
         """Test loading resource attributes for user resources."""
-        mock_session = MagicMock(spec=AsyncSession)
-        mock_user_repo = AsyncMock()
-
-        # Create mock resource user
-        mock_resource_user = MagicMock(spec=User)
-        mock_resource_user.is_active = True
-        mock_resource_user.organization_id = uuid.uuid4()
-        mock_resource_user.roles = ["viewer"]
-
-        mock_user_repo.get_by_id.return_value = mock_resource_user
-
         context = ABACContext(
             subject_id="user-123",
             resource_type="users",
             action="read",
             organization_id="org-456",
             resource_id="resource-user-789",
-            session=mock_session,
+            resource_owner_id="owner-123",
         )
 
-        with patch("app.repositories.user.UserRepository", return_value=mock_user_repo):
-            attrs = await context.get_resource_attributes()
+        attrs = await context.get_resource_attributes()
 
         assert attrs["resource_type"] == "users"
         assert attrs["resource_id"] == "resource-user-789"
-        assert attrs["resource_is_active"] is True
-        assert attrs["resource_roles"] == ["viewer"]
+        assert attrs["resource_owner_id"] == "owner-123"
+        assert attrs["resource_organization_id"] == "org-456"
+        # Note: Detailed resource loading now happens at service layer
 
     @pytest.mark.asyncio
     async def test_load_resource_attributes_api_keys(self):
         """Test loading resource attributes for API key resources."""
-        mock_session = MagicMock(spec=AsyncSession)
-        mock_api_key_repo = AsyncMock()
-
-        # Create mock API key
-        mock_api_key = MagicMock()
-        mock_api_key.is_active.return_value = True
-        mock_api_key.organization_id = uuid.uuid4()
-        mock_api_key.permissions = ["users:read", "api_keys:write"]
-        mock_api_key.expires_at = None
-
-        mock_api_key_repo.get_by_id.return_value = mock_api_key
-
         context = ABACContext(
             subject_id="user-123",
             resource_type="api_keys",
             action="read",
             organization_id="org-456",
             resource_id="api-key-789",
-            session=mock_session,
+            resource_owner_id="user-123",
         )
 
-        with patch("app.repositories.api_key.APIKeyRepository", return_value=mock_api_key_repo):
-            attrs = await context.get_resource_attributes()
+        attrs = await context.get_resource_attributes()
 
         assert attrs["resource_type"] == "api_keys"
         assert attrs["resource_id"] == "api-key-789"
-        assert attrs["resource_is_active"] is True
-        assert attrs["resource_permissions"] == ["users:read", "api_keys:write"]
-        assert attrs["resource_expires_at"] is None
+        assert attrs["resource_owner_id"] == "user-123"
+        assert attrs["resource_organization_id"] == "org-456"
+        # Note: Detailed resource loading now happens at service layer
 
     @pytest.mark.asyncio
     async def test_load_action_attributes(self, sample_context):
@@ -225,9 +208,6 @@ class TestABACContext:
     @pytest.mark.asyncio
     async def test_calculate_authority_level_global_admin(self):
         """Test authority level calculation for global admin."""
-        mock_user = MagicMock(spec=User)
-        mock_user.roles = ["admin"]
-
         context = ABACContext(
             subject_id="user-123",
             resource_type="users",
@@ -235,37 +215,31 @@ class TestABACContext:
         )
 
         # Test global wildcard permission
-        level = context._calculate_authority_level(mock_user, {"*"})
+        level = context._calculate_authority_level_from_roles(["admin"], {"*"})
         assert level == "global_admin"
 
     @pytest.mark.asyncio
     async def test_calculate_authority_level_admin(self):
         """Test authority level calculation for admin."""
-        mock_user = MagicMock(spec=User)
-        mock_user.roles = ["admin", "viewer"]
-
         context = ABACContext(
             subject_id="user-123",
             resource_type="users",
             action="read",
         )
 
-        level = context._calculate_authority_level(mock_user, {"users:*"})
+        level = context._calculate_authority_level_from_roles(["admin", "viewer"], {"users:*"})
         assert level == "admin"
 
     @pytest.mark.asyncio
     async def test_calculate_authority_level_user(self):
         """Test authority level calculation for regular user."""
-        mock_user = MagicMock(spec=User)
-        mock_user.roles = ["viewer"]
-
         context = ABACContext(
             subject_id="user-123",
             resource_type="users",
             action="read",
         )
 
-        level = context._calculate_authority_level(mock_user, {"users:read"})
+        level = context._calculate_authority_level_from_roles(["viewer"], {"users:read"})
         assert level == "viewer"
 
 
@@ -950,7 +924,6 @@ class TestABACHelperFunctions:
                 subject_id="user-123",
                 resource_type="users",
                 action="read",
-                session=mock_session,
             )
 
             assert is_allowed is True
@@ -971,7 +944,6 @@ class TestABACHelperFunctions:
                 subject_id="user-123",
                 resource_type="users",
                 action="read",
-                session=mock_session,
             )
 
             assert explanation["decision"] == "ALLOW"
@@ -984,35 +956,43 @@ class TestABACIntegration:
     @pytest.mark.asyncio
     async def test_complete_evaluation_flow(self):
         """Test complete ABAC evaluation flow with real context."""
-        # This test would require actual database setup in a full integration test
-        # For now, we'll test the flow with mocked dependencies
+        from typing import List, Set
 
-        mock_session = MagicMock(spec=AsyncSession)
-        mock_user_repo = AsyncMock()
-        mock_rbac_service = AsyncMock()
+        from app.core.interfaces.user_interface import IUserPermissionProvider, UserData
 
-        # Create mock user with admin privileges
-        org_uuid = uuid.uuid4()
-        mock_user = MagicMock(spec=User)
-        mock_user.username = "admin_user"
-        mock_user.email = "admin@example.com"
-        mock_user.is_active = True
-        mock_user.is_verified = True
-        mock_user.roles = ["admin"]
-        mock_user.organization_id = org_uuid
+        # Create mock permission provider that implements the full interface
+        class MockPermissionProvider(IUserPermissionProvider):
+            def __init__(self, org_uuid):
+                self.org_uuid = org_uuid
 
-        mock_user_repo.get_by_id.return_value = mock_user
-        mock_rbac_service.get_user_permissions.return_value = {"users:*", "api_keys:*"}
+            async def get_user_permissions(self, user_id: str) -> Set[str]:
+                return {"users:*", "api_keys:*"}
 
-        with patch("app.repositories.user.UserRepository", return_value=mock_user_repo):
-            with patch("app.services.rbac_service.RBACService", return_value=mock_rbac_service):
-                is_allowed, reason = await check_abac_permission(
-                    subject_id="admin-123",
-                    resource_type="users",
-                    action="read",
-                    session=mock_session,
-                    organization_id=str(org_uuid),
+            async def get_user_roles(self, user_id: str) -> List[str]:
+                return ["admin"]
+
+            async def get_user_data(self, user_id: str) -> UserData:
+                return UserData(
+                    id=user_id,
+                    username="admin_user",
+                    email="admin@example.com",
+                    is_active=True,
+                    is_verified=True,
+                    is_superuser=False,
+                    roles=["admin"],
+                    organization_id=str(self.org_uuid),
                 )
+
+        org_uuid = uuid.uuid4()
+        mock_provider = MockPermissionProvider(org_uuid)
+
+        is_allowed, reason = await check_abac_permission(
+            subject_id="admin-123",
+            resource_type="users",
+            action="read",
+            organization_id=str(org_uuid),
+            permission_provider=mock_provider,
+        )
 
         # Should be allowed due to admin role and proper organization context
         assert is_allowed is True

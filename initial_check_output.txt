@@ -1,0 +1,84 @@
+/Users/tamnguyen/Documents/GitHub/violentutf-api/run_all_checks.py:35: SyntaxWarning: invalid escape sequence '\.'
+  ('black --check . --exclude="venv|agent_orchestrator|__pycache__|\.git|\.venv|implement_issue_venv"',
+
+============================================================
+Running: Black Code Formatting
+Command: black --check . --exclude="venv|agent_orchestrator|__pycache__|\.git|\.venv|implement_issue_venv"
+============================================================
+❌ FAILED: Black Code Formatting
+STDERR: Error: Could not open file '/Users/tamnguyen/Documents/GitHub/violentutf-api/pyproject.toml': Error reading configuration file: Cannot overwrite a value (at line 52, column 64)
+
+
+============================================================
+Running: isort Import Sorting
+Command: isort --check-only --diff . --profile black --skip-glob "*/venv/*" --skip-glob "*/.venv/*" --skip-glob "*/implement_issue_venv/*" --skip-glob "*/agent_orchestrator/*"
+============================================================
+❌ FAILED: isort Import Sorting
+STDOUT: --- /Users/tamnguyen/Documents/GitHub/violentutf-api/verify_dependencies.py:before	2025-08-18 23:58:23.126275
++++ /Users/tamnguyen/Documents/GitHub/violentutf-api/verify_dependencies.py:after	2025-08-19 00:06:41.169428
+@@ -3,6 +3,7 @@
+
+ import sys
+ import traceback
++
+
+ def test_imports():
+     """Test all critical imports."""
+--- /Users/tamnguyen/Documents/GitHub/violentutf-api/run_all_checks.py:before	2025-08-19 00:06:25.358538
++++ /Users/tamnguyen/Documents/GitHub/violentutf-api/run_all_chec
+STDERR: /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/isort/settings.py:350: UserWarning: Failed to pull configuration information from /Users/tamnguyen/Documents/GitHub/violentutf-api/pyproject.toml
+  project_root, config_settings = _find_config(settings_path)
+ERROR: /Users/tamnguyen/Documents/GitHub/violentutf-api/verify_dependencies.py Imports are incorrectly sorted and/or formatted.
+ERROR: /Users/tamnguyen/Documents/GitHub/violentutf-api/run_all_checks.py Imports ar
+
+============================================================
+Running: Flake8 Critical Errors
+Command: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,agent_orchestrator,__pycache__,.git,.venv,implement_issue_venv
+============================================================
+✅ PASSED: Flake8 Critical Errors
+
+============================================================
+Running: Mypy Type Checking
+Command: mypy app/ --ignore-missing-imports --exclude="venv|agent_orchestrator"
+============================================================
+❌ FAILED: Mypy Type Checking
+STDOUT: app/core/decorators/circuit_breaker.py:101: error: Argument 1 to "call" of "CircuitBreaker" has incompatible type "Callable[[VarArg(Any), KwArg(Any)], Coroutine[Any, Any, T]]"; expected "Callable[..., Coroutine[Any, Any, Never]] | Callable[..., Never]"  [arg-type]
+app/models/user_role.py:26: error: Incompatible types in assignment (expression has type "Column[Any]", base class "AuditMixin" defined the type as "str")  [assignment]
+app/models/user_role.py:74: error: Incompatible return value type
+STDERR: pyproject.toml: Cannot overwrite a value (at line 52, column 64)
+
+
+============================================================
+Running: Bandit Security Scan
+Command: bandit -r app/ --exclude=/venv,/agent_orchestrator,/__pycache__ -ll
+============================================================
+✅ PASSED: Bandit Security Scan
+
+============================================================
+Running: Unit Tests
+Command: python3 -m pytest tests/unit/ -x --tb=short --quiet
+============================================================
+❌ FAILED: Unit Tests
+STDERR: Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/pytest/__main__.py", line 9, in <module>
+    raise SystemExit(pytest.console_main())
+                     ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/_pytest/config/__init__.py", line 201, in console_main
+
+
+============================================================
+SUMMARY
+============================================================
+Total checks: 6
+Passed: 2
+Failed: 4
+
+Failed checks:
+  - Black Code Formatting
+  - isort Import Sorting
+  - Mypy Type Checking
+  - Unit Tests
+
+Detailed results saved to: check_results_20250819_000640.json

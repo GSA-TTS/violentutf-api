@@ -44,6 +44,8 @@ except ImportError:
 
     # Define dummy enum-like class for type annotations when git history is not available
     class FixType:  # type: ignore
+        """Dummy enum-like class for fix types when git history is not available."""
+
         EXPLICIT_ADR_FIX = "explicit_adr_fix"
         ARCHITECTURAL_FIX = "architectural_fix"
         BOUNDARY_FIX = "boundary_fix"

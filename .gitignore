@@ -113,6 +113,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+implement_issue_venv/
+agent_orchestrator/implement_issue_venv/
 
 # Spyder project settings
 .spyderproject
@@ -256,3 +258,4 @@ red_team_outputs/
 tools/agent_orchestrator/
 temp.md
 /.implement_checkpoints
+/agent_orchestrator

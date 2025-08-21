@@ -11,17 +11,19 @@ from ..core.config import settings
 if TYPE_CHECKING:
     # Define a protocol that matches the Redis interface we use
     class RedisProtocol(Protocol):
-        async def ping(self) -> bool: ...
+        """Protocol definition for Redis client interface."""
 
-        async def get(self, key: str) -> Optional[str]: ...
+        async def ping(self) -> bool: ...  # noqa: E704
 
-        async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool: ...
+        async def get(self, key: str) -> Optional[str]: ...  # noqa: E704
 
-        async def setex(self, key: str, ttl: int, value: str) -> bool: ...
+        async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool: ...  # noqa: E704
 
-        async def delete(self, key: str) -> int: ...
+        async def setex(self, key: str, ttl: int, value: str) -> bool: ...  # noqa: E704
 
-        async def aclose(self) -> None: ...
+        async def delete(self, key: str) -> int: ...  # noqa: E704
+
+        async def aclose(self) -> None: ...  # noqa: E704
 
     RedisClient = RedisProtocol
 else:

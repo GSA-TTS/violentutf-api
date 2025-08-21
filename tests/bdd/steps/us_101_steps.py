@@ -9,13 +9,18 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-import docker
+try:
+    import docker
+
+    docker_client = docker.from_env()
+    DOCKER_AVAILABLE = True
+except ImportError:
+    docker_client = None
+    DOCKER_AVAILABLE = False
+
 import requests
 import yaml
 from behave import given, then, when
-
-# Docker client for container inspection
-docker_client = docker.from_env()
 
 
 @given("the docker-compose.test.yml file exists in the project root")

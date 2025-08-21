@@ -5,7 +5,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from structlog.stdlib import get_logger
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user_data
 from app.core.auth_failover import get_fallback_auth_provider
 from app.core.permissions import require_permission
 from app.models.user import User

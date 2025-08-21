@@ -71,7 +71,7 @@ repos:
       - id: detect-secrets
         name: detect-secrets-comprehensive
         args: ['--baseline', '.secrets.baseline']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
         pass_filenames: false
 
   # YAML formatting - Using stable v3 instead of alpha

@@ -311,19 +311,19 @@ class MFAPolicyService:
             # Parse JSON fields
             try:
                 policy_dict["conditions"] = json.loads(policy.conditions)
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["conditions"] = {}
 
             try:
                 policy_dict["required_methods"] = json.loads(policy.required_methods)
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["required_methods"] = []
 
             try:
                 policy_dict["bypass_permissions"] = (
                     json.loads(policy.bypass_permissions) if policy.bypass_permissions else []
                 )
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["bypass_permissions"] = []
 
             policy_list.append(policy_dict)

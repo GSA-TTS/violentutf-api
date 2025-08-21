@@ -218,7 +218,7 @@ class TestChartGenerator:
         encoded = generator._encode_labels(labels)
 
         assert len(encoded) == 4
-        assert all(isinstance(l, str) for l in encoded)
+        assert all(isinstance(label, str) for label in encoded)
         assert "<script>" not in encoded[0]
         assert encoded[1] == "Normal"
         assert encoded[2] == "123"

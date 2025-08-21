@@ -24,10 +24,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from multi_agent_auditor import ArchitecturalAnalysisOrchestrator
-from pattern_analyzer import PatternAnalyzer
-from safe_cache_manager import MultiTierCacheManager
-from smart_analyzer import SmartArchitecturalAnalyzer
+from multi_agent_auditor import ArchitecturalAnalysisOrchestrator  # noqa: E402
+from pattern_analyzer import PatternAnalyzer  # noqa: E402
+from safe_cache_manager import MultiTierCacheManager  # noqa: E402
+from smart_analyzer import SmartArchitecturalAnalyzer  # noqa: E402
 
 
 @dataclass
@@ -276,9 +276,9 @@ class IncrementalAnalyzer:
         self.orchestrator: Optional[ArchitecturalAnalysisOrchestrator]
         try:
             self.orchestrator = ArchitecturalAnalysisOrchestrator(str(self.repo_path))
-        except:
+        except Exception as e:
             self.orchestrator = None
-            self.logger.warning("Multi-agent orchestrator not available")
+            self.logger.warning(f"Multi-agent orchestrator not available: {e}")
 
     async def analyze_changes(
         self, base_ref: str = "HEAD~1", use_claude: bool = True, force_reanalysis: bool = False
