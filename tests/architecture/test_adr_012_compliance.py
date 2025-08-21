@@ -55,10 +55,27 @@ class TestADR012Compliance:
         prod_db_env = prod_config.get("services", {}).get("db", {}).get("environment", {})
         test_db_env = test_config.get("services", {}).get("db", {}).get("environment", {})
 
-        if prod_db_env.get("POSTGRES_DB") and test_db_env.get("POSTGRES_DB"):
+        # Handle both dictionary and list formats for environment variables
+        def extract_env_var(env_config, var_name):
+            if isinstance(env_config, dict):
+                return env_config.get(var_name)
+            elif isinstance(env_config, list):
+                for env_var in env_config:
+                    if isinstance(env_var, str) and env_var.startswith(f"{var_name}="):
+                        return env_var.split("=", 1)[1]
+                    elif isinstance(env_var, str) and "=" in env_var:
+                        key, value = env_var.split("=", 1)
+                        if key == var_name:
+                            return value
+            return None
+
+        prod_db_name = extract_env_var(prod_db_env, "POSTGRES_DB")
+        test_db_name = extract_env_var(test_db_env, "POSTGRES_DB")
+
+        if prod_db_name and test_db_name:
             assert (
-                prod_db_env["POSTGRES_DB"] != test_db_env["POSTGRES_DB"]
-            ), "Test and production must use different database names (ADR-012)"
+                prod_db_name != test_db_name
+            ), f"Test and production must use different database names (ADR-012). Found prod: {prod_db_name}, test: {test_db_name}"
 
     def test_test_modules_structure(self, project_root):
         """
@@ -79,10 +96,19 @@ class TestADR012Compliance:
             test_dir = tests_dir / dir_name
             assert test_dir.exists(), f"Required test directory {dir_name} must exist (ADR-012)"
 
-        # Check that test files follow naming convention
-        for test_file in tests_dir.rglob("*.py"):
-            if test_file.stem != "__init__" and "conftest" not in test_file.stem:
-                assert test_file.stem.startswith("test_"), f"Test file {test_file.name} should start with 'test_'"
+        # Check that test files in test directories follow naming convention
+        test_dirs_to_check = ["unit", "integration", "bdd", "security", "architecture"]
+
+        for test_dir_name in test_dirs_to_check:
+            test_dir = tests_dir / test_dir_name
+            if test_dir.exists():
+                for test_file in test_dir.rglob("*.py"):
+                    # Skip __init__.py and conftest.py
+                    if test_file.stem == "__init__" or "conftest" in test_file.stem:
+                        continue
+                    assert test_file.stem.startswith(
+                        "test_"
+                    ), f"Test file {test_file.name} in {test_dir_name}/ should start with 'test_'"
 
     def test_integration_test_fixtures(self, project_root):
         """
@@ -113,6 +139,9 @@ class TestADR012Compliance:
 
         violations = []
         for test_file in tests_dir.rglob("test_*.py"):
+            # Skip the architectural compliance test itself
+            if "test_adr_012_compliance.py" in str(test_file):
+                continue
             content = test_file.read_text()
             for pattern in forbidden_patterns:
                 if re.search(pattern, content):

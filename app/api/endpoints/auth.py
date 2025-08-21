@@ -1,5 +1,6 @@
 """Authentication endpoints with real database authentication."""
 
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -128,9 +129,8 @@ async def login(
 
         # Authenticate user
         user = await user_repo.authenticate(
-            username=request.username,
+            username_or_email=request.username,
             password=request.password,
-            ip_address=client_ip,
         )
 
         if not user:
@@ -182,6 +182,12 @@ async def login(
                 mfa_required=True,
                 mfa_challenge_id=challenge_id,
             )
+
+        # Update user login tracking
+        if client_ip:
+            user.last_login_at = datetime.now(timezone.utc)
+            user.last_login_ip = client_ip
+            await user_repo.update(user)
 
         # No MFA required, create JWT tokens with complete claims per ADR-003
         token_data = {

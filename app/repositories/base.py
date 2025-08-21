@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Generic, Iterator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
 from sqlalchemy import and_, delete, desc, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from structlog.stdlib import get_logger
 
 from ..db.base_class import Base
 from ..models.mixins import BaseModelMixin
+from .interfaces.base import IBaseRepository
 
 logger = get_logger(__name__)
 
@@ -53,7 +54,7 @@ class Page(Generic[T]):
         return self.items[index]
 
 
-class BaseRepository(Generic[T]):
+class BaseRepository(Generic[T], IBaseRepository[T]):
     """
     Base repository providing common CRUD operations.
 
@@ -365,12 +366,18 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to list entities", page=page, size=size, error=str(e))
             raise
 
-    async def count(self, filters: Optional[Dict[str, object]] = None, include_deleted: bool = False) -> int:
+    async def count(
+        self,
+        filters: Optional[Dict[str, object]] = None,
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        include_deleted: bool = False,
+    ) -> int:
         """
-        Count entities with optional filtering.
+        Count entities with optional filtering and organization filtering.
 
         Args:
             filters: Optional filters to apply
+            organization_id: Optional organization ID for multi-tenant filtering
             include_deleted: Whether to include soft-deleted entities
 
         Returns:
@@ -383,6 +390,10 @@ class BaseRepository(Generic[T]):
             # Apply soft delete filter if model has is_deleted field
             if not include_deleted and hasattr(self.model, "is_deleted"):
                 query = query.where(getattr(self.model, "is_deleted") == False)  # noqa: E712
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                query = query.where(getattr(self.model, "organization_id") == str(organization_id))
 
             # Apply custom filters
             if filters:
@@ -405,12 +416,15 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to count entities", filters=filters, error=str(e))
             raise
 
-    async def exists(self, entity_id: Union[str, uuid.UUID]) -> bool:
+    async def exists(
+        self, entity_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> bool:
         """
-        Check if entity exists.
+        Check if entity exists with optional organization filtering.
 
         Args:
             entity_id: Entity identifier
+            organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             True if entity exists and is not soft-deleted
@@ -418,13 +432,18 @@ class BaseRepository(Generic[T]):
         try:
             entity_id_str = str(entity_id)
 
-            # Build query with soft delete filter if model has is_deleted field
+            # Build base filters
+            filters = [self.model.id == entity_id_str]
+
+            # Add soft delete filter if model has is_deleted field
             if hasattr(self.model, "is_deleted"):
-                query = select(func.count(self.model.id)).where(
-                    and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == False)  # noqa: E712
-                )
-            else:
-                query = select(func.count(self.model.id)).where(self.model.id == entity_id_str)
+                filters.append(getattr(self.model, "is_deleted") == False)  # noqa: E712
+
+            # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                filters.append(getattr(self.model, "organization_id") == str(organization_id))
+
+            query = select(func.count(self.model.id)).where(and_(*filters))
 
             result = await self.session.execute(query)
             count = result.scalar()
@@ -437,7 +456,12 @@ class BaseRepository(Generic[T]):
             self.logger.error("Failed to check entity existence", entity_id=str(entity_id), error=str(e))
             raise
 
-    async def restore(self, entity_id: Union[str, uuid.UUID], restored_by: str = "system") -> bool:
+    async def restore(
+        self,
+        entity_id: Union[str, uuid.UUID],
+        restored_by: str = "system",
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+    ) -> bool:
         """
         Restore a soft-deleted entity.
 
@@ -570,9 +594,10 @@ class BaseRepository(Generic[T]):
         self,
         page: int = 1,
         per_page: int = 20,
-        filters: Optional[Dict[str, object]] = None,
+        filters: Optional[Dict[str, Any]] = None,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
         include_deleted: bool = False,
     ) -> Tuple[List[T], int]:
         """
@@ -584,6 +609,7 @@ class BaseRepository(Generic[T]):
             filters: Optional filters to apply
             sort_by: Field to sort by
             sort_order: Sort order ("asc" or "desc")
+            organization_id: Optional organization ID for multi-tenant filtering
             include_deleted: Whether to include soft-deleted entities
 
         Returns:
@@ -599,6 +625,10 @@ class BaseRepository(Generic[T]):
         # Apply soft delete filter
         if not include_deleted and hasattr(self.model, "is_deleted"):
             query = query.where(getattr(self.model, "is_deleted") == False)
+
+        # CRITICAL: Add organization filtering if model supports multi-tenancy and organization_id is provided
+        if organization_id and hasattr(self.model, "organization_id"):
+            query = query.where(getattr(self.model, "organization_id") == str(organization_id))
 
         # Apply filters
         if filters:

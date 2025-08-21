@@ -79,7 +79,7 @@ def test_settings() -> Settings:
     os.environ["REQUEST_SIGNING_ENABLED"] = "false"
 
     return Settings(
-        SECRET_KEY="test-secret-key-for-testing-only-32chars",  # pragma: allowlist secret
+        SECRET_KEY="test-secret-key-for-testing-only-32chars",  # nosec B106 # Test key only
         ENVIRONMENT="development",
         DEBUG=True,
         DATABASE_URL=test_db_url,
@@ -206,9 +206,12 @@ async def cleanup_database_connections() -> None:
         from app.db.session import close_database_connections
 
         await close_database_connections()
-    except Exception:
+    except Exception as e:
         # Ignore cleanup errors to not interfere with test results
-        pass
+        # But log for debugging if needed
+        import logging
+
+        logging.getLogger(__name__).debug(f"Database cleanup error: {e}")  # nosec B110
 
 
 # Set pytest markers for better test organization

@@ -561,13 +561,14 @@ class TestSanitizationIntegration:
     @pytest.mark.asyncio
     async def test_sanitization_with_validation(self):
         """Test sanitization works with validation."""
-        from pydantic import BaseModel, validator
+        from pydantic import BaseModel, field_validator
 
         class UserInput(BaseModel):
             name: str
             bio: str
 
-            @validator("name")
+            @field_validator("name")
+            @classmethod
             def validate_name(cls, v):
                 if len(v) < 3:
                     raise ValueError("Name too short")

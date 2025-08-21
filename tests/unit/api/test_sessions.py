@@ -270,7 +270,12 @@ class TestSessionEndpoints:
         mock_session_repo.create.return_value = created_session
 
         # Patch the SessionRepository class itself since the endpoint creates its own instance
-        with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
+        from app.api.endpoints.sessions import session_crud_router
+
+        with (
+            patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class,
+            patch.object(session_crud_router, "_check_create_permission", return_value=None),
+        ):
             mock_repo_class.return_value = mock_session_repo
             response = await async_client.post(
                 "/api/v1/sessions/",
@@ -300,7 +305,12 @@ class TestSessionEndpoints:
         }
 
         # Patch the SessionRepository class itself since the endpoint creates its own instance
-        with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
+        from app.api.endpoints.sessions import session_crud_router
+
+        with (
+            patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class,
+            patch.object(session_crud_router, "_check_create_permission", return_value=None),
+        ):
             mock_repo_class.return_value = mock_session_repo
             response = await async_client.post(
                 "/api/v1/sessions/",
@@ -503,7 +513,12 @@ class TestSessionEndpoints:
     ) -> None:
         """Test getting all active sessions (admin only)."""
         # Patch the SessionRepository class itself since the endpoint creates its own instance
-        with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
+        from app.api.endpoints.sessions import session_crud_router
+
+        with (
+            patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class,
+            patch.object(session_crud_router, "_check_admin_permission", return_value=None),
+        ):
             mock_repo_class.return_value = mock_session_repo
             response = await async_client.get(
                 "/api/v1/sessions/active",
@@ -526,7 +541,12 @@ class TestSessionEndpoints:
     ) -> None:
         """Test getting session statistics (admin only)."""
         # Patch the SessionRepository class itself since the endpoint creates its own instance
-        with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
+        from app.api.endpoints.sessions import session_crud_router
+
+        with (
+            patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class,
+            patch.object(session_crud_router, "_check_admin_permission", return_value=None),
+        ):
             mock_repo_class.return_value = mock_session_repo
             response = await async_client.get(
                 "/api/v1/sessions/statistics",

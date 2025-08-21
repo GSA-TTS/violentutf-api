@@ -58,7 +58,8 @@ class TestExportManager:
         config = ReportConfig(output_dir=temp_dir, export_formats=["html", "json", "pdf"])
 
         with patch(
-            "tools.pre_audit.reporting.exporters.PDFReportGenerator", side_effect=ImportError("ReportLab not installed")
+            "tools.pre_audit.reporting.export_manager.PDFReportGenerator",
+            side_effect=ImportError("ReportLab not installed"),
         ):
             manager = ExportManager(config)
 
@@ -71,7 +72,7 @@ class TestExportManager:
         manager.config.enable_parallel_export = False
 
         # Mock generators
-        for format_name in ["html", "json"]:
+        for format_name in ["html", "json", "pdf"]:
             if format_name in manager.generators:
                 mock_gen = MagicMock()
                 mock_gen.generate.return_value = temp_dir / f"report.{format_name}"

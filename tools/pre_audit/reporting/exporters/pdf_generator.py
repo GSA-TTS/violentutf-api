@@ -80,9 +80,8 @@ class PDFReportGenerator(ReportGenerator):
 
         # PDF settings
         self.page_size = A4
-        self.styles = self._create_custom_styles()
 
-        # Color scheme
+        # Color scheme (must be defined before _create_custom_styles)
         self.colors = {
             "primary": colors.HexColor("#1976d2"),
             "success": colors.HexColor("#4caf50"),
@@ -92,6 +91,9 @@ class PDFReportGenerator(ReportGenerator):
             "light_gray": colors.HexColor("#f5f5f5"),
             "medium_gray": colors.HexColor("#666666"),
         }
+
+        # Initialize styles after colors are defined
+        self.styles = self._create_custom_styles()
 
     def generate(self, audit_data: Dict[str, Any]) -> Path:
         """
@@ -202,7 +204,7 @@ class PDFReportGenerator(ReportGenerator):
         """Generate hotspot analysis section for PDF."""
         story = []
 
-        story.append(Paragraph("Architectural Hotspots", self.styles["Heading1"]))
+        story.append(Paragraph("Architectural Hotspots", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.2 * inch))
 
         if hotspot_data:
@@ -231,7 +233,7 @@ class PDFReportGenerator(ReportGenerator):
 
             # Top hotspots table
             if hotspot_data.get("hotspots"):
-                story.append(Paragraph("Top Risk Areas", self.styles["Heading2"]))
+                story.append(Paragraph("Top Risk Areas", self.styles["CustomHeading2"]))
                 story.append(Spacer(1, 0.1 * inch))
 
                 hotspot_table_data = [["File", "Risk Score", "Category", "Violations"]]
@@ -252,6 +254,10 @@ class PDFReportGenerator(ReportGenerator):
 
         return story
 
+    def _create_hotspot_section(self, hotspot_data: Dict[str, Any]) -> List[Any]:
+        """Create hotspot analysis section for PDF."""
+        return self._generate_hotspot_section(hotspot_data)
+
     def _create_custom_styles(self) -> Dict[str, ParagraphStyle]:
         """Create custom paragraph styles."""
         styles = getSampleStyleSheet()
@@ -268,22 +274,32 @@ class PDFReportGenerator(ReportGenerator):
             )
         )
 
-        # Custom heading styles
+        # Custom heading styles - use unique names to avoid conflicts
         styles.add(
             ParagraphStyle(
-                name="Heading1", parent=styles["Heading1"], fontSize=18, textColor=self.colors["primary"], spaceAfter=12
+                name="CustomHeading1",
+                parent=styles["Heading1"],
+                fontSize=18,
+                textColor=self.colors["primary"],
+                spaceAfter=12,
             )
         )
 
         styles.add(
             ParagraphStyle(
-                name="Heading2", parent=styles["Heading2"], fontSize=14, textColor=self.colors["text"], spaceAfter=8
+                name="CustomHeading2",
+                parent=styles["Heading2"],
+                fontSize=14,
+                textColor=self.colors["text"],
+                spaceAfter=8,
             )
         )
 
         # Custom body text
         styles.add(
-            ParagraphStyle(name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6)
+            ParagraphStyle(
+                name="CustomBodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6
+            )
         )
 
         # Risk level styles
@@ -364,7 +380,7 @@ class PDFReportGenerator(ReportGenerator):
         """Create table of contents."""
         story = []
 
-        story.append(Paragraph("Table of Contents", self.styles["Heading1"]))
+        story.append(Paragraph("Table of Contents", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.3 * inch))
 
         toc_data = [
@@ -396,13 +412,13 @@ class PDFReportGenerator(ReportGenerator):
         """Create executive summary section."""
         story = []
 
-        story.append(Paragraph("Executive Summary", self.styles["Heading1"]))
+        story.append(Paragraph("Executive Summary", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.2 * inch))
 
         # Key findings
-        story.append(Paragraph("Key Findings", self.styles["Heading2"]))
+        story.append(Paragraph("Key Findings", self.styles["CustomHeading2"]))
         for finding in report_data["summary"]["key_findings"]:
-            story.append(Paragraph(f"• {finding}", self.styles["BodyText"]))
+            story.append(Paragraph(f"• {finding}", self.styles["CustomBodyText"]))
 
         story.append(Spacer(1, 0.2 * inch))
 
@@ -410,7 +426,7 @@ class PDFReportGenerator(ReportGenerator):
         risk_level = report_data["summary"]["risk_assessment"]
         risk_style = self.styles.get(f"Risk{risk_level.title()}", self.styles["Normal"])
 
-        story.append(Paragraph("Overall Risk Assessment", self.styles["Heading2"]))
+        story.append(Paragraph("Overall Risk Assessment", self.styles["CustomHeading2"]))
         story.append(Paragraph(risk_level, risk_style))
 
         story.append(Spacer(1, 0.2 * inch))
@@ -456,10 +472,12 @@ class PDFReportGenerator(ReportGenerator):
         story.append(Spacer(1, 0.2 * inch))
 
         # Technical debt
-        story.append(Paragraph("Technical Debt", self.styles["Heading2"]))
+        story.append(Paragraph("Technical Debt", self.styles["CustomHeading2"]))
         debt_days = report_data["summary"]["technical_debt_days"]
         story.append(
-            Paragraph(f"Estimated effort to resolve all violations: {debt_days:.1f} days", self.styles["BodyText"])
+            Paragraph(
+                f"Estimated effort to resolve all violations: {debt_days:.1f} days", self.styles["CustomBodyText"]
+            )
         )
 
         return story
@@ -468,7 +486,7 @@ class PDFReportGenerator(ReportGenerator):
         """Create risk overview with charts."""
         story = []
 
-        story.append(Paragraph("Risk Overview", self.styles["Heading1"]))
+        story.append(Paragraph("Risk Overview", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.2 * inch))
 
         # Create pie chart
@@ -529,7 +547,7 @@ class PDFReportGenerator(ReportGenerator):
         """Create violations detail section."""
         story = []
 
-        story.append(Paragraph("ADR Violations", self.styles["Heading1"]))
+        story.append(Paragraph("ADR Violations", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.2 * inch))
 
         violations = report_data.get("violations", [])
@@ -554,7 +572,9 @@ class PDFReportGenerator(ReportGenerator):
             risk_violations = by_risk[risk_level]
 
             story.append(
-                Paragraph(f"{risk_level.title()} Risk Violations ({len(risk_violations)})", self.styles["Heading2"])
+                Paragraph(
+                    f"{risk_level.title()} Risk Violations ({len(risk_violations)})", self.styles["CustomHeading2"]
+                )
             )
             story.append(Spacer(1, 0.1 * inch))
 
@@ -583,7 +603,7 @@ class PDFReportGenerator(ReportGenerator):
         """Create recommendations section."""
         story = []
 
-        story.append(Paragraph("Recommendations", self.styles["Heading1"]))
+        story.append(Paragraph("Recommendations", self.styles["CustomHeading1"]))
         story.append(Spacer(1, 0.2 * inch))
 
         recommendations = report_data.get("recommendations", [])
@@ -603,12 +623,16 @@ class PDFReportGenerator(ReportGenerator):
 
             priority_recs = by_priority[priority]
 
-            story.append(Paragraph(f"{priority.title()} Priority ({len(priority_recs)})", self.styles["Heading2"]))
+            story.append(
+                Paragraph(f"{priority.title()} Priority ({len(priority_recs)})", self.styles["CustomHeading2"])
+            )
             story.append(Spacer(1, 0.1 * inch))
 
             for rec in priority_recs[:5]:  # Limit to 5 per priority
                 story.append(
-                    Paragraph(f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}", self.styles["BodyText"])
+                    Paragraph(
+                        f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}", self.styles["CustomBodyText"]
+                    )
                 )
                 story.append(
                     Paragraph(

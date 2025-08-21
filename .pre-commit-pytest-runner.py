@@ -11,6 +11,20 @@ repo_root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).dec
 env = os.environ.copy()
 env["PYTHONPATH"] = f"{repo_root}:{env.get('PYTHONPATH', '')}"
 
+# Set up test environment variables (matching pytest_plugins/env_setup.py)
+env["SECRET_KEY"] = "test-secret-key-for-testing-only-32chars"
+env["DATABASE_URL"] = "sqlite+aiosqlite:///./test_violentutf.db"
+env["TESTING"] = "true"
+env["CSRF_PROTECTION"] = "false"
+env["REQUEST_SIGNING_ENABLED"] = "false"
+env["ENVIRONMENT"] = "development"
+env["DEBUG"] = "true"
+env["LOG_LEVEL"] = "ERROR"  # Reduce log noise
+env["LOG_FORMAT"] = "text"
+env["RATE_LIMIT_ENABLED"] = "false"
+env["ENABLE_METRICS"] = "false"
+env["REDIS_URL"] = ""  # Disable Redis for tests
+
 # Debug output (will be visible in pre-commit logs)
 print(f"Repository root: {repo_root}", file=sys.stderr)
 print(f"PYTHONPATH: {env['PYTHONPATH']}", file=sys.stderr)

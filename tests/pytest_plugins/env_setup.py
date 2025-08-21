@@ -7,7 +7,7 @@ import sys
 def pytest_configure(config):
     """Set up test environment before any test imports."""
     # Set test environment variables
-    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32chars"
+    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32chars"  # nosec B105 # Test key only
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test_violentutf.db"
     os.environ["TESTING"] = "true"
     os.environ["CSRF_PROTECTION"] = "false"

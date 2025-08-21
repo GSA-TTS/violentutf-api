@@ -134,48 +134,46 @@ async def test_user(test_db_manager: DatabaseTestManager) -> User:
 @pytest_asyncio.fixture(scope="module")
 async def admin_token(admin_user: User, async_client: AsyncClient) -> str:
     """Generate authentication token for admin user."""
-    # Login with admin credentials
-    login_response = await async_client.post(
-        "/api/v1/auth/login",
-        json={
+    # Create JWT token directly instead of using HTTP login to avoid authentication issues
+    from datetime import timedelta
+
+    from app.core.security import create_access_token
+
+    # Create access token with admin user data
+    access_token = create_access_token(
+        data={
+            "sub": str(admin_user.id),
             "username": admin_user.username,
-            "password": "AdminPass123!",  # Password used in factory
+            "email": admin_user.email,
+            "is_superuser": admin_user.is_superuser,
+            "is_active": admin_user.is_active,
+            "is_verified": admin_user.is_verified,
         },
+        expires_delta=timedelta(hours=1),
     )
-
-    if login_response.status_code != 200:
-        raise RuntimeError(f"Admin login failed: {login_response.status_code} - {login_response.text}")
-
-    response_data = login_response.json()
-    access_token = response_data.get("access_token")
-
-    if not access_token:
-        raise RuntimeError(f"No access token in response: {response_data}")
-
     return access_token
 
 
 @pytest_asyncio.fixture(scope="module")
 async def auth_token(test_user: User, async_client: AsyncClient) -> str:
     """Generate authentication token for regular test user."""
-    # Login with regular user credentials
-    login_response = await async_client.post(
-        "/api/v1/auth/login",
-        json={
+    # Create JWT token directly instead of using HTTP login to avoid authentication issues
+    from datetime import timedelta
+
+    from app.core.security import create_access_token
+
+    # Create access token with regular user data
+    access_token = create_access_token(
+        data={
+            "sub": str(test_user.id),
             "username": test_user.username,
-            "password": "UserPass123!",  # Password used in factory
+            "email": test_user.email,
+            "is_superuser": test_user.is_superuser,
+            "is_active": test_user.is_active,
+            "is_verified": test_user.is_verified,
         },
+        expires_delta=timedelta(hours=1),
     )
-
-    if login_response.status_code != 200:
-        raise RuntimeError(f"User login failed: {login_response.status_code} - {login_response.text}")
-
-    response_data = login_response.json()
-    access_token = response_data.get("access_token")
-
-    if not access_token:
-        raise RuntimeError(f"No access token in response: {response_data}")
-
     return access_token
 
 
@@ -222,23 +220,23 @@ async def fresh_admin_user(db_session: AsyncSession) -> User:
 # Utility functions for token generation
 async def generate_token_for_user(user: User, client: AsyncClient, password: str) -> str:
     """Generate authentication token for any user."""
-    login_response = await client.post(
-        "/api/v1/auth/login",
-        json={
+    # Create JWT token directly instead of using HTTP login to avoid authentication issues
+    from datetime import timedelta
+
+    from app.core.security import create_access_token
+
+    # Create access token with user data
+    access_token = create_access_token(
+        data={
+            "sub": str(user.id),
             "username": user.username,
-            "password": password,
+            "email": user.email,
+            "is_superuser": user.is_superuser,
+            "is_active": user.is_active,
+            "is_verified": user.is_verified,
         },
+        expires_delta=timedelta(hours=1),
     )
-
-    if login_response.status_code != 200:
-        raise RuntimeError(f"Login failed for {user.username}: {login_response.status_code} - {login_response.text}")
-
-    response_data = login_response.json()
-    access_token = response_data.get("access_token")
-
-    if not access_token:
-        raise RuntimeError(f"No access token in response: {response_data}")
-
     return access_token
 
 

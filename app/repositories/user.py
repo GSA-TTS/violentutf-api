@@ -1,20 +1,22 @@
 """User repository with authentication and user management methods."""
 
+import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from ..core.security import hash_password, verify_password
 from ..models.user import User
 from .base import BaseRepository, Page
+from .interfaces.user import IUserRepository
 
 logger = get_logger(__name__)
 
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User], IUserRepository):
     """
     User repository with authentication-specific methods.
 
@@ -31,7 +33,9 @@ class UserRepository(BaseRepository[User]):
         """Access to database session for transaction management."""
         return self.session
 
-    async def get_by_username(self, username: str, organization_id: Optional[str] = None) -> Optional[User]:
+    async def get_by_username(
+        self, username: str, organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> Optional[User]:
         """
         Get user by username with optional organization filtering.
 
@@ -66,7 +70,7 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to get user by username", username=username, error=str(e))
             raise
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str, organization_id: Optional[Union[str, uuid.UUID]] = None) -> Optional[User]:
         """
         Get user by email address.
 
@@ -96,13 +100,20 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to get user by email", email=email, error=str(e))
             raise
 
-    async def authenticate(self, username: str, password: str, ip_address: Optional[str] = None) -> Optional[User]:
+    async def authenticate(
+        self,
+        username_or_email: str,
+        password: str,
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+        ip_address: Optional[str] = None,
+    ) -> Optional[User]:
         """
         Authenticate user with username and password.
 
         Args:
-            username: Username or email address
+            username_or_email: Username or email address
             password: Plain text password
+            organization_id: Optional organization ID for multi-tenant filtering
             ip_address: Optional IP address for login tracking
 
         Returns:
@@ -110,14 +121,14 @@ class UserRepository(BaseRepository[User]):
         """
         try:
             # Try to find user by username first, then by email
-            user = await self.get_by_username(username)
+            user = await self.get_by_username(username_or_email, organization_id)
             if not user:
-                user = await self.get_by_email(username)
+                user = await self.get_by_email(username_or_email, organization_id)
 
             # Always run password verification to prevent timing attacks
             # Use a dummy hash if user not found
             if not user:
-                self.logger.debug("User not found for authentication", username=username)
+                self.logger.debug("User not found for authentication", username=username_or_email)
                 # Use a consistent dummy hash to prevent timing attacks
                 # This hash is for "dummy_password_for_timing_attack_prevention"
                 dummy_hash = "$2b$12$7qK8hQgzR3V3XgZLddQJyOWPZPL1GQ3nPGhcQd3cZkYFRZeG.0a.a"
@@ -126,7 +137,7 @@ class UserRepository(BaseRepository[User]):
 
             # Check if user is active
             if not user.is_active:
-                self.logger.warning("Inactive user attempted login", username=username, user_id=user.id)
+                self.logger.warning("Inactive user attempted login", username=username_or_email, user_id=user.id)
                 # Still verify password to maintain consistent timing
                 verify_password(password, user.password_hash)
                 return None
@@ -140,15 +151,18 @@ class UserRepository(BaseRepository[User]):
                 await self.session.commit()
 
                 self.logger.info(
-                    "User authenticated successfully", username=username, user_id=user.id, ip_address=ip_address
+                    "User authenticated successfully",
+                    username=username_or_email,
+                    user_id=user.id,
+                    ip_address=ip_address,
                 )
                 return user
             else:
-                self.logger.warning("Invalid password for user", username=username, user_id=user.id)
+                self.logger.warning("Invalid password for user", username=username_or_email, user_id=user.id)
                 return None
 
         except Exception as e:
-            self.logger.error("Failed to authenticate user", username=username, error=str(e))
+            self.logger.error("Failed to authenticate user", username=username_or_email, error=str(e))
             raise
 
     async def create_user(
@@ -275,7 +289,7 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to update user password", user_id=user_id, error=str(e))
             raise
 
-    async def activate_user(self, user_id: str, activated_by: str = "system") -> bool:
+    async def activate_user_simple(self, user_id: str, activated_by: str = "system") -> bool:
         """
         Activate a user account.
 
@@ -309,7 +323,7 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to activate user", user_id=user_id, error=str(e))
             raise
 
-    async def deactivate_user(self, user_id: str, deactivated_by: str = "system") -> bool:
+    async def deactivate_user_simple(self, user_id: str, deactivated_by: str = "system") -> bool:
         """
         Deactivate a user account.
 
@@ -448,7 +462,7 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to verify user", user_id=user_id, error=str(e))
             raise
 
-    async def get_active_users(
+    async def get_active_users_paginated(
         self, page: int = 1, size: int = 50, order_by: str = "created_at", order_desc: bool = True
     ) -> Page[User]:
         """
@@ -570,8 +584,8 @@ class UserRepository(BaseRepository[User]):
             await self.db.rollback()
             raise
 
-    async def update_last_login(self, user_id: str) -> Optional[User]:
-        """Update user's last login timestamp.
+    async def update_last_login_simple(self, user_id: str) -> Optional[User]:
+        """Update user's last login timestamp (simple version).
 
         Args:
             user_id: User ID
@@ -628,4 +642,229 @@ class UserRepository(BaseRepository[User]):
         except Exception as e:
             logger.error("change_password_error", user_id=user_id, error=str(e))
             await self.db.rollback()
+            raise
+
+    # Additional interface methods implementation
+
+    async def get_active_users(self, organization_id: Optional[Union[str, uuid.UUID]] = None) -> List[User]:
+        """
+        Get all active users with optional organization filtering.
+
+        Args:
+            organization_id: Optional organization ID for multi-tenant filtering
+
+        Returns:
+            List of active users
+        """
+        try:
+            # Build query
+            query = select(self.model).where(
+                and_(self.model.is_active == True, self.model.is_deleted == False)  # noqa: E712  # noqa: E712
+            )
+
+            # Add organization filtering if provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                query = query.where(self.model.organization_id == str(organization_id))
+
+            result = await self.session.execute(query)
+            users = list(result.scalars().all())
+
+            self.logger.debug("Retrieved active users", count=len(users))
+            return users
+
+        except Exception as e:
+            self.logger.error("Failed to get active users", error=str(e))
+            raise
+
+    async def get_by_organization(self, organization_id: Union[str, uuid.UUID]) -> List[User]:
+        """
+        Get all users in a specific organization.
+
+        Args:
+            organization_id: Organization ID
+
+        Returns:
+            List of users in the organization
+        """
+        try:
+            if not hasattr(self.model, "organization_id"):
+                self.logger.warning("Model does not support organization filtering")
+                return []
+
+            query = select(self.model).where(
+                and_(self.model.organization_id == str(organization_id), self.model.is_deleted == False)  # noqa: E712
+            )
+
+            result = await self.session.execute(query)
+            users = list(result.scalars().all())
+
+            self.logger.debug("Retrieved users by organization", organization_id=str(organization_id), count=len(users))
+            return users
+
+        except Exception as e:
+            self.logger.error("Failed to get users by organization", organization_id=str(organization_id), error=str(e))
+            raise
+
+    async def update_last_login(
+        self,
+        user_id: Union[str, uuid.UUID],
+        ip_address: Optional[str] = None,
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+    ) -> bool:
+        """
+        Update user's last login timestamp and IP address.
+
+        Args:
+            user_id: User ID
+            ip_address: Optional IP address
+            organization_id: Optional organization ID for multi-tenant filtering
+
+        Returns:
+            True if update successful, False otherwise
+        """
+        try:
+            update_data = {"last_login_at": datetime.now(timezone.utc)}
+            if ip_address:
+                update_data["last_login_ip"] = ip_address
+
+            updated_user = await self.update(user_id, organization_id=organization_id, **update_data)
+
+            success = updated_user is not None
+            if success:
+                self.logger.debug("Updated last login", user_id=str(user_id), ip_address=ip_address)
+
+            return success
+
+        except Exception as e:
+            self.logger.error("Failed to update last login", user_id=str(user_id), error=str(e))
+            raise
+
+    async def set_password(
+        self,
+        user_id: Union[str, uuid.UUID],
+        password_hash: str,
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
+    ) -> bool:
+        """
+        Set user password hash.
+
+        Args:
+            user_id: User ID
+            password_hash: Hashed password
+            organization_id: Optional organization ID for multi-tenant filtering
+
+        Returns:
+            True if update successful, False otherwise
+        """
+        try:
+            updated_user = await self.update(user_id, organization_id=organization_id, password_hash=password_hash)
+
+            success = updated_user is not None
+            if success:
+                self.logger.info("Password updated", user_id=str(user_id))
+
+            return success
+
+        except Exception as e:
+            self.logger.error("Failed to set password", user_id=str(user_id), error=str(e))
+            raise
+
+    async def activate_user(
+        self, user_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> bool:
+        """
+        Activate a user account.
+
+        Args:
+            user_id: User ID
+            organization_id: Optional organization ID for multi-tenant filtering
+
+        Returns:
+            True if activation successful, False otherwise
+        """
+        try:
+            updated_user = await self.update(user_id, organization_id=organization_id, is_active=True)
+
+            success = updated_user is not None
+            if success:
+                self.logger.info("User activated", user_id=str(user_id))
+
+            return success
+
+        except Exception as e:
+            self.logger.error("Failed to activate user", user_id=str(user_id), error=str(e))
+            raise
+
+    async def deactivate_user(
+        self, user_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+    ) -> bool:
+        """
+        Deactivate a user account.
+
+        Args:
+            user_id: User ID
+            organization_id: Optional organization ID for multi-tenant filtering
+
+        Returns:
+            True if deactivation successful, False otherwise
+        """
+        try:
+            updated_user = await self.update(user_id, organization_id=organization_id, is_active=False)
+
+            success = updated_user is not None
+            if success:
+                self.logger.info("User deactivated", user_id=str(user_id))
+
+            return success
+
+        except Exception as e:
+            self.logger.error("Failed to deactivate user", user_id=str(user_id), error=str(e))
+            raise
+
+    async def search_users(
+        self, query: str, organization_id: Optional[Union[str, uuid.UUID]] = None, limit: int = 20
+    ) -> List[User]:
+        """
+        Search users by name, email, or username.
+
+        Args:
+            query: Search query
+            organization_id: Optional organization ID for multi-tenant filtering
+            limit: Maximum number of results
+
+        Returns:
+            List of matching users
+        """
+        try:
+            search_term = f"%{query}%"
+
+            # Build search conditions
+            search_conditions = [
+                self.model.username.ilike(search_term),
+                self.model.email.ilike(search_term),
+            ]
+
+            # Add full_name search if field exists
+            if hasattr(self.model, "full_name"):
+                search_conditions.append(self.model.full_name.ilike(search_term))
+
+            # Build base query
+            search_query = select(self.model).where(
+                and_(or_(*search_conditions), self.model.is_deleted == False)  # noqa: E712
+            )
+
+            # Add organization filtering if provided
+            if organization_id and hasattr(self.model, "organization_id"):
+                search_query = search_query.where(self.model.organization_id == str(organization_id))
+
+            # Add limit and execute
+            search_query = search_query.limit(limit)
+            result = await self.session.execute(search_query)
+            users = list(result.scalars().all())
+
+            self.logger.debug("User search completed", query=query, count=len(users), limit=limit)
+            return users
+
+        except Exception as e:
+            self.logger.error("Failed to search users", query=query, error=str(e))
             raise

@@ -2,7 +2,7 @@
 """Run all performance tests and generate a comprehensive report."""
 
 import json
-import subprocess
+import subprocess  # nosec B404 # Needed for test execution
 import sys
 import time
 from datetime import datetime
@@ -30,7 +30,7 @@ def run_test_module(module_name: str, output_file: Path) -> dict:
         str(output_file),
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603 # Controlled pytest execution
 
     duration = time.time() - start_time
 

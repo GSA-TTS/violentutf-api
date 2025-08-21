@@ -420,7 +420,12 @@ class TestAPIKeyEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting API key usage statistics (admin only)."""
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        from app.api.endpoints.api_keys import api_key_crud_router
+
+        with (
+            patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo),
+            patch.object(api_key_crud_router, "_check_admin_permission", return_value=None),
+        ):
             response = await async_client.get(
                 "/api/v1/api-keys/usage-stats",
                 headers=admin_headers,
