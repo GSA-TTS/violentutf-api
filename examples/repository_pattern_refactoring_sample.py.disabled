@@ -1,0 +1,277 @@
+"""Sample refactoring demonstrating repository pattern implementation.
+
+This file shows how to refactor API endpoints to eliminate direct database
+access violations by using the repository pattern properly.
+"""
+
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.container import get_audit_repository, get_user_repository
+from app.core.errors import ConflictError, ValidationError
+from app.repositories.interfaces.audit import IAuditRepository
+from app.repositories.interfaces.user import IUserRepository
+from app.schemas.base import BaseResponse
+from app.schemas.user import UserCreate, UserResponse
+
+
+class UserAPIRefactoringSample:
+    """Sample class showing proper repository pattern usage in API endpoints."""
+
+    def __init__(self) -> None:
+        self.router = APIRouter()
+        self._register_refactored_endpoints()
+
+    def _register_refactored_endpoints(self) -> None:
+        """Register endpoints using repository pattern."""
+
+        @self.router.post(
+            "/users-refactored",
+            response_model=BaseResponse[UserResponse],
+            status_code=status.HTTP_201_CREATED,
+            summary="Create user (repository pattern)",
+        )
+        async def create_user_refactored(
+            user_data: UserCreate,
+            request: Request,
+            current_user: Optional[Dict[str, Any]] = None,  # Simplified for example
+            # Note: No direct database session dependency
+        ) -> BaseResponse[UserResponse]:
+            """
+            Create user endpoint using repository pattern.
+
+            BEFORE (with violations):
+            - Direct database session dependency
+            - Direct database operations (session.add, session.commit, session.rollback)
+            - Manual transaction management in API layer
+
+            AFTER (repository pattern):
+            - Repository interface dependency through container
+            - Repository handles all database operations
+            - Transaction management in repository layer
+            - Clean separation of concerns
+            """
+            try:
+                # Get repositories through dependency injection container
+                user_repo = get_user_repository()
+                audit_repo = get_audit_repository()
+
+                if not user_repo:
+                    raise ValidationError("User repository not available")
+                if not audit_repo:
+                    raise ValidationError("Audit repository not available")
+
+                # Get created_by from request context
+                created_by = str(current_user.get("id", "system")) if current_user else "system"
+
+                # Use repository to create user - NO direct database access
+                user = await user_repo.create_user(
+                    username=user_data.username,
+                    email=user_data.email,
+                    password=user_data.password,
+                    full_name=user_data.full_name,
+                    created_by=created_by,
+                )
+
+                # Log audit action through repository - NO direct database access
+                await audit_repo.log_action(
+                    action="user_created",
+                    user_id=created_by,
+                    details={
+                        "new_user_id": user.id,
+                        "username": user_data.username,
+                        "email": user_data.email,
+                    },
+                    ip_address=getattr(request.client, "host", None),
+                    user_agent=request.headers.get("user-agent"),
+                )
+
+                # Return response - NO transaction management needed here
+                response_user = UserResponse.model_validate(user)
+                return BaseResponse(
+                    data=response_user,
+                    message="User created successfully",
+                    trace_id=getattr(request.state, "trace_id", None),
+                )
+
+            except ConflictError:
+                # Repository-level exceptions bubble up naturally
+                # NO rollback needed - repository handles transaction cleanup
+                raise
+            except Exception as e:
+                # Generic error handling - NO manual rollback
+                # Repository pattern ensures transaction cleanup automatically
+                raise ValidationError(f"Failed to create user: {str(e)}")
+
+
+# COMPARISON: Before vs After
+
+class BeforeRepositoryPattern:
+    """Example showing violations BEFORE repository pattern."""
+
+    async def create_user_with_violations(
+        self,
+        user_data: UserCreate,
+        session: Optional[AsyncSession] = None,  # VIOLATION: Direct DB dependency (example)
+    ) -> BaseResponse[UserResponse]:
+        """Create user with direct database access (VIOLATIONS)."""
+        if not session:
+            raise ValidationError("Database session not available")
+
+        try:
+            # VIOLATION: Direct database operations
+            from sqlalchemy import select
+            from app.models.user import User
+
+            # VIOLATION: Direct SQL execution
+            existing_user = await session.execute(
+                select(User).where(User.email == user_data.email)
+            )
+            if existing_user.scalar_one_or_none():
+                raise ConflictError("User already exists")
+
+            # VIOLATION: Direct model instantiation and session manipulation
+            user = User(
+                username=user_data.username,
+                email=user_data.email,
+                password_hash="hashed_password",  # Example: hash_password(user_data.password)
+            )
+            session.add(user)  # VIOLATION: Direct session manipulation
+            await session.commit()  # VIOLATION: Direct commit
+
+            # VIOLATION: Direct audit log creation
+            from app.models.audit_log import AuditLog
+            audit_log = AuditLog(
+                action="user_created",
+                details={"user_id": user.id}
+            )
+            session.add(audit_log)  # VIOLATION: Direct session manipulation
+            await session.commit()  # VIOLATION: Direct commit
+
+            # Return proper response format
+            return BaseResponse(
+                data=UserResponse.model_validate(user),
+                message="User created successfully",
+                trace_id=None
+            )
+
+        except Exception:
+            await session.rollback()  # VIOLATION: Direct rollback
+            raise
+
+
+class AfterRepositoryPattern:
+    """Example showing clean implementation AFTER repository pattern."""
+
+    async def create_user_clean(
+        self,
+        user_data: UserCreate,
+        # NO database session dependency - uses repository interfaces
+    ) -> BaseResponse[UserResponse]:
+        """Create user using repository pattern (CLEAN)."""
+        # Get repositories from dependency injection container
+        user_repo = get_user_repository()
+        audit_repo = get_audit_repository()
+
+        if not user_repo:
+            raise ValidationError("User repository not available")
+        if not audit_repo:
+            raise ValidationError("Audit repository not available")
+
+        # Repository handles all database operations, transactions, and error handling
+        user = await user_repo.create_user(
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
+            created_by="system",
+        )
+
+        # Repository handles audit logging with proper transaction management
+        await audit_repo.log_action(
+            action="user_created",
+            user_id="system",
+            details={"new_user_id": user.id},
+        )
+
+        # Return proper response format
+        return BaseResponse(
+            data=UserResponse.model_validate(user),
+            message="User created successfully",
+            trace_id=None
+        )
+
+
+# BENEFITS OF REPOSITORY PATTERN:
+
+"""
+1. ELIMINATED VIOLATIONS:
+   - No direct database session dependencies in API layer
+   - No direct SQL execution in API endpoints
+   - No direct session.commit() or session.rollback() in API layer
+   - No direct model instantiation and session.add() in API layer
+
+2. IMPROVED SEPARATION OF CONCERNS:
+   - API layer focuses on HTTP concerns (request/response handling)
+   - Repository layer handles data access and transaction management
+   - Service layer handles business logic
+   - Clear boundaries between layers
+
+3. ENHANCED TESTABILITY:
+   - API endpoints can be unit tested by mocking repository interfaces
+   - Repository implementations can be tested independently
+   - Business logic can be tested without database dependencies
+
+4. BETTER ERROR HANDLING:
+   - Repository layer provides consistent error handling
+   - Transaction management centralized in repository
+   - No need for manual rollback in API layer
+
+5. COMPLIANCE WITH PYTESTARCH:
+   - Zero violations for direct database access patterns
+   - Enforces clean architecture principles
+   - Architectural fitness functions can validate compliance
+
+6. MAINTAINABILITY:
+   - Consistent data access patterns across the application
+   - Easy to change database implementations
+   - Repository interfaces provide stable contracts
+   - Dependency injection enables easy testing and mocking
+"""
+
+
+# MIGRATION STRATEGY:
+
+"""
+To eliminate all 243 violations:
+
+1. PHASE 1: Complete repository implementation
+   - Implement all missing repository interfaces
+   - Create repository implementations for all domain entities
+   - Set up dependency injection container registration
+
+2. PHASE 2: Service layer refactoring (31 files)
+   - Update services to use repository interfaces
+   - Remove direct database session dependencies
+   - Focus on high-violation services first:
+     * MfaPolicyService (22 violations)
+     * UserService (18 violations)
+     * HealthService (15 violations)
+
+3. PHASE 3: API layer cleanup (20+ endpoints)
+   - Remove direct database session dependencies from API endpoints
+   - Use service layer or repository interfaces through dependency injection
+   - Eliminate manual transaction management (commit/rollback)
+
+4. PHASE 4: Validation and testing
+   - Run PyTestArch tests to verify 0 violations
+   - Comprehensive testing of repository pattern
+   - Performance validation
+
+EXPECTED OUTCOME:
+- 243 violations reduced to 0
+- Clean architecture compliance
+- Improved testability and maintainability
+- Better separation of concerns
+"""

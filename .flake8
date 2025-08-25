@@ -8,6 +8,7 @@ exclude =
     venv,
     .env,
     env,
+    test_env,
     build,
     dist,
     .eggs,
