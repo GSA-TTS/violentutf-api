@@ -2,9 +2,10 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from passlib.hash import argon2
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
@@ -19,9 +20,14 @@ logger = get_logger(__name__)
 class APIKeyService:
     """Enhanced API key service with security features and business logic."""
 
-    def __init__(self, repository: APIKeyRepository, secrets_manager=None) -> None:
+    def __init__(self, repository_or_session: Union[APIKeyRepository, AsyncSession], secrets_manager=None) -> None:
         """Initialize API key service."""
-        self.repository = repository
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = APIKeyRepository(repository_or_session)
+            self.session = repository_or_session
+        else:
+            self.repository = repository_or_session
+            self.session = None
         self.secrets_manager = secrets_manager
 
     async def create_api_key(

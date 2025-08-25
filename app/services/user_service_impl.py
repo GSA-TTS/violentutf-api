@@ -12,6 +12,7 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.interfaces.user_interface import IUserService, UserData
+from app.core.security import verify_password
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserUpdatePassword
@@ -434,6 +435,76 @@ class UserServiceImpl(IUserService):
             logger.error(
                 "get_user_by_email_error",
                 email=email,
+                error=str(e),
+                exc_info=True,
+            )
+            return None
+
+    async def authenticate_user(
+        self,
+        username: str,
+        password: str,
+        ip_address: Optional[str] = None,
+    ) -> Optional[User]:
+        """Authenticate user with username and password.
+
+        Args:
+            username: Username or email to authenticate
+            password: Plain text password to verify
+            ip_address: Client IP address for logging
+
+        Returns:
+            User instance if authentication successful, None otherwise
+        """
+        try:
+            # Try to get user by username first
+            user = await self.get_user_by_username(username)
+
+            # If not found by username, try email
+            if not user:
+                user = await self.get_user_by_email(username)
+
+            if not user:
+                logger.warning(
+                    "authentication_failed_user_not_found",
+                    username=username,
+                    ip_address=ip_address,
+                )
+                return None
+
+            # Check if user is active
+            if not user.is_active:
+                logger.warning(
+                    "authentication_failed_user_inactive",
+                    username=username,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                )
+                return None
+
+            # Verify password
+            if not verify_password(password, user.password_hash):
+                logger.warning(
+                    "authentication_failed_invalid_password",
+                    username=username,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                )
+                return None
+
+            logger.info(
+                "authentication_successful",
+                username=username,
+                user_id=user.id,
+                ip_address=ip_address,
+            )
+            return user
+
+        except Exception as e:
+            logger.error(
+                "authentication_error",
+                username=username,
+                ip_address=ip_address,
                 error=str(e),
                 exc_info=True,
             )

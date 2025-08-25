@@ -2,8 +2,9 @@
 
 import json
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ValidationError
@@ -21,14 +22,23 @@ class MFAPolicyService:
 
     def __init__(
         self,
-        mfa_policy_repo: MFAPolicyRepository,
-        role_repo: RoleRepository,
-        user_repo: UserRepository,
+        session_or_mfa_policy_repo: Union[AsyncSession, MFAPolicyRepository],
+        role_repo: Optional[RoleRepository] = None,
+        user_repo: Optional[UserRepository] = None,
     ):
         """Initialize MFA policy service."""
-        self.mfa_policy_repo = mfa_policy_repo
-        self.role_repo = role_repo
-        self.user_repo = user_repo
+        if isinstance(session_or_mfa_policy_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.mfa_policy_repo = MFAPolicyRepository(session_or_mfa_policy_repo)
+            self.role_repo = RoleRepository(session_or_mfa_policy_repo)
+            self.user_repo = UserRepository(session_or_mfa_policy_repo)
+            self.session = session_or_mfa_policy_repo
+        else:
+            # Legacy pattern: use provided repositories
+            self.mfa_policy_repo = session_or_mfa_policy_repo
+            self.role_repo = role_repo
+            self.user_repo = user_repo
+            self.session = None
 
     async def create_policy(
         self,

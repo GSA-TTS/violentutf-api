@@ -12,6 +12,7 @@ from structlog.stdlib import get_logger
 
 from app.api.deps import get_audit_service
 from app.db.session import get_db
+from app.repositories.user import UserRepository
 from app.services.audit_service import AuditService
 
 from ...core.errors import ValidationError
@@ -28,7 +29,6 @@ from ...core.input_validation import (
 from ...core.rate_limiting import rate_limit
 from ...core.security import create_access_token, create_refresh_token, validate_password_strength
 from ...db.session import get_db_dependency
-from ...repositories.user import UserRepository
 
 logger = get_logger(__name__)
 router = APIRouter()

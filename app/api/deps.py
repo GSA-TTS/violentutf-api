@@ -20,11 +20,7 @@ from app.core.auth import (
 )
 
 # Import db session dependency for service layer initialization
-from app.db.session import get_db
-from app.repositories.api_key import APIKeyRepository
-
-# Import repository components for service initialization
-from app.repositories.user import UserRepository
+from app.db.session import get_db_dependency as get_db
 from app.services.api_key_service import APIKeyService
 from app.services.architectural_metrics_service import ArchitecturalMetricsService
 from app.services.audit_service import AuditService
@@ -114,7 +110,7 @@ async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserServi
 async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> APIKeyService:
     """Get API key service dependency injection.
 
-    Provides APIKeyService instance with repository for API endpoints.
+    Provides APIKeyService instance with database session for API endpoints.
     Follows ADR-013 service layer integration patterns.
 
     Args:
@@ -123,8 +119,7 @@ async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> APIKey
     Returns:
         APIKeyService: Configured API key service instance
     """
-    repository = APIKeyRepository(session)
-    return APIKeyService(repository)
+    return APIKeyService(session)
 
 
 async def get_session_service(session: AsyncSession = Depends(get_db)) -> SessionService:
@@ -245,19 +240,7 @@ async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> MFAService
 
 async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> MFAPolicyService:
     """Get MFAPolicyService dependency."""
-    from app.repositories.mfa_policy import MFAPolicyRepository
-    from app.repositories.role import RoleRepository
-    from app.repositories.user import UserRepository
-
-    mfa_policy_repo = MFAPolicyRepository(session)
-    role_repo = RoleRepository(session)
-    user_repo = UserRepository(session)
-
-    return MFAPolicyService(
-        mfa_policy_repo=mfa_policy_repo,
-        role_repo=role_repo,
-        user_repo=user_repo,
-    )
+    return MFAPolicyService(session)
 
 
 async def get_scheduled_report_service(session: AsyncSession = Depends(get_db)) -> "ScheduledReportService":

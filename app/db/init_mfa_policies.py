@@ -6,18 +6,12 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
-from app.repositories.mfa_policy import MFAPolicyRepository
-from app.repositories.role import RoleRepository
-from app.repositories.user import UserRepository
 from app.services.mfa_policy_service import MFAPolicyService
 
 
 async def create_default_policies(session: AsyncSession) -> List[str]:
     """Create default MFA policies."""
-    mfa_policy_repo = MFAPolicyRepository(session)
-    role_repo = RoleRepository(session)
-    user_repo = UserRepository(session)
-    policy_service = MFAPolicyService(mfa_policy_repo, role_repo, user_repo)
+    policy_service = MFAPolicyService(session)
     created_policies = []
 
     # Policy 1: Superuser MFA (Required)

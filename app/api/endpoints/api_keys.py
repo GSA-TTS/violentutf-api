@@ -3,7 +3,7 @@
 import hashlib
 import secrets
 import uuid
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,8 @@ from app.api.deps import get_api_key_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
+
+# Repository import removed - using service layer instead
 from app.schemas.api_key import (
     APIKeyCreate,
     APIKeyCreateResponse,
@@ -176,10 +178,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             current_user_id = self._get_current_user_id(request)
 
             # Create service with session
-            from app.repositories.api_key import APIKeyRepository
-
-            api_key_repo = APIKeyRepository(session)
-            api_key_service = APIKeyService(api_key_repo)
+            api_key_service = APIKeyService(session)
 
             # Use service layer for transaction management
             api_key, full_key = await api_key_service.create_api_key(current_user_id, item_data)
