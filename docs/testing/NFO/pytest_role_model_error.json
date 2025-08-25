@@ -1,0 +1,45 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "tests/integration/test_auth_integration.py",
+  "failure_type": "LOGIC_ERROR",
+  "failure_subtype": "TypeError",
+  "file_path": "",
+  "file_path_log": [
+    "app/models/role.py",
+    "tests/integration/test_auth_integration.py",
+    "tests/integration/test_auth_integration.py"
+  ],
+  "issue": "",
+  "issue_log": [
+    "TypeError: 'hierarchy_level' is an invalid keyword argument for Role",
+    "SQLAlchemy model constructor failing with unexpected keyword argument",
+    "Test data includes fields not defined in the Role model schema",
+    "FIXED: Updated test code to use role_metadata={'level': X} instead of hierarchy_level=X parameter"
+  ],
+  "line_range": "2179",
+  "severity": "HIGH",
+  "message": "TypeError: 'hierarchy_level' is an invalid keyword argument for Role",
+  "offending_code_snippet": "Role constructor receiving hierarchy_level parameter that is not defined in model",
+  "structured_details": {
+    "model_name": "Role",
+    "invalid_argument": "hierarchy_level",
+    "affected_tests": [
+      "test_api_key_authentication_flow",
+      "test_rbac_authorization_flow",
+      "test_oauth2_flow",
+      "test_audit_logging_integration",
+      "test_permission_middleware_integration"
+    ],
+    "sqlalchemy_error_location": "sqlalchemy/orm/decl_base.py:2179",
+    "test_file": "tests/integration/test_auth_integration.py"
+  },
+  "solution": [
+    "Check Role model definition in app/models/role.py to verify correct field names",
+    "Review test data creation to ensure field names match model schema",
+    "Update Role model to include hierarchy_level field if needed for business logic",
+    "Fix test fixtures to use correct field names for Role model",
+    "Run database migration if model changes are required"
+  ]
+}

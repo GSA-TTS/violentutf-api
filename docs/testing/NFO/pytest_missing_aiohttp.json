@@ -1,0 +1,37 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "tests/security/test_circuit_breaker_enhanced.py",
+  "failure_type": "DEPENDENCY_ERROR",
+  "failure_subtype": "ModuleNotFoundError",
+  "file_path": "",
+  "file_path_log": [
+    "tests/security/test_circuit_breaker_enhanced.py",
+    "requirements-dev.txt"
+  ],
+  "issue": "",
+  "issue_log": [
+    "ModuleNotFoundError: No module named 'aiohttp'",
+    "Integration test trying to import aiohttp which is not in requirements files",
+    "FIXED: Added aiohttp>=3.9.0,<4.0.0 to requirements-dev.txt for HTTP client testing"
+  ],
+  "line_range": "776",
+  "severity": "MEDIUM",
+  "message": "ModuleNotFoundError: No module named 'aiohttp'",
+  "offending_code_snippet": "import aiohttp",
+  "structured_details": {
+    "missing_module": "aiohttp",
+    "test_function": "test_http_client_integration",
+    "test_class": "TestCircuitBreakerIntegration",
+    "import_location": "tests/security/test_circuit_breaker_enhanced.py:776",
+    "related_functionality": "HTTP client circuit breaker integration testing"
+  },
+  "solution": [
+    "Add aiohttp to requirements-dev.txt for testing HTTP client integrations",
+    "Consider making the import optional with try/except and skip test if not available",
+    "Use pytest.importorskip to conditionally skip tests when aiohttp is not available",
+    "Review if aiohttp is needed for production and add to requirements.txt accordingly",
+    "Update test documentation to list optional testing dependencies"
+  ]
+}

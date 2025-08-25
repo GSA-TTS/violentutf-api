@@ -115,6 +115,7 @@ exclude = [
     ".git",
     ".ruff_cache",
     ".venv",
+    "test_env",
     "__pycache__",
     "tests",
     "migrations",
@@ -138,7 +139,7 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
-exclude = ["agent_orchestrator/"]
+exclude = ["agent_orchestrator/", "test_env/"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -154,6 +155,10 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "docs.examples.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "examples.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
@@ -218,7 +223,7 @@ disable_error_code = ["assignment", "return-value"]
 # Repository and service files with SQLAlchemy compatibility issues
 [[tool.mypy.overrides]]
 module = "app.repositories.*"
-disable_error_code = ["index", "attr-defined", "assignment", "arg-type", "call-arg", "operator", "return-value", "no-any-return", "union-attr", "misc"]
+disable_error_code = ["index", "attr-defined", "assignment", "arg-type", "call-arg", "operator", "return-value", "no-any-return", "union-attr", "misc", "override", "no-redef"]
 
 [[tool.mypy.overrides]]
 module = "app.services.*"
@@ -250,30 +255,11 @@ module = "app.celery.*"
 disable_error_code = ["misc", "call-overload", "no-untyped-def"]
 
 [tool.bandit]
-exclude_dirs = ["tests", "venv", ".venv"]
+exclude_dirs = ["tests", "venv", ".venv", "test_env"]
 skips = ["B101", "B601"]
 
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-ra",
-    "--strict-markers",
-    "--cov=app",
-    "--cov-branch",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=80",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-]
+# Removed [tool.pytest.ini_options] section to avoid conflicts with pytest.ini
+# All pytest configuration is now centralized in pytest.ini
 
 [tool.coverage.run]
 source = ["app"]

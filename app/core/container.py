@@ -15,6 +15,29 @@ from .interfaces import (
     IUserService,
 )
 
+# Repository interfaces
+try:
+    from ..repositories.interfaces import (
+        IApiKeyRepository,
+        IAuditRepository,
+        IHealthRepository,
+        IRoleRepository,
+        ISecurityScanRepository,
+        ISessionRepository,
+        IUserRepository,
+        IVulnerabilityRepository,
+    )
+except ImportError:
+    # Fallback in case interfaces are not available during initial setup
+    IApiKeyRepository = None
+    IAuditRepository = None
+    IHealthRepository = None
+    IRoleRepository = None
+    ISecurityScanRepository = None
+    ISessionRepository = None
+    IUserRepository = None
+    IVulnerabilityRepository = None
+
 T = TypeVar("T")
 
 
@@ -112,3 +135,68 @@ def get_abac_service() -> Optional[IABACService]:
 def get_cache_service() -> Optional[ICacheService]:
     """Get cache service from container."""
     return get_container().get_service(ICacheService)  # type: ignore[type-abstract]
+
+
+# Repository convenience functions
+def get_user_repository() -> Optional[IUserRepository]:
+    """Get user repository from container."""
+    try:
+        return get_container().get_service(IUserRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_session_repository() -> Optional[ISessionRepository]:
+    """Get session repository from container."""
+    try:
+        return get_container().get_service(ISessionRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_api_key_repository() -> Optional[IApiKeyRepository]:
+    """Get API key repository from container."""
+    try:
+        return get_container().get_service(IApiKeyRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_audit_repository() -> Optional[IAuditRepository]:
+    """Get audit repository from container."""
+    try:
+        return get_container().get_service(IAuditRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_security_scan_repository() -> Optional[ISecurityScanRepository]:
+    """Get security scan repository from container."""
+    try:
+        return get_container().get_service(ISecurityScanRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_health_repository() -> Optional[IHealthRepository]:
+    """Get health repository from container."""
+    try:
+        return get_container().get_service(IHealthRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_vulnerability_repository() -> Optional[IVulnerabilityRepository]:
+    """Get vulnerability repository from container."""
+    try:
+        return get_container().get_service(IVulnerabilityRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None
+
+
+def get_role_repository() -> Optional[IRoleRepository]:
+    """Get role repository from container."""
+    try:
+        return get_container().get_service(IRoleRepository)  # type: ignore[type-abstract]
+    except Exception:
+        return None

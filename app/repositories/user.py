@@ -10,11 +10,12 @@ from structlog.stdlib import get_logger
 from ..core.security import hash_password, verify_password
 from ..models.user import User
 from .base import BaseRepository, Page
+from .interfaces.user import IUserRepository
 
 logger = get_logger(__name__)
 
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User], IUserRepository):
     """
     User repository with authentication-specific methods.
 

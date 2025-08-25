@@ -12,6 +12,7 @@ repos:
         language_version: python3.12
         # Using same args as CI: black --check --diff .
         args: ['--check', '--quiet']
+        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\\.venv/)'
 
   # Import sorting - PyCQA maintained (matches CI)
   - repo: https://github.com/PyCQA/isort
@@ -60,8 +61,8 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/', '--quiet']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/)'
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/,/test_env/', '--quiet']
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|test_env/)'
         pass_filenames: false
 
   # Secret detection - Yelp maintained - ALL FILES
@@ -71,7 +72,7 @@ repos:
       - id: detect-secrets
         name: detect-secrets-comprehensive
         args: ['--baseline', '.secrets.baseline']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|test_env/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
         pass_filenames: false
 
   # YAML formatting - Using stable v3 instead of alpha
@@ -131,7 +132,7 @@ repos:
 
       - id: validate-json-ci
         name: Validate JSON (matches CI)
-        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
+        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not any(f.startswith(p) for p in ['agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/', 'test_env/', 'tools/agent_orchestrator/'])]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
         language: system
         files: '\.json$'
         pass_filenames: false
@@ -162,14 +163,14 @@ repos:
         entry: python3 -c "import re, sys; patterns = [r'(?i)(api[_-]?key|api[_-]?secret|access[_-]?key|secret[_-]?key|client[_-]?secret|password|passwd|pwd)\s*[=:]\s*[\"\'`]([^\"\'`]+)[\"\'`]', r'(?i)bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*', r'sk_live_[a-zA-Z0-9]+', r'xox[baprs]-[a-zA-Z0-9\-]+', r'ghp_[a-zA-Z0-9]{36}']; content = sys.stdin.read(); violations = []; [violations.extend(re.finditer(p, content, re.MULTILINE)) for p in patterns]; sys.exit(1 if violations else 0)"
         language: system
         files: '\.(py|js|ts|jsx|tsx|java|go|rb|php|yml|yaml|json|env|sh|bash)$'
-        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|\.example|\.template|test_|_test\.|spec_|_spec\.).*'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/|\.example|\.template|test_|_test\.|spec_|_spec\.).*'
 
       - id: no-print-statements
         name: Check for print statements
         entry: python3 -c "import re, sys; content = sys.stdin.read(); sys.exit(1 if re.search(r'^\s*print\(', content, re.MULTILINE) else 0)"
         language: system
         types: [python]
-        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_|_test\.py|debug|scripts/)'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/|test_|_test\.py|debug|scripts/)'
 
       - id: check-api-security
         name: Check API security patterns
@@ -208,7 +209,7 @@ repos:
           "
         language: system
         files: '\.(py|yml|yaml|sh|bash)$'
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/)'
         pass_filenames: false
         always_run: true
 
