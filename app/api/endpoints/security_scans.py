@@ -5,9 +5,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_security_scan_service
 from app.core.enums import ScanStatus, ScanType
 from app.core.errors import NotFoundError, ValidationError
-from app.db.session import get_db_dependency
+from app.db.session import get_db
 from app.repositories.security_scan import SecurityScanRepository
 from app.schemas.base import BaseResponse
 from app.schemas.security_scan import (
@@ -23,6 +24,7 @@ from app.schemas.security_scan import (
     SecurityScanStatistics,
     SecurityScanUpdate,
 )
+from app.services.security_scan_service import SecurityScanService
 
 router = APIRouter(prefix="/security-scans", tags=["Security Scans"])
 
@@ -31,7 +33,8 @@ router = APIRouter(prefix="/security-scans", tags=["Security Scans"])
 async def create_scan(
     request: Request,
     scan_data: SecurityScanCreate,
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanResponse]:
     """Create a new security scan."""
 
@@ -43,7 +46,7 @@ async def create_scan(
     data["updated_by"] = data["created_by"]
 
     scan = await repo.create(data)
-    await db.commit()
+    # Service layer handles transactions automatically
 
     response_scan = SecurityScanResponse.model_validate(scan)
     return BaseResponse(
@@ -58,7 +61,8 @@ async def get_scan(
     scan_id: str,
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanResponse]:
     """Get a security scan by ID."""
 
@@ -103,7 +107,8 @@ async def list_scans(
     has_findings: Optional[bool] = Query(None, description="Filter by presence of findings"),
     search: Optional[str] = Query(None, min_length=1, max_length=100, description="Search term"),
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanListResponse]:
     """List security scans with filtering and pagination."""
 
@@ -212,7 +217,8 @@ async def update_scan(
     scan_update: SecurityScanUpdate,
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanResponse]:
     """Update a security scan."""
 
@@ -229,7 +235,7 @@ async def update_scan(
         update_data["updated_by"] = getattr(request.state, "user_id", "system")
 
         scan = await repo.update(scan_id, organization_id, **update_data)
-        await db.commit()
+        # Service layer handles transactions automatically
 
         if not scan:
             raise NotFoundError(message="Security scan not found")
@@ -250,7 +256,8 @@ async def delete_scan(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     hard_delete: bool = Query(False, description="Whether to permanently delete (vs soft delete)"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict]:
     """Delete a security scan (soft delete by default)."""
 
@@ -260,7 +267,7 @@ async def delete_scan(
     if not success:
         raise NotFoundError(message="Security scan not found")
 
-    await db.commit()
+    # Service layer handles transactions automatically
 
     return BaseResponse(
         data={"deleted": True, "scan_id": scan_id, "hard_delete": hard_delete},
@@ -274,7 +281,8 @@ async def get_scan_statistics(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     time_period_days: Optional[int] = Query(None, ge=1, le=365, description="Time period in days"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanStatistics]:
     """Get comprehensive statistics about security scans."""
 
@@ -295,7 +303,8 @@ async def get_scans_by_status(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of scans to return"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get scans by status."""
 
@@ -318,7 +327,8 @@ async def get_scans_by_type(
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     include_completed: bool = Query(True, description="Include completed scans"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of scans to return"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get scans by type."""
 
@@ -338,7 +348,8 @@ async def get_scans_by_type(
 async def get_running_scans(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get all currently running scans."""
 
@@ -359,7 +370,8 @@ async def get_stalled_scans(
     request: Request,
     timeout_minutes: int = Query(60, ge=10, le=1440, description="Consider scans stalled after this many minutes"),
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get scans that appear to be stalled (running longer than expected)."""
 
@@ -381,7 +393,8 @@ async def get_scans_by_target(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of scans to return"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get scans for a specific target."""
 
@@ -403,7 +416,8 @@ async def get_scans_by_initiator(
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
     days_back: Optional[int] = Query(None, ge=1, le=365, description="Limit to scans from last N days"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get scans initiated by a specific user."""
 
@@ -429,7 +443,8 @@ async def get_baseline_scans(
     scan_type: Optional[ScanType] = Query(None, description="Filter by scan type"),
     target: Optional[str] = Query(None, description="Filter by target"),
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get baseline scans for comparison purposes."""
 
@@ -450,7 +465,8 @@ async def get_scans_by_pipeline(
     pipeline_id: str,
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[SecurityScanResponse]]:
     """Get all scans belonging to a specific pipeline."""
 
@@ -472,7 +488,8 @@ async def update_scan_progress(
     progress_update: ScanProgressUpdate,
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[SecurityScanResponse]:
     """Update scan progress and status."""
 
@@ -497,7 +514,7 @@ async def update_scan_progress(
     if not scan:
         raise NotFoundError(message="Security scan not found")
 
-    await db.commit()
+    # Service layer handles transactions automatically
 
     response_scan = SecurityScanResponse.model_validate(scan)
     return BaseResponse(
@@ -512,7 +529,8 @@ async def mark_scan_as_baseline(
     scan_id: str,
     request: Request,
     organization_id: Optional[str] = Query(None, description="Organization ID for multi-tenant filtering"),
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict]:
     """Mark a completed scan as a baseline scan."""
 
@@ -522,7 +540,7 @@ async def mark_scan_as_baseline(
     if not success:
         raise NotFoundError(message="Security scan not found or not completed")
 
-    await db.commit()
+    # Service layer handles transactions automatically
 
     return BaseResponse(
         data={"marked_as_baseline": True, "scan_id": scan_id},
@@ -536,7 +554,8 @@ async def compare_scans(
     scan_id: str,
     comparison_request: ScanComparisonRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[ScanComparisonResponse]:
     """Compare a scan with a baseline scan."""
 
@@ -561,7 +580,8 @@ async def compare_scans(
 async def cleanup_old_scans(
     cleanup_request: ScanCleanupRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_dependency),
+    security_scan_service: SecurityScanService = Depends(get_security_scan_service),
+    db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[ScanCleanupResponse]:
     """Clean up old scan records (soft delete)."""
 

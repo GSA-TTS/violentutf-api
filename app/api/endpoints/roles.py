@@ -5,15 +5,13 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_rbac_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.core.permissions import RequireAdmin, RequireRoleRead, RequireRoleWrite
 from app.schemas.base import BaseResponse, OperationResult, PaginatedResponse
 from app.services.rbac_service import RBACService
-
-from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -73,12 +71,12 @@ def check_admin_permission(request: Request) -> None:
 
 @router.post("/initialize", response_model=BaseResponse[List[Dict[str, Any]]])
 async def initialize_system_roles(
-    request: Request, session: AsyncSession = Depends(get_db_dependency), _: None = Depends(RequireAdmin)
+    request: Request, rbac_service: RBACService = Depends(get_rbac_service), _: None = Depends(RequireAdmin)
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Initialize system roles and permissions."""
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected service
         created_roles = await rbac_service.initialize_system_roles()
 
         role_dicts = [role.to_dict() for role in created_roles]
@@ -99,12 +97,12 @@ async def list_roles(
     request: Request,
     include_system: bool = Query(True, description="Include system roles"),
     include_custom: bool = Query(True, description="Include custom roles"),
-    session: AsyncSession = Depends(get_db_dependency),
+    rbac_service: RBACService = Depends(get_rbac_service),
     _: None = Depends(RequireRoleRead),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all roles."""
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
         all_roles = []
 
         if include_system:
@@ -132,11 +130,11 @@ async def list_roles(
 
 @router.get("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def get_role(
-    role_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
+    role_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[Dict[str, Any]]:
     """Get a specific role by ID."""
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
         role_repository = rbac_service.role_repository
 
         role = await role_repository.get(role_id)
@@ -158,16 +156,16 @@ async def get_role(
 async def create_role(
     role_data: Dict[str, Any],
     request: Request,
-    session: AsyncSession = Depends(get_db_dependency),
+    rbac_service: RBACService = Depends(get_rbac_service),
     _: None = Depends(RequireRoleWrite),
 ) -> BaseResponse[Dict[str, Any]]:
     """Create a new role."""
 
     try:
         current_user_id = get_current_user_id(request)
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
-        # Create role using service
+        # Create role using service (handles validation and transactions)
         role = await rbac_service.create_role(
             name=role_data.get("name"),
             display_name=role_data.get("display_name"),
@@ -177,30 +175,28 @@ async def create_role(
             created_by=current_user_id,
         )
 
-        await session.commit()
-
         return BaseResponse(
             data=role.to_dict(), message="Role created successfully", trace_id=getattr(request.state, "trace_id", None)
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to create role", error=str(e))
         raise
 
 
 @router.put("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def update_role(
-    role_id: str, role_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
+    role_id: str, role_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[Dict[str, Any]]:
     """Update an existing role."""
     check_admin_permission(request)
 
     try:
         current_user_id = get_current_user_id(request)
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
-        # Update role using service
+        # Update role using service (handles validation and transactions)
         role = await rbac_service.update_role(
             role_id=role_id,
             display_name=role_data.get("display_name"),
@@ -210,34 +206,29 @@ async def update_role(
             updated_by=current_user_id,
         )
 
-        await session.commit()
-
         return BaseResponse(
             data=role.to_dict(), message="Role updated successfully", trace_id=getattr(request.state, "trace_id", None)
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to update role", role_id=role_id, error=str(e))
         raise
 
 
 @router.delete("/{role_id}", response_model=BaseResponse[OperationResult])
 async def delete_role(
-    role_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
+    role_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[OperationResult]:
     """Delete a role."""
     check_admin_permission(request)
 
     try:
         current_user_id = get_current_user_id(request)
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
-        # Delete role using service
+        # Delete role using service (handles validation and transactions)
         success = await rbac_service.delete_role(role_id, deleted_by=current_user_id)
-
-        if success:
-            await session.commit()
 
         result = OperationResult(
             success=success,
@@ -251,28 +242,28 @@ async def delete_role(
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to delete role", role_id=role_id, error=str(e))
         raise
 
 
 @router.post("/assign", response_model=BaseResponse[Dict[str, Any]])
 async def assign_role_to_user(
-    assignment_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
+    assignment_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[Dict[str, Any]]:
     """Assign a role to a user."""
     check_admin_permission(request)
 
     try:
         current_user_id = get_current_user_id(request)
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Parse expiration date if provided
         expires_at = None
         if assignment_data.get("expires_at"):
             expires_at = datetime.fromisoformat(assignment_data["expires_at"])
 
-        # Assign role using service
+        # Assign role using service (handles validation and transactions)
         assignment = await rbac_service.assign_role_to_user(
             user_id=assignment_data["user_id"],
             role_id=assignment_data["role_id"],
@@ -282,8 +273,6 @@ async def assign_role_to_user(
             context=assignment_data.get("context"),
         )
 
-        await session.commit()
-
         return BaseResponse(
             data=assignment.to_dict(),
             message="Role assigned successfully",
@@ -291,21 +280,21 @@ async def assign_role_to_user(
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to assign role", error=str(e))
         raise
 
 
 @router.post("/revoke", response_model=BaseResponse[OperationResult])
 async def revoke_role_from_user(
-    revocation_data: Dict[str, Any], request: Request, session: AsyncSession = Depends(get_db_dependency)
+    revocation_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[OperationResult]:
     """Revoke a role from a user."""
     check_admin_permission(request)
 
     try:
         current_user_id = get_current_user_id(request)
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Revoke role using service
         success = await rbac_service.revoke_role_from_user(
@@ -314,9 +303,6 @@ async def revoke_role_from_user(
             revoked_by=current_user_id,
             reason=revocation_data.get("reason"),
         )
-
-        if success:
-            await session.commit()
 
         result = OperationResult(
             success=success,
@@ -330,7 +316,7 @@ async def revoke_role_from_user(
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to revoke role", error=str(e))
         raise
 
@@ -340,7 +326,7 @@ async def get_user_roles(
     user_id: str,
     request: Request,
     include_expired: bool = Query(False, description="Include expired assignments"),
-    session: AsyncSession = Depends(get_db_dependency),
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all roles assigned to a user."""
     current_user_id = get_current_user_id(request)
@@ -353,7 +339,7 @@ async def get_user_roles(
         raise ForbiddenError(message="You can only view your own roles")
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Get user roles
         roles = await rbac_service.get_user_roles(user_id, include_expired)
@@ -372,7 +358,7 @@ async def get_user_roles(
 
 @router.get("/user/{user_id}/permissions", response_model=BaseResponse[List[str]])
 async def get_user_permissions(
-    user_id: str, request: Request, session: AsyncSession = Depends(get_db_dependency)
+    user_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[List[str]]:
     """Get all effective permissions for a user."""
     current_user_id = get_current_user_id(request)
@@ -385,7 +371,7 @@ async def get_user_permissions(
         raise ForbiddenError(message="You can only view your own permissions")
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Get user permissions
         permissions = await rbac_service.get_user_permissions(user_id)
@@ -404,7 +390,10 @@ async def get_user_permissions(
 
 @router.post("/user/{user_id}/check-permission", response_model=BaseResponse[Dict[str, Any]])
 async def check_user_permission(
-    user_id: str, permission_data: Dict[str, str], request: Request, session: AsyncSession = Depends(get_db_dependency)
+    user_id: str,
+    permission_data: Dict[str, str],
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[Dict[str, Any]]:
     """Check if a user has a specific permission."""
     current_user_id = get_current_user_id(request)
@@ -421,7 +410,7 @@ async def check_user_permission(
         if not permission:
             raise ValidationError(message="Permission is required")
 
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Check permission
         has_permission = await rbac_service.check_user_permission(user_id, permission)
@@ -448,13 +437,13 @@ async def get_role_assignments(
     request: Request,
     include_inactive: bool = Query(False, description="Include inactive assignments"),
     include_expired: bool = Query(False, description="Include expired assignments"),
-    session: AsyncSession = Depends(get_db_dependency),
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Get all assignments for a specific role."""
     check_admin_permission(request)
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Get role assignments
         assignments = await rbac_service.get_users_with_role(role_id)
@@ -473,13 +462,13 @@ async def get_role_assignments(
 
 @router.get("/statistics", response_model=BaseResponse[Dict[str, Any]])
 async def get_rbac_statistics(
-    request: Request, session: AsyncSession = Depends(get_db_dependency)
+    request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[Dict[str, Any]]:
     """Get RBAC system statistics."""
     check_admin_permission(request)
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Get statistics
         stats = await rbac_service.get_rbac_statistics()
@@ -497,13 +486,13 @@ async def get_rbac_statistics(
 
 @router.post("/cleanup-expired", response_model=BaseResponse[OperationResult])
 async def cleanup_expired_assignments(
-    request: Request, session: AsyncSession = Depends(get_db_dependency)
+    request: Request, rbac_service: RBACService = Depends(get_rbac_service)
 ) -> BaseResponse[OperationResult]:
     """Clean up expired role assignments."""
     check_admin_permission(request)
 
     try:
-        rbac_service = RBACService(session)
+        # Use injected RBAC service
 
         # Clean up expired assignments
         cleaned_count = await rbac_service.cleanup_expired_assignments()
@@ -520,6 +509,6 @@ async def cleanup_expired_assignments(
         )
 
     except Exception as e:
-        await session.rollback()
+        # Service layer handles rollback automatically
         logger.error("Failed to cleanup expired assignments", error=str(e))
         raise

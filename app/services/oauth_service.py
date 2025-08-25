@@ -4,10 +4,11 @@ import hashlib
 import json
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.config import settings
@@ -44,29 +45,42 @@ class OAuth2Service:
 
     def __init__(
         self,
-        app_repo: OAuthApplicationRepository,
-        access_token_repo: OAuthAccessTokenRepository,
-        refresh_token_repo: OAuthRefreshTokenRepository,
-        auth_code_repo: OAuthAuthorizationCodeRepository,
-        scope_repo: OAuthScopeRepository,
-        audit_service: AuditService,
+        session_or_app_repo: Union[AsyncSession, OAuthApplicationRepository],
+        access_token_repo: Optional[OAuthAccessTokenRepository] = None,
+        refresh_token_repo: Optional[OAuthRefreshTokenRepository] = None,
+        auth_code_repo: Optional[OAuthAuthorizationCodeRepository] = None,
+        scope_repo: Optional[OAuthScopeRepository] = None,
+        audit_service: Optional[AuditService] = None,
     ):
         """Initialize OAuth2 service.
 
         Args:
-            app_repo: OAuth application repository
-            access_token_repo: OAuth access token repository
-            refresh_token_repo: OAuth refresh token repository
-            auth_code_repo: OAuth authorization code repository
-            scope_repo: OAuth scope repository
-            audit_service: Audit service
+            session_or_app_repo: Either an AsyncSession for new pattern or OAuthApplicationRepository for legacy pattern
+            access_token_repo: OAuth access token repository (required for legacy pattern)
+            refresh_token_repo: OAuth refresh token repository (required for legacy pattern)
+            auth_code_repo: OAuth authorization code repository (required for legacy pattern)
+            scope_repo: OAuth scope repository (required for legacy pattern)
+            audit_service: Audit service (required for legacy pattern)
         """
-        self.app_repo = app_repo
-        self.access_token_repo = access_token_repo
-        self.refresh_token_repo = refresh_token_repo
-        self.auth_code_repo = auth_code_repo
-        self.scope_repo = scope_repo
-        self.audit_service = audit_service
+        if isinstance(session_or_app_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.session = session_or_app_repo
+            self.app_repo = OAuthApplicationRepository(session_or_app_repo)
+            self.access_token_repo = OAuthAccessTokenRepository(session_or_app_repo)
+            self.refresh_token_repo = OAuthRefreshTokenRepository(session_or_app_repo)
+            self.auth_code_repo = OAuthAuthorizationCodeRepository(session_or_app_repo)
+            self.scope_repo = OAuthScopeRepository(session_or_app_repo)
+            # TODO: Handle audit service in new pattern
+            self.audit_service = None  # Will need to be enhanced
+        else:
+            # Legacy pattern: use provided repositories
+            self.session = None
+            self.app_repo = session_or_app_repo
+            self.access_token_repo = access_token_repo
+            self.refresh_token_repo = refresh_token_repo
+            self.auth_code_repo = auth_code_repo
+            self.scope_repo = scope_repo
+            self.audit_service = audit_service
 
     async def create_application(
         self,

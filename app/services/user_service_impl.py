@@ -5,13 +5,16 @@ This service implements user interfaces to maintain Clean Architecture
 compliance while providing user data operations.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.interfaces.user_interface import IUserService, UserData
+from app.models.user import User
 from app.repositories.user import UserRepository
+from app.schemas.user import UserCreate, UserUpdate, UserUpdatePassword
 
 logger = get_logger(__name__)
 
@@ -95,3 +98,343 @@ class UserServiceImpl(IUserService):
         except Exception as e:
             logger.error("Failed to check user active status", user_id=user_id, error=str(e))
             return False
+
+    async def create_user(self, user_data: UserCreate, created_by: Optional[str] = None) -> User:
+        """Create a new user with transaction management.
+
+        Args:
+            user_data: User creation data
+            created_by: ID of user creating this user
+
+        Returns:
+            Created user instance
+
+        Raises:
+            ConflictError: If username or email already exists
+            ValidationError: If user data is invalid
+        """
+        try:
+            # Validate username and email availability
+            existing_user = await self.user_repo.get_by_username(user_data.username)
+            if existing_user:
+                raise ConflictError(f"Username '{user_data.username}' already exists")
+
+            existing_user = await self.user_repo.get_by_email(user_data.email)
+            if existing_user:
+                raise ConflictError(f"Email '{user_data.email}' already exists")
+
+            # Create user using repository method
+            user = await self.user_repo.create_user(
+                username=user_data.username,
+                email=user_data.email,
+                password=user_data.password,
+                full_name=user_data.full_name,
+                is_superuser=user_data.is_superuser,
+                created_by=created_by,
+            )
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_created",
+                user_id=str(user.id),
+                username=user.username,
+                email=user.email,
+                created_by=created_by,
+            )
+
+            return user
+
+        except (ConflictError, ValidationError):
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_creation_error",
+                error=str(e),
+                username=user_data.username,
+                email=user_data.email,
+                exc_info=True,
+            )
+            raise
+
+    async def update_user_profile(self, user_id: str, user_data: UserUpdate, updated_by: Optional[str] = None) -> User:
+        """Update user profile with transaction management.
+
+        Args:
+            user_id: User ID to update
+            user_data: Update data
+            updated_by: ID of user performing the update
+
+        Returns:
+            Updated user instance
+
+        Raises:
+            NotFoundError: If user not found
+            ConflictError: If email already exists
+        """
+        try:
+            # Get existing user
+            user = await self.user_repo.get(user_id)
+            if not user:
+                raise NotFoundError(f"User with ID {user_id} not found")
+
+            # Check email uniqueness if email is being changed
+            if user_data.email and user_data.email != user.email:
+                existing_user = await self.user_repo.get_by_email(user_data.email)
+                if existing_user and str(existing_user.id) != user_id:
+                    raise ConflictError(f"Email '{user_data.email}' already exists")
+
+            # Update user
+            updated_user = await self.user_repo.update_profile(user_id, user_data, updated_by)
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_profile_updated",
+                user_id=user_id,
+                updated_by=updated_by,
+            )
+
+            return updated_user
+
+        except (NotFoundError, ConflictError):
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_profile_update_error",
+                user_id=user_id,
+                error=str(e),
+                exc_info=True,
+            )
+            raise
+
+    async def change_user_password(
+        self, user_id: str, password_data: UserUpdatePassword, updated_by: Optional[str] = None
+    ) -> User:
+        """Change user password with transaction management.
+
+        Args:
+            user_id: User ID
+            password_data: Password change data
+            updated_by: ID of user performing the change
+
+        Returns:
+            Updated user instance
+
+        Raises:
+            NotFoundError: If user not found
+            ValidationError: If current password is incorrect
+        """
+        try:
+            # Get existing user
+            user = await self.user_repo.get(user_id)
+            if not user:
+                raise NotFoundError(f"User with ID {user_id} not found")
+
+            # Change password using repository method
+            updated_user = await self.user_repo.change_password(user_id, password_data, updated_by)
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_password_changed",
+                user_id=user_id,
+                updated_by=updated_by,
+            )
+
+            return updated_user
+
+        except (NotFoundError, ValidationError):
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_password_change_error",
+                user_id=user_id,
+                error=str(e),
+                exc_info=True,
+            )
+            raise
+
+    async def verify_user_email(self, user_id: str, updated_by: Optional[str] = None) -> User:
+        """Verify user email with transaction management.
+
+        Args:
+            user_id: User ID
+            updated_by: ID of user performing the verification
+
+        Returns:
+            Updated user instance
+
+        Raises:
+            NotFoundError: If user not found
+        """
+        try:
+            user = await self.user_repo.get(user_id)
+            if not user:
+                raise NotFoundError(f"User with ID {user_id} not found")
+
+            # Verify email using repository method
+            updated_user = await self.user_repo.verify_email(user_id, updated_by)
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_email_verified",
+                user_id=user_id,
+                updated_by=updated_by,
+            )
+
+            return updated_user
+
+        except NotFoundError:
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_email_verification_error",
+                user_id=user_id,
+                error=str(e),
+                exc_info=True,
+            )
+            raise
+
+    async def activate_user(self, user_id: str, updated_by: Optional[str] = None) -> User:
+        """Activate user account with transaction management.
+
+        Args:
+            user_id: User ID
+            updated_by: ID of user performing the activation
+
+        Returns:
+            Updated user instance
+
+        Raises:
+            NotFoundError: If user not found
+        """
+        try:
+            user = await self.user_repo.get(user_id)
+            if not user:
+                raise NotFoundError(f"User with ID {user_id} not found")
+
+            # Activate user using repository method
+            updated_user = await self.user_repo.activate(user_id, updated_by)
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_activated",
+                user_id=user_id,
+                updated_by=updated_by,
+            )
+
+            return updated_user
+
+        except NotFoundError:
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_activation_error",
+                user_id=user_id,
+                error=str(e),
+                exc_info=True,
+            )
+            raise
+
+    async def deactivate_user(self, user_id: str, updated_by: Optional[str] = None) -> User:
+        """Deactivate user account with transaction management.
+
+        Args:
+            user_id: User ID
+            updated_by: ID of user performing the deactivation
+
+        Returns:
+            Updated user instance
+
+        Raises:
+            NotFoundError: If user not found
+        """
+        try:
+            user = await self.user_repo.get(user_id)
+            if not user:
+                raise NotFoundError(f"User with ID {user_id} not found")
+
+            # Deactivate user using repository method
+            updated_user = await self.user_repo.deactivate(user_id, updated_by)
+
+            # Commit transaction
+            await self.session.commit()
+
+            logger.info(
+                "user_deactivated",
+                user_id=user_id,
+                updated_by=updated_by,
+            )
+
+            return updated_user
+
+        except NotFoundError:
+            await self.session.rollback()
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            logger.error(
+                "user_deactivation_error",
+                user_id=user_id,
+                error=str(e),
+                exc_info=True,
+            )
+            raise
+
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """Get user by username.
+
+        Args:
+            username: Username to search for
+
+        Returns:
+            User instance if found, None otherwise
+        """
+        try:
+            return await self.user_repo.get_by_username(username)
+        except Exception as e:
+            logger.error(
+                "get_user_by_username_error",
+                username=username,
+                error=str(e),
+                exc_info=True,
+            )
+            return None
+
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get user by email.
+
+        Args:
+            email: Email to search for
+
+        Returns:
+            User instance if found, None otherwise
+        """
+        try:
+            return await self.user_repo.get_by_email(email)
+        except Exception as e:
+            logger.error(
+                "get_user_by_email_error",
+                email=email,
+                error=str(e),
+                exc_info=True,
+            )
+            return None
