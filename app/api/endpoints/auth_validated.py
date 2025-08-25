@@ -10,6 +10,10 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_audit_service
+from app.db.session import get_db
+from app.services.audit_service import AuditService
+
 from ...core.errors import ValidationError
 from ...core.input_validation import (
     EMAIL_RULE,
@@ -118,7 +122,8 @@ AUTH_VALIDATION_CONFIG = ValidationConfig(
 async def login(
     request: LoginRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Authenticate user and return JWT tokens with comprehensive input validation."""
     try:
@@ -208,7 +213,8 @@ async def login(
 )
 async def register(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Register a new user account with comprehensive input validation."""
     try:
@@ -290,7 +296,8 @@ async def register(
 )
 async def refresh_token(
     request: TokenRefreshRequest,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Refresh access token using refresh token with comprehensive validation."""
     try:

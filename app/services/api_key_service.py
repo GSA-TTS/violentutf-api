@@ -345,6 +345,21 @@ class APIKeyService:
             ip_address=ip_address,
         )
 
+    async def get_api_key(self, key_id: str) -> Optional[APIKey]:
+        """Get an API key by ID.
+
+        Args:
+            key_id: API key ID
+
+        Returns:
+            APIKey instance if found, None otherwise
+        """
+        try:
+            return await self.repository.get(key_id)
+        except Exception as e:
+            logger.error("Failed to get API key", key_id=key_id, error=str(e))
+            return None
+
     async def get_user_keys(
         self,
         user_id: str,

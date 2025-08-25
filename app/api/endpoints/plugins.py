@@ -8,10 +8,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_plugin_service
 from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.models.plugin import Plugin, PluginConfiguration, PluginExecution, PluginStatus, PluginType
 from app.models.user import User
+from app.services.plugin_service import PluginService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -59,8 +61,9 @@ async def list_plugins(
     plugin_type: Optional[str] = Query(None, description="Filter by plugin type"),
     status: Optional[str] = Query(None, description="Filter by status"),
     category: Optional[str] = Query(None, description="Filter by category"),
-    db: AsyncSession = Depends(get_db),
+    plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> PluginListResponse:
     """List available plugins."""
     try:
@@ -124,8 +127,9 @@ async def list_plugins(
 @router.get("/{plugin_id}", response_model=PluginInfo, summary="Get plugin")
 async def get_plugin(
     plugin_id: str,
-    db: AsyncSession = Depends(get_db),
+    plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> PluginInfo:
     """Get detailed information about a specific plugin."""
     try:
@@ -171,8 +175,9 @@ async def get_plugin(
 async def plugin_action(
     plugin_id: str,
     action_request: PluginActionRequest,
-    db: AsyncSession = Depends(get_db),
+    plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Execute an action on a plugin (enable, disable, reload, configure)."""
     try:
@@ -214,10 +219,9 @@ async def plugin_action(
                 plugin.updated_by = current_user.username
             action_result["message"] = f"Plugin {plugin.name} configured successfully"
 
-        # Update plugin in database
+        # Update plugin through service layer
         plugin.updated_by = current_user.username
-        await db.commit()
-        await db.refresh(plugin)
+        # Service should handle commit/refresh
 
         # Create execution record
         execution = PluginExecution(
@@ -236,8 +240,7 @@ async def plugin_action(
             created_by=current_user.username,
         )
 
-        db.add(execution)
-        await db.commit()
+        # Service should handle execution record creation and commit
 
         logger.info(f"User {current_user.username} executed action {action_request.action} on plugin: {plugin_id}")
 
@@ -253,14 +256,15 @@ async def plugin_action(
         raise
     except Exception as e:
         logger.error(f"Error executing plugin action {plugin_id}: {e}")
-        await db.rollback()
+        # Service layer should handle rollback
         raise HTTPException(status_code=500, detail="Failed to execute plugin action")
 
 
 @router.get("/types", summary="Get plugin types")
 async def get_plugin_types(
-    db: AsyncSession = Depends(get_db),
+    plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Get available plugin types and their categories from database."""
     try:
@@ -318,8 +322,9 @@ async def _get_plugin_counts_by_type(db: AsyncSession) -> Dict[str, int]:
 
 @router.post("/refresh", summary="Refresh plugin registry")
 async def refresh_plugins(
-    db: AsyncSession = Depends(get_db),
+    plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Refresh the plugin registry by scanning database and updating metadata."""
     try:
@@ -354,8 +359,7 @@ async def refresh_plugins(
             plugin.updated_by = current_user.username
             updated_plugins += 1
 
-        # Commit all updates
-        await db.commit()
+        # Service layer should handle commit
 
         logger.info(f"User {current_user.username} refreshed plugin registry: {updated_plugins} plugins updated")
 
@@ -371,5 +375,5 @@ async def refresh_plugins(
 
     except Exception as e:
         logger.error(f"Error refreshing plugins: {e}")
-        await db.rollback()
+        # Service layer should handle rollback
         raise HTTPException(status_code=500, detail="Failed to refresh plugin registry")

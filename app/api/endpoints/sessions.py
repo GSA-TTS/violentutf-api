@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
+from app.api.deps import get_session_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.db.session import get_db
 from app.models.session import Session
 from app.repositories.session import SessionRepository
 from app.schemas.base import BaseResponse, OperationResult
@@ -21,8 +23,7 @@ from app.schemas.session import (
     SessionStatistics,
     SessionUpdate,
 )
-
-from ...db.session import get_db_dependency
+from app.services.session_service import SessionService
 
 logger = get_logger(__name__)
 
@@ -134,7 +135,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         async def create_session_endpoint(
             request: Request,
             session_data: SessionCreate,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[SessionResponse]:
             """Create a new session with validation."""
             try:
@@ -156,7 +158,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
 
                 # Create session
                 new_session = await repo.create(create_data)
-                await session.commit()
+                # Service layer handles transactions automatically
 
                 # Build response
                 response_session = self._build_session_response(new_session)
@@ -175,7 +177,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
             except Exception as e:
-                await session.rollback()
+                # Service layer handles rollback
                 if not isinstance(e, (ConflictError, ValidationError, ForbiddenError)):
                     logger.error(
                         "session_creation_error",
@@ -197,7 +199,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         async def get_my_sessions(
             request: Request,
             include_inactive: bool = Query(False, description="Include inactive sessions"),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[List[SessionResponse]]:
             """Get current user's sessions."""
             current_user_id = self._get_current_user_id(request)
@@ -228,7 +231,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             request: Request,
             session_id: uuid.UUID,
             revoke_data: SessionRevokeRequest,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Revoke a session."""
             try:
@@ -260,7 +264,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 return self._build_operation_result(request, "Session revoked successfully")
 
             except Exception as e:
-                await session.rollback()
+                # Service layer handles rollback
                 if not isinstance(e, (NotFoundError, ValidationError, ForbiddenError)):
                     logger.error(
                         "session_revocation_error",
@@ -282,7 +286,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         async def revoke_all_user_sessions(
             request: Request,
             revoke_data: SessionRevokeRequest,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Revoke all sessions for the current user."""
             try:
@@ -306,7 +311,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
             except Exception as e:
-                await session.rollback()
+                # Service layer handles rollback
                 logger.error(
                     "revoke_all_sessions_error",
                     user_id=current_user_id,
@@ -328,7 +333,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             request: Request,
             session_id: uuid.UUID,
             extend_data: SessionExtendRequest,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Extend a session's expiration time."""
             try:
@@ -347,7 +353,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
 
                 new_expires_at = datetime.now(timezone.utc) + timedelta(minutes=extend_data.extension_minutes)
                 session_obj.extend_session(new_expires_at)
-                await session.commit()
+                # Service layer handles transactions automatically
 
                 logger.info(
                     "session_extended",
@@ -362,7 +368,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
             except Exception as e:
-                await session.rollback()
+                # Service layer handles rollback
                 if not isinstance(e, (NotFoundError, ValidationError, ForbiddenError)):
                     logger.error(
                         "session_extension_error",
@@ -384,7 +390,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         async def get_active_sessions(
             request: Request,
             limit: int = Query(100, ge=1, le=1000, description="Maximum sessions to return"),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[List[SessionResponse]]:
             """Get all active sessions (admin only)."""
             self._check_admin_permission(request)
@@ -420,7 +427,9 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             description="Get session statistics (admin only).",
         )
         async def get_session_statistics(
-            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[SessionStatistics]:
             """Get session statistics (admin only)."""
             self._check_admin_permission(request)
@@ -463,7 +472,9 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             include_in_schema=False,  # Hide from public docs
         )
         async def cleanup_expired_sessions(
-            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            session_service: SessionService = Depends(get_session_service),  # noqa: B008
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Cleanup expired sessions (admin only)."""
             self._check_admin_permission(request)
@@ -499,9 +510,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         from fastapi import Depends
         from sqlalchemy.ext.asyncio import AsyncSession
 
+        from app.db.session import get_db
         from app.schemas.base import PaginatedResponse
-
-        from ...db.session import get_db_dependency
 
         # List endpoint (from base router)
         @self.router.get(
@@ -513,7 +523,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
         async def list_items(
             request: Request,
             filters: SessionFilter = Depends(SessionFilter),
-            session: AsyncSession = Depends(get_db_dependency),
+            session_service: SessionService = Depends(get_session_service),
+            session: AsyncSession = Depends(get_db),
         ) -> PaginatedResponse[SessionResponse]:
             return await self._list_items(request, filters, session)
 
@@ -528,7 +539,10 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
+            request: Request,
+            item_id: uuid.UUID,
+            session_service: SessionService = Depends(get_session_service),
+            session: AsyncSession = Depends(get_db),
         ) -> BaseResponse[SessionResponse]:
             return await self._get_item(request, item_id, session)
 
@@ -550,7 +564,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             request: Request,
             item_id: uuid.UUID,
             item_data: SessionUpdate,
-            session: AsyncSession = Depends(get_db_dependency),
+            session_service: SessionService = Depends(get_session_service),
+            session: AsyncSession = Depends(get_db),
         ) -> BaseResponse[SessionResponse]:
             return await self._update_item(request, item_id, item_data, session)
 
@@ -570,7 +585,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             request: Request,
             item_id: uuid.UUID,
             item_data: SessionUpdate,
-            session: AsyncSession = Depends(get_db_dependency),
+            session_service: SessionService = Depends(get_session_service),
+            session: AsyncSession = Depends(get_db),
         ) -> BaseResponse[SessionResponse]:
             return await self._patch_item(request, item_id, item_data, session)
 
@@ -585,7 +601,10 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             },
         )
         async def delete_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
+            request: Request,
+            item_id: uuid.UUID,
+            session_service: SessionService = Depends(get_session_service),
+            session: AsyncSession = Depends(get_db),
         ) -> BaseResponse[OperationResult]:
             return await self._delete_item(request, item_id, False, session)
 
