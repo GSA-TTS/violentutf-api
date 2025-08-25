@@ -10,6 +10,13 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import AuthenticationError
 from app.dependencies.middleware import get_middleware_service
+from app.repositories.audit_log_extensions import ExtendedAuditLogRepository
+from app.repositories.oauth_access_token import OAuthAccessTokenRepository
+from app.repositories.oauth_application import OAuthApplicationRepository
+from app.repositories.oauth_authorization_code import OAuthAuthorizationCodeRepository
+from app.repositories.oauth_refresh_token import OAuthRefreshTokenRepository
+from app.repositories.oauth_scope import OAuthScopeRepository
+from app.services.audit_service import AuditService
 from app.services.oauth_service import OAuth2Service
 
 logger = get_logger(__name__)
@@ -84,7 +91,18 @@ async def get_oauth_user(request: Request, token: Optional[str] = None):
     try:
         # Get middleware service
         async for middleware_service in get_middleware_service():
-            oauth_service = OAuth2Service(middleware_service.session)
+            # Create repository instances
+            app_repo = OAuthApplicationRepository(middleware_service.session)
+            access_token_repo = OAuthAccessTokenRepository(middleware_service.session)
+            refresh_token_repo = OAuthRefreshTokenRepository(middleware_service.session)
+            auth_code_repo = OAuthAuthorizationCodeRepository(middleware_service.session)
+            scope_repo = OAuthScopeRepository(middleware_service.session)
+            audit_repo = ExtendedAuditLogRepository(middleware_service.session)
+            audit_service = AuditService(audit_repo)
+
+            oauth_service = OAuth2Service(
+                app_repo, access_token_repo, refresh_token_repo, auth_code_repo, scope_repo, audit_service
+            )
 
             # Validate token and get user
             access_token, user, application = await oauth_service.validate_access_token(token)

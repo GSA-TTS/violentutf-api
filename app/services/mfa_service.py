@@ -10,12 +10,16 @@ from typing import Dict, List, Optional, Tuple
 import pyotp
 import qrcode
 from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import AuthenticationError, NotFoundError, ValidationError
 from app.models.mfa import MFABackupCode, MFAChallenge, MFADevice, MFAEvent, MFAMethod
 from app.models.user import User
+from app.repositories.mfa_backup_code import MFABackupCodeRepository
+from app.repositories.mfa_challenge import MFAChallengeRepository
+from app.repositories.mfa_device import MFADeviceRepository
+from app.repositories.mfa_event import MFAEventRepository
+from app.repositories.user import UserRepository
 from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)
@@ -32,10 +36,22 @@ class MFAService:
     CHALLENGE_EXPIRY_MINUTES = 5
     MAX_CHALLENGE_ATTEMPTS = 3
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        mfa_device_repo: MFADeviceRepository,
+        mfa_challenge_repo: MFAChallengeRepository,
+        mfa_backup_code_repo: MFABackupCodeRepository,
+        mfa_event_repo: MFAEventRepository,
+        user_repo: UserRepository,
+        audit_service: AuditService,
+    ) -> None:
         """Initialize MFA service."""
-        self.session = session
-        self.audit_service = AuditService(session)
+        self.mfa_device_repo = mfa_device_repo
+        self.mfa_challenge_repo = mfa_challenge_repo
+        self.mfa_backup_code_repo = mfa_backup_code_repo
+        self.mfa_event_repo = mfa_event_repo
+        self.user_repo = user_repo
+        self.audit_service = audit_service
 
     async def setup_totp(self, user: User, device_name: str) -> Tuple[str, str, str]:
         """
@@ -67,21 +83,16 @@ class MFAService:
 
         # Create or update device record
         if existing:
-            existing.secret = secret
-            existing.name = device_name
-            existing.verified_at = None
-            device = existing
+            device = await self.mfa_device_repo.update(existing.id, secret=secret, name=device_name, verified_at=None)
         else:
-            device = MFADevice(
-                user_id=user.id,
-                name=device_name,
-                method=MFAMethod.TOTP,
-                secret=secret,
-                is_active=False,  # Not active until verified
-            )
-            self.session.add(device)
-
-        await self.session.flush()
+            device_data = {
+                "user_id": user.id,
+                "name": device_name,
+                "method": MFAMethod.TOTP,
+                "secret": secret,
+                "is_active": False,  # Not active until verified
+            }
+            device = await self.mfa_device_repo.create(device_data)
 
         # Log event
         await self._log_mfa_event(
@@ -125,11 +136,12 @@ class MFAService:
             raise AuthenticationError("Invalid TOTP token")
 
         # Mark as verified and active
-        device.verified_at = datetime.now(timezone.utc)
-        device.is_active = True
-        device.is_primary = True  # Make primary if first device
-
-        await self.session.flush()
+        device = await self.mfa_device_repo.update(
+            device.id,
+            verified_at=datetime.now(timezone.utc),
+            is_active=True,
+            is_primary=True,  # Make primary if first device
+        )
 
         # Generate backup codes
         backup_codes = await self._generate_backup_codes(user.id)
@@ -167,17 +179,16 @@ class MFAService:
 
         # Create challenge
         challenge_id = secrets.token_urlsafe(32)
-        challenge = MFAChallenge(
-            user_id=user.id,
-            device_id=device.id,
-            challenge_id=challenge_id,
-            method=device.method,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=self.CHALLENGE_EXPIRY_MINUTES),
-            max_attempts=self.MAX_CHALLENGE_ATTEMPTS,
-        )
+        challenge_data = {
+            "user_id": user.id,
+            "device_id": device.id,
+            "challenge_id": challenge_id,
+            "method": device.method,
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=self.CHALLENGE_EXPIRY_MINUTES),
+            "max_attempts": self.MAX_CHALLENGE_ATTEMPTS,
+        }
 
-        self.session.add(challenge)
-        await self.session.flush()
+        _ = await self.mfa_challenge_repo.create(challenge_data)
 
         # Log event
         await self._log_mfa_event(
@@ -205,15 +216,14 @@ class MFAService:
             Tuple of (success, user)
         """
         # Get challenge
-        query = select(MFAChallenge).where(MFAChallenge.challenge_id == challenge_id)
-        result = await self.session.execute(query)
-        challenge = result.scalar_one_or_none()
+        challenge = await self.mfa_challenge_repo.get_by_challenge_id(challenge_id)
 
         if not challenge or not challenge.is_valid:
             raise AuthenticationError("Invalid or expired challenge")
 
         # Update attempt count
-        challenge.attempt_count += 1
+        current_count = getattr(challenge, "attempt_count", 0)
+        await self.mfa_challenge_repo.update(challenge.id, attempt_count=current_count + 1)
 
         # Get device and user
         device = await self._get_device_by_id(challenge.device_id)
@@ -231,14 +241,13 @@ class MFAService:
 
         if verified:
             # Mark challenge as verified
-            challenge.is_verified = True
-            challenge.verified_at = datetime.now(timezone.utc)
+            await self.mfa_challenge_repo.update(challenge.id, is_verified=True, verified_at=datetime.now(timezone.utc))
 
             # Update device usage
-            device.last_used_at = datetime.now(timezone.utc)
-            device.use_count += 1
-
-            await self.session.flush()
+            current_use_count = getattr(device, "use_count", 0)
+            await self.mfa_device_repo.update(
+                device.id, last_used_at=datetime.now(timezone.utc), use_count=current_use_count + 1
+            )
 
             # Log success
             await self._log_mfa_event(
@@ -262,7 +271,7 @@ class MFAService:
                 details={"ip_address": ip_address, "attempts": challenge.attempt_count},
             )
 
-            await self.session.flush()
+            # Challenge was already updated above
 
             if challenge.attempt_count >= challenge.max_attempts:
                 raise AuthenticationError("Maximum attempts exceeded")
@@ -296,11 +305,7 @@ class MFAService:
                 raise AuthenticationError("Invalid backup code")
 
         # Soft delete device
-        device.is_deleted = True
-        device.deleted_at = datetime.now(timezone.utc)
-        device.is_active = False
-
-        await self.session.flush()
+        await self.mfa_device_repo.delete(device.id)
 
         # Log event
         await self._log_mfa_event(
@@ -323,14 +328,7 @@ class MFAService:
         Returns:
             List of device information
         """
-        query = (
-            select(MFADevice)
-            .where(MFADevice.user_id == user.id, MFADevice.is_deleted == False)
-            .order_by(MFADevice.created_at.desc())
-        )
-
-        result = await self.session.execute(query)
-        devices = result.scalars().all()
+        devices = await self.mfa_device_repo.get_by_user_id(user.id)
 
         return [
             {
@@ -357,18 +355,15 @@ class MFAService:
             List of new backup codes
         """
         # Invalidate existing codes
-        query = select(MFABackupCode).where(MFABackupCode.user_id == user.id, MFABackupCode.is_used == False)
-        result = await self.session.execute(query)
-        existing_codes = result.scalars().all()
+        existing_codes = await self.mfa_backup_code_repo.get_user_codes(user.id, unused_only=True)
 
         for code in existing_codes:
-            code.is_used = True
-            code.used_at = datetime.now(timezone.utc)
+            await self.mfa_backup_code_repo.mark_code_used(code.id)
 
         # Generate new codes
         new_codes = await self._generate_backup_codes(user.id)
 
-        await self.session.flush()
+        # Codes already saved in _generate_backup_codes
 
         # Log event
         await self._log_mfa_event(
@@ -401,19 +396,10 @@ class MFAService:
         # check if user has already set up MFA
         if details.get("enforcement_level") in ["recommended", "grace_period"]:
             # Check if user has any active MFA devices
-            query = select(MFADevice).where(
-                and_(
-                    MFADevice.user_id == user.id,
-                    MFADevice.is_active == True,
-                    MFADevice.is_deleted == False,
-                    MFADevice.verified_at.isnot(None),
-                )
-            )
-            result = await self.session.execute(query)
-            devices = result.scalars().all()
+            device_count = await self.mfa_device_repo.count_active_devices(user.id)
 
             # If user has configured MFA, require it even if policy doesn't mandate it
-            return len(devices) > 0
+            return device_count > 0
 
         # MFA not required
         return False
@@ -446,17 +432,11 @@ class MFAService:
         code_hash = hashlib.sha256(code.encode()).hexdigest()
 
         # Find unused code
-        query = select(MFABackupCode).where(
-            MFABackupCode.user_id == user_id, MFABackupCode.code_hash == code_hash, MFABackupCode.is_used == False
-        )
-        result = await self.session.execute(query)
-        backup_code = result.scalar_one_or_none()
+        backup_code = await self.mfa_backup_code_repo.get_by_hash(code_hash)
 
-        if backup_code:
+        if backup_code and backup_code.user_id == user_id and not backup_code.is_used:
             # Mark as used
-            backup_code.is_used = True
-            backup_code.used_at = datetime.now(timezone.utc)
-            await self.session.flush()
+            await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
             return True
 
         return False
@@ -475,50 +455,33 @@ class MFAService:
 
             code_hash = hashlib.sha256(code.encode()).hexdigest()
 
-            backup_code = MFABackupCode(user_id=user_id, code_hash=code_hash)
-            self.session.add(backup_code)
+            backup_code_data = {
+                "user_id": user_id,
+                "code_hash": code_hash,
+            }
+            await self.mfa_backup_code_repo.create(backup_code_data)
 
-        await self.session.flush()
         return codes
 
     async def _get_user_device(self, user_id: str, method: MFAMethod) -> Optional[MFADevice]:
         """Get user's device by method."""
-        query = select(MFADevice).where(
-            MFADevice.user_id == user_id, MFADevice.method == method, MFADevice.is_deleted == False
-        )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return await self.mfa_device_repo.get_by_user_and_method(user_id, method)
 
     async def _get_primary_device(self, user_id: str) -> Optional[MFADevice]:
         """Get user's primary MFA device."""
-        query = select(MFADevice).where(
-            MFADevice.user_id == user_id,
-            MFADevice.is_primary == True,
-            MFADevice.is_active == True,
-            MFADevice.is_deleted == False,
-        )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return await self.mfa_device_repo.get_primary_device(user_id)
 
     async def _get_device_by_id(self, device_id: str) -> Optional[MFADevice]:
         """Get device by ID."""
-        query = select(MFADevice).where(MFADevice.id == device_id)
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return await self.mfa_device_repo.get_by_id(device_id)
 
     async def _get_user_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID."""
-        query = select(User).where(User.id == user_id)
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return await self.user_repo.get_by_id(user_id)
 
     async def _count_active_devices(self, user_id: str) -> int:
         """Count user's active MFA devices."""
-        query = select(MFADevice).where(
-            MFADevice.user_id == user_id, MFADevice.is_active == True, MFADevice.is_deleted == False
-        )
-        result = await self.session.execute(query)
-        return len(result.scalars().all())
+        return await self.mfa_device_repo.count_active_devices(user_id)
 
     async def _log_mfa_event(
         self,
@@ -530,15 +493,15 @@ class MFAService:
         details: Optional[Dict] = None,
     ) -> None:
         """Log MFA event."""
-        event = MFAEvent(
-            user_id=user_id,
-            event_type=event_type,
-            event_status=event_status,
-            method=method,
-            device_id=device_id,
-            details=json.dumps(details) if details else None,
-        )
-        self.session.add(event)
+        event_data = {
+            "user_id": user_id,
+            "event_type": event_type,
+            "event_status": event_status,
+            "method": method,
+            "device_id": device_id,
+            "details": json.dumps(details) if details else None,
+        }
+        await self.mfa_event_repo.create(event_data)
 
         # Also log to audit service
         await self.audit_service.log_security_event(

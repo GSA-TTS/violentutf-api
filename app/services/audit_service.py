@@ -6,13 +6,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, Union
 
 from fastapi import Request
-from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, func, select
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
 from app.models.audit_log import AuditLog
-from app.repositories.base import BaseRepository
+from app.repositories.audit_log_extensions import ExtendedAuditLogRepository
 
 logger = get_logger(__name__)
 
@@ -73,14 +72,13 @@ class AuditService:
         "privilege_escalation": "Privilege escalation attempt",
     }
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, repository: ExtendedAuditLogRepository):
         """Initialize audit service.
 
         Args:
-            session: Database session
+            repository: Audit log repository
         """
-        self.session = session
-        self.repository: BaseRepository[AuditLog] = BaseRepository(session, AuditLog)
+        self.repository = repository
 
     async def log_event(
         self,
@@ -156,31 +154,26 @@ class AuditService:
                         logger.debug(f"Invalid user_id format: {user_id}")
                         converted_user_id = None
 
-            audit_data = {
-                "action": action,
-                "resource_type": resource_type,
-                "resource_id": resource_id,
-                "user_id": converted_user_id,
-                "user_email": user_email,
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "changes": changes,
-                "action_metadata": metadata,
-                "status": status,
-                "error_message": error_message,
-                "duration_ms": duration_ms,
-            }
-
-            # Add request correlation
+            # Add request correlation to metadata
             if request_id:
-                if not audit_data["action_metadata"]:
-                    audit_data["action_metadata"] = {}
-                audit_data["action_metadata"]["request_id"] = request_id
+                if not metadata:
+                    metadata = {}
+                metadata["request_id"] = request_id
 
-            audit_log = AuditLog(**audit_data)
-            self.session.add(audit_log)
-
-            # Commit is handled by the caller
+            audit_log = await self.repository.log_action(
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                user_id=converted_user_id,
+                user_email=user_email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                changes=changes,
+                metadata=metadata,
+                status=status,
+                error_message=error_message,
+                duration_ms=duration_ms,
+            )
 
             logger.info(
                 "Audit event logged",
@@ -430,17 +423,7 @@ class AuditService:
         Returns:
             List of audit logs
         """
-        query = select(AuditLog).where(AuditLog.user_id == uuid.UUID(user_id))
-
-        if start_date:
-            query = query.where(AuditLog.created_at >= start_date)
-        if end_date:
-            query = query.where(AuditLog.created_at <= end_date)
-
-        query = query.order_by(AuditLog.created_at.desc()).limit(limit)
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        return await self.repository.get_by_user(user_id=user_id, start_date=start_date, end_date=end_date, limit=limit)
 
     async def get_resource_history(
         self,
@@ -458,20 +441,7 @@ class AuditService:
         Returns:
             List of audit logs
         """
-        query = (
-            select(AuditLog)
-            .where(
-                and_(
-                    AuditLog.resource_type == resource_type,
-                    AuditLog.resource_id == resource_id,
-                )
-            )
-            .order_by(AuditLog.created_at.desc())
-            .limit(limit)
-        )
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        return await self.repository.get_by_resource(resource_type=resource_type, resource_id=resource_id, limit=limit)
 
     async def get_failed_auth_attempts(
         self,

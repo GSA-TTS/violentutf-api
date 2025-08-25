@@ -9,6 +9,8 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.dependencies.middleware import get_middleware_service
+from app.repositories.role import RoleRepository
+from app.repositories.user import UserRepository
 from app.services.rbac_service import RBACService
 
 logger = get_logger(__name__)
@@ -313,7 +315,9 @@ class PermissionChecker:
                 return None  # Return None to indicate we can't check permissions
 
             # Create RBAC service
-            rbac_service = RBACService(session)
+            role_repo = RoleRepository(session)
+            user_repo = UserRepository(session)
+            rbac_service = RBACService(role_repo, user_repo)
 
             # Enhance permission based on ownership if it's a scoped permission
             enhanced_permission = await self._enhance_scoped_permission(request, user_id, permission, rbac_service)

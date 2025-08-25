@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from passlib.hash import argon2
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
@@ -20,10 +19,9 @@ logger = get_logger(__name__)
 class APIKeyService:
     """Enhanced API key service with security features and business logic."""
 
-    def __init__(self, session: AsyncSession, secrets_manager=None) -> None:
+    def __init__(self, repository: APIKeyRepository, secrets_manager=None) -> None:
         """Initialize API key service."""
-        self.session = session
-        self.repository = APIKeyRepository(session)
+        self.repository = repository
         self.secrets_manager = secrets_manager
 
     async def create_api_key(
@@ -338,7 +336,7 @@ class APIKeyService:
             ip_address: Optional IP address of the request
         """
         api_key.record_usage(ip_address)
-        await self.session.commit()
+        # Repository handles persistence automatically
 
         logger.debug(
             "api_key_usage_recorded",

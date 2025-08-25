@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
@@ -20,11 +19,10 @@ logger = get_logger(__name__)
 class RBACService:
     """Service for Role-Based Access Control operations."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, role_repository: RoleRepository, user_repository: UserRepository) -> None:
         """Initialize RBAC service."""
-        self.session = session
-        self.role_repository = RoleRepository(session)
-        self.user_repository = UserRepository(session)
+        self.role_repository = role_repository
+        self.user_repository = user_repository
 
     async def initialize_system_roles(self) -> List[Role]:
         """Initialize default system roles and permissions.
@@ -39,13 +37,11 @@ class RBACService:
             # TODO: Create system permissions when Permission repository is implemented
 
             if created_roles:
-                await self.session.commit()
                 logger.info("System roles initialized", count=len(created_roles))
 
             return created_roles
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("Failed to initialize system roles", error=str(e))
             raise
 
@@ -613,13 +609,13 @@ class RBACService:
             cleaned_count = result.rowcount
 
             if cleaned_count > 0:
-                await self.session.commit()
+                # Repository handles persistence
                 logger.info("Expired role assignments cleaned up", count=cleaned_count)
 
             return cleaned_count
 
         except Exception as e:
-            await self.session.rollback()
+            # Repository handles error handling
             logger.error("Failed to cleanup expired assignments", error=str(e))
             raise
 
