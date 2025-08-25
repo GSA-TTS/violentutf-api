@@ -5,12 +5,9 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, desc, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_plugin_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
 from app.models.plugin import Plugin, PluginConfiguration, PluginExecution, PluginStatus, PluginType
 from app.models.user import User
 from app.services.plugin_service import PluginService
@@ -63,15 +60,13 @@ async def list_plugins(
     category: Optional[str] = Query(None, description="Filter by category"),
     plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> PluginListResponse:
     """List available plugins."""
     try:
-        # Build query with filters
-        query = select(Plugin).where(Plugin.is_deleted.is_(False))
-
+        # Build filters for service layer
+        filters = {}
         if plugin_type:
-            query = query.where(Plugin.plugin_type == plugin_type)
+            filters["plugin_type"] = plugin_type
         if status:
             # Map common status values to PluginStatus enum
             status_mapping = {
@@ -81,17 +76,12 @@ async def list_plugins(
                 "inactive": PluginStatus.INACTIVE,
                 "error": PluginStatus.ERROR,
             }
-            db_status = status_mapping.get(status.lower(), status)
-            query = query.where(Plugin.status == db_status)
+            filters["status"] = status_mapping.get(status.lower(), status)
         if category:
-            query = query.where(Plugin.category == category)
+            filters["category"] = category
 
-        # Order by status (active first), then by name
-        query = query.order_by(Plugin.status.desc(), Plugin.load_count.desc(), Plugin.name)
-
-        # Execute query
-        result = await db.execute(query)
-        plugins = result.scalars().all()
+        # Get plugins through service layer
+        plugins = await plugin_service.list_plugins(filters=filters)
 
         # Convert to response schemas with proper status mapping
         plugin_responses = []
@@ -129,14 +119,11 @@ async def get_plugin(
     plugin_id: str,
     plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> PluginInfo:
     """Get detailed information about a specific plugin."""
     try:
-        # Query plugin by ID
-        query = select(Plugin).where(and_(Plugin.id == plugin_id, Plugin.is_deleted.is_(False)))
-        result = await db.execute(query)
-        plugin = result.scalar_one_or_none()
+        # Get plugin through service layer
+        plugin = await plugin_service.get_plugin(plugin_id)
 
         if not plugin:
             raise HTTPException(status_code=404, detail="Plugin not found")
@@ -177,7 +164,6 @@ async def plugin_action(
     action_request: PluginActionRequest,
     plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Execute an action on a plugin (enable, disable, reload, configure)."""
     try:
@@ -187,10 +173,8 @@ async def plugin_action(
         if action_request.action not in valid_actions:
             raise HTTPException(status_code=400, detail=f"Invalid action. Valid actions: {valid_actions}")
 
-        # Get plugin
-        query = select(Plugin).where(and_(Plugin.id == plugin_id, Plugin.is_deleted.is_(False)))
-        result = await db.execute(query)
-        plugin = result.scalar_one_or_none()
+        # Get plugin through service layer
+        plugin = await plugin_service.get_plugin(plugin_id)
 
         if not plugin:
             raise HTTPException(status_code=404, detail="Plugin not found")
@@ -198,30 +182,34 @@ async def plugin_action(
         # Execute action
         action_result = {"status": "success", "message": ""}
 
+        # Prepare update data based on action
+        update_data = {}
+
         if action_request.action == "enable":
-            plugin.status = PluginStatus.ACTIVE
+            update_data["status"] = PluginStatus.ACTIVE
             action_result["message"] = f"Plugin {plugin.name} enabled successfully"
 
         elif action_request.action == "disable":
-            plugin.status = PluginStatus.DISABLED
+            update_data["status"] = PluginStatus.DISABLED
             action_result["message"] = f"Plugin {plugin.name} disabled successfully"
 
         elif action_request.action == "reload":
             # Update last loaded timestamp and increment count
-            plugin.last_loaded_at = datetime.now(timezone.utc)
-            plugin.load_count += 1
+            update_data["last_loaded_at"] = datetime.now(timezone.utc)
+            update_data["load_count"] = plugin.load_count + 1
             action_result["message"] = f"Plugin {plugin.name} reloaded successfully"
 
         elif action_request.action == "configure":
             # Update configuration if provided
             if action_request.config:
-                plugin.default_config.update(action_request.config)
-                plugin.updated_by = current_user.username
+                new_config = plugin.default_config.copy()
+                new_config.update(action_request.config)
+                update_data["default_config"] = new_config
             action_result["message"] = f"Plugin {plugin.name} configured successfully"
 
         # Update plugin through service layer
-        plugin.updated_by = current_user.username
-        # Service should handle commit/refresh
+        if update_data:
+            await plugin_service.update_plugin(plugin_id, update_data, current_user.username)
 
         # Create execution record
         execution = PluginExecution(
@@ -264,39 +252,45 @@ async def plugin_action(
 async def get_plugin_types(
     plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Get available plugin types and their categories from database."""
     try:
-        # Get unique categories from database
-        category_query = select(Plugin.category.distinct()).where(
-            and_(Plugin.is_deleted.is_(False), Plugin.status.in_([PluginStatus.ACTIVE, PluginStatus.INACTIVE]))
+        # Get all plugins through service layer
+        all_plugins = await plugin_service.list_plugins(
+            skip=0,
+            limit=10000,  # Large limit to get all plugins
+            filters={"status__in": [PluginStatus.ACTIVE, PluginStatus.INACTIVE]},
         )
-        category_result = await db.execute(category_query)
-        db_categories = [row[0] for row in category_result.fetchall()]
+
+        # Extract unique categories
+        db_categories = list(set(plugin.category for plugin in all_plugins if plugin.category))
 
         # Build response with all available enum types and database data
-        available_types = [t.value for t in PluginType]
         plugin_types = {}
+        total_plugins_by_type = {}
 
-        for plugin_type in available_types:
+        for plugin_type_enum in PluginType:
+            plugin_type = plugin_type_enum.value
             # Get categories for this type
-            type_categories_query = select(Plugin.category.distinct()).where(
-                and_(
-                    Plugin.plugin_type == plugin_type,
-                    Plugin.is_deleted.is_(False),
-                    Plugin.status.in_([PluginStatus.ACTIVE, PluginStatus.INACTIVE]),
+            type_categories = list(
+                set(
+                    plugin.category
+                    for plugin in all_plugins
+                    if plugin.plugin_type == plugin_type_enum and plugin.category
                 )
             )
-            type_categories_result = await db.execute(type_categories_query)
-            type_categories = [row[0] for row in type_categories_result.fetchall()]
 
             plugin_types[plugin_type] = type_categories or ["General"]
+
+            # Count plugins by type
+            total_plugins_by_type[plugin_type] = len(
+                [plugin for plugin in all_plugins if plugin.plugin_type == plugin_type_enum]
+            )
 
         return {
             "plugin_types": plugin_types,
             "available_categories": db_categories,
-            "total_plugins_by_type": await _get_plugin_counts_by_type(db),
+            "total_plugins_by_type": total_plugins_by_type,
         }
 
     except Exception as e:
@@ -304,62 +298,37 @@ async def get_plugin_types(
         raise HTTPException(status_code=500, detail="Failed to get plugin types")
 
 
-async def _get_plugin_counts_by_type(db: AsyncSession) -> Dict[str, int]:
-    """Get plugin counts by type."""
-    counts = {}
-    for plugin_type in PluginType:
-        count_query = select(func.count()).where(
-            and_(
-                Plugin.plugin_type == plugin_type,
-                Plugin.is_deleted.is_(False),
-                Plugin.status.in_([PluginStatus.ACTIVE, PluginStatus.INACTIVE]),
-            )
-        )
-        result = await db.execute(count_query)
-        counts[plugin_type.value] = result.scalar() or 0
-    return counts
-
-
 @router.post("/refresh", summary="Refresh plugin registry")
 async def refresh_plugins(
     plugin_service: PluginService = Depends(get_plugin_service),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Refresh the plugin registry by scanning database and updating metadata."""
     try:
         from datetime import datetime, timezone
 
-        # Get current plugin statistics
-        total_plugins_query = select(func.count()).where(Plugin.is_deleted.is_(False))
-        total_result = await db.execute(total_plugins_query)
-        total_plugins = total_result.scalar() or 0
-
-        active_plugins_query = select(func.count()).where(
-            and_(Plugin.is_deleted.is_(False), Plugin.status == PluginStatus.ACTIVE)
-        )
-        active_result = await db.execute(active_plugins_query)
-        active_plugins = active_result.scalar() or 0
+        # Get current plugin statistics through service layer
+        all_plugins = await plugin_service.list_plugins(skip=0, limit=10000)
+        total_plugins = len(all_plugins)
+        active_plugins = len([p for p in all_plugins if p.status == PluginStatus.ACTIVE])
 
         # Update health status for all plugins (simplified health check)
-        plugins_to_check = await db.execute(select(Plugin).where(Plugin.is_deleted.is_(False)))
         updated_plugins = 0
 
-        for plugin in plugins_to_check.scalars().all():
-            # Simple health check - update last health check timestamp
-            plugin.last_health_check = datetime.now(timezone.utc)
+        for plugin in all_plugins:
+            # Prepare health status update
+            health_update = {"last_health_check": datetime.now(timezone.utc)}
 
             # Reset error count if plugin is active (simplified)
             if plugin.status == PluginStatus.ACTIVE:
-                plugin.health_status = "healthy"
-                plugin.error_count = 0
+                health_update["health_status"] = "healthy"
+                health_update["error_count"] = 0
             else:
-                plugin.health_status = "inactive"
+                health_update["health_status"] = "inactive"
 
-            plugin.updated_by = current_user.username
+            # Update through service layer
+            await plugin_service.update_plugin(plugin.id, health_update, current_user.username)
             updated_plugins += 1
-
-        # Service layer should handle commit
 
         logger.info(f"User {current_user.username} refreshed plugin registry: {updated_plugins} plugins updated")
 
