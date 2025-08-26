@@ -6,7 +6,7 @@ It consolidates authentication, database access, service layer dependencies, and
 Follows ADR-013 for API layer separation and service layer integration.
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,9 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Import existing authentication functions
 from app.core.auth import (
     get_current_active_user,
-    get_current_superuser,
     get_current_user,
-    get_optional_current_user_data,
 )
 
 # Import db session dependency for service layer initialization
@@ -283,6 +281,236 @@ async def get_template_service(session: AsyncSession = Depends(get_db)) -> Templ
 async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> VulnerabilityFindingService:
     """Get VulnerabilityFindingService dependency."""
     return VulnerabilityFindingService(session)
+
+
+# Repository dependency functions using container
+async def get_user_repository_dep() -> Any:
+    """Get user repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_user_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="User repository not available")
+    return repository
+
+
+async def get_api_key_repository_dep() -> Any:
+    """Get API key repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_api_key_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="API key repository not available")
+    return repository
+
+
+async def get_session_repository_dep() -> Any:
+    """Get session repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_session_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Session repository not available")
+    return repository
+
+
+async def get_audit_repository_dep() -> Any:
+    """Get audit repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_audit_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Audit repository not available")
+    return repository
+
+
+async def get_security_scan_repository_dep() -> Any:
+    """Get security scan repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_security_scan_repository()
+    if repository is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security scan repository not available"
+        )
+    return repository
+
+
+async def get_vulnerability_repository_dep() -> Any:
+    """Get vulnerability repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_vulnerability_repository()
+    if repository is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vulnerability repository not available"
+        )
+    return repository
+
+
+async def get_role_repository_dep() -> Any:
+    """Get role repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_role_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Role repository not available")
+    return repository
+
+
+async def get_health_repository_dep() -> Any:
+    """Get health repository from container for FastAPI dependency injection."""
+    from app.core import container
+    from app.db.session import get_session_maker
+
+    # Ensure repositories are registered in async context
+    try:
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await container.register_repositories(session_factory)
+    except Exception:
+        pass  # Continue if registration fails
+
+    repository = container.get_health_repository()
+    if repository is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Health repository not available")
+    return repository
+
+
+# UAT-compliant repository dependency functions (without _dep suffix)
+async def get_user_repository() -> Any:
+    """Get user repository from container for UAT compliance."""
+    return await get_user_repository_dep()
+
+
+async def get_api_key_repository() -> Any:
+    """Get API key repository from container for UAT compliance."""
+    return await get_api_key_repository_dep()
+
+
+async def get_session_repository() -> Any:
+    """Get session repository from container for UAT compliance."""
+    return await get_session_repository_dep()
+
+
+async def get_audit_repository() -> Any:
+    """Get audit repository from container for UAT compliance."""
+    return await get_audit_repository_dep()
+
+
+async def get_security_scan_repository() -> Any:
+    """Get security scan repository from container for UAT compliance."""
+    return await get_security_scan_repository_dep()
+
+
+async def get_vulnerability_repository() -> Any:
+    """Get vulnerability repository from container for UAT compliance."""
+    return await get_vulnerability_repository_dep()
+
+
+async def get_role_repository() -> Any:
+    """Get role repository from container for UAT compliance."""
+    return await get_role_repository_dep()
+
+
+async def get_health_repository() -> Any:
+    """Get health repository from container for UAT compliance."""
+    return await get_health_repository_dep()
 
 
 # Legacy aliases for backward compatibility

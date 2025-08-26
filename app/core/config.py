@@ -72,6 +72,51 @@ class Settings(BaseSettings):  # type: ignore[misc]
     DATABASE_POOL_SIZE: int = Field(default=5, ge=1, le=20)
     DATABASE_MAX_OVERFLOW: int = Field(default=10, ge=0, le=20)
 
+    # Repository-specific configuration
+    # Connection timeouts (seconds)
+    REPOSITORY_CONNECTION_TIMEOUT: int = Field(default=30, ge=5, le=300)
+    REPOSITORY_QUERY_TIMEOUT: int = Field(default=60, ge=10, le=600)
+    REPOSITORY_HEALTH_CHECK_TIMEOUT: int = Field(default=10, ge=3, le=60)
+
+    # Retry policies
+    REPOSITORY_MAX_RETRIES: int = Field(default=3, ge=0, le=10)
+    REPOSITORY_RETRY_DELAY_BASE: float = Field(default=1.0, ge=0.1, le=10.0)
+    REPOSITORY_RETRY_DELAY_MAX: float = Field(default=30.0, ge=1.0, le=300.0)
+    REPOSITORY_RETRY_EXPONENTIAL_BACKOFF: bool = Field(default=True)
+
+    # Connection pool settings per repository type
+    REPOSITORY_USER_POOL_SIZE: int = Field(default=5, ge=1, le=20)
+    REPOSITORY_API_KEY_POOL_SIZE: int = Field(default=3, ge=1, le=20)
+    REPOSITORY_SESSION_POOL_SIZE: int = Field(default=10, ge=1, le=30)
+    REPOSITORY_AUDIT_POOL_SIZE: int = Field(default=8, ge=1, le=30)
+    REPOSITORY_SECURITY_SCAN_POOL_SIZE: int = Field(default=5, ge=1, le=20)
+    REPOSITORY_VULNERABILITY_POOL_SIZE: int = Field(default=3, ge=1, le=20)
+    REPOSITORY_ROLE_POOL_SIZE: int = Field(default=2, ge=1, le=20)
+    REPOSITORY_HEALTH_POOL_SIZE: int = Field(default=2, ge=1, le=20)
+
+    # Session lifecycle settings
+    REPOSITORY_SESSION_CLEANUP_ENABLED: bool = Field(default=True)
+    REPOSITORY_SESSION_CLEANUP_INTERVAL: int = Field(default=300, ge=60, le=3600)
+    REPOSITORY_SESSION_MAX_IDLE_TIME: int = Field(default=1800, ge=300, le=7200)
+
+    # Monitoring and metrics
+    REPOSITORY_METRICS_ENABLED: bool = Field(default=True)
+    REPOSITORY_RESPONSE_TIME_TRACKING: bool = Field(default=True)
+    REPOSITORY_ERROR_TRACKING: bool = Field(default=True)
+    REPOSITORY_PERFORMANCE_LOGGING: bool = Field(default=False)
+
+    # Health check configuration
+    REPOSITORY_HEALTH_CHECK_ENABLED: bool = Field(default=True)
+    REPOSITORY_HEALTH_CHECK_INTERVAL: int = Field(default=30, ge=10, le=300)
+    REPOSITORY_HEALTH_CHECK_CACHE_TTL: int = Field(default=60, ge=10, le=600)
+    REPOSITORY_HEALTH_CHECK_FAILURE_THRESHOLD: int = Field(default=3, ge=1, le=10)
+    REPOSITORY_HEALTH_CHECK_RECOVERY_THRESHOLD: int = Field(default=2, ge=1, le=10)
+
+    # Environment-specific overrides
+    REPOSITORY_PRODUCTION_STRICT_MODE: bool = Field(default=False)
+    REPOSITORY_DEBUG_SQL_LOGGING: bool = Field(default=False)
+    REPOSITORY_ENABLE_QUERY_PROFILING: bool = Field(default=False)
+
     # Redis settings
     REDIS_URL: Optional[str] = Field(default=None)
     CACHE_TTL: int = Field(default=300, ge=60, le=3600)
@@ -322,6 +367,69 @@ class Settings(BaseSettings):  # type: ignore[misc]
             "access_token_expire_minutes": self.ACCESS_TOKEN_EXPIRE_MINUTES,
             "bcrypt_rounds": self.BCRYPT_ROUNDS,
         }
+
+    def get_repository_config(self: "Settings") -> Dict[str, Any]:
+        """Get repository configuration dictionary."""
+        return {
+            "timeouts": {
+                "connection": self.REPOSITORY_CONNECTION_TIMEOUT,
+                "query": self.REPOSITORY_QUERY_TIMEOUT,
+                "health_check": self.REPOSITORY_HEALTH_CHECK_TIMEOUT,
+            },
+            "retry_policies": {
+                "max_retries": self.REPOSITORY_MAX_RETRIES,
+                "delay_base": self.REPOSITORY_RETRY_DELAY_BASE,
+                "delay_max": self.REPOSITORY_RETRY_DELAY_MAX,
+                "exponential_backoff": self.REPOSITORY_RETRY_EXPONENTIAL_BACKOFF,
+            },
+            "pool_sizes": {
+                "user": self.REPOSITORY_USER_POOL_SIZE,
+                "api_key": self.REPOSITORY_API_KEY_POOL_SIZE,
+                "session": self.REPOSITORY_SESSION_POOL_SIZE,
+                "audit": self.REPOSITORY_AUDIT_POOL_SIZE,
+                "security_scan": self.REPOSITORY_SECURITY_SCAN_POOL_SIZE,
+                "vulnerability": self.REPOSITORY_VULNERABILITY_POOL_SIZE,
+                "role": self.REPOSITORY_ROLE_POOL_SIZE,
+                "health": self.REPOSITORY_HEALTH_POOL_SIZE,
+            },
+            "session_lifecycle": {
+                "cleanup_enabled": self.REPOSITORY_SESSION_CLEANUP_ENABLED,
+                "cleanup_interval": self.REPOSITORY_SESSION_CLEANUP_INTERVAL,
+                "max_idle_time": self.REPOSITORY_SESSION_MAX_IDLE_TIME,
+            },
+            "monitoring": {
+                "metrics_enabled": self.REPOSITORY_METRICS_ENABLED,
+                "response_time_tracking": self.REPOSITORY_RESPONSE_TIME_TRACKING,
+                "error_tracking": self.REPOSITORY_ERROR_TRACKING,
+                "performance_logging": self.REPOSITORY_PERFORMANCE_LOGGING,
+            },
+            "health_checks": {
+                "enabled": self.REPOSITORY_HEALTH_CHECK_ENABLED,
+                "interval": self.REPOSITORY_HEALTH_CHECK_INTERVAL,
+                "cache_ttl": self.REPOSITORY_HEALTH_CHECK_CACHE_TTL,
+                "failure_threshold": self.REPOSITORY_HEALTH_CHECK_FAILURE_THRESHOLD,
+                "recovery_threshold": self.REPOSITORY_HEALTH_CHECK_RECOVERY_THRESHOLD,
+            },
+            "environment_overrides": {
+                "production_strict_mode": self.REPOSITORY_PRODUCTION_STRICT_MODE,
+                "debug_sql_logging": self.REPOSITORY_DEBUG_SQL_LOGGING,
+                "enable_query_profiling": self.REPOSITORY_ENABLE_QUERY_PROFILING,
+            },
+        }
+
+    def get_repository_pool_size(self: "Settings", repository_type: str) -> int:
+        """Get pool size for specific repository type."""
+        pool_config = {
+            "user": self.REPOSITORY_USER_POOL_SIZE,
+            "api_key": self.REPOSITORY_API_KEY_POOL_SIZE,
+            "session": self.REPOSITORY_SESSION_POOL_SIZE,
+            "audit": self.REPOSITORY_AUDIT_POOL_SIZE,
+            "security_scan": self.REPOSITORY_SECURITY_SCAN_POOL_SIZE,
+            "vulnerability": self.REPOSITORY_VULNERABILITY_POOL_SIZE,
+            "role": self.REPOSITORY_ROLE_POOL_SIZE,
+            "health": self.REPOSITORY_HEALTH_POOL_SIZE,
+        }
+        return pool_config.get(repository_type.lower(), self.DATABASE_POOL_SIZE)
 
     def validate_configuration(self: "Settings") -> Dict[str, Any]:
         """
