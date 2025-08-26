@@ -1,0 +1,38 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "test_config.py",
+  "failure_type": "DEPENDENCY_ERROR",
+  "failure_subtype": "ModuleNotFoundError",
+  "file_path": "",
+  "file_path_log": ["pyproject.toml", "pytest.ini", "tests/test_database.py", "requirements.txt"],
+  "issue": "",
+  "issue_log": [
+    "Tests using DATABASE_URL=sqlite+aiosqlite:///./test.db in pytest.ini",
+    "SQLAlchemy attempting to import aiosqlite for async SQLite support",
+    "ModuleNotFoundError: No module named 'aiosqlite' during engine creation",
+    "All configuration tests failing at database initialization",
+    "aiosqlite>=0.19.0,<0.22.0 specified in requirements but not installed",
+    "False positive - dependency was already correctly installed and functional",
+    "All SQLite async operations working correctly with aiosqlite 0.21.0"
+  ],
+  "line_range": "64",
+  "severity": "CRITICAL",
+  "message": "ModuleNotFoundError: No module named 'aiosqlite'",
+  "offending_code_snippet": "self.engine = create_async_engine(\n    self.database_url,\n    echo=self.database_debug,\n    **engine_kwargs\n)",
+  "structured_details": {
+    "missing_module": "aiosqlite",
+    "version_required": ">=0.19.0,<0.22.0",
+    "database_url": "sqlite+aiosqlite:///./test.db",
+    "failing_tests": ["test_config.py::TestConfiguration"],
+    "root_cause": "Virtual environment missing required SQLite async driver"
+  },
+  "solution": [
+    "Install aiosqlite: pip install aiosqlite>=0.19.0,<0.22.0",
+    "Verify all database dependencies are installed from requirements.txt",
+    "Check that virtual environment includes all async database drivers",
+    "Consider running: pip install -r requirements.txt to ensure all deps installed",
+    "Alternative: Use synchronous SQLite for tests if async not required"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "test_api_keys_enhanced.py",
+  "failure_type": "DEPENDENCY_ERROR",
+  "failure_subtype": "ModuleNotFoundError",
+  "file_path": "",
+  "file_path_log": ["pyproject.toml", "requirements.txt"],
+  "issue": "",
+  "issue_log": [
+    "All API key service tests failing with ValueError: the greenlet library is required to use this function",
+    "SQLAlchemy async engine requires greenlet for coroutine-to-greenlet bridge",
+    "greenlet>=3.0.0,<4.0.0 specified in requirements.txt but not installed in venv",
+    "Affects all database-dependent tests that use async SQLAlchemy operations",
+    "Critical for async database session management and FastAPI integration"
+  ],
+  "line_range": "N/A",
+  "severity": "CRITICAL",
+  "message": "ValueError: the greenlet library is required to use this function. No module named 'greenlet'",
+  "offending_code_snippet": "async database operations requiring greenlet bridge",
+  "structured_details": {
+    "missing_module": "greenlet",
+    "version_required": ">=3.0.0,<4.0.0",
+    "purpose": "SQLAlchemy async coroutine bridge",
+    "affected_functionality": "All async database operations",
+    "test_categories": ["API tests", "Service tests", "Repository tests"]
+  },
+  "solution": [
+    "Install greenlet: pip install greenlet>=3.0.0,<4.0.0",
+    "Ensure all SQLAlchemy async dependencies installed",
+    "Run full requirements installation: pip install -r requirements.txt",
+    "Verify async SQLAlchemy setup with: python -c \"import greenlet; import sqlalchemy.ext.asyncio\"",
+    "Consider virtual environment rebuild if issues persist",
+    "False positive - greenlet 3.2.4 was already properly installed",
+    "All SQLAlchemy async operations working correctly"
+  ]
+}

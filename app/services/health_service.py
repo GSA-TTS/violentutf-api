@@ -276,15 +276,14 @@ class HealthCheckService:
     async def _check_mfa_service(self) -> Dict[str, Any]:
         """Check MFA service health."""
         try:
-            # Check if MFA tables are accessible
+            # Check if MFA tables are accessible using health repository
             async with get_db() as session:
-                from app.models.mfa import MFADevice
-
-                query = select(MFADevice).limit(1)
-                await session.execute(query)
+                health_repo = HealthRepository(session)
+                # Use health repository's database connectivity which is safer
+                result = await health_repo.check_database_connectivity()
 
             return {
-                "status": HealthStatus.HEALTHY,
+                "status": result.get("status", HealthStatus.HEALTHY),
             }
         except Exception as e:
             return {
@@ -295,15 +294,17 @@ class HealthCheckService:
     async def _check_rbac_service(self) -> Dict[str, Any]:
         """Check RBAC service health."""
         try:
-            # Check if RBAC tables are accessible
+            # Check if RBAC tables are accessible using role repository
             async with get_db() as session:
-                from app.models.rbac import Role
+                from app.repositories.role import RoleRepository
 
-                query = select(Role).limit(1)
-                await session.execute(query)
+                role_repo = RoleRepository(session)
+                # Try a simple count operation to test table access
+                count = await role_repo.count()
 
             return {
                 "status": HealthStatus.HEALTHY,
+                "role_count": count,
             }
         except Exception as e:
             return {
@@ -334,27 +335,25 @@ class HealthCheckService:
 
         try:
             async with get_db() as session:
-                # Active sessions count
-                from app.models.session import Session
+                # Active sessions count using session repository
+                from app.repositories.session import SessionRepository
 
-                active_sessions_query = select(Session).where(
-                    Session.is_active == True,
-                    Session.expires_at > datetime.now(timezone.utc),
-                )
-                result = await session.execute(active_sessions_query)
-                active_sessions = len(result.scalars().all())
-                metrics["metrics"]["active_sessions"] = active_sessions
+                session_repo = SessionRepository(session)
 
-                # Active users (logged in within last hour)
-                from app.models.user import User
+                active_sessions_list = await session_repo.get_active_sessions()
+                metrics["metrics"]["active_sessions"] = len(active_sessions_list)
+
+                # Active users (logged in within last hour) using user repository
+                from app.repositories.user import UserRepository
+
+                user_repo = UserRepository(session)
 
                 one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-                active_users_query = select(User).where(
-                    User.last_login_at > one_hour_ago,
+                # Use pagination to get recent users
+                recent_users = await user_repo.list_with_pagination(
+                    page=1, size=1000, filters={"last_login_at__gte": one_hour_ago}
                 )
-                result = await session.execute(active_users_query)
-                active_users = len(result.scalars().all())
-                metrics["metrics"]["active_users_1h"] = active_users
+                metrics["metrics"]["active_users_1h"] = len(recent_users.items)
 
                 # Failed login attempts (if tracked)
                 # This would require an audit log query

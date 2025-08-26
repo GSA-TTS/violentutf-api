@@ -17,6 +17,7 @@ from app.core.abac import check_abac_permission
 from app.core.authority import AuthorityLevel, evaluate_user_authority, is_deprecated_superuser
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.db.session import get_db
+from app.repositories.role import RoleRepository
 from app.repositories.user import UserRepository
 from app.services.rbac_service import RBACService
 
@@ -501,7 +502,9 @@ async def get_current_user_permissions(
         raise UnauthorizedError(message="Authentication required")
 
     try:
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         permissions = await rbac_service.get_user_permissions(user_id)
         return sorted(list(permissions))
 
@@ -576,7 +579,9 @@ async def check_permission(
                     return True
 
         # Check specific permission
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         return await rbac_service.check_user_permission(user_id, permission)
 
     except Exception as e:
@@ -688,7 +693,9 @@ async def _has_admin_permissions(request: Request) -> bool:
         if not user_id:
             return False
 
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         return await rbac_service.check_user_permission(user_id, "*")
 
     except Exception as e:
@@ -714,7 +721,9 @@ async def _check_permissions(
         True if user has required permissions
     """
     try:
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
 
         # Check user permissions directly without storing result
 

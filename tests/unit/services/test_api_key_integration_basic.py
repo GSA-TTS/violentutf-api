@@ -32,6 +32,9 @@ def api_key_service(mock_session, mock_secrets_manager):
 class TestBasicIntegration:
     """Basic integration tests."""
 
+    # Mark all test methods in this class as async
+    pytestmark = pytest.mark.asyncio
+
     async def test_hash_storage_and_retrieval(self, api_key_service, mock_secrets_manager):
         """Test basic hash storage and retrieval functionality."""
         key_id = "test-key-123"

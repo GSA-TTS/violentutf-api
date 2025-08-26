@@ -1,0 +1,37 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 4,
+  "test_file_name": ".pre-commit-pytest-runner.py",
+  "failure_type": "CONFIGURATION_ERROR",
+  "failure_subtype": "PluginNotFound",
+  "file_path": "",
+  "file_path_log": [".pre-commit-pytest-runner.py", "pytest.ini", "requirements.txt", "pyproject.toml"],
+  "issue": "",
+  "issue_log": [
+    "Pre-commit pytest runner uses --timeout=30 argument",
+    "pytest-timeout plugin not found in virtual environment",
+    "Plugin is listed in pyproject.toml dev dependencies but not installed",
+    "Causes pre-commit hook to fail with unrecognized arguments error"
+  ],
+  "line_range": "67-72",
+  "severity": "HIGH",
+  "message": "UsageError: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --timeout=30",
+  "offending_code_snippet": "pytest-timeout = \">=2.2.0,<3.0.0\"",
+  "structured_details": {
+    "plugin_name": "pytest-timeout",
+    "argument_used": "--timeout=30",
+    "current_dependencies": ["pytest>=8.0.0,<9.0.0"],
+    "missing_dependency": "pytest-timeout>=2.2.0,<3.0.0",
+    "environment": "development",
+    "impact": "Pre-commit tests cannot run"
+  },
+  "solution": [
+    "Install pytest-timeout plugin: pip install pytest-timeout>=2.2.0,<3.0.0",
+    "Verify plugin installation with: python -c \"import pytest_timeout\"",
+    "Alternative: Remove --timeout argument from .pre-commit-pytest-runner.py if timeout not critical",
+    "Ensure all dev dependencies are installed: pip install -e .[dev] or poetry install --with dev",
+    "False positive - pytest-timeout was already properly installed",
+    "Pre-commit test runner working correctly with 30-second timeout"
+  ]
+}

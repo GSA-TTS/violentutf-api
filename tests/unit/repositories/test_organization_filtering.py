@@ -20,6 +20,9 @@ from app.repositories.user import UserRepository
 class TestRepositoryOrganizationFiltering:
     """Test repository organization-based filtering."""
 
+    # Mark all test methods in this class as async
+    pytestmark = pytest.mark.asyncio
+
     @pytest.fixture
     def mock_session(self):
         """Create mock database session."""
@@ -93,7 +96,11 @@ class TestRepositoryOrganizationFiltering:
         # Mock get_by_id to return a user for version checking
         repository = BaseRepository(mock_session, real_user_model)
 
-        with patch.object(repository, "get_by_id", return_value=None):
+        # Create async mock for get_by_id that returns None after update
+        async def mock_get_by_id(entity_id, organization_id=None):
+            return None
+
+        with patch.object(repository, "get_by_id", side_effect=mock_get_by_id):
             entity_id = "user-123"
             organization_id = "org-456"
             update_data = {"name": "Updated Name"}

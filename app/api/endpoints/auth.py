@@ -4,8 +4,12 @@ from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
+
+from app.api.deps import get_audit_service, get_mfa_service, get_user_service
+from app.services.audit_service import AuditService
+from app.services.mfa_service import MFAService
+from app.services.user_service_impl import UserServiceImpl
 
 from ...core.errors import ValidationError
 from ...core.input_validation import (
@@ -19,8 +23,6 @@ from ...core.input_validation import (
 )
 from ...core.rate_limiting import rate_limit
 from ...core.security import create_access_token, create_refresh_token, validate_password_strength
-from ...db.session import get_db_dependency
-from ...repositories.user import UserRepository
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -116,18 +118,17 @@ AUTH_VALIDATION_CONFIG = ValidationConfig(
 async def login(
     request: LoginRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+    audit_service: AuditService = Depends(get_audit_service),  # noqa: B008
+    user_service: UserServiceImpl = Depends(get_user_service),
+    mfa_service: MFAService = Depends(get_mfa_service),
 ) -> LoginResponse:
     """Authenticate user and return JWT tokens."""
     try:
         # Get client IP address for logging
         client_ip = http_request.client.host if http_request.client else None
 
-        # Create user repository
-        user_repo = UserRepository(db)
-
-        # Authenticate user
-        user = await user_repo.authenticate(
+        # Authenticate user through service layer
+        user = await user_service.authenticate_user(
             username=request.username,
             password=request.password,
             ip_address=client_ip,
@@ -160,9 +161,6 @@ async def login(
             )
 
         # Check if MFA is required
-        from app.services.mfa_service import MFAService
-
-        mfa_service = MFAService(db)
 
         if await mfa_service.check_mfa_required(user):
             # Create MFA challenge instead of returning tokens
@@ -228,7 +226,8 @@ async def login(
 )
 async def register(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+    audit_service: AuditService = Depends(get_audit_service),  # noqa: B008
+    user_service: UserServiceImpl = Depends(get_user_service),
 ) -> Dict[str, str]:
     """Register a new user account."""
     try:
@@ -240,11 +239,8 @@ async def register(
                 detail=f"Password validation failed: {message}",
             )
 
-        # Create user repository
-        user_repo = UserRepository(db)
-
-        # Check if username already exists
-        existing_user = await user_repo.get_by_username(user_data.username)
+        # Check if username already exists through service layer
+        existing_user = await user_service.get_user_by_username(user_data.username)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -252,15 +248,15 @@ async def register(
             )
 
         # Check if email already exists
-        existing_email = await user_repo.get_by_email(user_data.email)
+        existing_email = await user_service.get_user_by_email(user_data.email)
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email already exists",
             )
 
-        # Create user using repository method (password will be hashed internally)
-        new_user = await user_repo.create_user(
+        # Create user using service layer (password will be hashed internally)
+        new_user = await user_service.create_user(
             username=user_data.username,
             email=user_data.email,
             password=user_data.password,
@@ -309,7 +305,8 @@ async def register(
 )
 async def refresh_token(
     request: TokenRefreshRequest,
-    db: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+    audit_service: AuditService = Depends(get_audit_service),  # noqa: B008
+    user_service: UserServiceImpl = Depends(get_user_service),
 ) -> LoginResponse:
     """Refresh access token using refresh token."""
     try:
@@ -345,8 +342,7 @@ async def refresh_token(
             )
 
         # Verify user still exists and is active
-        user_repo = UserRepository(db)
-        user = await user_repo.get(user_id)
+        user = await user_service.get_user_by_id(user_id)
 
         if not user or not user.can_login():
             logger.warning(

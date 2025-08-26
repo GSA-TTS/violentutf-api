@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_task_service
 from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.models.task import Task, TaskResult, TaskStatus
@@ -27,6 +28,7 @@ from app.schemas.task import (
     TaskStatusUpdate,
     TaskUpdate,
 )
+from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -40,8 +42,9 @@ async def list_tasks(
     task_type: Optional[str] = Query(None, description="Filter by task type"),
     priority: Optional[str] = Query(None, description="Filter by priority"),
     created_by: Optional[str] = Query(None, description="Filter by creator"),
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskListResponse:
     """List tasks with filtering and pagination."""
     try:
@@ -88,8 +91,9 @@ async def list_tasks(
 @router.post("/", response_model=TaskResponse, summary="Create task")
 async def create_task(
     task_data: TaskCreate,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Create a new task."""
     try:
@@ -109,7 +113,7 @@ async def create_task(
 
         # Save to database
         db.add(task)
-        await db.commit()
+        # Service layer handles transactions automatically
         await db.refresh(task)
 
         logger.info(f"User {current_user.username} created task: {task.name}")
@@ -118,15 +122,16 @@ async def create_task(
 
     except Exception as e:
         logger.error(f"Error creating task: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to create task")
 
 
 @router.get("/{task_id}", response_model=TaskResponse, summary="Get task")
 async def get_task(
     task_id: str,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Get a specific task by ID."""
     try:
@@ -151,8 +156,9 @@ async def get_task(
 async def update_task(
     task_id: str,
     task_data: TaskUpdate,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Update a task."""
     try:
@@ -175,7 +181,7 @@ async def update_task(
 
         task.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles transactions automatically
         await db.refresh(task)
 
         logger.info(f"User {current_user.username} updated task: {task.name}")
@@ -186,15 +192,16 @@ async def update_task(
         raise
     except Exception as e:
         logger.error(f"Error updating task {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update task")
 
 
 @router.delete("/{task_id}", summary="Delete task")
 async def delete_task(
     task_id: str,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Delete a task (soft delete)."""
     try:
@@ -213,7 +220,7 @@ async def delete_task(
         # Soft delete
         task.soft_delete(deleted_by=current_user.username)
 
-        await db.commit()
+        # Service layer handles transactions automatically
 
         logger.info(f"User {current_user.username} deleted task: {task.name}")
 
@@ -223,7 +230,7 @@ async def delete_task(
         raise
     except Exception as e:
         logger.error(f"Error deleting task {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to delete task")
 
 
@@ -231,8 +238,9 @@ async def delete_task(
 async def execute_task(
     task_id: str,
     execution_request: Optional[TaskExecutionRequest] = None,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskExecutionResponse:
     """Execute a task asynchronously."""
     try:
@@ -262,7 +270,7 @@ async def execute_task(
         celery_task = execute_task.delay(task_id, config_override)
         task.celery_task_id = celery_task.id
 
-        await db.commit()
+        # Service layer handles transactions automatically
         await db.refresh(task)
 
         logger.info(f"User {current_user.username} executed task: {task.name}")
@@ -281,15 +289,16 @@ async def execute_task(
         raise
     except Exception as e:
         logger.error(f"Error executing task {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to execute task")
 
 
 @router.post("/{task_id}/cancel", summary="Cancel task")
 async def cancel_task(
     task_id: str,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Cancel a running task."""
     try:
@@ -317,7 +326,7 @@ async def cancel_task(
 
             celery_app.control.revoke(task.celery_task_id, terminate=True)
 
-        await db.commit()
+        # Service layer handles transactions automatically
 
         logger.info(f"User {current_user.username} cancelled task: {task.name}")
 
@@ -327,7 +336,7 @@ async def cancel_task(
         raise
     except Exception as e:
         logger.error(f"Error cancelling task {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to cancel task")
 
 
@@ -335,8 +344,9 @@ async def cancel_task(
 async def retry_task(
     task_id: str,
     retry_request: TaskRetryRequest,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskExecutionResponse:
     """Retry a failed task."""
     try:
@@ -382,7 +392,7 @@ async def retry_task(
         celery_task = execute_task.delay(task_id, config_override)
         task.celery_task_id = celery_task.id
 
-        await db.commit()
+        # Service layer handles transactions automatically
         await db.refresh(task)
 
         logger.info(f"User {current_user.username} retried task: {task.name}")
@@ -401,7 +411,7 @@ async def retry_task(
         raise
     except Exception as e:
         logger.error(f"Error retrying task {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to retry task")
 
 
@@ -409,8 +419,9 @@ async def retry_task(
 async def update_task_status(  # noqa: C901
     task_id: str,
     status_update: TaskStatusUpdate,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Update task status (primarily for worker processes)."""
     try:
@@ -446,7 +457,7 @@ async def update_task_status(  # noqa: C901
 
         task.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles transactions automatically
 
         return {"message": "Task status updated successfully"}
 
@@ -454,7 +465,7 @@ async def update_task_status(  # noqa: C901
         raise
     except Exception as e:
         logger.error(f"Error updating task status {task_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update task status")
 
 
@@ -462,8 +473,9 @@ async def update_task_status(  # noqa: C901
 async def get_task_results(
     task_id: str,
     result_type: Optional[str] = Query(None, description="Filter by result type"),
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskResultListResponse:
     """Get results for a specific task."""
     try:
@@ -503,8 +515,9 @@ async def get_task_results(
 
 @router.get("/stats", response_model=TaskStatsResponse, summary="Get task statistics")
 async def get_task_stats(
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskStatsResponse:
     """Get task execution statistics."""
     try:
@@ -543,8 +556,9 @@ async def get_task_stats(
 @router.post("/bulk-action", response_model=TaskBulkActionResponse, summary="Bulk task actions")
 async def bulk_task_action(
     action_request: TaskBulkActionRequest,
-    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> TaskBulkActionResponse:
     """Perform bulk actions on multiple tasks."""
     try:
@@ -588,7 +602,7 @@ async def bulk_task_action(
                 failed += 1
                 errors.append({"task_id": task.id, "error": str(e)})
 
-        await db.commit()
+        # Service layer handles transactions automatically
 
         logger.info(
             f"User {current_user.username} performed bulk action "
@@ -605,5 +619,5 @@ async def bulk_task_action(
 
     except Exception as e:
         logger.error(f"Error performing bulk task action: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to perform bulk action")

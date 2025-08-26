@@ -4,11 +4,10 @@ import hashlib
 import json
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
@@ -17,7 +16,11 @@ from app.core.errors import AuthenticationError, ForbiddenError, NotFoundError, 
 from app.core.security import create_token, hash_token, verify_password
 from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken, OAuthScope
 from app.models.user import User
-from app.repositories.base import BaseRepository
+from app.repositories.oauth_access_token import OAuthAccessTokenRepository
+from app.repositories.oauth_application import OAuthApplicationRepository
+from app.repositories.oauth_authorization_code import OAuthAuthorizationCodeRepository
+from app.repositories.oauth_refresh_token import OAuthRefreshTokenRepository
+from app.repositories.oauth_scope import OAuthScopeRepository
 from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)
@@ -40,19 +43,44 @@ class OAuth2Service:
     ALLOWED_GRANT_TYPES = ["authorization_code", "refresh_token", "client_credentials"]
     ALLOWED_RESPONSE_TYPES = ["code", "token"]
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session_or_app_repo: Union[AsyncSession, OAuthApplicationRepository],
+        access_token_repo: Optional[OAuthAccessTokenRepository] = None,
+        refresh_token_repo: Optional[OAuthRefreshTokenRepository] = None,
+        auth_code_repo: Optional[OAuthAuthorizationCodeRepository] = None,
+        scope_repo: Optional[OAuthScopeRepository] = None,
+        audit_service: Optional[AuditService] = None,
+    ):
         """Initialize OAuth2 service.
 
         Args:
-            session: Database session
+            session_or_app_repo: Either an AsyncSession for new pattern or OAuthApplicationRepository for legacy pattern
+            access_token_repo: OAuth access token repository (required for legacy pattern)
+            refresh_token_repo: OAuth refresh token repository (required for legacy pattern)
+            auth_code_repo: OAuth authorization code repository (required for legacy pattern)
+            scope_repo: OAuth scope repository (required for legacy pattern)
+            audit_service: Audit service (required for legacy pattern)
         """
-        self.session = session
-        self.app_repo: BaseRepository[OAuthApplication] = BaseRepository(session, OAuthApplication)
-        self.access_token_repo: BaseRepository[OAuthAccessToken] = BaseRepository(session, OAuthAccessToken)
-        self.refresh_token_repo: BaseRepository[OAuthRefreshToken] = BaseRepository(session, OAuthRefreshToken)
-        self.auth_code_repo: BaseRepository[OAuthAuthorizationCode] = BaseRepository(session, OAuthAuthorizationCode)
-        self.scope_repo: BaseRepository[OAuthScope] = BaseRepository(session, OAuthScope)
-        self.audit_service = AuditService(session)
+        if isinstance(session_or_app_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.session = session_or_app_repo
+            self.app_repo = OAuthApplicationRepository(session_or_app_repo)
+            self.access_token_repo = OAuthAccessTokenRepository(session_or_app_repo)
+            self.refresh_token_repo = OAuthRefreshTokenRepository(session_or_app_repo)
+            self.auth_code_repo = OAuthAuthorizationCodeRepository(session_or_app_repo)
+            self.scope_repo = OAuthScopeRepository(session_or_app_repo)
+            # TODO: Handle audit service in new pattern
+            self.audit_service = None  # Will need to be enhanced
+        else:
+            # Legacy pattern: use provided repositories
+            self.session = None
+            self.app_repo = session_or_app_repo
+            self.access_token_repo = access_token_repo
+            self.refresh_token_repo = refresh_token_repo
+            self.auth_code_repo = auth_code_repo
+            self.scope_repo = scope_repo
+            self.audit_service = audit_service
 
     async def create_application(
         self,
@@ -99,26 +127,25 @@ class OAuth2Service:
         response_types = self._get_response_types_for_app_type(application_type)
 
         # Create application
-        app = OAuthApplication(
-            name=name,
-            description=description,
-            client_id=client_id,
-            client_secret_hash=client_secret_hash,
-            redirect_uris=json.dumps(redirect_uris),
-            allowed_scopes=json.dumps(allowed_scopes),
-            grant_types=json.dumps(grant_types),
-            response_types=json.dumps(response_types),
-            application_type=application_type,
-            is_confidential=is_confidential,
-            owner_id=user_id,
-            logo_url=logo_url,
-            homepage_url=homepage_url,
-            privacy_policy_url=privacy_policy_url,
-            terms_of_service_url=terms_of_service_url,
-        )
+        app_data = {
+            "name": name,
+            "description": description,
+            "client_id": client_id,
+            "client_secret_hash": client_secret_hash,
+            "redirect_uris": json.dumps(redirect_uris),
+            "allowed_scopes": json.dumps(allowed_scopes),
+            "grant_types": json.dumps(grant_types),
+            "response_types": json.dumps(response_types),
+            "application_type": application_type,
+            "is_confidential": is_confidential,
+            "owner_id": user_id,
+            "logo_url": logo_url,
+            "homepage_url": homepage_url,
+            "privacy_policy_url": privacy_policy_url,
+            "terms_of_service_url": terms_of_service_url,
+        }
 
-        self.session.add(app)
-        await self.session.flush()
+        app = await self.app_repo.create(app_data)
 
         # Log the creation
         await self.audit_service.log_resource_event(
@@ -152,12 +179,7 @@ class OAuth2Service:
         Returns:
             OAuth application if found
         """
-        query = select(OAuthApplication).where(
-            OAuthApplication.client_id == client_id,
-            OAuthApplication.is_deleted == False,
-        )
-        result = await self.session.execute(query)
-        app = result.scalar_one_or_none()
+        app = await self.app_repo.get_by_client_id(client_id)
 
         if app and not include_secret:
             # Clear sensitive data
@@ -236,22 +258,21 @@ class OAuth2Service:
             user_agent = request.headers.get("User-Agent")
 
         # Create authorization code record
-        auth_code = OAuthAuthorizationCode(
-            code_hash=code_hash,
-            redirect_uri=redirect_uri,
-            scopes=json.dumps(scopes),
-            code_challenge=code_challenge,
-            code_challenge_method=code_challenge_method,
-            expires_at=expires_at,
-            application_id=application_id,
-            user_id=user_id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            nonce=nonce,
-        )
+        auth_code_data = {
+            "code_hash": code_hash,
+            "redirect_uri": redirect_uri,
+            "scopes": json.dumps(scopes),
+            "code_challenge": code_challenge,
+            "code_challenge_method": code_challenge_method,
+            "expires_at": expires_at,
+            "application_id": application_id,
+            "user_id": user_id,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "nonce": nonce,
+        }
 
-        self.session.add(auth_code)
-        await self.session.flush()
+        _ = await self.auth_code_repo.create(auth_code_data)
 
         # Log the authorization
         await self.audit_service.log_auth_event(
@@ -304,9 +325,7 @@ class OAuth2Service:
 
         # Find authorization code
         code_hash = hash_token(code)
-        query = select(OAuthAuthorizationCode).where(OAuthAuthorizationCode.code_hash == code_hash)
-        result = await self.session.execute(query)
-        auth_code = result.scalar_one_or_none()
+        auth_code = await self.auth_code_repo.get_by_code_hash(code_hash)
 
         if not auth_code:
             raise ValidationError("Invalid authorization code")
@@ -335,8 +354,7 @@ class OAuth2Service:
                 raise ValidationError("Invalid code verifier")
 
         # Mark code as used
-        auth_code.is_used = True
-        auth_code.used_at = datetime.now(timezone.utc)
+        await self.auth_code_repo.update(auth_code.id, is_used=True, used_at=datetime.now(timezone.utc))
 
         # Create tokens
         scopes = json.loads(auth_code.scopes)
@@ -388,9 +406,7 @@ class OAuth2Service:
 
         # Find refresh token
         token_hash = hash_token(refresh_token)
-        query = select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == token_hash)
-        result = await self.session.execute(query)
-        refresh_token_obj = result.scalar_one_or_none()
+        refresh_token_obj = await self.refresh_token_repo.get_by_token_hash(token_hash)
 
         if not refresh_token_obj:
             raise ValidationError("Invalid refresh token")
@@ -411,8 +427,10 @@ class OAuth2Service:
             scopes = original_scopes
 
         # Update refresh token usage
-        refresh_token_obj.use_count += 1
-        refresh_token_obj.last_used_at = datetime.now(timezone.utc)
+        current_use_count = getattr(refresh_token_obj, "use_count", 0)
+        await self.refresh_token_repo.update(
+            refresh_token_obj.id, use_count=current_use_count + 1, last_used_at=datetime.now(timezone.utc)
+        )
 
         # Create new tokens
         access_token, new_refresh_token = await self._create_tokens(
@@ -451,16 +469,8 @@ class OAuth2Service:
         """
         token_hash = hash_token(token)
 
-        # Query with joins for efficiency
-        query = (
-            select(OAuthAccessToken, User, OAuthApplication)
-            .join(User, OAuthAccessToken.user_id == User.id)
-            .join(OAuthApplication, OAuthAccessToken.application_id == OAuthApplication.id)
-            .where(OAuthAccessToken.token_hash == token_hash)
-        )
-
-        result = await self.session.execute(query)
-        row = result.one_or_none()
+        # Get token with user and application
+        row = await self.access_token_repo.get_with_user_and_app(token_hash)
 
         if not row:
             raise AuthenticationError("Invalid access token")
@@ -501,9 +511,7 @@ class OAuth2Service:
 
         # Try access token first (unless hint says otherwise)
         if token_type_hint != REFRESH_TOKEN_TYPE_HINT:
-            query = select(OAuthAccessToken).where(OAuthAccessToken.token_hash == token_hash)
-            result = await self.session.execute(query)
-            access_token = result.scalar_one_or_none()
+            access_token = await self.access_token_repo.get_by_token_hash(token_hash)
 
             if access_token:
                 # Validate client if provided
@@ -512,8 +520,9 @@ class OAuth2Service:
                     if app and access_token.application_id != app.id:
                         return False
 
-                access_token.is_revoked = True
-                access_token.revoked_at = datetime.now(timezone.utc)
+                await self.access_token_repo.update(
+                    access_token.id, is_revoked=True, revoked_at=datetime.now(timezone.utc)
+                )
                 revoked = True
 
                 await self.audit_service.log_auth_event(
@@ -527,9 +536,7 @@ class OAuth2Service:
 
         # Try refresh token if not found or hint specified
         if not revoked and token_type_hint != ACCESS_TOKEN_TYPE_HINT:
-            query = select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == token_hash)
-            result = await self.session.execute(query)
-            refresh_token = result.scalar_one_or_none()
+            refresh_token = await self.refresh_token_repo.get_by_token_hash(token_hash)
 
             if refresh_token:
                 # Validate client if provided
@@ -538,16 +545,13 @@ class OAuth2Service:
                     if app and refresh_token.application_id != app.id:
                         return False
 
-                refresh_token.is_revoked = True
-                refresh_token.revoked_at = datetime.now(timezone.utc)
+                await self.refresh_token_repo.update(
+                    refresh_token.id, is_revoked=True, revoked_at=datetime.now(timezone.utc)
+                )
                 revoked = True
 
                 # Also revoke associated access tokens
-                query = select(OAuthAccessToken).where(OAuthAccessToken.refresh_token_id == refresh_token.id)
-                result = await self.session.execute(query)
-                for access_token in result.scalars():
-                    access_token.is_revoked = True
-                    access_token.revoked_at = datetime.now(timezone.utc)
+                await self.access_token_repo.revoke_by_refresh_token(refresh_token.id)
 
                 await self.audit_service.log_auth_event(
                     event_type="oauth_refresh_token_revoked",
@@ -569,22 +573,11 @@ class OAuth2Service:
         Returns:
             List of authorized applications with details
         """
-        # Get all active tokens for user
-        query = (
-            select(OAuthApplication, OAuthRefreshToken)
-            .join(OAuthRefreshToken, OAuthApplication.id == OAuthRefreshToken.application_id)
-            .where(
-                OAuthRefreshToken.user_id == user_id,
-                OAuthRefreshToken.is_revoked == False,
-                OAuthRefreshToken.expires_at > datetime.now(timezone.utc),
-            )
-            .distinct(OAuthApplication.id)
-        )
-
-        result = await self.session.execute(query)
+        # Get all active authorizations for user
+        authorizations_data = await self.refresh_token_repo.get_user_authorizations(user_id)
         authorizations = []
 
-        for app, token in result:
+        for app, token in authorizations_data:
             scopes = json.loads(token.scopes)
             authorizations.append(
                 {
@@ -614,31 +607,12 @@ class OAuth2Service:
             True if tokens were revoked
         """
         # Revoke all refresh tokens
-        query = select(OAuthRefreshToken).where(
-            OAuthRefreshToken.user_id == user_id,
-            OAuthRefreshToken.application_id == application_id,
-            OAuthRefreshToken.is_revoked == False,
-        )
-        result = await self.session.execute(query)
-
-        revoked_count = 0
-        for token in result.scalars():
-            token.is_revoked = True
-            token.revoked_at = datetime.now(timezone.utc)
-            revoked_count += 1
+        refresh_revoked_count = await self.refresh_token_repo.revoke_user_app_tokens(user_id, application_id)
 
         # Revoke all access tokens
-        query = select(OAuthAccessToken).where(
-            OAuthAccessToken.user_id == user_id,
-            OAuthAccessToken.application_id == application_id,
-            OAuthAccessToken.is_revoked == False,
-        )
-        result = await self.session.execute(query)
+        access_revoked_count = await self.access_token_repo.revoke_user_app_tokens(user_id, application_id)
 
-        for token in result.scalars():
-            token.is_revoked = True
-            token.revoked_at = datetime.now(timezone.utc)
-            revoked_count += 1
+        revoked_count = refresh_revoked_count + access_revoked_count
 
         if revoked_count > 0:
             await self.audit_service.log_auth_event(
@@ -776,30 +750,29 @@ class OAuth2Service:
             user_agent = request.headers.get("User-Agent")
 
         # Create refresh token record first
-        refresh_token_obj = OAuthRefreshToken(
-            token_hash=refresh_token_hash,
-            scopes=json.dumps(scopes),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS),
-            application_id=app.id,
-            user_id=user_id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
-        self.session.add(refresh_token_obj)
-        await self.session.flush()
+        refresh_token_data = {
+            "token_hash": refresh_token_hash,
+            "scopes": json.dumps(scopes),
+            "expires_at": datetime.now(timezone.utc) + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS),
+            "application_id": app.id,
+            "user_id": user_id,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+        }
+        refresh_token_obj = await self.refresh_token_repo.create(refresh_token_data)
 
         # Create access token record
-        access_token_obj = OAuthAccessToken(
-            token_hash=access_token_hash,
-            scopes=json.dumps(scopes),
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
-            application_id=app.id,
-            user_id=user_id,
-            refresh_token_id=refresh_token_obj.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
-        self.session.add(access_token_obj)
+        access_token_data = {
+            "token_hash": access_token_hash,
+            "scopes": json.dumps(scopes),
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "application_id": app.id,
+            "user_id": user_id,
+            "refresh_token_id": refresh_token_obj.id,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+        }
+        _ = await self.access_token_repo.create(access_token_data)
 
         return access_token, refresh_token
 

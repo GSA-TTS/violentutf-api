@@ -1,7 +1,10 @@
 """Base CRUD router with standardized patterns and comprehensive validation."""
 
 import uuid
-from typing import Any, Dict, Generic, List, Optional, Sequence, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Sequence, Type, TypeVar, Union
+
+if TYPE_CHECKING:
+    pass
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.encoders import jsonable_encoder

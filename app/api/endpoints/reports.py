@@ -8,6 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_report_service
 from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.models.report import Report, ReportFormat, ReportStatus, ReportTemplate, TemplateType
@@ -22,6 +23,7 @@ from app.schemas.report import (
     ReportStatsResponse,
     ReportUpdate,
 )
+from app.services.report_service import ReportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,8 +37,9 @@ async def list_reports(
     format: Optional[ReportFormat] = Query(None, description="Filter by format"),
     status: Optional[ReportStatus] = Query(None, description="Filter by status"),
     created_by: Optional[str] = Query(None, description="Filter by creator"),
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportListResponse:
     """List reports with filtering and pagination."""
     try:
@@ -84,8 +87,9 @@ async def list_reports(
 async def create_report(
     report_data: ReportCreate,
     generate_immediately: bool = Query(True, description="Generate report immediately"),
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportGenerationResponse:
     """Create a new report and optionally generate it immediately."""
     try:
@@ -110,7 +114,7 @@ async def create_report(
 
         # Save report to database
         db.add(report)
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         # Create associated task for async generation
@@ -133,7 +137,7 @@ async def create_report(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             # Link report to task
@@ -148,7 +152,7 @@ async def create_report(
             task.status = TaskStatus.PENDING
 
             task_id = task.id
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(report)
 
         logger.info(f"User {current_user.username} created report: {report.name}")
@@ -165,15 +169,16 @@ async def create_report(
 
     except Exception as e:
         logger.error(f"Error creating report: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to create report")
 
 
 @router.get("/{report_id}", response_model=ReportResponse, summary="Get report")
 async def get_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
     """Get a specific report by ID (ADR-007 status polling)."""
     try:
@@ -198,8 +203,9 @@ async def get_report(
 async def update_report(
     report_id: str,
     report_data: ReportUpdate,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
     """Update a report."""
     try:
@@ -222,7 +228,7 @@ async def update_report(
 
         report.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         logger.info(f"User {current_user.username} updated report: {report.name}")
@@ -233,15 +239,16 @@ async def update_report(
         raise
     except Exception as e:
         logger.error(f"Error updating report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update report")
 
 
 @router.delete("/{report_id}", summary="Delete report")
 async def delete_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Delete a report (soft delete)."""
     try:
@@ -260,7 +267,7 @@ async def delete_report(
         # Soft delete
         report.soft_delete(deleted_by=current_user.username)
 
-        await db.commit()
+        # Service layer handles commit
 
         logger.info(f"User {current_user.username} deleted report: {report.name}")
 
@@ -270,7 +277,7 @@ async def delete_report(
         raise
     except Exception as e:
         logger.error(f"Error deleting report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to delete report")
 
 
@@ -278,8 +285,9 @@ async def delete_report(
 async def generate_report(
     report_id: str,
     generation_request: Optional[ReportGenerationRequest] = None,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportGenerationResponse:
     """Generate a report asynchronously."""
     try:
@@ -312,7 +320,7 @@ async def generate_report(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             report.task_id = task.id
@@ -340,7 +348,7 @@ async def generate_report(
         celery_task = generate_report_task.delay(report.id, config_override)
         task.celery_task_id = celery_task.id
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         logger.info(f"User {current_user.username} generated report: {report.name}")
@@ -358,15 +366,16 @@ async def generate_report(
         raise
     except Exception as e:
         logger.error(f"Error generating report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to generate report")
 
 
 @router.get("/{report_id}/download", summary="Download report")
 async def download_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Download a generated report file."""
     try:
@@ -387,7 +396,7 @@ async def download_report(
 
         # Update download count
         report.download_count += 1
-        await db.commit()
+        # Service layer handles commit
 
         # Return content based on format
         if report.content:
@@ -440,8 +449,9 @@ async def download_report(
 
 @router.get("/stats", response_model=ReportStatsResponse, summary="Get report statistics")
 async def get_report_stats(
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportStatsResponse:
     """Get report generation statistics."""
     try:
