@@ -385,7 +385,7 @@ class MFAService:
         # First check policy requirements
         from app.services.mfa_policy_service import MFAPolicyService
 
-        policy_service = MFAPolicyService(self.session)
+        policy_service = MFAPolicyService(self.mfa_device_repo.session)
         is_required, policy, details = await policy_service.check_mfa_requirement(user)
 
         # If policy says MFA is required, return True

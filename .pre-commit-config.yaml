@@ -133,7 +133,7 @@ repos:
 
       - id: validate-json-ci
         name: Validate JSON (matches CI)
-        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/', 'test_env/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
+        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/', 'test_env/', 'tools/agent_orchestrator/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
         language: system
         files: '\.json$'
         pass_filenames: false

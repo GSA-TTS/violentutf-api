@@ -52,12 +52,10 @@ def non_mocked_hosts():
     return ["test", "testserver", "localhost", "127.0.0.1", "app", "http://test", "http://testserver"]
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> asyncio.AbstractEventLoop:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Removed custom event_loop fixture - using pytest-asyncio's built-in management
+# The pytest.ini configuration handles event loop management with:
+# asyncio_mode = auto
+# asyncio_default_fixture_loop_scope = function
 
 
 @pytest.fixture(scope="session")

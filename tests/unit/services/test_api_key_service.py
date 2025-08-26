@@ -101,21 +101,29 @@ class TestAPIKeyService:
         # Arrange
         plain_key = "test_key_123"
         mock_api_key = MagicMock(spec=APIKey)
+        mock_api_key.id = uuid.uuid4()
         mock_api_key.is_active = MagicMock(return_value=True)
         mock_api_key.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
         mock_api_key.last_used_at = None
         mock_api_key.user = mock_user = MagicMock(spec=User)
         mock_user.is_active = True
 
+        # Mock update method to simulate field update
+        async def mock_update(entity_id, **kwargs):
+            if "last_used_at" in kwargs:
+                mock_api_key.last_used_at = kwargs["last_used_at"]
+            return mock_api_key
+
         with patch.object(api_key_service, "_hash_key", return_value="hashed_key"):
             with patch.object(api_key_service.repository, "get_by_hash", return_value=mock_api_key):
-                with patch.object(api_key_service.session, "flush"):
-                    # Act
-                    result = await api_key_service.validate_api_key(plain_key)
+                with patch.object(api_key_service.repository, "update", side_effect=mock_update):
+                    with patch.object(api_key_service.session, "flush"):
+                        # Act
+                        result = await api_key_service.validate_api_key(plain_key)
 
-                    # Assert
-                    assert result == (mock_api_key, mock_user)
-                    assert mock_api_key.last_used_at is not None
+                        # Assert
+                        assert result == (mock_api_key, mock_user)
+                        assert mock_api_key.last_used_at is not None
 
     @pytest.mark.asyncio
     async def test_validate_api_key_not_found(self, api_key_service):
@@ -187,18 +195,25 @@ class TestAPIKeyService:
         mock_api_key.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
         mock_api_key.user_id = uuid.uuid4()
 
-        with patch.object(api_key_service.repository, "get", return_value=mock_api_key):
-            with patch.object(api_key_service, "_generate_secure_key", return_value="new_key_123"):
-                with patch.object(api_key_service.session, "add"):
-                    with patch.object(api_key_service.session, "flush"):
-                        # Act
-                        new_api_key, plain_key = await api_key_service.rotate_api_key(api_key_id)
+        # Mock update method to simulate marking old key as deleted
+        async def mock_update(entity_id, **kwargs):
+            if "is_deleted" in kwargs:
+                mock_api_key.is_deleted = kwargs["is_deleted"]
+            return mock_api_key
 
-                        # Assert
-                        assert new_api_key.name == f"{mock_api_key.name} (Rotated)"
-                        assert new_api_key.permissions == mock_api_key.permissions
-                        assert plain_key == "new_key_123"
-                        assert mock_api_key.is_deleted is True
+        with patch.object(api_key_service.repository, "get", return_value=mock_api_key):
+            with patch.object(api_key_service.repository, "update", side_effect=mock_update):
+                with patch.object(api_key_service, "_generate_secure_key", return_value="new_key_123"):
+                    with patch.object(api_key_service.session, "add"):
+                        with patch.object(api_key_service.session, "flush"):
+                            # Act
+                            new_api_key, plain_key = await api_key_service.rotate_api_key(api_key_id)
+
+                            # Assert
+                            assert new_api_key.name == f"{mock_api_key.name} (Rotated)"
+                            assert new_api_key.permissions == mock_api_key.permissions
+                            assert plain_key == "new_key_123"
+                            assert mock_api_key.is_deleted is True
 
     @pytest.mark.asyncio
     async def test_rotate_api_key_not_found(self, api_key_service):
@@ -220,15 +235,24 @@ class TestAPIKeyService:
         mock_api_key.is_active = MagicMock(return_value=True)
         mock_api_key.is_deleted = False
 
-        with patch.object(api_key_service.repository, "get", return_value=mock_api_key):
-            with patch.object(api_key_service.session, "flush"):
-                # Act
-                result = await api_key_service.revoke_api_key(api_key_id)
+        # Mock update method to simulate revocation
+        async def mock_update(entity_id, **kwargs):
+            if "is_deleted" in kwargs:
+                mock_api_key.is_deleted = kwargs["is_deleted"]
+            if "revoked_at" in kwargs:
+                mock_api_key.revoked_at = kwargs["revoked_at"]
+            return mock_api_key
 
-                # Assert
-                assert result is True
-                assert mock_api_key.is_deleted is True
-                assert mock_api_key.revoked_at is not None
+        with patch.object(api_key_service.repository, "get", return_value=mock_api_key):
+            with patch.object(api_key_service.repository, "update", side_effect=mock_update):
+                with patch.object(api_key_service.session, "flush"):
+                    # Act
+                    result = await api_key_service.revoke_api_key(api_key_id)
+
+                    # Assert
+                    assert result is True
+                    assert mock_api_key.is_deleted is True
+                    assert mock_api_key.revoked_at is not None
 
     @pytest.mark.asyncio
     async def test_revoke_api_key_already_revoked(self, api_key_service):
@@ -324,15 +348,26 @@ class TestAPIKeyService:
         for key in mock_expired_keys:
             key.is_active = MagicMock(return_value=True)
 
-        with patch.object(api_key_service.repository, "get_expired_keys", return_value=mock_expired_keys):
-            with patch.object(api_key_service.session, "flush"):
-                # Act
-                count = await api_key_service.cleanup_expired_keys()
-
-                # Assert
-                assert count == 2
+        # Mock update method to simulate marking keys as deleted
+        async def mock_update(entity_id, **kwargs):
+            if "is_deleted" in kwargs:
+                # Find the key being updated and mark it as deleted
                 for key in mock_expired_keys:
-                    assert key.is_deleted is True
+                    if str(key.id) == str(entity_id):
+                        key.is_deleted = kwargs["is_deleted"]
+                        break
+            return None
+
+        with patch.object(api_key_service.repository, "get_expired_keys", return_value=mock_expired_keys):
+            with patch.object(api_key_service.repository, "update", side_effect=mock_update):
+                with patch.object(api_key_service.session, "flush"):
+                    # Act
+                    count = await api_key_service.cleanup_expired_keys()
+
+                    # Assert
+                    assert count == 2
+                    for key in mock_expired_keys:
+                        assert key.is_deleted is True
 
     def test_generate_secure_key(self, api_key_service):
         """Test secure key generation."""
