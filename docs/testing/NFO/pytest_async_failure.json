@@ -1,0 +1,45 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "tests/api/test_api_keys_enhanced.py",
+  "failure_type": "CONFIGURATION_ERROR",
+  "failure_subtype": "AsyncTestExecutionError",
+  "file_path": "",
+  "file_path_log": [
+    "tests/api/test_api_keys_enhanced.py",
+    "tests/api/test_scans_endpoints.py",
+    "tests/api/test_tasks_endpoints.py",
+    "pyproject.toml"
+  ],
+  "issue": "",
+  "issue_log": [
+    "async def functions are not natively supported",
+    "You need to install a suitable plugin for your async framework",
+    "pytest-asyncio plugin is installed but not being recognized",
+    "FIXED: Removed duplicate pytest configuration from pyproject.toml to resolve asyncio plugin conflicts"
+  ],
+  "line_range": "31-33",
+  "severity": "HIGH",
+  "message": "async def functions are not natively supported. You need to install a suitable plugin for your async framework, for example: anyio, pytest-asyncio, pytest-tornasync, pytest-trio, pytest-twisted",
+  "offending_code_snippet": "async def test_create_api_key_with_enhanced_security(\n    self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession\n):",
+  "structured_details": {
+    "async_test_count": 1099,
+    "failing_test_files": [
+      "tests/api/test_api_keys_enhanced.py",
+      "tests/api/test_scans_endpoints.py",
+      "tests/api/test_tasks_endpoints.py"
+    ],
+    "pytest_asyncio_installed": true,
+    "pytest_version": "8.4.1",
+    "pytest_asyncio_version": "0.24.0",
+    "configuration_issue": "pytest.ini asyncio_mode configuration may be incorrect"
+  },
+  "solution": [
+    "Verify pytest.ini asyncio_mode configuration is properly set to 'auto'",
+    "Check that all async test functions are properly decorated with @pytest.mark.asyncio if needed",
+    "Ensure pytest-asyncio plugin is properly loaded in conftest.py",
+    "Update test fixtures to use proper async/await patterns",
+    "Consider adding pytest_plugins configuration to conftest.py"
+  ]
+}

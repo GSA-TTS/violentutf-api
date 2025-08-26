@@ -164,14 +164,14 @@ repos:
         entry: python3 -c "import re, sys; patterns = [r'(?i)(api[_-]?key|api[_-]?secret|access[_-]?key|secret[_-]?key|client[_-]?secret|password|passwd|pwd)\s*[=:]\s*[\"\'`]([^\"\'`]+)[\"\'`]', r'(?i)bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*', r'sk_live_[a-zA-Z0-9]+', r'xox[baprs]-[a-zA-Z0-9\-]+', r'ghp_[a-zA-Z0-9]{36}']; content = sys.stdin.read(); violations = []; [violations.extend(re.finditer(p, content, re.MULTILINE)) for p in patterns]; sys.exit(1 if violations else 0)"
         language: system
         files: '\.(py|js|ts|jsx|tsx|java|go|rb|php|yml|yaml|json|env|sh|bash)$'
-        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|\.example|\.template|test_|_test\.|spec_|_spec\.).*'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/|\.example|\.template|test_|_test\.|spec_|_spec\.).*'
 
       - id: no-print-statements
         name: Check for print statements
         entry: python3 -c "import re, sys; content = sys.stdin.read(); sys.exit(1 if re.search(r'^\s*print\(', content, re.MULTILINE) else 0)"
         language: system
         types: [python]
-        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_|_test\.py|debug|scripts/)'
+        exclude: '(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/|test_|_test\.py|debug|scripts/)'
 
       - id: check-api-security
         name: Check API security patterns
@@ -210,7 +210,7 @@ repos:
           "
         language: system
         files: '\.(py|yml|yaml|sh|bash)$'
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|test_env/)'
         pass_filenames: false
         always_run: true
 
