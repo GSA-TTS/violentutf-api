@@ -27,7 +27,7 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
         """Initialize session repository."""
         super().__init__(session, Session)
 
-    async def get_by_token(self, session_token: str) -> Optional[Session]:
+    async def get_by_session_token(self, session_token: str) -> Optional[Session]:
         """
         Get session by token hash.
 
@@ -487,8 +487,8 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
         return await self.create(session_data)
 
     async def get_by_token(self, token: str) -> Optional[Session]:
-        """Get session by token (interface method - already implemented)."""
-        return await self.get_by_token(token)
+        """Get session by token (interface method - delegates to get_by_session_token)."""
+        return await self.get_by_session_token(token)
 
     async def invalidate_session(self, session_id: str) -> bool:
         """Invalidate a specific session (interface method)."""
