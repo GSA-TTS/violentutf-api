@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
@@ -20,11 +20,28 @@ logger = get_logger(__name__)
 class RBACService:
     """Service for Role-Based Access Control operations."""
 
-    def __init__(self, session: AsyncSession) -> None:
-        """Initialize RBAC service."""
-        self.session = session
-        self.role_repository = RoleRepository(session)
-        self.user_repository = UserRepository(session)
+    def __init__(
+        self,
+        session_or_role_repo: Union[AsyncSession, RoleRepository],
+        user_repository: Optional[UserRepository] = None,
+    ) -> None:
+        """Initialize RBAC service.
+
+        Args:
+            session_or_role_repo: Either an AsyncSession for new pattern or RoleRepository for legacy pattern
+            user_repository: UserRepository instance (only required for legacy pattern)
+        """
+        if isinstance(session_or_role_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.session = session_or_role_repo
+            self.role_repository = RoleRepository(session_or_role_repo)
+            self.user_repository = UserRepository(session_or_role_repo)
+        else:
+            # Legacy pattern: use provided repositories
+            self.role_repository = session_or_role_repo
+            self.user_repository = user_repository
+            # For backward compatibility, we don't have session in legacy mode
+            self.session = None
 
     async def initialize_system_roles(self) -> List[Role]:
         """Initialize default system roles and permissions.
@@ -39,13 +56,11 @@ class RBACService:
             # TODO: Create system permissions when Permission repository is implemented
 
             if created_roles:
-                await self.session.commit()
                 logger.info("System roles initialized", count=len(created_roles))
 
             return created_roles
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("Failed to initialize system roles", error=str(e))
             raise
 
@@ -107,6 +122,10 @@ class RBACService:
             # Save role
             created_role = await self.role_repository.create(role_data)
 
+            # Commit transaction if we have a session
+            if self.session:
+                await self.session.commit()
+
             logger.info(
                 "Role created",
                 role_id=str(created_role.id),
@@ -118,7 +137,13 @@ class RBACService:
 
             return created_role
 
+        except (ConflictError, ValidationError):
+            if self.session:
+                await self.session.rollback()
+            raise
         except Exception as e:
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to create role", name=name, error=str(e))
             raise
 
@@ -175,11 +200,21 @@ class RBACService:
             # Update role
             updated_role = await self.role_repository.update(role_id, update_data)
 
+            # Commit transaction if we have a session
+            if self.session:
+                await self.session.commit()
+
             logger.info("Role updated", role_id=role_id, updated_by=updated_by, changes=list(update_data.keys()))
 
             return updated_role
 
+        except (NotFoundError, ForbiddenError, ValidationError):
+            if self.session:
+                await self.session.rollback()
+            raise
         except Exception as e:
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to update role", role_id=role_id, error=str(e))
             raise
 
@@ -212,12 +247,22 @@ class RBACService:
             # Soft delete the role
             success = await self.role_repository.delete(role_id, deleted_by)
 
+            # Commit transaction if we have a session
+            if self.session:
+                await self.session.commit()
+
             if success:
                 logger.info("Role deleted", role_id=role_id, name=role.name, deleted_by=deleted_by)
 
             return success
 
+        except (NotFoundError, ForbiddenError, ValidationError):
+            if self.session:
+                await self.session.rollback()
+            raise
         except Exception as e:
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to delete role", role_id=role_id, error=str(e))
             raise
 
@@ -264,9 +309,19 @@ class RBACService:
                 context=context,
             )
 
+            # Commit transaction if we have a session
+            if self.session:
+                await self.session.commit()
+
             return assignment
 
+        except (NotFoundError, ValidationError):
+            if self.session:
+                await self.session.rollback()
+            raise
         except Exception as e:
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to assign role to user", user_id=user_id, role_id=role_id, error=str(e))
             raise
 
@@ -289,9 +344,15 @@ class RBACService:
                 user_id=user_id, role_id=role_id, revoked_by=revoked_by, reason=reason
             )
 
+            # Commit transaction if we have a session
+            if self.session:
+                await self.session.commit()
+
             return success
 
         except Exception as e:
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to revoke role from user", user_id=user_id, role_id=role_id, error=str(e))
             raise
 
@@ -609,17 +670,24 @@ class RBACService:
                 .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
             )
 
-            result = await self.session.execute(update_query)
-            cleaned_count = result.rowcount
+            if self.session:
+                result = await self.session.execute(update_query)
+                cleaned_count = result.rowcount
+
+                # Commit transaction
+                await self.session.commit()
+            else:
+                # Legacy mode - use repository methods instead
+                cleaned_count = await self.role_repository.cleanup_expired_assignments()
 
             if cleaned_count > 0:
-                await self.session.commit()
                 logger.info("Expired role assignments cleaned up", count=cleaned_count)
 
             return cleaned_count
 
         except Exception as e:
-            await self.session.rollback()
+            if self.session:
+                await self.session.rollback()
             logger.error("Failed to cleanup expired assignments", error=str(e))
             raise
 

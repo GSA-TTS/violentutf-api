@@ -1,0 +1,43 @@
+{
+  "status": "fixed",
+  "tool_name": "black",
+  "exit_code": 1,
+  "test_file_name": "black",
+  "failure_type": "CODE_STYLE_ERROR",
+  "failure_subtype": "FormattingRequired",
+  "file_path": "",
+  "file_path_log": [
+    "tests/unit/services/test_api_key_secrets_integration.py",
+    "tests/unit/repositories/test_organization_filtering.py",
+    "tests/unit/services/test_api_key_integration_basic.py",
+    "multiple_files"
+  ],
+  "issue": "",
+  "issue_log": [
+    "Black formatter failed with exit code 1",
+    "Multiple test files had formatting issues that were automatically fixed",
+    "Pre-commit hook configured with --check --quiet flags",
+    "Files contained trailing whitespace and formatting inconsistencies"
+  ],
+  "line_range": "N/A",
+  "severity": "LOW",
+  "message": "Black formatting check failed - code style inconsistencies found",
+  "offending_code_snippet": "N/A - Multiple formatting issues across files",
+  "structured_details": {
+    "formatter": "black",
+    "affected_files_count": 3,
+    "auto_fixed": true,
+    "configuration": "--check --quiet",
+    "line_length": 120,
+    "python_version": "py312"
+  },
+  "solution": [
+    "Files were automatically reformatted by the trailing-whitespace hook",
+    "Run 'black .' to format all files consistently",
+    "Consider running 'pre-commit run black --all-files' to fix remaining issues",
+    "Ensure IDE is configured to use Black formatter on save",
+    "Run formatting before committing: 'black tests/unit/services/ tests/unit/repositories/'",
+    "False positive - files were already properly formatted by automated hooks",
+    "All specified files pass Black validation with no changes required"
+  ]
+}

@@ -49,6 +49,9 @@ def sample_api_key():
 class TestAPIKeySecretsManagerIntegration:
     """Test API Key service integration with secrets manager."""
 
+    # Mark all test methods in this class as async
+    pytestmark = pytest.mark.asyncio
+
     @pytest.fixture
     def api_key_service_with_secrets(self, mock_session, mock_secrets_manager):
         """Create API key service with secrets manager."""
@@ -376,6 +379,7 @@ class TestSecurityEnhancements:
         # Verify hash can be verified
         assert argon2.verify(full_key, hash_value)
 
+    @pytest.mark.asyncio
     async def test_hash_verification_argon2_and_sha256(self):
         """Test hash verification supports both Argon2 and SHA256."""
         service = APIKeyService(Mock(), None)
@@ -397,6 +401,7 @@ class TestSecurityEnhancements:
         # Test invalid hash format
         assert await service._verify_key_hash(test_key, "invalid_hash") is False
 
+    @pytest.mark.asyncio
     async def test_automatic_migration_triggers(self, mock_session, mock_secrets_manager):
         """Test that various operations trigger appropriate migrations."""
         service = APIKeyService(mock_session, mock_secrets_manager)
@@ -423,6 +428,9 @@ class TestSecurityEnhancements:
 
 class TestErrorHandling:
     """Test comprehensive error handling scenarios."""
+
+    # Mark all test methods in this class as async
+    pytestmark = pytest.mark.asyncio
 
     async def test_secrets_manager_unavailable_scenarios(self, mock_session):
         """Test graceful degradation when secrets manager is unavailable."""

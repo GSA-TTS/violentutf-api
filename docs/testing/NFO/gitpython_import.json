@@ -1,0 +1,38 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "git_history_parser.py",
+  "failure_type": "DEPENDENCY_ERROR",
+  "failure_subtype": "ModuleNotFoundError",
+  "file_path": "",
+  "file_path_log": ["requirements.txt", "pyproject.toml", "tools/pre_audit/git_history_parser.py"],
+  "issue": "",
+  "issue_log": [
+    "git_history_parser.py has conditional import: try: import git except ImportError: HAS_GIT = False",
+    "However, type hint git.Commit is used in class definition outside the conditional block",
+    "This causes NameError: name 'git' is not defined during module import",
+    "Multiple test files fail because they import modules that depend on git_history_parser",
+    "GitPython is listed in requirements.txt as gitpython>=3.1.40,<4.0.0 but not installed"
+  ],
+  "line_range": "188",
+  "severity": "CRITICAL",
+  "message": "NameError: name 'git' is not defined",
+  "offending_code_snippet": "def _analyze_commit(self, commit: git.Commit, target_adr: Optional[str] = None) -> Optional[ArchitecturalFix]:",
+  "structured_details": {
+    "missing_module": "git (GitPython)",
+    "version_required": ">=3.1.40,<4.0.0",
+    "conditional_import": true,
+    "type_hint_issue": "Type hint used outside conditional import block",
+    "affected_modules": ["claude_code_auditor", "reporting modules", "integration tests"]
+  },
+  "solution": [
+    "Install GitPython: pip install GitPython>=3.1.40,<4.0.0",
+    "Fix type hint issue: Use TYPE_CHECKING import or Union type with string literal",
+    "Alternative fix: Move type hints inside conditional blocks or use forward references",
+    "Immediate fix: pip install -r requirements.txt to install all missing dependencies",
+    "Code fix: from typing import TYPE_CHECKING; if TYPE_CHECKING: import git",
+    "Applied TYPE_CHECKING pattern for proper type hint scoping",
+    "Updated type hint to use string literal: 'git.Commit'"
+  ]
+}

@@ -12,7 +12,10 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union
+
+if TYPE_CHECKING:
+    import git
 
 try:
     import git
@@ -185,7 +188,7 @@ class GitHistoryParser:
 
         return fixes
 
-    def _analyze_commit(self, commit: git.Commit, target_adr: Optional[str] = None) -> Optional[ArchitecturalFix]:
+    def _analyze_commit(self, commit: "git.Commit", target_adr: Optional[str] = None) -> Optional[ArchitecturalFix]:
         """
         Analyze a single commit for architectural fixes.
 

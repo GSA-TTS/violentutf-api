@@ -12,6 +12,7 @@ repos:
         language_version: python3.12
         # Using same args as CI: black --check --diff .
         args: ['--check', '--quiet']
+        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/)'
 
   # Import sorting - PyCQA maintained (matches CI)
   - repo: https://github.com/PyCQA/isort
@@ -21,6 +22,7 @@ repos:
         # Using same args as CI: isort --check-only --diff .
         # But need profile to match existing code style
         args: ['--check-only', '--quiet', '--profile=black']
+        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/)'
 
   # Critical linting only - matches CI exactly
   - repo: https://github.com/PyCQA/flake8
@@ -39,7 +41,7 @@ repos:
     hooks:
       - id: mypy
         args: ['--ignore-missing-imports', '--strict', '--no-error-summary', '--no-pretty']
-        exclude: '^(tests/|alembic/|backups/|docs/)'
+        exclude: '^(tests/|alembic/|backups/|docs/|test_env/)'
         additional_dependencies:
           - types-requests
           - types-redis
@@ -60,8 +62,8 @@ repos:
     hooks:
       - id: bandit
         name: bandit-comprehensive
-        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/', '--quiet']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/)'
+        args: ['-r', '.', '-ll', '--skip', 'B101,B601', '--exclude', '/venv/,/htmlcov/,/__pycache__/,/.git/,/.mypy_cache/,/backups/,/implement_issue_venv/,/agent_orchestrator/implement_issue_venv/,/test_env/', '--quiet']
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|test_env/)'
         pass_filenames: false
 
   # Secret detection - Yelp maintained - ALL FILES
@@ -71,7 +73,7 @@ repos:
       - id: detect-secrets
         name: detect-secrets-comprehensive
         args: ['--baseline', '.secrets.baseline']
-        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
+        exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|test_env/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
         pass_filenames: false
 
   # YAML formatting - Using stable v3 instead of alpha
@@ -131,7 +133,7 @@ repos:
 
       - id: validate-json-ci
         name: Validate JSON (matches CI)
-        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
+        entry: python3 -c "import json, sys, glob; files = [f for f in glob.glob('**/*.json', recursive=True) if not f.startswith(('agent_orchestrator/', 'venv/', '.venv/', 'env/', '.env/', 'test_env/', 'tools/agent_orchestrator/'))]; [json.load(open(f)) for f in files]; print(f'Validated {len(files)} JSON files')"
         language: system
         files: '\.json$'
         pass_filenames: false

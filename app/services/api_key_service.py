@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from passlib.hash import argon2
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,10 +20,14 @@ logger = get_logger(__name__)
 class APIKeyService:
     """Enhanced API key service with security features and business logic."""
 
-    def __init__(self, session: AsyncSession, secrets_manager=None) -> None:
+    def __init__(self, repository_or_session: Union[APIKeyRepository, AsyncSession], secrets_manager=None) -> None:
         """Initialize API key service."""
-        self.session = session
-        self.repository = APIKeyRepository(session)
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = APIKeyRepository(repository_or_session)
+            self.session = repository_or_session
+        else:
+            self.repository = repository_or_session
+            self.session = None
         self.secrets_manager = secrets_manager
 
     async def create_api_key(
@@ -338,7 +342,7 @@ class APIKeyService:
             ip_address: Optional IP address of the request
         """
         api_key.record_usage(ip_address)
-        await self.session.commit()
+        # Repository handles persistence automatically
 
         logger.debug(
             "api_key_usage_recorded",
@@ -346,6 +350,21 @@ class APIKeyService:
             usage_count=api_key.usage_count,
             ip_address=ip_address,
         )
+
+    async def get_api_key(self, key_id: str) -> Optional[APIKey]:
+        """Get an API key by ID.
+
+        Args:
+            key_id: API key ID
+
+        Returns:
+            APIKey instance if found, None otherwise
+        """
+        try:
+            return await self.repository.get(key_id)
+        except Exception as e:
+            logger.error("Failed to get API key", key_id=key_id, error=str(e))
+            return None
 
     async def get_user_keys(
         self,

@@ -9,6 +9,7 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.dependencies.middleware import get_middleware_service
+from app.services.middleware_service import MiddlewareService
 from app.services.rbac_service import RBACService
 
 logger = get_logger(__name__)
@@ -467,9 +468,17 @@ class PermissionChecker:
             True if user owns the API key
         """
         try:
-            async for middleware_service in get_middleware_service():
+            # Use dependency injection to avoid N+1 query problems
+            base_middleware_service = None
+            async for service in get_middleware_service():
+                base_middleware_service = service
+                break
+
+            if base_middleware_service:
+                middleware_service = MiddlewareService(base_middleware_service.session)
                 api_key = await middleware_service.api_key_repo.get(key_id)
                 return api_key and str(api_key.user_id) == user_id
+            return False
 
         except Exception as e:
             logger.error(
@@ -492,9 +501,17 @@ class PermissionChecker:
             True if user owns the session
         """
         try:
-            async for middleware_service in get_middleware_service():
+            # Use dependency injection to avoid N+1 query problems
+            base_middleware_service = None
+            async for service in get_middleware_service():
+                base_middleware_service = service
+                break
+
+            if base_middleware_service:
+                middleware_service = MiddlewareService(base_middleware_service.session)
                 user_session = await middleware_service.session_repo.get(session_id)
                 return user_session and str(user_session.user_id) == user_id
+            return False
 
         except Exception as e:
             logger.error(

@@ -1,0 +1,37 @@
+{
+  "status": "fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "test_errors.py",
+  "failure_type": "CONFIGURATION_ERROR",
+  "failure_subtype": "FixtureNotFound",
+  "file_path": "tests/conftest.py",
+  "file_path_log": ["tests/test_database.py", "pytest.ini"],
+  "issue": "pytest-asyncio fixture scope conflicts causing event_loop fixture not found errors",
+  "issue_log": [
+    "Module-scoped async fixtures conflict with pytest-asyncio event loop management",
+    "test_db_manager fixture expects 'tests/unit/test_config.py::<event_loop>' but not available",
+    "Custom event_loop fixture in conftest.py conflicts with pytest-asyncio defaults",
+    "pytest-asyncio plugin warning about deprecated event_loop fixture redefinition",
+    "Async fixtures with module scope causing cross-test pollution"
+  ],
+  "line_range": "152",
+  "severity": "HIGH",
+  "message": "fixture 'tests/unit/test_config.py::<event_loop>' not found",
+  "offending_code_snippet": "@pytest_asyncio.fixture(scope=\"module\")\nasync def test_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:",
+  "structured_details": {
+    "pytest_asyncio_mode": "strict",
+    "custom_event_loop_fixture": true,
+    "conflicting_scopes": ["module", "function"],
+    "deprecated_pattern": "Custom event_loop fixture redefinition",
+    "affected_test_files": ["test_errors.py", "test_config.py"]
+  },
+  "solution": [
+    "Remove custom event_loop fixture from tests/conftest.py",
+    "Use pytest-asyncio's built-in event loop management",
+    "Change module-scoped async fixtures to function-scoped for compatibility",
+    "Update pytest.ini to use event_loop_policy instead of custom event_loop",
+    "Alternative: Use pytest-asyncio.fixture with proper scope configuration",
+    "Fix: Replace custom event loop with pytest-asyncio standard patterns"
+  ]
+}

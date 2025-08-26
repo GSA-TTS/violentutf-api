@@ -259,3 +259,4 @@ tools/agent_orchestrator/
 temp.md
 /.implement_checkpoints
 /agent_orchestrator
+/test_env

@@ -3,16 +3,19 @@
 import hashlib
 import secrets
 import uuid
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
+from app.api.deps import get_api_key_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
+
+# Repository import removed - using service layer instead
 from app.schemas.api_key import (
     APIKeyCreate,
     APIKeyCreateResponse,
@@ -24,8 +27,6 @@ from app.schemas.api_key import (
 )
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult, PaginatedResponse
 from app.services.api_key_service import APIKeyService
-
-from ...db.session import get_db_dependency
 
 logger = get_logger(__name__)
 
@@ -67,9 +68,9 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         async def list_items(
             request: Request,
             filters: APIKeyFilter = Depends(APIKeyFilter),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> PaginatedResponse[APIKeyResponse]:
-            return await self._list_items(request, filters, session)
+            return await self._list_items(request, filters, api_key_service)
 
         # Get by ID endpoint
         @self.router.get(
@@ -82,9 +83,11 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            item_id: uuid.UUID,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
-            return await self._get_item(request, item_id, session)
+            return await self._get_item(request, item_id, api_key_service)
 
         # Custom Create endpoint for API Keys
         @self.router.post(
@@ -99,9 +102,11 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             },
         )
         async def create_item(
-            request: Request, item_data: APIKeyCreate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            item_data: APIKeyCreate,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyCreateResponse]:
-            return await self._create_item(request, item_data, session)
+            return await self._create_item(request, item_data, api_key_service)
 
         # Update endpoint
         @self.router.put(
@@ -119,9 +124,9 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             item_data: APIKeyUpdate,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
-            return await self._update_item(request, item_id, item_data, session)
+            return await self._update_item(request, item_id, item_data, api_key_service)
 
         # Patch endpoint
         @self.router.patch(
@@ -139,9 +144,9 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             item_data: APIKeyUpdate,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyResponse]:
-            return await self._patch_item(request, item_id, item_data, session)
+            return await self._patch_item(request, item_id, item_data, api_key_service)
 
         # Delete endpoint
         @self.router.delete(
@@ -157,9 +162,9 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             item_id: uuid.UUID,
             permanent: bool = Query(False, description="Whether to permanently delete the item"),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
-            return await self._delete_item(request, item_id, permanent, session)
+            return await self._delete_item(request, item_id, permanent, api_key_service)
 
     async def _create_item(
         self,
@@ -172,10 +177,11 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             # Get current user
             current_user_id = self._get_current_user_id(request)
 
-            # Use enhanced service layer
+            # Create service with session
             api_key_service = APIKeyService(session)
+
+            # Use service layer for transaction management
             api_key, full_key = await api_key_service.create_api_key(current_user_id, item_data)
-            await session.commit()
 
             # Create response with full key (only time it's shown)
             response_key = APIKeyCreateResponse(
@@ -319,17 +325,13 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         async def get_my_api_keys(
             request: Request,
             include_revoked: bool = Query(False, description="Include revoked keys"),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[List[APIKeyResponse]]:
             """Get current user's API keys."""
             current_user_id = self._get_current_user_id(request)
 
-            repo = APIKeyRepository(session)
-            api_keys = await repo.list_user_keys(current_user_id)
-
-            # Filter out revoked keys if not requested
-            if not include_revoked:
-                api_keys = [key for key in api_keys if not key.revoked_at]
+            # Use service layer to get user keys
+            api_keys = await api_key_service.get_user_keys(current_user_id, include_revoked=include_revoked)
 
             # Convert to response schemas
             response_keys = [self._build_api_key_response(key) for key in api_keys]
@@ -346,49 +348,38 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Revoke an API key, making it permanently unusable.",
         )
         async def revoke_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            key_id: uuid.UUID,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Revoke an API key."""
             try:
-                repo = APIKeyRepository(session)
-
                 # Get current user
                 current_user_id = self._get_current_user_id(request)
 
-                # Get the API key
-                api_key = await repo.get(key_id)
-                if not api_key:
-                    raise NotFoundError(message=f"API key with ID {key_id} not found")
+                # Use service layer for revocation (includes transaction management)
+                success = await api_key_service.revoke_api_key(str(key_id), current_user_id)
 
-                # Check ownership (unless admin)
-                self._check_key_ownership(api_key, current_user_id, request)
-
-                # Revoke the key
-                success = await repo.revoke(str(key_id))
-
-                if not success:
+                if success:
+                    logger.info(
+                        "api_key_revoked",
+                        api_key_id=str(key_id),
+                        user_id=current_user_id,
+                    )
+                    return self._build_operation_result(True, "API key revoked successfully", request)
+                else:
                     raise NotFoundError(message=f"API key with ID {key_id} not found or already revoked")
 
-                await session.commit()
-
-                logger.info(
-                    "api_key_revoked",
-                    api_key_id=str(key_id),
-                    name=api_key.name,
-                    user_id=current_user_id,
-                )
-
-                return self._build_operation_result(True, "API key revoked successfully", request)
-
+            except (NotFoundError, ValidationError, ForbiddenError):
+                # Re-raise known exceptions
+                raise
             except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (NotFoundError, ValidationError, ForbiddenError)):
-                    logger.error(
-                        "api_key_revocation_error",
-                        api_key_id=str(key_id),
-                        error=str(e),
-                        exc_info=True,
-                    )
+                logger.error(
+                    "api_key_revocation_error",
+                    api_key_id=str(key_id),
+                    error=str(e),
+                    exc_info=True,
+                )
                 raise
 
     def _register_rotate_endpoint(self) -> None:
@@ -401,16 +392,16 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Generate a new key value for an existing API key.",
         )
         async def rotate_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            key_id: uuid.UUID,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyCreateResponse]:
             """Rotate an API key to generate a new key value."""
             try:
                 current_user_id = self._get_current_user_id(request)
 
-                # Use enhanced service layer
-                api_key_service = APIKeyService(session)
+                # Use service layer (includes transaction management)
                 api_key, new_full_key = await api_key_service.rotate_api_key(str(key_id), current_user_id)
-                await session.commit()
 
                 # Create response with new full key (only time it's shown)
                 response_key = APIKeyCreateResponse(
@@ -431,15 +422,16 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
 
                 return self._build_base_response(response_key, "API key rotated successfully", request)
 
+            except (NotFoundError, ValidationError, ForbiddenError):
+                # Re-raise known exceptions
+                raise
             except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (NotFoundError, ValidationError, ForbiddenError)):
-                    logger.error(
-                        "api_key_rotation_error",
-                        api_key_id=str(key_id),
-                        error=str(e),
-                        exc_info=True,
-                    )
+                logger.error(
+                    "api_key_rotation_error",
+                    api_key_id=str(key_id),
+                    error=str(e),
+                    exc_info=True,
+                )
                 raise
 
     def _register_validate_endpoint(self) -> None:
@@ -452,21 +444,27 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Validate an API key and return its status.",
         )
         async def validate_api_key(
-            request: Request, key_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            key_id: uuid.UUID,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Validate an API key."""
-            repo = APIKeyRepository(session)
+            try:
+                # Get the API key through service layer
+                api_key = await api_key_service.get_api_key(key_id)
+                if not api_key:
+                    raise NotFoundError(message=f"API key with ID {key_id} not found")
 
-            # Get the API key
-            api_key = await repo.get(key_id)
-            if not api_key:
-                raise NotFoundError(message=f"API key with ID {key_id} not found")
+                # Check if key is valid
+                is_valid = api_key.is_active()
+                message = f"API key is {'valid' if is_valid else 'invalid'}"
 
-            # Check if key is valid
-            is_valid = api_key.is_active()
-            message = f"API key is {'valid' if is_valid else 'invalid'}"
-
-            return self._build_operation_result(is_valid, message, request, affected_rows=0)
+                return self._build_operation_result(is_valid, message, request, affected_rows=0)
+            except NotFoundError:
+                raise
+            except Exception as e:
+                logger.error("api_key_validation_error", key_id=str(key_id), error=str(e))
+                raise
 
     def _register_analytics_endpoint(self) -> None:
         """Register the analytics endpoint."""
@@ -478,14 +476,13 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get analytics and usage statistics for current user's API keys.",
         )
         async def get_my_analytics(
-            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request, api_key_service: APIKeyService = Depends(get_api_key_service)  # noqa: B008
         ) -> BaseResponse[Dict[str, Any]]:
             """Get analytics for current user's API keys."""
             try:
                 current_user_id = self._get_current_user_id(request)
 
-                # Use enhanced service layer
-                api_key_service = APIKeyService(session)
+                # Use service layer for analytics
                 analytics = await api_key_service.get_key_analytics(current_user_id)
 
                 return self._build_base_response(analytics, "Analytics retrieved successfully", request)
@@ -525,17 +522,15 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get usage statistics for API keys (admin only).",
         )
         async def get_usage_stats(
-            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request, api_key_service: APIKeyService = Depends(get_api_key_service)  # noqa: B008
         ) -> BaseResponse[APIKeyUsageStats]:
             """Get API key usage statistics (admin only)."""
             # Check admin permissions
             self._check_admin_permission(request)
 
             try:
-                repo = APIKeyRepository(session)
-
-                # Get statistics using repository method
-                stats = await repo.get_statistics()
+                # Get statistics using repository method through service
+                stats = await api_key_service.repository.get_statistics()
 
                 # Convert to response schema
                 usage_stats = APIKeyUsageStats(
@@ -571,25 +566,23 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             request: Request,
             key_id: uuid.UUID,
             ip_address: Optional[str] = Query(None, description="IP address of the request"),  # noqa: B008
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Record API key usage (internal endpoint)."""
             try:
-                repo = APIKeyRepository(session)
-
-                # Get the API key
-                api_key = await repo.get(key_id)
+                # Get the API key through service
+                api_key = await api_key_service.repository.get(key_id)
                 if not api_key:
                     raise NotFoundError(message=f"API key with ID {key_id} not found")
 
-                # Record usage
-                api_key.record_usage(ip_address)
-                await session.commit()
+                # Record usage through service (includes transaction management)
+                await api_key_service.record_key_usage(api_key, ip_address)
 
                 return self._build_operation_result(True, "API key usage recorded", request)
 
+            except NotFoundError:
+                raise
             except Exception as e:
-                await session.rollback()
                 logger.error(
                     "api_key_usage_recording_error",
                     api_key_id=str(key_id),

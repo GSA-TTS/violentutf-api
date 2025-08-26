@@ -18,9 +18,7 @@ from ..core.authority import AuthorityLevel, evaluate_user_authority
 from ..core.config import get_settings
 from ..core.security import decode_token
 from ..db.session import get_db
-from ..repositories.api_key import APIKeyRepository
-from ..repositories.user import UserRepository
-from ..services.api_key_service import APIKeyService
+from ..services.middleware_service import MiddlewareService
 
 logger = get_logger(__name__)
 
@@ -179,10 +177,12 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                 # Try to get database session for authority evaluation
                 async for db_session in get_db():
                     request.state.db_session = db_session
+                    middleware_service = MiddlewareService(db_session)
 
                     # Load full user model for authority evaluation
-                    user_repo = UserRepository(db_session)
-                    full_user = await user_repo.get_by_id(payload.get("sub"), payload.get("organization_id"))
+                    full_user = await middleware_service.get_user_by_id(
+                        payload.get("sub"), payload.get("organization_id")
+                    )
 
                     if full_user:
                         # Calculate authority level using new system
@@ -266,18 +266,17 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                         request.state.db_session = session
                         break
 
-                # Validate API key
-                api_key_repo = APIKeyRepository(session)
-                api_key_service = APIKeyService(session)
+                # Validate API key using middleware service
+                middleware_service = MiddlewareService(session)
 
                 # Find API key by prefix (first part of the key)
                 api_key_prefix = api_key[:10] if len(api_key) >= 10 else api_key
-                api_key_models = await api_key_repo.get_by_prefix(api_key_prefix)
+                api_key_models = await middleware_service.get_api_keys_by_prefix(api_key_prefix)
 
                 authenticated_user = None
                 for api_key_model in api_key_models:
                     # Verify the full API key hash
-                    if await api_key_service._verify_key_hash(api_key, api_key_model.key_hash):
+                    if await middleware_service.verify_api_key_hash(api_key, api_key_model.key_hash):
                         # Check if API key is active and not expired
                         if (
                             api_key_model.expires_at
@@ -291,15 +290,12 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                             continue
 
                         # Load user
-                        user_repo = UserRepository(session)
-                        user = await user_repo.get_by_id(str(api_key_model.user_id))
+                        user = await middleware_service.get_user_by_id(str(api_key_model.user_id))
 
                         if user and user.is_verified:
                             authenticated_user = user
                             # Record API key usage
-                            api_key_model.record_usage()
-                            if session:
-                                await session.commit()  # Commit the usage update
+                            await middleware_service.record_api_key_usage(api_key_model)
                             break
 
                 if not authenticated_user:
