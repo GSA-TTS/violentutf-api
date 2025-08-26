@@ -83,7 +83,7 @@ jobs:
 
     - name: Post PR Comment
       if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');
@@ -136,7 +136,7 @@ jobs:
 
     - name: Create Check Run
       if: always()
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');
@@ -196,7 +196,7 @@ jobs:
 
     steps:
     - name: Add PR Label
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           // Add label to remind about local analysis

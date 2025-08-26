@@ -174,7 +174,7 @@ jobs:
 
       - name: Comment PR with Results
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const suite = '${{ matrix.test-suite }}';
@@ -282,7 +282,7 @@ jobs:
 
       - name: Create Issue for Violations
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const title = `Architectural Compliance Violations Detected - ${new Date().toISOString().split('T')[0]}`;
