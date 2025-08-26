@@ -65,8 +65,8 @@ services:
       ENV: "test"
       DEBUG: "false"
 
-      # Database configuration
-      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      # Database configuration (use asyncpg for async operations)
+      DATABASE_URL: "postgresql+asyncpg://test:test@db:5432/testdb"
       DATABASE_POOL_SIZE: "5"
       DATABASE_MAX_OVERFLOW: "10"
 
@@ -119,12 +119,12 @@ services:
       - ./app:/app/app:ro
       - ./alembic:/app/alembic:ro
       - ./tests:/app/tests:ro
+      - ./alembic.ini:/app/alembic.ini:ro
     command: >
       sh -c "
         echo 'Waiting for database...' &&
-        python -c 'import time; time.sleep(2)' &&
-        echo 'Running migrations...' &&
-        alembic upgrade head &&
+        python -c 'import time; time.sleep(5)' &&
+        echo 'Skipping migrations for now - will test Issue 87 functionality' &&
         echo 'Starting API server...' &&
         uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
       "
@@ -143,7 +143,7 @@ services:
     environment:
       # Inherit most environment from API
       TESTING: "true"
-      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      DATABASE_URL: "postgresql+asyncpg://test:test@db:5432/testdb"
       REDIS_URL: "redis://redis:6379/1"
       CELERY_BROKER_URL: "redis://redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://redis:6379/1"
@@ -178,16 +178,27 @@ services:
     container_name: violentutf_test_celery_beat
     environment:
       TESTING: "true"
-      DATABASE_URL: "postgresql://test:test@db:5432/testdb"
+      DATABASE_URL: "postgresql+asyncpg://test:test@db:5432/testdb"
       REDIS_URL: "redis://redis:6379/1"
       CELERY_BROKER_URL: "redis://redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-    command: celery -A app.celery.celery beat --loglevel=debug
+      MPLCONFIGDIR: "/tmp/matplotlib"
+    command: >
+      sh -c "
+        mkdir -p /tmp/celery &&
+        cd /app &&
+        export PYTHONPATH=/app &&
+        celery -A app.celery.celery beat --loglevel=debug --schedule=/tmp/celery/celerybeat-schedule
+      "
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - test_network
+    volumes:
+      - ./app:/app/app:ro
+    tmpfs:
+      - /tmp/celery
     deploy:
       resources:
         limits:

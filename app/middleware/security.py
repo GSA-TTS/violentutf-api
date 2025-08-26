@@ -81,7 +81,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # Apply secure headers
-        self.secure.set_headers(response)
+        secure_headers = self.secure.headers()
+        for header_name, header_value in secure_headers.items():
+            response.headers[header_name] = header_value
 
         # Additional security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
