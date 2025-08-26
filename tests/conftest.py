@@ -27,6 +27,26 @@ if TYPE_CHECKING:
 from app.core.config import Settings, get_settings  # noqa: E402
 from app.main import create_application  # noqa: E402
 
+# Import our new fixtures for repository testing
+from tests.fixtures.repository_fixtures import (  # noqa
+    async_context_factory,
+    database_error_factory,
+    mock_session,
+    mock_validation_factory,
+    pagination_result_factory,
+    performance_monitor,
+    query_result_factory,
+    transaction_mock_factory,
+)
+from tests.fixtures.simple_factories import (  # noqa
+    api_key_factory,
+    audit_log_factory,
+    role_factory,
+    security_scan_factory,
+    session_factory,
+    user_factory,
+)
+
 # Import test fixtures - this makes them available to all tests
 from tests.test_database import DatabaseTestManager, clean_db_session, db_session, test_db_manager  # noqa
 from tests.test_fixtures import (  # noqa
