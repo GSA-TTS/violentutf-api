@@ -82,7 +82,7 @@ jobs:
         retention-days: 30
 
     - name: Upload SARIF results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always() && hashFiles('docs/reports/ADRaudit-claudecode/ci/architectural-violations.sarif') != ''
       with:
         sarif_file: docs/reports/ADRaudit-claudecode/ci/architectural-violations.sarif
