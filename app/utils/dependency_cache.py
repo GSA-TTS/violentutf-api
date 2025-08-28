@@ -137,7 +137,24 @@ class FileCacheManager:
                 if freed_space >= target_size_reduction:
                     break
                 try:
-                    file_path.unlink()
+                    # Windows-compatible file removal
+                    import platform
+
+                    if platform.system() == "Windows":
+                        import time
+
+                        for attempt in range(3):
+                            try:
+                                file_path.unlink()
+                                break
+                            except PermissionError:
+                                if attempt < 2:
+                                    time.sleep(0.1 * (2**attempt))
+                                    continue
+                                else:
+                                    raise
+                    else:
+                        file_path.unlink()
                     freed_space += size
                     logger.debug("Removed old cache file", file=str(file_path))
                 except OSError:

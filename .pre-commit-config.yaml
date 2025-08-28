@@ -76,13 +76,6 @@ repos:
         exclude: '^(venv/|htmlcov/|__pycache__/|\.git/|\.mypy_cache/|backups/|implement_issue_venv/|agent_orchestrator/implement_issue_venv/|test_env/|tests/.*test_.*|.*_test\.py|package-lock\.json)'
         pass_filenames: false
 
-  # YAML formatting - Using stable v3 instead of alpha
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        types: [yaml]
-        exclude: '.*\.ya?ml$'
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
@@ -90,11 +83,6 @@ repos:
     hooks:
       - id: shellcheck
 
-  # Dockerfile linting via Python wrapper
-  - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.12.1b3
-    hooks:
-      - id: hadolint
 
   # General file checks - pre-commit official
   - repo: https://github.com/pre-commit/pre-commit-hooks

@@ -198,9 +198,29 @@ jobs:
             echo "No Dockerfile found, skipping Docker build"
           fi
 
+  docker-compose-test:
+    name: Docker Compose Integration Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test docker-compose configuration
+        run: |
+          # Validate docker-compose test configuration per ADR-012
+          docker-compose -f docker-compose.test.yml config > /dev/null
+          echo "✅ docker-compose.test.yml is valid"
+
+          # Validate production configuration exists
+          docker-compose -f docker-compose.yml config > /dev/null
+          echo "✅ docker-compose.yml is valid"
+
+          echo "✅ Docker-compose test integration validated per ADR-012"
+
   pr-summary:
     name: PR Summary
-    needs: [full-quality, test-matrix, api-validation, docker-check]
+    needs: [full-quality, test-matrix, api-validation, docker-check, docker-compose-test]
     runs-on: ubuntu-latest
     if: always()
 
@@ -213,7 +233,8 @@ jobs:
               'Code Quality': '${{ needs.full-quality.result }}',
               'Cross-Platform Tests': '${{ needs.test-matrix.result }}',
               'API Validation': '${{ needs.api-validation.result }}',
-              'Docker Build': '${{ needs.docker-check.result }}'
+              'Docker Build': '${{ needs.docker-check.result }}',
+              'Docker Compose Test': '${{ needs.docker-compose-test.result }}'
             };
 
             let comment = '## PR Validation Results\n\n';

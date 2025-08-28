@@ -87,7 +87,9 @@ def test_settings() -> Settings:
     get_settings.cache_clear()
 
     # Use separate test database to avoid conflicts
-    test_db_url = "sqlite+aiosqlite:///./test_violentutf.db"
+    from tests.helpers.windows_compat import get_test_db_path
+
+    test_db_url = get_test_db_path()
 
     # Set environment variable for test database
     os.environ["DATABASE_URL"] = test_db_url
@@ -184,7 +186,7 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture(autouse=True)
-def reset_dependency_overrides(app: FastAPI) -> None:
+def reset_dependency_overrides(app: FastAPI) -> Generator[None, None, None]:
     """Reset dependency overrides after each test, but preserve core test dependencies."""
     from app.core.config import get_settings
     from app.db.session import get_db, get_db_dependency
@@ -196,13 +198,18 @@ def reset_dependency_overrides(app: FastAPI) -> None:
         get_db_dependency: app.dependency_overrides.get(get_db_dependency),
     }
 
-    yield
+    yield  # Run the test
 
     # Clear all overrides, then restore the preserved ones
     app.dependency_overrides.clear()
     for dependency, override in preserved_overrides.items():
         if override is not None:
             app.dependency_overrides[dependency] = override
+
+    # Windows-specific cleanup
+    from tests.helpers.windows_compat import force_close_sqlite_connections
+
+    force_close_sqlite_connections()
 
 
 @pytest_asyncio.fixture

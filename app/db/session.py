@@ -40,7 +40,22 @@ def create_database_engine() -> Optional[AsyncEngine]:
 
     # Only use test fallback if no URL configured and not in unit test environment
     if not database_url and os.getenv("TESTING") and not os.getenv("PYTEST_CURRENT_TEST"):
-        database_url = "sqlite+aiosqlite:///./test.db"
+        # Use Windows-compatible test database path
+        try:
+            import platform
+            import tempfile
+            import uuid
+
+            if platform.system() == "Windows":
+                temp_dir = tempfile.gettempdir()
+                unique_id = str(uuid.uuid4()).replace("-", "")[:8]
+                database_url = f"sqlite+aiosqlite:///{temp_dir}/test_{os.getpid()}_{unique_id}.db"
+            else:
+                unique_id = str(uuid.uuid4()).replace("-", "")[:8]
+                database_url = f"sqlite+aiosqlite:///./test_{os.getpid()}_{unique_id}.db"
+        except Exception:
+            # Fallback to original path if something goes wrong
+            database_url = "sqlite+aiosqlite:///./test.db"
         logger.info("Using test database URL", url=database_url)
 
     if not database_url:

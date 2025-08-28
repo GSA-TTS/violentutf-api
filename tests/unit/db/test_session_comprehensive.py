@@ -105,7 +105,7 @@ class TestDatabaseEngineCreation:
             assert result == test_engine
             # Should use test database URL
             call_args = test_create_engine.call_args[0]
-            assert "test.db" in call_args[0]
+            assert "test_" in call_args[0] and ".db" in call_args[0]
 
     @patch("app.db.session.settings")
     def test_create_engine_no_url_no_test_mode(self, test_settings):

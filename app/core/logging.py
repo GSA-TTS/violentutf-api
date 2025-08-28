@@ -36,6 +36,10 @@ def sanitize_sensitive_data(
 
     def _sanitize_dict(d: MutableMapping[str, Any]) -> Dict[str, Any]:
         """Recursively sanitize dictionary."""
+        # Protection against non-dict objects
+        if not hasattr(d, "items") or callable(d):
+            return {}
+
         sanitized = {}
         for key, value in d.items():
             lower_key = key.lower()

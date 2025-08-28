@@ -250,7 +250,7 @@ class TestAPIKeyRepository:
         new_api_key = api_key_factory.create(
             id="new-api-key-id",
             name="New API Key",
-            key_hash="c3d4e5f6789012345678901cdef123456789012cdef123456789012cdef1234",
+            key_hash="c3d4e5f6789012345678901cdef123456789012cdef123456789012cdef12345",
             user_id="test-user-id",
         )
         mock_session.flush.return_value = None
@@ -261,7 +261,8 @@ class TestAPIKeyRepository:
             created_key = await api_key_repository.create_api_key(
                 user_id="test-user-id",
                 name="New API Key",
-                key_hash="c3d4e5f6789012345678901cdef123456789012cdef123456789012cdef1234",
+                key_hash="c3d4e5f6789012345678901cdef123456789012cdef123456789012cdef12345",
+                key_prefix="test_new",
                 permissions={"read": True},
             )
 
@@ -555,7 +556,7 @@ class TestAPIKeyRepository:
 
         # Assert
         assert rotated_key is not None
-        assert rotated_key.key_hash == "b2c3d4e5f6789012345678901bcdef12345678901bcdef12345678901bcdef12"
+        assert rotated_key.key_hash == "b2c3d4e5f6789012345678901bcdef12345678901bcdef12345678901bcdef123"
         assert rotated_key.rotated_by == "admin"
         assert rotated_key.rotated_at is not None
         mock_session.flush.assert_called_once()

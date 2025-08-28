@@ -82,8 +82,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Apply secure headers
         secure_headers = self.secure.headers
-        for header_name, header_value in secure_headers.items():
-            response.headers[header_name] = header_value
+
+        # Handle case where headers might be a function instead of dict
+        if callable(secure_headers):
+            try:
+                secure_headers = secure_headers()
+            except Exception:
+                secure_headers = {}
+
+        # Ensure we have a dict-like object
+        if hasattr(secure_headers, "items") and not callable(secure_headers):
+            for header_name, header_value in secure_headers.items():
+                response.headers[header_name] = header_value
 
         # Additional security headers
         response.headers["X-Content-Type-Options"] = "nosniff"

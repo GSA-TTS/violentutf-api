@@ -116,7 +116,11 @@ async def create_test_task(
         "config": kwargs.get("config", {"timeout": 300}),
         "progress": kwargs.get("progress", 0),
         "created_by": created_by,
-        **{k: v for k, v in kwargs.items() if k not in ["description", "priority", "input_data", "config", "progress"]},
+        **{
+            k: v
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
+            if k not in ["description", "priority", "input_data", "config", "progress"]
+        },
     }
     task = Task(**task_data)
     db_session.add(task)
@@ -155,7 +159,7 @@ async def create_test_scan(
         "created_by": created_by,
         **{
             k: v
-            for k, v in kwargs.items()
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
             if k
             not in [
                 "description",
@@ -197,7 +201,7 @@ async def create_test_scan_finding(
         "created_by": created_by,
         **{
             k: v
-            for k, v in kwargs.items()
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
             if k not in ["description", "category", "vulnerability_type", "confidence_score", "evidence"]
         },
     }
@@ -227,7 +231,11 @@ async def create_test_scan_report(
         "summary": kwargs.get("summary", {"findings": 0, "severity": "low"}),
         "generated_at": kwargs.get("generated_at", datetime.utcnow()),
         "created_by": created_by,
-        **{k: v for k, v in kwargs.items() if k not in ["content", "summary", "generated_at"]},
+        **{
+            k: v
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
+            if k not in ["content", "summary", "generated_at"]
+        },
     }
     report = ScanReport(**report_data)
     db_session.add(report)
