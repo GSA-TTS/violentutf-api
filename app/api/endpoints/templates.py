@@ -381,8 +381,6 @@ async def preview_template(
             raise HTTPException(status_code=404, detail="Template not found")
 
         # Generate preview using template content
-        from datetime import timezone
-
         preview_data = {
             "template_id": template.id,
             "template_name": template.name,

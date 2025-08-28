@@ -535,22 +535,26 @@ class TestSessionEndpoints:
         """Test extending session expiration."""
         extend_data = {"extension_minutes": 120}
 
-        # Patch the SessionRepository class itself since the endpoint creates its own instance
-        with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
-            mock_repo_class.return_value = mock_session_repo
+        # Mock service response
+        extend_result = {"success": True, "message": "Session extended by 120 minutes"}
 
-            # Mock the _get_current_user_id and _check_session_ownership methods
-            with (
-                patch.object(
-                    session_crud_router, "_get_current_user_id", return_value="12345678-1234-5678-9abc-123456789abc"
-                ),
-                patch.object(session_crud_router, "_check_session_ownership", return_value=None),
-            ):
-                response = await async_client.post(
-                    f"/api/v1/sessions/{mock_session.id}/extend",
-                    json=extend_data,
-                    headers=auth_headers,
-                )
+        # Mock service
+        mock_service = AsyncMock()
+        mock_service.extend_session.return_value = extend_result
+
+        # Get the app instance from the async client and override dependency
+        app = async_client._transport.app
+        app.dependency_overrides[get_session_service] = lambda: mock_service
+
+        try:
+            response = await async_client.post(
+                f"/api/v1/sessions/{mock_session.id}/extend",
+                json=extend_data,
+                headers=auth_headers,
+            )
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -651,14 +655,10 @@ class TestSessionEndpoints:
         ]
 
         for endpoint in endpoints:
-            # Patch the SessionRepository class itself since the endpoint creates its own instance
-            with patch("app.api.endpoints.sessions.SessionRepository") as mock_repo_class:
-                mock_repo_class.return_value = mock_session_repo
-
-                # Mock the _check_admin_permission to raise ForbiddenError (simulate non-admin user)
-                with patch.object(session_crud_router, "_check_admin_permission") as mock_admin_check:
-                    mock_admin_check.side_effect = ForbiddenError(message="Administrator privileges required")
-                    response = await async_client.get(endpoint, headers=auth_headers)
+            # Mock the _check_admin_permission to raise ForbiddenError (simulate non-admin user)
+            with patch.object(session_crud_router, "_check_admin_permission") as mock_admin_check:
+                mock_admin_check.side_effect = ForbiddenError(message="Administrator privileges required")
+                response = await async_client.get(endpoint, headers=auth_headers)
 
             assert response.status_code == status.HTTP_403_FORBIDDEN
             assert "Administrator privileges required" in response.json()["message"]

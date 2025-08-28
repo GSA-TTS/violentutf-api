@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Import existing authentication functions
 from app.core.auth import (
     get_current_active_user,
+    get_current_superuser,
     get_current_user,
 )
 
