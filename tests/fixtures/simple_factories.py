@@ -132,12 +132,15 @@ class SimpleRoleFactory:
     @staticmethod
     def create(**kwargs) -> Role:
         """Create a Role instance with test data."""
+        # Extract permissions to put in role_metadata
+        permissions = kwargs.pop("permissions", ["read", "write"])
+
         defaults = {
             "id": str(uuid.uuid4()),
             "name": f"Test Role {random.randint(1000, 9999)}",
             "display_name": f"Test Display Role {random.randint(1000, 9999)}",
             "description": "Test role for unit testing",
-            "role_metadata": {"permissions": ["read", "write"]},
+            "role_metadata": {"permissions": permissions},
             "is_system_role": False,
             "is_active": True,
             "created_at": datetime.now(timezone.utc),
@@ -158,6 +161,10 @@ class SimpleSecurityScanFactory:
     @staticmethod
     def create(**kwargs) -> SecurityScan:
         """Create a SecurityScan instance with test data."""
+        # Map user_id to initiated_by if provided
+        if "user_id" in kwargs:
+            kwargs["initiated_by"] = kwargs.pop("user_id")
+
         defaults = {
             "id": str(uuid.uuid4()),
             "name": f"Test Security Scan {random.randint(1000, 9999)}",

@@ -181,7 +181,7 @@ class ApiKeyFactory:
             id=id or str(uuid.uuid4()),
             user_id=user_id or str(uuid.uuid4()),
             name=name or f"API Key {random_word()}",
-            key_hash=key_hash or f"hash_{uuid.uuid4().hex}",
+            key_hash=key_hash or uuid.uuid4().hex[:64].ljust(64, "0"),
             organization_id=organization_id or str(uuid.uuid4()),
             expires_at=expires_at,
             is_active=is_active,

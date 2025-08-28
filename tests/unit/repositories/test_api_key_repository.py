@@ -43,9 +43,8 @@ class TestAPIKeyRepository:
         return api_key_factory.create(
             id="expired-api-key-id",
             name="Expired API Key",
-            key_hash="expired_key_hash_456",
+            key_hash="c1d2e3f4a5b6789012345678901bcdef1234567890abcdef1234567890abcdef",
             user_id="test-user-id",
-            is_active=True,
             expires_at=datetime.now(timezone.utc) - timedelta(days=1),
             created_at=datetime.now(timezone.utc) - timedelta(days=31),
         )
@@ -56,9 +55,9 @@ class TestAPIKeyRepository:
         return api_key_factory.create(
             id="inactive-api-key-id",
             name="Inactive API Key",
-            key_hash="inactive_key_hash_789",
+            key_hash="b1c2d3e4f5678901234567890abcdef1234567890abcdef1234567890abcdef1",
             user_id="test-user-id",
-            is_active=False,
+            revoked_at=datetime.now(timezone.utc) - timedelta(hours=1),
             created_at=datetime.now(timezone.utc),
         )
 
@@ -196,7 +195,7 @@ class TestAPIKeyRepository:
         # Assert
         assert len(user_keys) == 1
         assert user_keys[0].user_id == "test-user-id"
-        assert user_keys[0].is_active is True
+        assert user_keys[0].is_active() is True
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -219,8 +218,8 @@ class TestAPIKeyRepository:
 
         # Assert
         assert len(user_keys) == 2
-        assert any(key.is_active is True for key in user_keys)
-        assert any(key.is_active is False for key in user_keys)
+        assert any(key.is_active() is True for key in user_keys)
+        assert any(key.is_active() is False for key in user_keys)
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -343,7 +342,7 @@ class TestAPIKeyRepository:
 
         # Assert
         assert success is True
-        assert sample_api_key.is_active is False
+        assert sample_api_key.is_active() is False
         assert sample_api_key.revoked_by == "admin"
         assert sample_api_key.revoked_at is not None
         mock_session.flush.assert_called_once()

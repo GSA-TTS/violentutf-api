@@ -42,6 +42,16 @@ class Role(Base, BaseModelMixin):
     # Timestamps and audit fields (inherited from BaseModel)
     # created_at, updated_at, created_by, updated_by, version, is_deleted
 
+    @property
+    def permissions(self) -> List[str]:
+        """Get permissions from role metadata."""
+        return self.role_metadata.get("permissions", [])
+
+    @permissions.setter
+    def permissions(self, value: List[str]) -> None:
+        """Set permissions in role metadata."""
+        self.role_metadata["permissions"] = value
+
     def __repr__(self) -> str:
         """Return string representation of the role."""
         return f"<Role(id={self.id}, name='{self.name}', display_name='{self.display_name}')>"

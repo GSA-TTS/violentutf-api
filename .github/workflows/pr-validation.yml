@@ -209,11 +209,11 @@ jobs:
       - name: Test docker-compose configuration
         run: |
           # Validate docker-compose test configuration per ADR-012
-          docker-compose -f docker-compose.test.yml config > /dev/null
+          docker compose -f docker-compose.test.yml config > /dev/null
           echo "✅ docker-compose.test.yml is valid"
 
           # Validate production configuration exists
-          docker-compose -f docker-compose.yml config > /dev/null
+          docker compose -f docker-compose.yml config > /dev/null
           echo "✅ docker-compose.yml is valid"
 
           echo "✅ Docker-compose test integration validated per ADR-012"

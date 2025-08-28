@@ -67,6 +67,7 @@ per-file-ignores =
     app/services/audit_service.py:C901
     app/services/mfa_policy_service.py:C901
     app/services/rbac_service.py:C901
+    app/utils/performance_tracker.py:ANN401,D107,D401
     fix_test_patterns.py:C901
     tools/pre_audit/*:C901,ANN201,ANN202
 max-complexity = 10

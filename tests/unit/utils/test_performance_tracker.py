@@ -370,17 +370,15 @@ class TestPerformanceTracker:
         assert "baseline_test" in tracker._baselines
         assert tracker._baselines["baseline_test"] == 5.0
 
-    @patch("psutil.Process")
-    def test_memory_monitoring_failure_handling(self, mock_process, tracker):
+    def test_memory_monitoring_failure_handling(self, tracker):
         """Test graceful handling of memory monitoring failures."""
-        # Mock psutil to raise exception
-        mock_process_instance = Mock()
-        mock_process_instance.memory_info.side_effect = Exception("Mock psutil error")
-        mock_process.return_value = mock_process_instance
+        # Mock the existing _process instance to raise exception
+        with patch.object(tracker, "_process") as mock_process:
+            mock_process.memory_info.side_effect = Exception("Mock psutil error")
 
-        # Should handle gracefully
-        memory_usage = tracker._get_memory_usage_mb()
-        assert memory_usage == 0.0, "Should return 0.0 on psutil failure"
+            # Should handle gracefully
+            memory_usage = tracker._get_memory_usage_mb()
+            assert memory_usage == 0.0, "Should return 0.0 on psutil failure"
 
 
 class TestPerformanceDecorator:
