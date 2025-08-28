@@ -552,3 +552,108 @@ class RoleRepository(BaseRepository[Role]):
         except Exception as e:
             logger.error("Failed to cleanup expired assignments", error=str(e))
             raise
+
+    async def create_role(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        permissions: Optional[List[str]] = None,
+        organization_id: Optional[str] = None,
+        created_by: str = "system",
+    ) -> Role:
+        """Create a new role.
+
+        Args:
+            name: Role name
+            description: Role description
+            permissions: List of permissions
+            organization_id: Organization identifier
+            created_by: Who is creating the role
+
+        Returns:
+            Created role
+
+        Raises:
+            ValueError: If role with name already exists
+        """
+        try:
+            # Check if role already exists
+            existing = await self.get_by_name(name)
+            if existing:
+                raise ValueError(f"Role with name '{name}' already exists")
+
+            # Create role data
+            role_data = {
+                "name": name,
+                "display_name": name.replace("_", " ").title(),
+                "description": description or f"Role {name}",
+                "permissions": permissions or [],
+                "is_system_role": False,
+                "is_active": True,
+                "metadata": {"created_by": created_by, "level": 999},
+                "created_by": created_by,
+                "updated_by": created_by,
+            }
+
+            if organization_id:
+                role_data["metadata"]["organization_id"] = organization_id
+
+            role = Role(**role_data)
+            role.validate_role_data()
+
+            self.session.add(role)
+            await self.session.flush()
+            await self.session.refresh(role)
+
+            logger.info("Role created", name=name, role_id=str(role.id), created_by=created_by)
+            return role
+
+        except Exception as e:
+            logger.error("Failed to create role", name=name, error=str(e))
+            raise
+
+    async def update_role_permissions(
+        self, role_id: str, permissions: List[str], updated_by: str = "system"
+    ) -> Optional[Role]:
+        """Update role permissions.
+
+        Args:
+            role_id: Role identifier
+            permissions: New permissions list
+            updated_by: Who is updating the role
+
+        Returns:
+            Updated role if found, None otherwise
+
+        Raises:
+            ValueError: If trying to update system role
+        """
+        try:
+            role_uuid = uuid.UUID(role_id)
+            role = await self.get(role_uuid)
+
+            if not role:
+                return None
+
+            if role.is_system_role:
+                raise ValueError("Cannot update permissions of system roles")
+
+            # Update permissions
+            role.permissions = permissions
+            role.updated_by = updated_by
+            role.updated_at = datetime.now(timezone.utc)
+
+            await self.session.flush()
+            await self.session.refresh(role)
+
+            logger.info(
+                "Role permissions updated",
+                role_id=str(role_uuid),
+                permissions_count=len(permissions),
+                updated_by=updated_by,
+            )
+            return role
+
+        except Exception as e:
+            logger.error("Failed to update role permissions", role_id=role_id, error=str(e))
+            raise

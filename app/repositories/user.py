@@ -67,7 +67,7 @@ class UserRepository(BaseRepository[User], IUserRepository):
             self.logger.error("Failed to get user by username", username=username, error=str(e))
             raise
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: Optional[str]) -> Optional[User]:
         """
         Get user by email address.
 
@@ -78,6 +78,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
             User if found, None otherwise
         """
         try:
+            # Validate email input
+            if email is None:
+                return None
+
             # Case-insensitive email lookup
             query = select(self.model).where(
                 and_(self.model.email.ilike(email.lower()), self.model.is_deleted == False)  # noqa: E712

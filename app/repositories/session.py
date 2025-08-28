@@ -449,10 +449,28 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             raise
 
     # Interface methods implementation
-    async def get_active_sessions(self, user_id: str) -> List[Session]:
-        """Get all active sessions for a user (interface method)."""
-        user_uuid = uuid.UUID(user_id)
-        return await self.get_user_sessions(user_uuid, include_inactive=False)
+    async def get_active_sessions(self, user_id: str = None, limit: int = 10) -> List[Session]:
+        """Get all active sessions or active sessions for a specific user (interface method)."""
+        if user_id:
+            user_uuid = uuid.UUID(user_id)
+            sessions = await self.get_user_sessions(user_uuid, include_inactive=False)
+        else:
+            # Get all active sessions across all users
+            query = (
+                select(self.model)
+                .where(
+                    and_(self.model.is_active == True, self.model.expires_at > datetime.now(timezone.utc))  # noqa: E712
+                )
+                .order_by(self.model.last_activity_at.desc())
+            )
+
+            if limit and limit > 0:
+                query = query.limit(limit)
+
+            result = await self.session.execute(query)
+            sessions = list(result.scalars().all())
+
+        return sessions[:limit] if limit and limit > 0 and user_id else sessions
 
     async def get_user_sessions_interface(self, user_id: str, limit: int = 10) -> List[Session]:
         """Get user sessions with optional limit (interface method)."""
@@ -515,19 +533,33 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             # Revoke all user sessions
             return await self.revoke_user_sessions(user_uuid, "system", "All sessions invalidated")
 
-    async def extend_session(self, session_id: str, extension: timedelta) -> Optional[Session]:
+    async def extend_session(
+        self, session_id: str, extension: Optional[timedelta] = None, extension_minutes: Optional[int] = None
+    ) -> bool:
         """Extend session expiration time (interface method)."""
         try:
-            session_uuid = uuid.UUID(session_id)
-            session_obj = await self.get(session_uuid)
+            # Handle both extension patterns
+            if extension_minutes is not None:
+                extension = timedelta(minutes=extension_minutes)
+            elif extension is None:
+                extension = timedelta(minutes=60)  # Default extension
+            # else: extension is already a timedelta, use as-is
+
+            # Try to parse as UUID first, if that fails assume it's a token
+            try:
+                session_uuid = uuid.UUID(session_id)
+                session_obj = await self.get(session_uuid)
+            except ValueError:
+                # Assume it's a token instead of UUID
+                session_obj = await self.get_by_token(session_id)
 
             if session_obj:
                 new_expires_at = datetime.now(timezone.utc) + extension
                 session_obj.extend_session(new_expires_at)
                 await self.session.commit()
-                return session_obj
+                return True
 
-            return None
+            return False
         except Exception as e:
             self.logger.error("Failed to extend session", session_id=session_id, error=str(e))
             raise
