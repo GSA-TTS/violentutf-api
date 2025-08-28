@@ -317,10 +317,12 @@ class TestAuthEndpointsSecurity:
         mock_existing_user.email = registration_data["email"]
 
         # Test scenario: First registration succeeds, second fails due to duplicate username
+        from app.services.user_service_impl import UserServiceImpl
+
         with (
-            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
-            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
-            patch.object(UserRepository, "create_user") as mock_create_user,
+            patch.object(UserServiceImpl, "get_user_by_username") as mock_get_by_username,
+            patch.object(UserServiceImpl, "get_user_by_email") as mock_get_by_email,
+            patch.object(UserServiceImpl, "create_user") as mock_create_user,
         ):
             # First registration: no existing user found
             mock_get_by_username.return_value = None
@@ -346,8 +348,8 @@ class TestAuthEndpointsSecurity:
 
         # Test scenario: duplicate email detection
         with (
-            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
-            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
+            patch.object(UserServiceImpl, "get_user_by_username") as mock_get_by_username,
+            patch.object(UserServiceImpl, "get_user_by_email") as mock_get_by_email,
         ):
             # Different username, but same email
             email_duplicate_data = registration_data.copy()

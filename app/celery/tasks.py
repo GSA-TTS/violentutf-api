@@ -2,7 +2,7 @@
 
 import asyncio
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from celery import Task as CeleryTask
@@ -80,7 +80,7 @@ async def execute_task(
 
             # Update task status
             task.status = TaskStatus.RUNNING
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             task.celery_task_id = self.request.id
             await db.commit()
 
@@ -99,7 +99,7 @@ async def execute_task(
                 name="Task Execution Result",
                 data=result_data,
                 result_metadata={
-                    "execution_time": (datetime.utcnow() - task.started_at).total_seconds(),
+                    "execution_time": (datetime.now(timezone.utc) - task.started_at).total_seconds(),
                     "worker_id": self.request.id,
                 },
                 is_primary=True,
@@ -110,7 +110,7 @@ async def execute_task(
 
             # Update task as completed
             task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             task.output_data = result_data
             task.progress = 100
             task.progress_message = "Task completed successfully"
@@ -130,7 +130,7 @@ async def execute_task(
             # Update task as failed
             if "task" in locals() and task is not None:
                 task.status = TaskStatus.FAILED
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 task.error_message = str(e)
                 task.error_details = {
                     "error_type": type(e).__name__,
@@ -168,12 +168,12 @@ async def execute_scan_task(
 
             # Update scan and task status
             scan.status = ScanStatus.RUNNING
-            scan.started_at = datetime.utcnow()
+            scan.started_at = datetime.now(timezone.utc)
             scan.progress = 10
             scan.current_phase = "Initialization"
 
             task.status = TaskStatus.RUNNING
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             task.celery_task_id = self.request.id
             task.progress = 10
             task.progress_message = "Initializing scan..."
@@ -190,13 +190,13 @@ async def execute_scan_task(
 
             # Update scan as completed
             scan.status = ScanStatus.COMPLETED
-            scan.completed_at = datetime.utcnow()
+            scan.completed_at = datetime.now(timezone.utc)
             scan.progress = 100
             scan.current_phase = "Completed"
 
             # Update task as completed
             task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             task.progress = 100
             task.progress_message = "Scan completed successfully"
             task.output_data = scan_results
@@ -216,13 +216,13 @@ async def execute_scan_task(
             # Update scan and task as failed
             if "scan" in locals() and scan is not None:
                 scan.status = ScanStatus.FAILED
-                scan.completed_at = datetime.utcnow()
+                scan.completed_at = datetime.now(timezone.utc)
                 scan.error_message = str(e)
                 scan.error_details = {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
 
             if "task" in locals() and task is not None:
                 task.status = TaskStatus.FAILED
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 task.error_message = str(e)
                 task.error_details = {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
 
@@ -258,7 +258,7 @@ async def generate_report_task(self: AsyncTask, report_id: str) -> Dict[str, Any
             # Update report with generated content
             report.content = report_content
             report.status = ReportStatus.COMPLETED
-            report.generated_at = datetime.utcnow()
+            report.generated_at = datetime.now(timezone.utc)
 
             await db.commit()
 
@@ -313,7 +313,7 @@ async def execute_scheduled_reports_task(self: AsyncTask) -> Dict[str, Any]:
                 "successful": successful_count,
                 "failed": failed_count,
                 "results": results,
-                "executed_at": datetime.utcnow().isoformat(),
+                "executed_at": datetime.now(timezone.utc).isoformat(),
             }
 
         except Exception as e:
@@ -322,7 +322,7 @@ async def execute_scheduled_reports_task(self: AsyncTask) -> Dict[str, Any]:
                 "status": "error",
                 "message": str(e),
                 "error_type": type(e).__name__,
-                "executed_at": datetime.utcnow().isoformat(),
+                "executed_at": datetime.now(timezone.utc).isoformat(),
             }
 
 
@@ -364,7 +364,7 @@ async def _execute_task_by_type(task: TaskModel, config: Dict[str, Any]) -> Dict
                 "task_type": task.task_type,
                 "processed": True,
                 "config_used": config,
-                "execution_timestamp": datetime.utcnow().isoformat(),
+                "execution_timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -378,7 +378,7 @@ async def _execute_task_by_type(task: TaskModel, config: Dict[str, Any]) -> Dict
             "processed": False,
             "error": str(e),
             "config_used": config,
-            "execution_timestamp": datetime.utcnow().isoformat(),
+            "execution_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
@@ -515,7 +515,7 @@ async def _execute_scan_by_type(scan: Scan, config: Dict[str, Any], db: AsyncSes
     findings_data = {
         "scan_id": scan.id,
         "scan_type": scan.scan_type,
-        "start_time": datetime.utcnow().isoformat(),
+        "start_time": datetime.now(timezone.utc).isoformat(),
         "total_tests": 0,
         "passed_tests": 0,
         "failed_tests": 0,
@@ -571,10 +571,10 @@ async def _execute_scan_by_type(scan: Scan, config: Dict[str, Any], db: AsyncSes
     scan.failed_tests = int(findings_data["failed_tests"])
 
     # Add execution metadata
-    findings_data["end_time"] = datetime.utcnow().isoformat()
+    findings_data["end_time"] = datetime.now(timezone.utc).isoformat()
     start_time_str = str(findings_data["start_time"])  # Ensure it's a string
     findings_data["scan_duration_seconds"] = (
-        datetime.utcnow() - datetime.fromisoformat(start_time_str)
+        datetime.now(timezone.utc) - datetime.fromisoformat(start_time_str)
     ).total_seconds()
     metadata_dict = findings_data.get("metadata", {})
     if isinstance(metadata_dict, dict):
@@ -670,11 +670,11 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
         end_date = None
 
         if "start_date" in config:
-            from datetime import datetime
+            from datetime import datetime, timezone
 
             start_date = datetime.fromisoformat(config["start_date"])
         if "end_date" in config:
-            from datetime import datetime
+            from datetime import datetime, timezone
 
             end_date = datetime.fromisoformat(config["end_date"])
 
@@ -692,7 +692,7 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
         return {
             "report_id": report.id,
             "report_type": report.report_type,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "file_path": result.get("file_path"),
             "format": report.format.value,
             "metrics_period": result.get("metrics_period"),
@@ -702,7 +702,7 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
     return {
         "report_id": report.id,
         "report_type": report.report_type,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {"total_items": 10, "processed": 10, "success_rate": 1.0},
         "details": {"sections": ["Executive Summary", "Technical Details", "Recommendations"], "format": report.format},
     }
@@ -733,12 +733,12 @@ async def execute_scheduled_reports_task_v2(self: AsyncTask) -> Dict[str, Any]:
                 "status": "completed",
                 "reports_executed": len(results),
                 "results": results,
-                "execution_time": datetime.utcnow().isoformat(),
+                "execution_time": datetime.now(timezone.utc).isoformat(),
             }
 
         except Exception as e:
             logger.error(f"Error executing scheduled reports: {e}")
-            return {"status": "failed", "error": str(e), "execution_time": datetime.utcnow().isoformat()}
+            return {"status": "failed", "error": str(e), "execution_time": datetime.now(timezone.utc).isoformat()}
 
 
 async def _send_webhook(task: TaskModel) -> None:
@@ -767,7 +767,7 @@ async def _send_webhook(task: TaskModel) -> None:
         "progress": task.progress,
         "output_data": task.output_data,
         "error_message": task.error_message,
-        "webhook_timestamp": datetime.utcnow().isoformat(),
+        "webhook_timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     # Send webhook with retry logic
@@ -798,7 +798,7 @@ async def _send_webhook(task: TaskModel) -> None:
                                 task.config = {}
                             task.config["webhook_response"] = {
                                 "status_code": response.status,
-                                "sent_at": datetime.utcnow().isoformat(),
+                                "sent_at": datetime.now(timezone.utc).isoformat(),
                                 "attempt": attempt + 1,
                             }
                         return
@@ -824,5 +824,5 @@ async def _send_webhook(task: TaskModel) -> None:
             "status": "failed",
             "attempts": max_retries,
             "last_error": "Max retries exceeded",
-            "failed_at": datetime.utcnow().isoformat(),
+            "failed_at": datetime.now(timezone.utc).isoformat(),
         }

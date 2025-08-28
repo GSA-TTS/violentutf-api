@@ -12,7 +12,7 @@ repos:
         language_version: python3.12
         # Using same args as CI: black --check --diff .
         args: ['--check', '--quiet']
-        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/)'
+        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/|.*\.md$|.*\.txt$|.*\.rst$)'
 
   # Import sorting - PyCQA maintained (matches CI)
   - repo: https://github.com/PyCQA/isort

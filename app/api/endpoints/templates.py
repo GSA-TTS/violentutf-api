@@ -1,7 +1,7 @@
 """Report template management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -397,7 +397,7 @@ async def preview_template(
         }
 
         # Update last_used_at
-        template.last_used_at = datetime.utcnow()
+        template.last_used_at = datetime.now(timezone.utc)
         # Service layer handles commit
 
         return preview_data

@@ -1,6 +1,6 @@
 """Repository for security scan management."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, func, or_, select, update
@@ -69,7 +69,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         self, timeout_minutes: int = 60, organization_id: Optional[str] = None
     ) -> List[SecurityScan]:
         """Get scans that appear to be stalled (running longer than expected)."""
-        cutoff_time = datetime.utcnow() - timedelta(minutes=timeout_minutes)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
 
         filters = [
             self.model.status == ScanStatus.RUNNING,
@@ -104,7 +104,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         filters = [self.model.initiated_by == initiator, self.model.is_active == True]  # noqa: E712
 
         if days_back:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
             filters.append(self.model.created_at >= cutoff_date)
 
         if organization_id:
@@ -187,7 +187,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
             base_filters.append(self.model.organization_id == organization_id)
 
         if time_period_days:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_period_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_period_days)
             base_filters.append(self.model.created_at >= cutoff_date)
 
         # Total scans by status
@@ -305,7 +305,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         update_data = {"status": status, "updated_by": "system"}
 
         # Set timestamps based on status
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if status == ScanStatus.RUNNING:
             update_data["started_at"] = now
         elif status == ScanStatus.COMPLETED:
@@ -423,7 +423,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         self, days_to_keep: int = 90, organization_id: Optional[str] = None, dry_run: bool = True
     ) -> Dict[str, int]:
         """Clean up old scan records (soft delete)."""
-        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
 
         filters = [
             self.model.created_at < cutoff_date,
@@ -445,7 +445,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
                 .where(and_(*filters))
                 .values(
                     is_active=False,
-                    deleted_at=datetime.utcnow(),
+                    deleted_at=datetime.now(timezone.utc),
                     deleted_by="system_cleanup",
                     updated_by="system_cleanup",
                 )
