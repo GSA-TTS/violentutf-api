@@ -1,8 +1,9 @@
 """Scan management service for handling scan operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
@@ -15,13 +16,18 @@ logger = get_logger(__name__)
 class ScanService:
     """Service for managing scans with transaction management."""
 
-    def __init__(self, repository: BaseRepository):
-        """Initialize scan service with repository.
+    def __init__(self, repository_or_session: Union[BaseRepository, AsyncSession]):
+        """Initialize scan service with repository or database session.
 
         Args:
-            repository: Scan repository for data access
+            repository_or_session: Scan repository or AsyncSession
         """
-        self.repository = repository
+        if isinstance(repository_or_session, AsyncSession):
+            from app.repositories.scan import ScanRepository
+
+            self.repository = ScanRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_scan(self, scan_data: Dict[str, Any], user_id: str) -> Scan:
         """Create a new scan.

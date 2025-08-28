@@ -7,6 +7,7 @@ compliance while providing user data operations.
 
 from typing import List, Optional, Union
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ConflictError, NotFoundError, ValidationError
@@ -22,13 +23,16 @@ logger = get_logger(__name__)
 class UserServiceImpl(IUserService):
     """User service implementation using repository pattern."""
 
-    def __init__(self, user_repo: UserRepository):
-        """Initialize with user repository.
+    def __init__(self, repository_or_session: Union[UserRepository, AsyncSession]):
+        """Initialize with user repository or database session.
 
         Args:
-            user_repo: User repository for operations
+            repository_or_session: User repository or AsyncSession
         """
-        self.user_repo = user_repo
+        if isinstance(repository_or_session, AsyncSession):
+            self.user_repo = UserRepository(repository_or_session)
+        else:
+            self.user_repo = repository_or_session
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserData]:
         """Get user by ID.

@@ -76,7 +76,7 @@ jobs:
           # Install security scanning tools
           pip install pip-audit safety
           # Install test dependencies
-          pip install pytest pytest-asyncio pytest-timeout pytest-json-report pytest-html
+          pip install pytest pytest-asyncio pytest-timeout pytest-json-report pytest-html pytest-cov
           # Install integration test dependencies
           pip install httpx aiosqlite asyncpg psycopg2-binary
           # Install additional dependencies for repository pattern

@@ -1,8 +1,9 @@
 """Plugin management service for handling plugin lifecycle and operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
@@ -15,13 +16,18 @@ logger = get_logger(__name__)
 class PluginService:
     """Service for managing plugins with transaction management."""
 
-    def __init__(self, repository: BaseRepository):
-        """Initialize plugin service with repository.
+    def __init__(self, repository_or_session: Union[BaseRepository, AsyncSession]):
+        """Initialize plugin service with repository or database session.
 
         Args:
-            repository: Plugin repository for data access
+            repository_or_session: Plugin repository or AsyncSession
         """
-        self.repository = repository
+        if isinstance(repository_or_session, AsyncSession):
+            from app.repositories.plugin import PluginRepository
+
+            self.repository = PluginRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_plugin(self, plugin_data: Dict[str, Any], user_id: str) -> Plugin:
         """Create a new plugin.

@@ -11,42 +11,18 @@ from typing import TYPE_CHECKING, Any, Optional
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Import existing authentication functions
-from app.core.auth import (
-    get_current_active_user,
-    get_current_superuser,
-    get_current_user,
-)
+# Import existing authentication functions (frequently used)
+from app.core.auth import get_current_active_user, get_current_superuser, get_current_user
 
 # Import db session dependency for service layer initialization
 from app.db.session import get_db_dependency as get_db
-from app.repositories.plugin import PluginRepository
-from app.repositories.scan import ScanRepository
-from app.repositories.security_scan import SecurityScanRepository
-from app.repositories.user import UserRepository
-from app.repositories.vulnerability_finding import VulnerabilityFindingRepository
-from app.repositories.vulnerability_taxonomy import VulnerabilityTaxonomyRepository
-from app.services.api_key_service import APIKeyService
-from app.services.architectural_metrics_service import ArchitecturalMetricsService
-from app.services.audit_service import AuditService
-from app.services.health_service import HealthService
-from app.services.mfa_policy_service import MFAPolicyService
-from app.services.mfa_service import MFAService
-from app.services.oauth_service import OAuth2Service
-from app.services.plugin_service import PluginService
-from app.services.rbac_service import RBACService
-from app.services.report_service import ReportService
-from app.services.request_validation_service import RequestValidationService
-from app.services.scan_service import ScanService
-from app.services.security_scan_service import SecurityScanService
-from app.services.session_service import SessionService
-from app.services.task_service import TaskService
-from app.services.template_service import TemplateService
 
-# Import core service layer components that work
-from app.services.user_service_impl import UserServiceImpl
-from app.services.vulnerability_finding_service import VulnerabilityFindingService
-from app.services.vulnerability_taxonomy_service import VulnerabilityTaxonomyService
+# Repository imports removed to maintain layer boundary compliance (ADR-013)
+# Services now handle repository creation internally when provided with AsyncSession
+# Only most frequently used services imported at module level
+# Other services imported locally within functions to reduce module dependencies
+
+# Service imports moved to local functions to reduce module dependencies
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -99,7 +75,7 @@ async def get_optional_user(request: Request) -> Optional["User"]:
 # Following ADR-013 API layer separation patterns
 
 
-async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserServiceImpl:
+async def get_user_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get user service dependency injection.
 
     Provides UserService instance with database session for API endpoints.
@@ -111,11 +87,13 @@ async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserServi
     Returns:
         UserServiceImpl: Configured user service instance
     """
-    user_repo = UserRepository(session)
-    return UserServiceImpl(user_repo)
+    from app.services.user_service_impl import UserServiceImpl
+
+    # UserServiceImpl accepts session directly and creates repository internally
+    return UserServiceImpl(session)
 
 
-async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> APIKeyService:
+async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get API key service dependency injection.
 
     Provides APIKeyService instance with database session for API endpoints.
@@ -127,10 +105,12 @@ async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> APIKey
     Returns:
         APIKeyService: Configured API key service instance
     """
+    from app.services.api_key_service import APIKeyService
+
     return APIKeyService(session)
 
 
-async def get_session_service(session: AsyncSession = Depends(get_db)) -> SessionService:
+async def get_session_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get session service dependency injection.
 
     Provides SessionService instance for API endpoints.
@@ -142,10 +122,12 @@ async def get_session_service(session: AsyncSession = Depends(get_db)) -> Sessio
     Returns:
         SessionService: Configured session service instance
     """
+    from app.services.session_service import SessionService
+
     return SessionService(session)
 
 
-async def get_architectural_metrics_service(session: AsyncSession = Depends(get_db)) -> ArchitecturalMetricsService:
+async def get_architectural_metrics_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get architectural metrics service dependency injection.
 
     Provides ArchitecturalMetricsService instance for API endpoints.
@@ -157,10 +139,12 @@ async def get_architectural_metrics_service(session: AsyncSession = Depends(get_
     Returns:
         ArchitecturalMetricsService: Configured metrics service instance
     """
+    from app.services.architectural_metrics_service import ArchitecturalMetricsService
+
     return ArchitecturalMetricsService(session)
 
 
-async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> RBACService:
+async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get RBAC service dependency injection.
 
     Provides RBACService instance for API endpoints.
@@ -172,11 +156,13 @@ async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> RBACServi
     Returns:
         RBACService: Configured RBAC service instance
     """
+    from app.services.rbac_service import RBACService
+
     # For now, we'll pass session directly and fix constructor later
     return RBACService(session)
 
 
-async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get_db)) -> VulnerabilityTaxonomyService:
+async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get VulnerabilityTaxonomyService dependency.
 
     Provides VulnerabilityTaxonomyService instance for API endpoints.
@@ -188,11 +174,13 @@ async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get
     Returns:
         VulnerabilityTaxonomyService: Configured vulnerability taxonomy service instance
     """
-    vulnerability_taxonomy_repo = VulnerabilityTaxonomyRepository(session)
-    return VulnerabilityTaxonomyService(vulnerability_taxonomy_repo)
+    from app.services.vulnerability_taxonomy_service import VulnerabilityTaxonomyService
+
+    # VulnerabilityTaxonomyService accepts session directly and creates repository internally
+    return VulnerabilityTaxonomyService(session)
 
 
-async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> OAuth2Service:
+async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get OAuth2Service dependency.
 
     Provides OAuth2Service instance for API endpoints.
@@ -204,23 +192,29 @@ async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> OAuth2Se
     Returns:
         OAuth2Service: Configured OAuth2 service instance
     """
+    from app.services.oauth_service import OAuth2Service
+
     return OAuth2Service(session)
 
 
-async def get_audit_service(session: AsyncSession = Depends(get_db)) -> AuditService:
+async def get_audit_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get AuditService dependency."""
+    from app.services.audit_service import AuditService
+
     # Service handles its own repository dependencies internally
     return AuditService(session)
 
 
-async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> MFAService:
+async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get MFAService dependency."""
     # Use service factory to avoid direct repository imports in API layer
     return _create_mfa_service(session)
 
 
-async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> MFAPolicyService:
+async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get MFAPolicyService dependency."""
+    from app.services.mfa_policy_service import MFAPolicyService
+
     return MFAPolicyService(session)
 
 
@@ -231,46 +225,63 @@ async def get_scheduled_report_service(session: AsyncSession = Depends(get_db)) 
     return ScheduledReportService(session)
 
 
-async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> PluginService:
+async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get PluginService dependency."""
-    plugin_repo = PluginRepository(session)
-    return PluginService(plugin_repo)
+    from app.services.plugin_service import PluginService
+
+    # Services should handle repository creation internally to maintain layer boundaries
+    return PluginService(session)
 
 
-async def get_report_service(session: AsyncSession = Depends(get_db)) -> ReportService:
+async def get_report_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get ReportService dependency."""
+    from app.services.report_service import ReportService
+
+    # ReportService accepts session directly and creates repository internally
     return ReportService(session)
 
 
-async def get_scan_service(session: AsyncSession = Depends(get_db)) -> ScanService:
+async def get_scan_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get ScanService dependency."""
-    scan_repo = ScanRepository(session)
-    return ScanService(scan_repo)
+    from app.services.scan_service import ScanService
+
+    # Services should handle repository creation internally to maintain layer boundaries
+    return ScanService(session)
 
 
-async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> SecurityScanService:
+async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get SecurityScanService dependency."""
-    security_scan_repo = SecurityScanRepository(session)
-    return SecurityScanService(security_scan_repo)
+    from app.services.security_scan_service import SecurityScanService
+
+    # Services should handle repository creation internally to maintain layer boundaries
+    return SecurityScanService(session)
 
 
-async def get_task_service(session: AsyncSession = Depends(get_db)) -> TaskService:
+async def get_task_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get TaskService dependency."""
+    from app.services.task_service import TaskService
+
+    # TaskService accepts session directly and creates repository internally
     return TaskService(session)
 
 
-async def get_template_service(session: AsyncSession = Depends(get_db)) -> TemplateService:
+async def get_template_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get TemplateService dependency."""
+    from app.services.template_service import TemplateService
+
+    # TemplateService accepts session directly and creates repository internally
     return TemplateService(session)
 
 
-async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> VulnerabilityFindingService:
+async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> Any:
     """Get VulnerabilityFindingService dependency."""
-    vulnerability_finding_repo = VulnerabilityFindingRepository(session)
-    return VulnerabilityFindingService(vulnerability_finding_repo)
+    from app.services.vulnerability_finding_service import VulnerabilityFindingService
+
+    # Services should handle repository creation internally to maintain layer boundaries
+    return VulnerabilityFindingService(session)
 
 
-async def get_health_service() -> HealthService:
+async def get_health_service() -> Any:
     """Get health service dependency injection.
 
     Provides HealthService instance for API endpoints.
@@ -279,10 +290,12 @@ async def get_health_service() -> HealthService:
     Returns:
         HealthService: Configured health service instance
     """
+    from app.services.health_service import HealthService
+
     return HealthService()
 
 
-async def get_request_validation_service() -> RequestValidationService:
+async def get_request_validation_service() -> Any:
     """Get request validation service dependency injection.
 
     Provides RequestValidationService instance for API endpoints.
@@ -291,6 +304,8 @@ async def get_request_validation_service() -> RequestValidationService:
     Returns:
         RequestValidationService: Configured request validation service instance
     """
+    from app.services.request_validation_service import RequestValidationService
+
     return RequestValidationService()
 
 
@@ -533,12 +548,15 @@ get_db_dep = get_db
 # These functions encapsulate repository creation to maintain architectural boundaries
 
 
-def _create_mfa_service(session: AsyncSession) -> MFAService:
+def _create_mfa_service(session: AsyncSession) -> Any:
     """Internal factory for MFAService creation.
 
     Creates MFAService with session-based dependency injection.
     Repository creation moved to service layer to maintain architectural boundaries.
     """
+    from app.services.audit_service import AuditService
+    from app.services.mfa_service import MFAService
+
     # Create audit service (it handles its own repository internally)
     audit_service = AuditService(session)
 

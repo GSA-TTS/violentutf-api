@@ -1,8 +1,9 @@
 """Security scan management service for handling security scan operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
@@ -15,13 +16,16 @@ logger = get_logger(__name__)
 class SecurityScanService:
     """Service for managing security scans using repository pattern."""
 
-    def __init__(self, repository: SecurityScanRepository):
-        """Initialize security scan service with repository.
+    def __init__(self, repository_or_session: Union[SecurityScanRepository, AsyncSession]):
+        """Initialize security scan service with repository or database session.
 
         Args:
-            repository: Security scan repository for operations
+            repository_or_session: Security scan repository or AsyncSession
         """
-        self.repository = repository
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = SecurityScanRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_security_scan(self, scan_data: Dict[str, Any], user_id: str) -> SecurityScan:
         """Create a new security scan.
