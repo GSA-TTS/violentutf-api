@@ -10,7 +10,9 @@ from app.api.base import BaseCRUDRouter
 from app.api.deps import get_session_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.session import Session
-from app.repositories.session import SessionRepository
+
+# Removed SessionRepository import to comply with Clean Architecture
+# Repository access moved to service layer
 from app.schemas.base import BaseResponse, OperationResult
 from app.schemas.session import (
     SessionCreate,
@@ -31,9 +33,10 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
 
     def __init__(self) -> None:
         """Initialize session CRUD router."""
+        # TODO: Remove repository dependency when BaseCRUDRouter is refactored
+        # Using service layer through dependency injection instead
         super().__init__(
             model=Session,
-            repository=SessionRepository,
             create_schema=SessionCreate,
             update_schema=SessionUpdate,
             response_schema=SessionResponse,
@@ -42,6 +45,7 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
             tags=["Sessions"],
             require_auth=True,
             require_admin=False,  # Users can manage their own sessions
+            repository=None,  # Service layer handles data access
         )
 
     def _check_admin_permission(self, request: Request) -> None:

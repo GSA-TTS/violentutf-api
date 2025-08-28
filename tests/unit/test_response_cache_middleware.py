@@ -425,7 +425,6 @@ class TestResponseCacheIntegration:
         )
 
         with patch.object(cache_middleware, "_invalidate_cache_pattern") as mock_invalidate:
-
             # Import TestClient locally to ensure correct resolution
             from tests.utils.testclient import SafeTestClient
 

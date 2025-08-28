@@ -140,7 +140,7 @@ class SessionFactory:
             token=token or f"token_{uuid.uuid4().hex}",
             expires_at=expires_at or (datetime.utcnow() + timedelta(hours=24)),
             ip_address=ip_address or random_ip(),
-            user_agent=user_agent or f"TestAgent/{random.randint(1,10)}.0",
+            user_agent=user_agent or f"TestAgent/{random.randint(1, 10)}.0",
             is_active=is_active,
             created_at=kwargs.get("created_at", datetime.utcnow()),
             updated_at=kwargs.get("updated_at"),
@@ -230,7 +230,7 @@ class AuditLogFactory:
             resource_id=resource_id or str(uuid.uuid4()),
             details=details or {"test": random_word()},
             ip_address=ip_address or random_ip(),
-            user_agent=user_agent or f"TestAgent/{random.randint(1,10)}.0",
+            user_agent=user_agent or f"TestAgent/{random.randint(1, 10)}.0",
             timestamp=kwargs.get("timestamp", datetime.utcnow()),
             **kwargs,
         )
@@ -261,7 +261,7 @@ class SecurityScanFactory:
         return SecurityScan(
             id=id or str(uuid.uuid4()),
             scan_type=scan_type or random.choice(["vulnerability", "compliance", "penetration"]),
-            target=target or f"https://test{random.randint(1,999)}.example.com",
+            target=target or f"https://test{random.randint(1, 999)}.example.com",
             user_id=user_id or str(uuid.uuid4()),
             organization_id=organization_id or str(uuid.uuid4()),
             status=status,

@@ -575,6 +575,7 @@ def reset_engine() -> None:
 async def init_db() -> None:
     """
     Initialize database with Alembic migrations.
+
     This function is used by the setup script to initialize the database schema.
     """
     import os

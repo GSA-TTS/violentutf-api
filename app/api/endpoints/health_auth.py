@@ -5,12 +5,12 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_health_service
 from app.core.auth import get_current_user_data
 from app.core.auth_failover import get_fallback_auth_provider
 from app.core.permissions import require_permission
 from app.models.user import User
 from app.schemas.base import BaseResponse
-from app.services.health_service import get_health_service
 
 logger = get_logger(__name__)
 

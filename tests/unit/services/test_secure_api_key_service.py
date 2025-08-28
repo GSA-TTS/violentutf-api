@@ -183,7 +183,6 @@ class TestAPIKeyValidationEnhanced(TestSecureAPIKeyService):
             patch.object(api_key_service, "_verify_key_hash", return_value=True),
             patch("asyncio.create_task") as mock_create_task,
         ):
-
             result = await api_key_service.validate_api_key(test_key)
 
         assert result == sample_api_key_sha256

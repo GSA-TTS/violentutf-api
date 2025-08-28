@@ -398,7 +398,6 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             # Special handling for setting expires_at to None (remove expiration)
             # We can't use the base update method because it filters out None values
             if new_expires_at is None:
-
                 update_query = (
                     update(self.model)
                     .where(self.model.id == api_key_id)

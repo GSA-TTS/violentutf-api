@@ -13,7 +13,9 @@ from app.core.errors import ConflictError, ForbiddenError, NotFoundError, Valida
 from app.core.rate_limiting import rate_limit
 from app.core.security import hash_password
 from app.models.user import User
-from app.repositories.user import UserRepository
+
+# Removed UserRepository import to comply with Clean Architecture
+# Repository access moved to service layer
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
 from app.services.user_service_impl import UserServiceImpl
@@ -39,7 +41,6 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         """Initialize user CRUD router."""
         super().__init__(
             model=User,
-            repository=UserRepository,
             create_schema=UserCreate,
             update_schema=UserUpdate,
             response_schema=UserResponse,
@@ -48,6 +49,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             tags=["Users"],
             require_auth=True,
             require_admin=False,  # Users can view their own profile
+            repository=None,  # Service layer handles data access
         )
 
     def _check_admin_permission(self, request: Request) -> None:
@@ -93,11 +95,11 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             trace_id=getattr(request.state, "trace_id", None),
         )
 
-    async def _validate_user_availability(self, repo: UserRepository, user_data: UserCreate) -> None:
+    async def _validate_user_availability(self, user_service: UserServiceImpl, user_data: UserCreate) -> None:
         """Validate username and email availability."""
-        if not await repo.is_username_available(user_data.username):
+        if not await user_service.is_username_available(user_data.username):
             raise ConflictError(message=f"Username '{user_data.username}' is already taken")
-        if not await repo.is_email_available(user_data.email):
+        if not await user_service.is_email_available(user_data.email):
             raise ConflictError(message=f"Email '{user_data.email}' is already registered")
 
     def _prepare_update_data(self, user_data: UserUpdate, request: Request) -> Dict[str, Any]:

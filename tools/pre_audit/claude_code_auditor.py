@@ -2022,7 +2022,6 @@ class GitForensicsAnalyzer:
             # Create hotspots for high-churn files
             for file_path, churn_score in file_churn.items():
                 if churn_score > 100:  # Threshold for high churn
-
                     # Calculate additional metrics
                     file_full_path = self.repo_path / file_path
                     complexity_score = await self._calculate_file_complexity(file_full_path)

@@ -1,374 +1,137 @@
-"""Health check service for monitoring authentication components."""
+"""Health service for system health checks."""
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict
 
-from sqlalchemy import select
 from structlog.stdlib import get_logger
 
-from app.core.cache import get_cache
-from app.core.circuit_breaker import get_all_circuit_stats
-from app.core.config import settings
-from app.db.session import get_db
-from app.repositories.health import HealthRepository
+from ..db.session import check_database_health
+from ..utils.cache import check_cache_health
+from ..utils.monitoring import check_dependency_health
 
 logger = get_logger(__name__)
 
 
-class HealthStatus:
-    """Health status constants."""
+class HealthService:
+    """Service for performing system health checks."""
 
-    HEALTHY = "healthy"
-    DEGRADED = "degraded"
-    UNHEALTHY = "unhealthy"
+    def __init__(self) -> None:
+        """Initialize health service."""
+        pass
 
-
-class HealthCheckService:
-    """Service for checking health of authentication components."""
-
-    def __init__(self):
-        """Initialize health check service."""
-        self._last_check_time: Optional[datetime] = None
-        self._last_check_results: Dict[str, Any] = {}
-        self._check_interval = timedelta(seconds=30)
-
-    async def check_all(self, force: bool = False) -> Dict[str, Any]:
-        """
-        Check health of all authentication components.
-
-        Args:
-            force: Force check even if recently checked
-
-        Returns:
-            Health check results
-        """
-        # Return cached results if recent
-        if not force and self._last_check_time:
-            time_since_check = datetime.now(timezone.utc) - self._last_check_time
-            if time_since_check < self._check_interval:
-                return self._last_check_results
-
-        # Run all health checks concurrently
-        results = await asyncio.gather(
-            self.check_database(),
-            self.check_cache(),
-            self.check_auth_services(),
-            self.check_circuit_breakers(),
-            return_exceptions=True,
-        )
-
-        # Process results
-        health_results = {
-            "status": HealthStatus.HEALTHY,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "components": {
-                "database": (
-                    results[0] if not isinstance(results[0], Exception) else self._error_result("database", results[0])
-                ),
-                "cache": (
-                    results[1] if not isinstance(results[1], Exception) else self._error_result("cache", results[1])
-                ),
-                "auth_services": (
-                    results[2]
-                    if not isinstance(results[2], Exception)
-                    else self._error_result("auth_services", results[2])
-                ),
-                "circuit_breakers": (
-                    results[3]
-                    if not isinstance(results[3], Exception)
-                    else self._error_result("circuit_breakers", results[3])
-                ),
-            },
-        }
-
-        # Determine overall status
-        statuses = [comp["status"] for comp in health_results["components"].values()]
-        if HealthStatus.UNHEALTHY in statuses:
-            health_results["status"] = HealthStatus.UNHEALTHY
-        elif HealthStatus.DEGRADED in statuses:
-            health_results["status"] = HealthStatus.DEGRADED
-
-        # Cache results
-        self._last_check_time = datetime.now(timezone.utc)
-        self._last_check_results = health_results
-
-        return health_results
-
-    async def check_database(self) -> Dict[str, Any]:
-        """
-        Check database health using repository pattern.
-
-        Returns:
-            Database health status
-        """
+    async def check_database_health(self) -> Dict[str, Any]:
+        """Check database health through proper service layer."""
         try:
-            start_time = datetime.now(timezone.utc)
-
-            async with get_db() as session:
-                health_repo = HealthRepository(session)
-                connectivity_result = await health_repo.check_database_connectivity()
-                db_stats = await health_repo.get_database_stats()
-
-            response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-            return {
-                "status": connectivity_result.get("status", HealthStatus.HEALTHY),
-                "response_time_ms": response_time * 1000,
-                "pool_size": settings.DATABASE_POOL_SIZE,
-                **db_stats,  # Include database statistics from repository
-            }
-
+            return await check_database_health()
         except Exception as e:
             logger.error("Database health check failed", error=str(e))
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-                "error_type": type(e).__name__,
-            }
+            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
 
-    async def check_cache(self) -> Dict[str, Any]:
-        """
-        Check cache (Redis) health.
-
-        Returns:
-            Cache health status
-        """
+    async def check_cache_health(self) -> Dict[str, Any]:
+        """Check cache health through proper service layer."""
         try:
-            cache = await get_cache()
-            health = await cache.health_check()
-
-            if health.get("redis_available"):
-                status = HealthStatus.HEALTHY
-            elif health.get("fallback_cache_size", 0) > 0:
-                status = HealthStatus.DEGRADED
-            else:
-                status = HealthStatus.UNHEALTHY
-
-            return {
-                "status": status,
-                "redis_connected": health.get("redis_connected", False),
-                "redis_available": health.get("redis_available", False),
-                "response_time_ms": health.get("redis_response_time_ms"),
-                "fallback_cache_size": health.get("fallback_cache_size", 0),
-                "connection_failures": health.get("connection_failures", 0),
-            }
-
+            return await check_cache_health()
         except Exception as e:
             logger.error("Cache health check failed", error=str(e))
+            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
+
+    async def check_dependency_health(self, cache_ttl: int = None) -> Dict[str, Any]:
+        """Check dependency health through proper service layer."""
+        try:
+            if cache_ttl:
+                return await check_dependency_health(cache_ttl=cache_ttl)
+            else:
+                return await check_dependency_health()
+        except Exception as e:
+            logger.error("Dependency health check failed", error=str(e))
             return {
-                "status": HealthStatus.UNHEALTHY,
+                "overall_healthy": False,
+                "checks": {
+                    "database": False,
+                    "cache": False,
+                },
                 "error": str(e),
-                "error_type": type(e).__name__,
+                "check_duration_seconds": 0,
             }
 
-    async def check_auth_services(self) -> Dict[str, Any]:
-        """
-        Check authentication services health.
-
-        Returns:
-            Auth services health status
-        """
+    async def check_repository_health(self) -> Dict[str, Any]:
+        """Check health of all registered repositories through service layer."""
         try:
-            service_checks = {}
+            from ..core.container import get_repository_health_with_timeout
 
-            # Check session service
-            session_check = await self._check_session_service()
-            service_checks["session_service"] = session_check
+            # Get comprehensive health status with caching and timeout protection
+            repository_status = await get_repository_health_with_timeout(timeout_seconds=30, use_cache=True)
 
-            # Check MFA service
-            mfa_check = await self._check_mfa_service()
-            service_checks["mfa_service"] = mfa_check
+            logger.debug(
+                "repository_health_check_complete",
+                overall_status=repository_status["overall_status"],
+                healthy_count=repository_status["healthy_count"],
+                total_count=repository_status["total_count"],
+            )
 
-            # Check RBAC service
-            rbac_check = await self._check_rbac_service()
-            service_checks["rbac_service"] = rbac_check
+            return repository_status
+
+        except Exception as e:
+            logger.error("repository_health_check_failed", error=str(e))
+            return {
+                "overall_status": "error",
+                "healthy_count": 0,
+                "degraded_count": 0,
+                "unhealthy_count": 8,
+                "total_count": 8,
+                "total_check_time_ms": 0,
+                "repositories": {},
+                "summary": {
+                    "health_percentage": 0,
+                    "average_response_time_ms": 0,
+                    "unhealthy_repositories": ["health_endpoint_error"],
+                },
+                "error": str(e),
+            }
+
+    async def get_comprehensive_health(self) -> Dict[str, Any]:
+        """Get comprehensive health status for all components."""
+        try:
+            # Run health checks in parallel
+            results = await asyncio.gather(
+                self.check_database_health(),
+                self.check_cache_health(),
+                self.check_dependency_health(),
+                return_exceptions=True,
+            )
+            db_health, cache_health, dep_health = results
+
+            # Process results
+            health_status = {
+                "status": "healthy",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "components": {
+                    "database": (
+                        db_health
+                        if not isinstance(db_health, Exception)
+                        else {"status": "error", "error": str(db_health)}
+                    ),
+                    "cache": (
+                        cache_health
+                        if not isinstance(cache_health, Exception)
+                        else {"status": "error", "error": str(cache_health)}
+                    ),
+                    "dependencies": (
+                        dep_health
+                        if not isinstance(dep_health, Exception)
+                        else {"status": "error", "error": str(dep_health)}
+                    ),
+                },
+            }
 
             # Determine overall status
-            all_healthy = all(check.get("status") == HealthStatus.HEALTHY for check in service_checks.values())
-            any_unhealthy = any(check.get("status") == HealthStatus.UNHEALTHY for check in service_checks.values())
+            component_statuses = [comp.get("status", "unknown") for comp in health_status["components"].values()]
+            if "error" in component_statuses or "unhealthy" in component_statuses:
+                health_status["status"] = "unhealthy"
 
-            if all_healthy:
-                status = HealthStatus.HEALTHY
-            elif any_unhealthy:
-                status = HealthStatus.UNHEALTHY
-            else:
-                status = HealthStatus.DEGRADED
-
-            return {
-                "status": status,
-                "services": service_checks,
-            }
+            return health_status
 
         except Exception as e:
-            logger.error("Auth services health check failed", error=str(e))
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-                "error_type": type(e).__name__,
-            }
-
-    async def check_circuit_breakers(self) -> Dict[str, Any]:
-        """
-        Check circuit breaker states.
-
-        Returns:
-            Circuit breaker health status
-        """
-        try:
-            stats = get_all_circuit_stats()
-
-            open_circuits = []
-            half_open_circuits = []
-
-            for name, breaker_stats in stats.items():
-                if breaker_stats["state"] == "open":
-                    open_circuits.append(name)
-                elif breaker_stats["state"] == "half_open":
-                    half_open_circuits.append(name)
-
-            if open_circuits:
-                status = HealthStatus.DEGRADED
-            else:
-                status = HealthStatus.HEALTHY
-
-            return {
-                "status": status,
-                "total_breakers": len(stats),
-                "open_circuits": open_circuits,
-                "half_open_circuits": half_open_circuits,
-                "stats": stats,
-            }
-
-        except Exception as e:
-            logger.error("Circuit breaker health check failed", error=str(e))
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-                "error_type": type(e).__name__,
-            }
-
-    async def _check_session_service(self) -> Dict[str, Any]:
-        """Check session service health."""
-        try:
-            start_time = datetime.now(timezone.utc)
-
-            # Test session operations
-            from app.services.session_service import SessionService
-
-            async with get_db() as session:
-                service = SessionService(session)
-                # Try to clean up expired sessions (lightweight operation)
-                await service.cleanup_expired_sessions()
-
-            response_time = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-            return {
-                "status": HealthStatus.HEALTHY,
-                "response_time_ms": response_time * 1000,
-            }
-        except Exception as e:
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-            }
-
-    async def _check_mfa_service(self) -> Dict[str, Any]:
-        """Check MFA service health."""
-        try:
-            # Check if MFA tables are accessible using health repository
-            async with get_db() as session:
-                health_repo = HealthRepository(session)
-                # Use health repository's database connectivity which is safer
-                result = await health_repo.check_database_connectivity()
-
-            return {
-                "status": result.get("status", HealthStatus.HEALTHY),
-            }
-        except Exception as e:
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-            }
-
-    async def _check_rbac_service(self) -> Dict[str, Any]:
-        """Check RBAC service health."""
-        try:
-            # Check if RBAC tables are accessible using role repository
-            async with get_db() as session:
-                from app.repositories.role import RoleRepository
-
-                role_repo = RoleRepository(session)
-                # Try a simple count operation to test table access
-                count = await role_repo.count()
-
-            return {
-                "status": HealthStatus.HEALTHY,
-                "role_count": count,
-            }
-        except Exception as e:
-            return {
-                "status": HealthStatus.UNHEALTHY,
-                "error": str(e),
-            }
-
-    def _error_result(self, component: str, error: Exception) -> Dict[str, Any]:
-        """Create error result for failed health check."""
-        return {
-            "status": HealthStatus.UNHEALTHY,
-            "error": str(error),
-            "error_type": type(error).__name__,
-            "component": component,
-        }
-
-    async def get_auth_metrics(self) -> Dict[str, Any]:
-        """
-        Get authentication metrics.
-
-        Returns:
-            Authentication metrics
-        """
-        metrics = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metrics": {},
-        }
-
-        try:
-            async with get_db() as session:
-                # Active sessions count using session repository
-                from app.repositories.session import SessionRepository
-
-                session_repo = SessionRepository(session)
-
-                active_sessions_list = await session_repo.get_active_sessions()
-                metrics["metrics"]["active_sessions"] = len(active_sessions_list)
-
-                # Active users (logged in within last hour) using user repository
-                from app.repositories.user import UserRepository
-
-                user_repo = UserRepository(session)
-
-                one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-                # Use pagination to get recent users
-                recent_users = await user_repo.list_with_pagination(
-                    page=1, size=1000, filters={"last_login_at__gte": one_hour_ago}
-                )
-                metrics["metrics"]["active_users_1h"] = len(recent_users.items)
-
-                # Failed login attempts (if tracked)
-                # This would require an audit log query
-
-        except Exception as e:
-            logger.error("Failed to get auth metrics", error=str(e))
-            metrics["error"] = str(e)
-
-        return metrics
-
-
-# Global instance
-_health_service = HealthCheckService()
-
-
-def get_health_service() -> HealthCheckService:
-    """Get global health check service instance."""
-    return _health_service
+            logger.error("Comprehensive health check failed", error=str(e))
+            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}

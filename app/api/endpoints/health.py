@@ -6,25 +6,25 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 import psutil
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from structlog.stdlib import get_logger
 
 from ...core.config import settings
 from ...core.rate_limiting import rate_limit
-from ...db.session import check_database_health
-from ...utils.cache import check_cache_health
-from ...utils.monitoring import check_dependency_health, track_health_check
+from ...services.health_service import HealthService
+from ..deps import get_health_service
+
+# Note: track_health_check removed from direct utils import
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.get("/health", status_code=status.HTTP_200_OK)
-@track_health_check
-async def health_check() -> Dict[str, Any]:
+async def health_check(health_service: HealthService = Depends(get_health_service)) -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
-    # Get repository health for UAT compliance
-    repository_health = await check_repository_health()
+    # Get repository health for UAT compliance using health service
+    db_health = await health_service.check_database_health()
 
     return {
         "status": "healthy",
@@ -32,22 +32,23 @@ async def health_check() -> Dict[str, Any]:
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
-        "repositories": repository_health,
+        "database": db_health,
     }
 
 
 @router.get("/ready")
-@track_health_check
-async def readiness_check(response: Response) -> Dict[str, Any]:
+async def readiness_check(
+    response: Response, health_service: HealthService = Depends(get_health_service)
+) -> Dict[str, Any]:
     """Return comprehensive readiness check - verifies all dependencies.
 
     Returns 503 if any critical dependency is down.
     """
     # Use enhanced dependency health check with caching (10 second TTL)
-    health_result = await check_dependency_health(cache_ttl=10)
+    health_result = await health_service.check_dependency_health()
 
     # Check repository health
-    repository_health = await check_repository_health()
+    repository_health = await health_service.check_repository_health()
 
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)

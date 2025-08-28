@@ -354,13 +354,11 @@ class TestUserRepository:
                 return_value="$argon2id$v=19$m=65536,t=3,p=4$new_salt$new_hash_data",
             ),
         ):
-
             # Mock get_by_id and update methods
             with (
                 patch.object(user_repository, "get_by_id", return_value=sample_user),
                 patch.object(user_repository, "update", return_value=sample_user) as mock_update,
             ):
-
                 # Act
                 result = await user_repository.update_password("test-user-id", "old_password", "new_password", "admin")
 
@@ -409,7 +407,6 @@ class TestUserRepository:
             patch.object(user_repository, "get_by_id", return_value=inactive_user),
             patch.object(user_repository, "update", return_value=inactive_user) as mock_update,
         ):
-
             # Act
             result = await user_repository.activate_user("inactive-user-id", "admin")
 
@@ -450,7 +447,6 @@ class TestUserRepository:
             patch.object(user_repository, "get_by_id", return_value=sample_user),
             patch.object(user_repository, "update", return_value=sample_user) as mock_update,
         ):
-
             # Act
             result = await user_repository.deactivate_user("test-user-id", "admin")
 
@@ -571,7 +567,6 @@ class TestUserRepository:
             patch.object(user_repository, "get_by_id", return_value=unverified_user),
             patch.object(user_repository, "update", return_value=unverified_user) as mock_update,
         ):
-
             # Act
             result = await user_repository.verify_user("test-user-id", "admin")
 

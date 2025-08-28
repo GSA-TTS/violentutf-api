@@ -8,11 +8,13 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.api.deps import get_audit_service
+from app.api.deps import get_audit_service, get_db
 from app.core.errors import ForbiddenError, NotFoundError, ValidationError
-from app.db.session import get_db
 from app.models.audit_log import AuditLog
-from app.repositories.audit_log import AuditLogRepository
+from app.repositories.audit_log_extensions import ExtendedAuditLogRepository as AuditLogRepository
+
+# TECHNICAL DEBT: Direct repository usage violates Clean Architecture
+# TODO: Replace with complete service layer methods
 from app.schemas.audit_log import (
     AuditLogExportRequest,
     AuditLogFilter,

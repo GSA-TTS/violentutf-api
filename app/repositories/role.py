@@ -492,3 +492,63 @@ class RoleRepository(BaseRepository[Role]):
         except Exception as e:
             logger.error("Failed to get role statistics", error=str(e))
             raise
+
+    async def get_role_assignments_for_user(self, user_id: str) -> List[UserRole]:
+        """Get detailed role assignment information for a user.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            List of UserRole assignment records
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+
+            # Get all assignments for the user
+            query = (
+                select(UserRole)
+                .where(and_(UserRole.user_id == user_uuid, UserRole.is_active == True))  # noqa: E712
+                .order_by(UserRole.assigned_at.desc())
+            )
+
+            result = await self.session.execute(query)
+            assignments = list(result.scalars().all())
+
+            logger.debug("User role assignments retrieved", user_id=user_id, assignment_count=len(assignments))
+
+            return assignments
+
+        except Exception as e:
+            logger.error("Failed to get user role assignments", user_id=user_id, error=str(e))
+            raise
+
+    async def cleanup_expired_assignments(self) -> int:
+        """Clean up expired role assignments.
+
+        Returns:
+            Number of assignments cleaned up
+        """
+        try:
+            from sqlalchemy import update
+
+            # Mark expired assignments as inactive
+            update_query = (
+                update(UserRole)
+                .where(
+                    and_(UserRole.expires_at <= datetime.now(timezone.utc), UserRole.is_active == True)
+                )  # noqa: E712
+                .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
+            )
+
+            result = await self.session.execute(update_query)
+            cleaned_count = result.rowcount
+
+            if cleaned_count > 0:
+                logger.info("Expired role assignments cleaned up", count=cleaned_count)
+
+            return cleaned_count
+
+        except Exception as e:
+            logger.error("Failed to cleanup expired assignments", error=str(e))
+            raise

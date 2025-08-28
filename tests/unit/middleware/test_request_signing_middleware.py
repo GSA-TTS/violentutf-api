@@ -318,7 +318,6 @@ class TestRequestSigner:
 
         # Mock time and random generation
         with patch("time.time", return_value=1234567890), patch("secrets.token_urlsafe", return_value="fixed_nonce"):
-
             headers1 = signer.sign_request("GET", "/test")
             headers2 = signer.sign_request("GET", "/test")
 
