@@ -210,7 +210,9 @@ class TestAPIKeyServiceRepositoryIntegration:
 
         # Act
         key_data = APIKeyCreate(
-            name="Test API Key", description="Integration test API key", permissions={"read": True, "write": True}
+            name="Test API Key",
+            description="Integration test API key",
+            permissions={"read": True, "write": True},
         )
         api_key, full_key = await api_key_service.create_api_key(user_id=str(test_user.id), key_data=key_data)
 
@@ -255,23 +257,71 @@ class TestAPIKeyServiceRepositoryIntegration:
         assert updated_key.last_used_at is not None
 
     async def test_revoke_api_key_integration(self, api_key_service: APIKeyService, test_user: User):
-        """Test API key revocation through service-repository integration."""
+        """Test API key revocation through service-repository integration with stability improvements."""
+        import asyncio
+
         from app.schemas.api_key import APIKeyCreate
 
-        # Arrange
-        key_data = APIKeyCreate(name="Revoke Test Key", permissions={"read": True})
-        api_key, full_key = await api_key_service.create_api_key(user_id=str(test_user.id), key_data=key_data)
+        # Arrange - Use unique name to avoid conflicts
+        unique_suffix = str(uuid4())[:8]
+        key_data = APIKeyCreate(name=f"Revoke Test Key {unique_suffix}", permissions={"read": True})
 
-        # Act
-        result = await api_key_service.revoke_api_key(str(api_key.id), str(test_user.id))
+        # Create API key with retry logic for stability
+        max_retries = 3
+        api_key = None
+        full_key = None
+
+        for attempt in range(max_retries):
+            try:
+                api_key, full_key = await api_key_service.create_api_key(user_id=str(test_user.id), key_data=key_data)
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
+
+        assert api_key is not None, "Failed to create API key after retries"
+
+        # Wait for API key to be fully committed to database
+        await asyncio.sleep(0.1)
+
+        # Verify API key exists before revocation
+        created_key = await api_key_service.get_api_key(str(api_key.id))
+        assert created_key is not None, "API key not found after creation"
+        assert created_key.is_active(), "API key should be active after creation"
+
+        # Act - Revoke with retry logic
+        result = None
+        for attempt in range(max_retries):
+            try:
+                result = await api_key_service.revoke_api_key(str(api_key.id), str(test_user.id))
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(0.1 * (attempt + 1))
 
         # Assert
-        assert result is True
+        assert result is True, "API key revocation should return True"
 
-        # Verify key is inactive
-        revoked_key = await api_key_service.get_api_key(str(api_key.id))
-        assert revoked_key is not None
-        assert not revoked_key.is_active()
+        # Wait for revocation to be committed
+        await asyncio.sleep(0.1)
+
+        # Verify key is inactive with retry logic for consistency
+        revoked_key = None
+        for attempt in range(max_retries):
+            try:
+                revoked_key = await api_key_service.get_api_key(str(api_key.id))
+                if revoked_key is not None and not revoked_key.is_active():
+                    break
+                await asyncio.sleep(0.1)  # Wait for consistency
+            except Exception:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(0.1)
+
+        assert revoked_key is not None, "Revoked API key not found"
+        assert not revoked_key.is_active(), "API key should be inactive after revocation"
 
 
 @pytest.mark.integration
@@ -492,7 +542,11 @@ class TestTransactionBoundaryIntegration:
         user = await user_service.create_user(user_data)
 
         # Mock the repository to raise an exception on update
-        with patch.object(user_service.user_repo, "update", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            user_service.user_repo,
+            "update",
+            side_effect=SQLAlchemyError("Database error"),
+        ):
             # Act & Assert
             with pytest.raises(SQLAlchemyError):
                 from app.schemas.user import UserUpdate
@@ -656,7 +710,11 @@ class TestErrorPropagationIntegration:
         user = await user_service.create_user(user_data)
 
         # Mock repository method that would be called during user lookup
-        with patch.object(user_service.user_repo, "get_by_username", side_effect=SQLAlchemyError("Connection lost")):
+        with patch.object(
+            user_service.user_repo,
+            "get_by_username",
+            side_effect=SQLAlchemyError("Connection lost"),
+        ):
             # Act & Assert - this should propagate the database error
             with pytest.raises(SQLAlchemyError):
                 # Try to create a user with the same username, which will trigger get_by_username

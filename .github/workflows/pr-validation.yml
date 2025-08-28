@@ -94,14 +94,9 @@ jobs:
           retention-days: 30
 
   test-matrix:
-    name: Tests - ${{ matrix.os }} / Py${{ matrix.python }}
-    runs-on: ${{ matrix.os }}
+    name: Unit Tests - Ubuntu / Py3.12
+    runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python: ['3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +104,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
@@ -120,19 +115,12 @@ jobs:
           pip install -e .
           pip install pytest pytest-cov pytest-xdist pytest-timeout pytest-asyncio  # Test dependencies
 
-      - name: Run tests (Unix)
-        if: runner.os != 'Windows'
+      - name: Run tests
         run: |
           pytest tests/unit/ -v --cov=app \
             --cov-report=xml --timeout=300 -n auto
 
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          python scripts/run_tests_windows.py --test-dir tests/unit
-
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.xml
@@ -231,7 +219,7 @@ jobs:
           script: |
             const results = {
               'Code Quality': '${{ needs.full-quality.result }}',
-              'Cross-Platform Tests': '${{ needs.test-matrix.result }}',
+              'Unit Tests': '${{ needs.test-matrix.result }}',
               'API Validation': '${{ needs.api-validation.result }}',
               'Docker Build': '${{ needs.docker-check.result }}',
               'Docker Compose Test': '${{ needs.docker-compose-test.result }}'

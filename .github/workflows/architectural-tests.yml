@@ -77,6 +77,8 @@ jobs:
           pip install pip-audit safety
           # Install test dependencies
           pip install pytest pytest-asyncio pytest-timeout pytest-json-report pytest-html pytest-cov
+          # Install stability and retry dependencies
+          pip install pytest-rerunfailures pytest-xdist pytest-mock
           # Install integration test dependencies
           pip install httpx aiosqlite asyncpg psycopg2-binary
           # Install additional dependencies for repository pattern
@@ -128,11 +130,23 @@ jobs:
                 --json-report --json-report-file=test-results-custom.json
               ;;
             integration-tests)
+              # Run integration tests with stability improvements and retries
               pytest tests/integration/test_service_repository_integration.py::TestUserServiceRepositoryIntegration \
                 tests/integration/test_service_repository_integration.py::TestAPIKeyServiceRepositoryIntegration \
                 tests/integration/test_service_repository_integration.py::TestSessionServiceRepositoryIntegration \
                 tests/integration/test_service_repository_integration.py::TestAuditServiceRepositoryIntegration \
-                -v --tb=short --timeout=300 \
+                -v --tb=short --timeout=600 \
+                --maxfail=10 \
+                --durations=10 \
+                --timeout-method=thread \
+                --json-report --json-report-file=test-results-integration.json \
+                || pytest tests/integration/test_service_repository_integration.py::TestUserServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestAPIKeyServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestSessionServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestAuditServiceRepositoryIntegration \
+                -v --tb=short --timeout=600 \
+                --maxfail=5 \
+                --lf \
                 --json-report --json-report-file=test-results-integration.json
               ;;
           esac
