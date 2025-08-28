@@ -330,18 +330,39 @@ class TestAPIKeyEndpoints:
         auth_headers: Dict[str, str],
     ) -> None:
         """Test getting current user's API keys."""
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Create mock service
+        mock_service = AsyncMock()
+        mock_service.get_user_keys.return_value = [mock_api_key]
+
+        # Use FastAPI dependency override - need to get the actual app instance from client
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
             response = await async_client.get(
                 "/api/v1/api-keys/my-keys",
                 headers=auth_headers,
                 params={"include_revoked": False},
             )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data["data"]) == 1
         assert data["data"][0]["name"] == mock_api_key.name
-        mock_api_key_repo.list_user_keys.assert_called_once()
+        mock_service.get_user_keys.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_revoke_api_key(
@@ -352,21 +373,38 @@ class TestAPIKeyEndpoints:
         auth_headers: Dict[str, str],
     ) -> None:
         """Test revoking an API key."""
-        # Revoke endpoint uses direct APIKeyRepository instantiation, so patch the class
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
-            # Mock the ownership check to work around UUID vs string comparison bug
-            with patch.object(api_key_crud_router, "_check_key_ownership") as mock_check:
-                mock_check.return_value = None  # No exception = ownership check passes
-                response = await async_client.post(
-                    f"/api/v1/api-keys/{mock_api_key.id}/revoke",
-                    headers=auth_headers,
-                )
+        # Create mock service
+        mock_service = AsyncMock()
+        mock_service.revoke_api_key.return_value = True  # Success
+
+        # Use FastAPI dependency override - get correct app instance
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
+            response = await async_client.post(
+                f"/api/v1/api-keys/{mock_api_key.id}/revoke",
+                headers=auth_headers,
+            )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["data"]["success"] is True
         assert "revoked successfully" in data["data"]["message"]
-        mock_api_key_repo.revoke.assert_called_once_with(str(mock_api_key.id))
+        mock_service.revoke_api_key.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_validate_api_key(
@@ -377,11 +415,32 @@ class TestAPIKeyEndpoints:
         auth_headers: Dict[str, str],
     ) -> None:
         """Test validating an API key."""
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Create mock service
+        mock_service = AsyncMock()
+        mock_service.get_api_key.return_value = mock_api_key
+
+        # Use FastAPI dependency override
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
             response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/validate",
                 headers=auth_headers,
             )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -420,11 +479,32 @@ class TestAPIKeyEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting API key usage statistics (admin only)."""
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Create mock service with repository attribute
+        mock_service = AsyncMock()
+        mock_service.repository = mock_api_key_repo
+
+        # Use FastAPI dependency override
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
             response = await async_client.get(
                 "/api/v1/api-keys/usage-stats",
                 headers=admin_headers,
             )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -496,11 +576,32 @@ class TestAPIKeyEndpoints:
         mock_api_key.is_active.side_effect = lambda: False  # Override side_effect
         mock_api_key.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
 
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Create mock service
+        mock_service = AsyncMock()
+        mock_service.get_api_key.return_value = mock_api_key
+
+        # Use FastAPI dependency override
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
             response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/validate",
                 headers=auth_headers,
             )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -519,12 +620,35 @@ class TestAPIKeyEndpoints:
         # Set different user ID
         mock_api_key.user_id = uuid.uuid4()
 
-        with patch("app.api.endpoints.api_keys.APIKeyRepository", return_value=mock_api_key_repo):
+        # Create mock service that raises ForbiddenError
+        from app.core.errors import ForbiddenError
+
+        mock_service = AsyncMock()
+        mock_service.revoke_api_key.side_effect = ForbiddenError(message="You can only access your own API keys")
+
+        # Use FastAPI dependency override
+        from app.api.deps import get_api_key_service
+
+        # Get the app instance from the async client
+        app = async_client._transport.app
+
+        # Store original dependency if it exists
+        original_override = app.dependency_overrides.get(get_api_key_service)
+
+        app.dependency_overrides[get_api_key_service] = lambda: mock_service
+
+        try:
             # Try to revoke someone else's key
             response = await async_client.post(
                 f"/api/v1/api-keys/{mock_api_key.id}/revoke",
                 headers=auth_headers,
             )
+        finally:
+            # Clean up this specific override
+            if original_override is not None:
+                app.dependency_overrides[get_api_key_service] = original_override
+            else:
+                app.dependency_overrides.pop(get_api_key_service, None)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "You can only access your own API keys" in response.json()["message"]

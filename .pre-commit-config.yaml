@@ -12,7 +12,7 @@ repos:
         language_version: python3.12
         # Using same args as CI: black --check --diff .
         args: ['--check', '--quiet']
-        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/)'
+        exclude: '^(examples/|tools/agent_orchestrator/|test_env/|venv/|\.venv/|.*\.md$|.*\.txt$|.*\.rst$)'
 
   # Import sorting - PyCQA maintained (matches CI)
   - repo: https://github.com/PyCQA/isort
@@ -37,7 +37,7 @@ repos:
 
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.0
+    rev: v1.17.1
     hooks:
       - id: mypy
         args: ['--ignore-missing-imports', '--strict', '--no-error-summary', '--no-pretty']
@@ -86,7 +86,7 @@ repos:
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
 
@@ -98,7 +98,7 @@ repos:
 
   # General file checks - pre-commit official
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer

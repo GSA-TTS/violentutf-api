@@ -116,9 +116,6 @@ class OAuthApplicationResponse(BaseModel):
         """Pydantic config."""
 
         from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
 
     @classmethod
     def from_orm(cls, obj: Any) -> "OAuthApplicationResponse":
@@ -245,10 +242,3 @@ class UserAuthorizationResponse(BaseModel):
     scopes: List[str] = Field(..., description="Granted scopes")
     authorized_at: datetime = Field(..., description="Authorization timestamp")
     last_used_at: Optional[datetime] = Field(None, description="Last usage timestamp")
-
-    class Config:
-        """Pydantic config."""
-
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }

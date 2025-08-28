@@ -34,7 +34,6 @@ class TestHealthCheckTracking:
             patch("app.utils.monitoring.health_check_total") as mock_counter,
             patch("app.utils.monitoring.health_check_duration") as mock_histogram,
         ):
-
             result = await mock_health_check()
 
             assert result == {"status": "healthy"}
@@ -289,7 +288,6 @@ class TestDependencyHealth:
             patch("app.utils.cache.check_cache_health") as mock_cache_health,
             patch("app.utils.monitoring.get_system_metrics") as mock_metrics,
         ):
-
             mock_db_health.return_value = True
             mock_cache_health.return_value = True
             mock_metrics.return_value = {"system": "metrics"}
@@ -310,7 +308,6 @@ class TestDependencyHealth:
             patch("app.utils.cache.check_cache_health") as mock_cache_health,
             patch("app.utils.monitoring.get_system_metrics") as mock_metrics,
         ):
-
             mock_db_health.return_value = False
             mock_cache_health.return_value = True
             mock_metrics.return_value = {"system": "metrics"}
@@ -329,7 +326,6 @@ class TestDependencyHealth:
             patch("app.utils.cache.check_cache_health") as mock_cache_health,
             patch("app.utils.monitoring.get_system_metrics") as mock_metrics,
         ):
-
             mock_db_health.side_effect = Exception("Database error")
             mock_cache_health.return_value = True
             mock_metrics.return_value = {"system": "metrics"}

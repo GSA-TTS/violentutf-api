@@ -4,7 +4,7 @@ This middleware has been enhanced to support the new ABAC (Attribute-Based Acces
 system that addresses critical security issues identified in the authentication audit report.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 
 from fastapi import HTTPException, Request, Response, status
@@ -278,10 +278,9 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                     # Verify the full API key hash
                     if await middleware_service.verify_api_key_hash(api_key, api_key_model.key_hash):
                         # Check if API key is active and not expired
-                        if (
-                            api_key_model.expires_at
-                            and api_key_model.expires_at.replace(tzinfo=None) < datetime.utcnow()
-                        ):
+                        if api_key_model.expires_at and api_key_model.expires_at.replace(tzinfo=None) < datetime.now(
+                            timezone.utc
+                        ).replace(tzinfo=None):
                             logger.warning(
                                 "api_key_expired",
                                 key_id=str(api_key_model.id),

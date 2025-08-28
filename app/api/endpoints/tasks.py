@@ -1,7 +1,7 @@
 """Task management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -260,7 +260,7 @@ async def execute_task(
         task.status = TaskStatus.PENDING
         task.progress = 0
         task.progress_message = "Queued for execution"
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.updated_by = current_user.username
 
         # Dispatch to Celery worker
@@ -316,7 +316,7 @@ async def cancel_task(
 
         # Cancel task
         task.status = TaskStatus.CANCELLED
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         task.progress_message = "Task cancelled by user"
         task.updated_by = current_user.username
 
@@ -370,7 +370,7 @@ async def retry_task(
         task.status = TaskStatus.PENDING
         task.progress = 0
         task.progress_message = "Queued for retry"
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.completed_at = None
         task.error_message = None
         task.error_details = None
@@ -453,7 +453,7 @@ async def update_task_status(  # noqa: C901
 
         # Set completion time for final states
         if status_update.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
 
         task.updated_by = current_user.username
 
@@ -577,7 +577,7 @@ async def bulk_task_action(
                 if action_request.action == "cancel":
                     if task.status in [TaskStatus.PENDING, TaskStatus.RUNNING]:
                         task.status = TaskStatus.CANCELLED
-                        task.completed_at = datetime.utcnow()
+                        task.completed_at = datetime.now(timezone.utc)
                         task.updated_by = current_user.username
                         successful += 1
                         results.append({"task_id": task.id, "status": "cancelled"})

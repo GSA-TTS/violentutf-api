@@ -1,7 +1,7 @@
 """Report generation and management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response
@@ -338,7 +338,7 @@ async def generate_report(
         report.updated_by = current_user.username
 
         task.status = TaskStatus.PENDING
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.updated_by = current_user.username
 
         # Dispatch to Celery worker
@@ -357,7 +357,7 @@ async def generate_report(
             report_id=report.id,
             task_id=task.id,
             status=report.status,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             status_url=f"/api/v1/reports/{report.id}",
             download_url=None,  # Available after completion
         )

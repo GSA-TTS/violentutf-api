@@ -257,11 +257,7 @@ async def register(
 
         # Create user using service layer (password will be hashed internally)
         new_user = await user_service.create_user(
-            username=user_data.username,
-            email=user_data.email,
-            password=user_data.password,
-            full_name=None,  # Can be added later
-            is_superuser=False,
+            user_data=user_data,
             created_by="registration",
         )
 

@@ -1,7 +1,7 @@
 """Scan management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -139,7 +139,7 @@ async def create_scan(
             # Link scan to task
             scan.task_id = task.id
             scan.status = ScanStatus.INITIALIZING
-            scan.started_at = datetime.utcnow()
+            scan.started_at = datetime.now(timezone.utc)
 
             # Dispatch to Celery worker for execution
             from app.celery.tasks import execute_scan_task
@@ -332,13 +332,13 @@ async def execute_scan(
 
         # Update scan and task status
         scan.status = ScanStatus.INITIALIZING
-        scan.started_at = datetime.utcnow()
+        scan.started_at = datetime.now(timezone.utc)
         scan.progress = 0
         scan.current_phase = "Initializing"
         scan.updated_by = current_user.username
 
         task.status = TaskStatus.PENDING
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.updated_by = current_user.username
 
         # Dispatch to Celery worker
@@ -394,7 +394,7 @@ async def cancel_scan(
 
         # Cancel scan
         scan.status = ScanStatus.CANCELLED
-        scan.completed_at = datetime.utcnow()
+        scan.completed_at = datetime.now(timezone.utc)
         scan.current_phase = "Cancelled"
         scan.updated_by = current_user.username
 
@@ -406,7 +406,7 @@ async def cancel_scan(
 
             if task:
                 task.status = TaskStatus.CANCELLED
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 task.progress_message = "Scan cancelled by user"
                 task.updated_by = current_user.username
 

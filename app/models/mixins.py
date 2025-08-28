@@ -88,7 +88,9 @@ class AuditMixin:
 
     @declared_attr  # type: ignore[arg-type]
     @classmethod
-    def __table_args__(cls: Type[Any]) -> Union[
+    def __table_args__(
+        cls: Type[Any],
+    ) -> Union[
         Tuple[Union[Index, UniqueConstraint], ...],
         Tuple[Union[Index, UniqueConstraint, Dict[str, str]], ...],
     ]:

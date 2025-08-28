@@ -291,6 +291,16 @@ skip_covered = true
 [tool.black]
 line-length = 120
 target-version = ["py312"]
+extend-exclude = '''
+(
+  \.md$
+  | \.txt$
+  | \.rst$
+  | \.json$
+  | \.yaml$
+  | \.yml$
+)
+'''
 
 [tool.isort]
 profile = "black"

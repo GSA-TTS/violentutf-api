@@ -416,7 +416,6 @@ class EnvironmentalRule(ABACRule):
 
         # High-risk actions during non-business hours require higher privileges
         if action_attrs.get("risk_level") == "high" and not env_attrs.get("is_business_hours", True):
-
             subject_attrs = await context.get_subject_attributes()
             if subject_attrs.get("authority_level") not in ["admin", "global_admin"]:
                 logger.info(
