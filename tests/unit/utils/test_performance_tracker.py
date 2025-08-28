@@ -337,15 +337,16 @@ class TestPerformanceTracker:
 
     def test_history_size_limit(self, tracker):
         """Test history size limitation."""
-        tracker.max_history = 5
+        # Create a new tracker with limited history
+        limited_tracker = PerformanceTracker(max_history=5)
 
         # Add more operations than history limit
         for i in range(10):
-            with tracker.track_operation("limit_test"):
+            with limited_tracker.track_operation("limit_test"):
                 pass
 
-        history = tracker.get_operation_history("limit_test")
-        assert len(history) <= tracker.max_history
+        history = limited_tracker.get_operation_history("limit_test")
+        assert len(history) <= limited_tracker.max_history
 
     def test_metrics_reset(self, tracker):
         """Test metrics reset functionality."""

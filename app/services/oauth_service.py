@@ -70,8 +70,8 @@ class OAuth2Service:
             self.refresh_token_repo = OAuthRefreshTokenRepository(session_or_app_repo)
             self.auth_code_repo = OAuthAuthorizationCodeRepository(session_or_app_repo)
             self.scope_repo = OAuthScopeRepository(session_or_app_repo)
-            # TODO: Handle audit service in new pattern
-            self.audit_service = None  # Will need to be enhanced
+            # Create audit service if not provided
+            self.audit_service = audit_service or AuditService(session_or_app_repo)
         else:
             # Legacy pattern: use provided repositories
             self.session = None

@@ -30,18 +30,22 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
         """Get API key by key hash (interface method)."""
         return await self.get_by_hash(key_hash)
 
-    async def get_by_hash(self, key_hash: str, organization_id: Optional[str] = None) -> Optional[APIKey]:
+    async def get_by_hash(self, key_hash: Optional[str], organization_id: Optional[str] = None) -> Optional[APIKey]:
         """
         Get API key by hash with optional organization filtering.
 
         Args:
-            key_hash: SHA256 hash of the API key
+            key_hash: SHA256 hash of the API key (can be None for validation testing)
             organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             APIKey if found and valid, None otherwise
         """
         try:
+            # Check for null input
+            if key_hash is None:
+                return None
+
             # Build filters for key hash and soft delete
             filters = [self.model.key_hash == key_hash, self.model.is_deleted == False]  # noqa: E712
 
@@ -67,7 +71,8 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             return api_key
 
         except Exception as e:
-            self.logger.error("Failed to get API key by hash", key_hash=key_hash[:8] + "...", error=str(e))
+            key_hash_safe = key_hash[:8] + "..." if key_hash else "None"
+            self.logger.error("Failed to get API key by hash", key_hash=key_hash_safe, error=str(e))
             raise
 
     async def get_by_prefix(self, key_prefix: str, organization_id: Optional[str] = None) -> List[APIKey]:
@@ -103,7 +108,7 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             self.logger.error("Failed to get API keys by prefix", key_prefix=key_prefix, error=str(e))
             raise
 
-    async def get_by_user_id(self, user_id: str, include_expired: bool = False) -> List[APIKey]:
+    async def get_by_user_id(self, user_id: Optional[str], include_expired: bool = False) -> List[APIKey]:
         """
         Get all API keys for a user.
 
@@ -115,6 +120,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             List of user's API keys
         """
         try:
+            # Check for null input
+            if user_id is None:
+                return []
+
             query = (
                 select(self.model)
                 .where(and_(self.model.user_id == user_id, self.model.is_deleted == False))  # noqa: E712
@@ -247,7 +256,7 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
 
     async def record_usage(
         self,
-        api_key_id: str,
+        api_key_id: Optional[str],
         ip_address: Optional[str] = None,
         usage_metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
@@ -263,6 +272,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             True if usage was recorded, False if key not found
         """
         try:
+            # Check for null input
+            if api_key_id is None:
+                return False
+
             # Update usage statistics
             update_data = {
                 "usage_count": self.model.usage_count + 1,
@@ -276,7 +289,7 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             # Increment version for optimistic locking
             current_key = await self.get_by_id(api_key_id)
             if current_key:
-                update_data["version"] = current_key.version + 1
+                update_data["version"] = (current_key.version or 0) + 1
 
                 updated_key = await self.update(api_key_id, **update_data)
                 success = updated_key is not None
@@ -495,22 +508,31 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             self.logger.error("Failed to validate API key", error=str(e))
             raise
 
-    async def revoke(self, key_id: str) -> bool:
+    async def revoke(self, key_id: Optional[str]) -> bool:
         """
         Revoke an API key by setting its revoked_at timestamp.
 
         Args:
-            key_id: The ID of the API key to revoke
+            key_id: The ID of the API key to revoke (can be None for validation testing)
 
         Returns:
             True if successfully revoked, False if not found
         """
         try:
+            # Check for null input
+            if key_id is None:
+                return False
+
             # Find the API key
             api_key = await self.get_by_id(key_id)
 
             if not api_key:
                 self.logger.warning("API key not found for revocation", key_id=key_id)
+                return False
+
+            # Check if already revoked
+            if api_key.revoked_at is not None:
+                self.logger.info("API key is already revoked", key_id=key_id)
                 return False
 
             # Set revoked timestamp
@@ -659,7 +681,7 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             created_by=created_by,
         )
 
-    async def revoke_api_key(self, key_id: str, revoked_by: str = "system") -> bool:
+    async def revoke_api_key(self, key_id: Optional[str], revoked_by: str = "system") -> bool:
         """Revoke an API key (interface method)."""
         return await self.revoke(key_id)
 
@@ -678,7 +700,7 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             self.logger.error("Failed to revoke user API keys", user_id=user_id, error=str(e))
             raise
 
-    async def update_last_used(self, key_id: str, ip_address: Optional[str] = None) -> bool:
+    async def update_last_used(self, key_id: Optional[str], ip_address: Optional[str] = None) -> bool:
         """Update the last used timestamp for an API key (interface method)."""
         return await self.record_usage(key_id, ip_address)
 

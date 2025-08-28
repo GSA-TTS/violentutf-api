@@ -38,6 +38,9 @@ class MFAService:
             session: Database session for repository initialization
             audit_service: Optional audit service instance
         """
+        # Store session for test access
+        self.session = session
+
         # Import repositories locally to avoid API layer violations
         from app.repositories.mfa_backup_code import MFABackupCodeRepository
         from app.repositories.mfa_challenge import MFAChallengeRepository

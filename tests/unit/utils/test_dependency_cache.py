@@ -191,10 +191,14 @@ class TestFileCacheManager:
         """Test handling of corrupted cache files."""
         cache_file = file_cache_manager._get_cache_file_path("corrupted")
 
-        # Create corrupted cache file
+        # Create corrupted cache file with proper permissions
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_file, "w") as f:
             f.write("invalid json{")
+        # Set secure permissions like the cache manager does
+        import os
+
+        os.chmod(cache_file, 0o600)
 
         # Should handle corruption gracefully
         cached = await file_cache_manager.get("corrupted")

@@ -53,7 +53,7 @@ class TestSecurityHeadersMiddleware:
         assert response.headers["X-XSS-Protection"] == "1; mode=block"
 
         assert "X-Frame-Options" in response.headers
-        assert response.headers["X-Frame-Options"] == "deny"
+        assert response.headers["X-Frame-Options"] == "DENY"
 
         # Check that sensitive headers are removed
         assert "Server" not in response.headers

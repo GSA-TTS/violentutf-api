@@ -216,22 +216,26 @@ class AuditLogFactory:
         action: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         details: Optional[Dict[str, Any]] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
         **kwargs,
     ) -> AuditLog:
         """Create an AuditLog instance with realistic test data."""
+        # Use metadata parameter for action_metadata field, fallback to details for backward compatibility
+        action_metadata = metadata or details or {"test": random_word()}
+
         return AuditLog(
             id=id or str(uuid.uuid4()),
             user_id=user_id,
             action=action or random.choice(["CREATE", "READ", "UPDATE", "DELETE"]),
             resource_type=resource_type or random.choice(["user", "session", "api_key"]),
             resource_id=resource_id or str(uuid.uuid4()),
-            details=details or {"test": random_word()},
+            action_metadata=action_metadata,
             ip_address=ip_address or random_ip(),
             user_agent=user_agent or f"TestAgent/{random.randint(1, 10)}.0",
-            timestamp=kwargs.get("timestamp", datetime.utcnow()),
+            created_by=kwargs.get("created_by", "system"),
             **kwargs,
         )
 
