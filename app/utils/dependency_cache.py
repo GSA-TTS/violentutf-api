@@ -41,6 +41,7 @@ class PackageInfo:
     cached_at: float = 0.0
 
     def __post_init__(self) -> None:
+        """Initialize cached_at timestamp if not provided."""
         if self.cached_at == 0.0:
             self.cached_at = time.time()
 
