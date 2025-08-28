@@ -122,9 +122,7 @@ class RBACService:
             # Save role
             created_role = await self.role_repository.create(role_data)
 
-            # Commit transaction if we have a session
-            if self.session:
-                await self.session.commit()
+            # Transaction management handled by repository layer
 
             logger.info(
                 "Role created",
@@ -138,12 +136,8 @@ class RBACService:
             return created_role
 
         except (ConflictError, ValidationError):
-            if self.session:
-                await self.session.rollback()
             raise
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to create role", name=name, error=str(e))
             raise
 
@@ -200,21 +194,15 @@ class RBACService:
             # Update role
             updated_role = await self.role_repository.update(role_id, update_data)
 
-            # Commit transaction if we have a session
-            if self.session:
-                await self.session.commit()
+            # Transaction management handled by repository layer
 
             logger.info("Role updated", role_id=role_id, updated_by=updated_by, changes=list(update_data.keys()))
 
             return updated_role
 
         except (NotFoundError, ForbiddenError, ValidationError):
-            if self.session:
-                await self.session.rollback()
             raise
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to update role", role_id=role_id, error=str(e))
             raise
 
@@ -247,9 +235,7 @@ class RBACService:
             # Soft delete the role
             success = await self.role_repository.delete(role_id, deleted_by)
 
-            # Commit transaction if we have a session
-            if self.session:
-                await self.session.commit()
+            # Transaction management handled by repository layer
 
             if success:
                 logger.info("Role deleted", role_id=role_id, name=role.name, deleted_by=deleted_by)
@@ -257,12 +243,8 @@ class RBACService:
             return success
 
         except (NotFoundError, ForbiddenError, ValidationError):
-            if self.session:
-                await self.session.rollback()
             raise
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to delete role", role_id=role_id, error=str(e))
             raise
 
@@ -309,19 +291,13 @@ class RBACService:
                 context=context,
             )
 
-            # Commit transaction if we have a session
-            if self.session:
-                await self.session.commit()
+            # Transaction management handled by repository layer
 
             return assignment
 
         except (NotFoundError, ValidationError):
-            if self.session:
-                await self.session.rollback()
             raise
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to assign role to user", user_id=user_id, role_id=role_id, error=str(e))
             raise
 
@@ -344,15 +320,11 @@ class RBACService:
                 user_id=user_id, role_id=role_id, revoked_by=revoked_by, reason=reason
             )
 
-            # Commit transaction if we have a session
-            if self.session:
-                await self.session.commit()
+            # Transaction management handled by repository layer
 
             return success
 
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to revoke role from user", user_id=user_id, role_id=role_id, error=str(e))
             raise
 
@@ -457,22 +429,7 @@ class RBACService:
             List of UserRole assignment records
         """
         try:
-            user_uuid = uuid.UUID(user_id)
-
-            # Get all assignments for the user
-            from sqlalchemy import and_, select
-
-            query = (
-                select(UserRole)
-                .where(and_(UserRole.user_id == user_uuid, UserRole.is_active == True))  # noqa: E712
-                .order_by(UserRole.assigned_at.desc())
-            )
-
-            result = await self.session.execute(query)
-            assignments = list(result.scalars().all())
-
-            logger.debug("User role assignments retrieved", user_id=user_id, assignment_count=len(assignments))
-
+            assignments = await self.role_repository.get_role_assignments_for_user(user_id)
             return assignments
 
         except Exception as e:
@@ -659,35 +616,13 @@ class RBACService:
             Number of assignments cleaned up
         """
         try:
-            from sqlalchemy import and_, update
+            cleaned_count = await self.role_repository.cleanup_expired_assignments()
 
-            # Mark expired assignments as inactive
-            update_query = (
-                update(UserRole)
-                .where(
-                    and_(UserRole.expires_at <= datetime.now(timezone.utc), UserRole.is_active == True)
-                )  # noqa: E712
-                .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
-            )
-
-            if self.session:
-                result = await self.session.execute(update_query)
-                cleaned_count = result.rowcount
-
-                # Commit transaction
-                await self.session.commit()
-            else:
-                # Legacy mode - use repository methods instead
-                cleaned_count = await self.role_repository.cleanup_expired_assignments()
-
-            if cleaned_count > 0:
-                logger.info("Expired role assignments cleaned up", count=cleaned_count)
+            # Transaction management handled by repository layer
 
             return cleaned_count
 
         except Exception as e:
-            if self.session:
-                await self.session.rollback()
             logger.error("Failed to cleanup expired assignments", error=str(e))
             raise
 

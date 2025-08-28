@@ -65,18 +65,14 @@ class SessionService:
         duration = self.DEFAULT_REMEMBER_ME_DURATION if remember_me else self.DEFAULT_SESSION_DURATION
         expires_at = datetime.now(timezone.utc) + duration
 
-        # Create session using repository
-        session_data = {
-            "user_id": user.id,
-            "session_token": session_token,
-            "expires_at": expires_at,
-            "user_agent": user_agent,
-            "ip_address": ip_address,
-            "device_info": json.dumps(device_info) if device_info else None,
-            "is_active": True,
-        }
-
-        session = await self.session_repo.create(session_data)
+        # Create session using repository interface method
+        session = await self.session_repo.create_session(
+            user_id=str(user.id),
+            token=session_token,
+            expires_at=expires_at.isoformat(),
+            ip_address=ip_address,
+            user_agent=user_agent,  # This will be mapped to device_info in the repository
+        )
 
         # Cache session data
         await self._cache_session(session, user)
@@ -181,7 +177,7 @@ class SessionService:
         session = await self.session_repo.get_by_token(session_token)
 
         if session:
-            await self.session_repo.update(session.id, is_active=False, invalidated_at=datetime.now(timezone.utc))
+            await self.session_repo.update(session.id, is_active=False, revoked_at=datetime.now(timezone.utc))
 
             logger.info(
                 "Session invalidated",
@@ -234,7 +230,7 @@ class SessionService:
             sessions = [s for s in sessions if str(s.id) != except_session_id]
 
         for session in sessions:
-            await self.session_repo.update(session.id, is_active=False, invalidated_at=datetime.now(timezone.utc))
+            await self.session_repo.update(session.id, is_active=False, revoked_at=datetime.now(timezone.utc))
 
         logger.info(
             "User sessions invalidated",
@@ -387,7 +383,7 @@ class SessionService:
             "created_at": session.created_at.isoformat(),
             "last_activity_at": session.last_activity_at.isoformat() if session.last_activity_at else None,
             "ip_address": session.ip_address,
-            "user_agent": session.user_agent,
+            "user_agent": session.device_info,
         }
 
     async def _cache_session(self, session: Session, user: User) -> None:

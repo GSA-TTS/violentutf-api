@@ -3,7 +3,6 @@
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
@@ -16,14 +15,13 @@ logger = get_logger(__name__)
 class ScanService:
     """Service for managing scans with transaction management."""
 
-    def __init__(self, session: AsyncSession):
-        """Initialize scan service with database session.
+    def __init__(self, repository: BaseRepository):
+        """Initialize scan service with repository.
 
         Args:
-            session: Database session for operations
+            repository: Scan repository for data access
         """
-        self.session = session
-        self.repository: BaseRepository = BaseRepository(Scan, session)
+        self.repository = repository
 
     async def create_scan(self, scan_data: Dict[str, Any], user_id: str) -> Scan:
         """Create a new scan.
@@ -43,13 +41,10 @@ class ScanService:
             scan_data.update({"id": str(uuid4()), "created_by": user_id, "updated_by": user_id, "status": "pending"})
 
             scan = await self.repository.create(scan_data)
-            await self.session.commit()
-
             logger.info("scan_created", scan_id=scan.id, user_id=user_id)
             return scan
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_create_scan", error=str(e))
             raise ValidationError(f"Failed to create scan: {str(e)}")
 
@@ -113,13 +108,10 @@ class ScanService:
             update_data["updated_by"] = user_id
 
             updated_scan = await self.repository.update(scan_id, update_data)
-            await self.session.commit()
-
             logger.info("scan_updated", scan_id=scan_id, user_id=user_id)
             return updated_scan
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_update_scan", scan_id=scan_id, error=str(e))
             raise ValidationError(f"Failed to update scan: {str(e)}")
 
@@ -138,19 +130,13 @@ class ScanService:
         """
         try:
             # Verify scan exists before operation
-
             await self.get_scan(scan_id)
             success = await self.repository.delete(scan_id)
             if success:
-                await self.session.commit()
                 logger.info("scan_deleted", scan_id=scan_id, user_id=user_id)
-            else:
-                await self.session.rollback()
-
             return success
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_delete_scan", scan_id=scan_id, error=str(e))
             raise
 

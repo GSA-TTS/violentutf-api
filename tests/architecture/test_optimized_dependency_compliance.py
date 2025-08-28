@@ -63,7 +63,8 @@ class TestOptimizedDependencyCompliance:
     @pytest.mark.timeout(10)  # Must complete within 10 seconds
     async def test_dependency_compliance_performance_target(self, optimized_dependency_service):
         """
-        Given the optimized dependency validation system
+        Given the optimized dependency validation system.
+
         When the full compliance test suite runs
         Then it must complete within 10 seconds target (ADR-015)
         And maintain 100% accuracy compared to baseline
@@ -95,7 +96,8 @@ class TestOptimizedDependencyCompliance:
     @pytest.mark.asyncio
     async def test_cache_effectiveness_target(self, optimized_dependency_service):
         """
-        Given cached dependency information
+        Given cached dependency information.
+
         When the same compliance test runs multiple times
         Then subsequent runs should achieve >80% cache hit rate (ADR-015)
         And execution time should improve significantly

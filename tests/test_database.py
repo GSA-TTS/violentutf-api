@@ -174,9 +174,21 @@ async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[Asy
     try:
         yield session
     finally:
-        # Always rollback the transaction to maintain test isolation
-        await transaction.rollback()
-        await session.close()
+        # Rollback transaction only if it's still active
+        try:
+            if transaction.is_active:
+                await transaction.rollback()
+        except Exception as e:
+            # Transaction might already be closed by service commits
+            print(f"Transaction rollback failed (expected for committed transactions): {e}")
+
+        # Close session safely
+        try:
+            await session.close()
+        except Exception as e:
+            print(f"Session close failed: {e}")
+
+        print("Test database cleaned up")
 
 
 @pytest_asyncio.fixture

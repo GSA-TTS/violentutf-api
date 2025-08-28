@@ -1,6 +1,6 @@
 """Task management service for handling background task operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,7 @@ from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
 from app.models.task import Task
+from app.repositories.task import TaskRepository
 
 logger = get_logger(__name__)
 
@@ -15,13 +16,16 @@ logger = get_logger(__name__)
 class TaskService:
     """Service for managing background tasks with transaction management."""
 
-    def __init__(self, session: AsyncSession):
-        """Initialize task service with database session.
+    def __init__(self, repository_or_session: Union[TaskRepository, AsyncSession]):
+        """Initialize task service with repository or database session.
 
         Args:
-            session: Database session for operations
+            repository_or_session: Task repository or AsyncSession
         """
-        self.session = session
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = TaskRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_task(self, task_data: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         """Create a new background task.
@@ -41,13 +45,12 @@ class TaskService:
             task_data.update({"id": str(uuid4()), "created_by": user_id, "updated_by": user_id, "status": "pending"})
 
             # Simulate task creation (would use actual Task model in real implementation)
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("task_created", task_id=task_data["id"], user_id=user_id)
             return task_data
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_create_task", error=str(e))
             raise ValidationError(f"Failed to create task: {str(e)}")
 
@@ -129,13 +132,12 @@ class TaskService:
             # Update task data
             task.update(update_data)
 
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("task_updated", task_id=task_id, user_id=user_id)
             return task
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_update_task", task_id=task_id, error=str(e))
             raise ValidationError(f"Failed to update task: {str(e)}")
 
@@ -156,13 +158,12 @@ class TaskService:
             await self.get_task(task_id)  # Validate task exists
 
             # Simulate deletion
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("task_deleted", task_id=task_id, user_id=user_id)
             return True
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_delete_task", task_id=task_id, error=str(e))
             raise
 

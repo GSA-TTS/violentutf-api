@@ -281,7 +281,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get", return_value=sample_session),
             patch.object(sample_session, "revoke") as mock_revoke,
         ):
-
             # Act
             result = await session_repository.revoke_session(session_id, "admin", "Test revocation")
 
@@ -338,7 +337,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get", return_value=sample_session),
             patch.object(sample_session, "revoke"),
         ):
-
             # Act & Assert
             with pytest.raises(SQLAlchemyError):
                 await session_repository.revoke_session(session_id, "admin")
@@ -435,7 +433,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get_by_token", return_value=sample_session),
             patch.object(sample_session, "update_activity") as mock_update,
         ):
-
             # Act
             result = await session_repository.update_session_activity("test_token", "192.168.1.1")
 
@@ -470,7 +467,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get_by_token", return_value=sample_session),
             patch.object(sample_session, "extend_session") as mock_extend,
         ):
-
             # Act
             result = await session_repository.extend_session("test_token", extension_minutes=120)
 
@@ -674,7 +670,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get_user_sessions", return_value=sessions),
             patch.object(session_repository, "revoke_session", side_effect=mock_revoke_side_effect) as mock_revoke,
         ):
-
             # Act
             count = await session_repository.invalidate_user_sessions(user_id, exclude_session_id=exclude_session_id)
 
@@ -709,7 +704,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get", return_value=sample_session),
             patch.object(sample_session, "extend_session") as mock_extend,
         ):
-
             # Act
             session = await session_repository.extend_session(session_id, extension)
 
@@ -775,7 +769,6 @@ class TestSessionRepository:
             patch.object(session_repository, "get_by_token", return_value=sample_session),
             patch.object(sample_session, "update_activity"),
         ):
-
             # Act & Assert
             with pytest.raises(SQLAlchemyError):
                 await session_repository.update_session_activity("test_token")

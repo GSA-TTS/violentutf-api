@@ -1,0 +1,36 @@
+{
+  "health": {
+    "avg_time": 0.008757333501125685,
+    "min_time": 0.002701999997952953,
+    "max_time": 0.06072716700145975,
+    "success_rate": 1.0,
+    "iterations": 10,
+    "method": "GET",
+    "endpoint": "/api/v1/health"
+  },
+  "readiness": {
+    "avg_time": 0.10417874189733993,
+    "min_time": 0.0029857089975848794,
+    "max_time": 1.011455499974545,
+    "success_rate": 0.0,
+    "iterations": 10,
+    "method": "GET",
+    "endpoint": "/api/v1/ready"
+  },
+  "api_root": {
+    "avg_time": 0.0014619293011492117,
+    "min_time": 0.0012766660074703395,
+    "max_time": 0.00185425000381656,
+    "success_rate": 0.0,
+    "iterations": 10,
+    "method": "GET",
+    "endpoint": "/"
+  },
+  "overall": {
+    "avg_response_time": 0.008757333501125685,
+    "total_endpoints_measured": 3,
+    "successful_endpoints": 1,
+    "measurement_timestamp": "2025-08-27T14:50:30.978158",
+    "baseline_type": "repository_pattern_current"
+  }
+}

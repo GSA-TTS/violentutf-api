@@ -108,7 +108,7 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             self.logger.error("Failed to get user sessions", user_id=str(user_id), error=str(e))
             raise
 
-    async def get_active_sessions(self, limit: int = 100) -> List[Session]:
+    async def get_all_active_sessions(self, limit: int = 100) -> List[Session]:
         """
         Get all currently active sessions.
 
@@ -321,7 +321,7 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             await self.session.rollback()
             raise
 
-    async def extend_session(self, session_token: str, extension_minutes: int = 60) -> bool:
+    async def extend_session_by_token(self, session_token: str, extension_minutes: int = 60) -> bool:
         """
         Extend session expiration time.
 
@@ -480,7 +480,7 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             "session_token": token,
             "expires_at": expires_datetime,
             "ip_address": ip_address,
-            "user_agent": user_agent,
+            "device_info": user_agent,  # Map user_agent to device_info field
             "is_active": True,
         }
 

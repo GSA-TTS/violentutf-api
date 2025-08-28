@@ -322,7 +322,6 @@ class TestAuthEndpointsSecurity:
             patch.object(UserRepository, "get_by_email") as mock_get_by_email,
             patch.object(UserRepository, "create_user") as mock_create_user,
         ):
-
             # First registration: no existing user found
             mock_get_by_username.return_value = None
             mock_get_by_email.return_value = None
@@ -350,7 +349,6 @@ class TestAuthEndpointsSecurity:
             patch.object(UserRepository, "get_by_username") as mock_get_by_username,
             patch.object(UserRepository, "get_by_email") as mock_get_by_email,
         ):
-
             # Different username, but same email
             email_duplicate_data = registration_data.copy()
             email_duplicate_data["username"] = f"different_user_{unique_id}"

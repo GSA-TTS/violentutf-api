@@ -239,7 +239,8 @@ class APIKey(Base, BaseModelMixin):
         """Check if the API key is active and valid."""
         # Handle case where is_deleted might be None before database save
         is_not_deleted = self.is_deleted is False or self.is_deleted is None
-        return is_not_deleted and not self.is_expired()
+        is_not_revoked = self.revoked_at is None
+        return is_not_deleted and is_not_revoked and not self.is_expired()
 
     @property
     def is_valid(self: "APIKey") -> bool:

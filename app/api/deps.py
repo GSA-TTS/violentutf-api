@@ -19,15 +19,23 @@ from app.core.auth import (
 
 # Import db session dependency for service layer initialization
 from app.db.session import get_db_dependency as get_db
+from app.repositories.plugin import PluginRepository
+from app.repositories.scan import ScanRepository
+from app.repositories.security_scan import SecurityScanRepository
+from app.repositories.user import UserRepository
+from app.repositories.vulnerability_finding import VulnerabilityFindingRepository
+from app.repositories.vulnerability_taxonomy import VulnerabilityTaxonomyRepository
 from app.services.api_key_service import APIKeyService
 from app.services.architectural_metrics_service import ArchitecturalMetricsService
 from app.services.audit_service import AuditService
+from app.services.health_service import HealthService
 from app.services.mfa_policy_service import MFAPolicyService
 from app.services.mfa_service import MFAService
 from app.services.oauth_service import OAuth2Service
 from app.services.plugin_service import PluginService
 from app.services.rbac_service import RBACService
 from app.services.report_service import ReportService
+from app.services.request_validation_service import RequestValidationService
 from app.services.scan_service import ScanService
 from app.services.security_scan_service import SecurityScanService
 from app.services.session_service import SessionService
@@ -102,7 +110,8 @@ async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserServi
     Returns:
         UserServiceImpl: Configured user service instance
     """
-    return UserServiceImpl(session)
+    user_repo = UserRepository(session)
+    return UserServiceImpl(user_repo)
 
 
 async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> APIKeyService:
@@ -178,7 +187,8 @@ async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get
     Returns:
         VulnerabilityTaxonomyService: Configured vulnerability taxonomy service instance
     """
-    return VulnerabilityTaxonomyService(session)
+    vulnerability_taxonomy_repo = VulnerabilityTaxonomyRepository(session)
+    return VulnerabilityTaxonomyService(vulnerability_taxonomy_repo)
 
 
 async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> OAuth2Service:
@@ -198,42 +208,14 @@ async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> OAuth2Se
 
 async def get_audit_service(session: AsyncSession = Depends(get_db)) -> AuditService:
     """Get AuditService dependency."""
-    from app.repositories.audit_log_extensions import ExtendedAuditLogRepository
-
-    audit_repo = ExtendedAuditLogRepository(session)
-    return AuditService(audit_repo)
+    # Service handles its own repository dependencies internally
+    return AuditService(session)
 
 
 async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> MFAService:
     """Get MFAService dependency."""
-    from app.repositories.mfa_backup_code import MFABackupCodeRepository
-    from app.repositories.mfa_challenge import MFAChallengeRepository
-    from app.repositories.mfa_device import MFADeviceRepository
-    from app.repositories.mfa_event import MFAEventRepository
-    from app.repositories.user import UserRepository
-    from app.services.audit_service import AuditService
-
-    # Create repositories
-    mfa_device_repo = MFADeviceRepository(session)
-    mfa_challenge_repo = MFAChallengeRepository(session)
-    mfa_backup_code_repo = MFABackupCodeRepository(session)
-    mfa_event_repo = MFAEventRepository(session)
-    user_repo = UserRepository(session)
-
-    # Create audit service
-    from app.repositories.audit_log_extensions import ExtendedAuditLogRepository
-
-    audit_repo = ExtendedAuditLogRepository(session)
-    audit_service = AuditService(audit_repo)
-
-    return MFAService(
-        mfa_device_repo=mfa_device_repo,
-        mfa_challenge_repo=mfa_challenge_repo,
-        mfa_backup_code_repo=mfa_backup_code_repo,
-        mfa_event_repo=mfa_event_repo,
-        user_repo=user_repo,
-        audit_service=audit_service,
-    )
+    # Use service factory to avoid direct repository imports in API layer
+    return _create_mfa_service(session)
 
 
 async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> MFAPolicyService:
@@ -250,7 +232,8 @@ async def get_scheduled_report_service(session: AsyncSession = Depends(get_db)) 
 
 async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> PluginService:
     """Get PluginService dependency."""
-    return PluginService(session)
+    plugin_repo = PluginRepository(session)
+    return PluginService(plugin_repo)
 
 
 async def get_report_service(session: AsyncSession = Depends(get_db)) -> ReportService:
@@ -260,12 +243,14 @@ async def get_report_service(session: AsyncSession = Depends(get_db)) -> ReportS
 
 async def get_scan_service(session: AsyncSession = Depends(get_db)) -> ScanService:
     """Get ScanService dependency."""
-    return ScanService(session)
+    scan_repo = ScanRepository(session)
+    return ScanService(scan_repo)
 
 
 async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> SecurityScanService:
     """Get SecurityScanService dependency."""
-    return SecurityScanService(session)
+    security_scan_repo = SecurityScanRepository(session)
+    return SecurityScanService(security_scan_repo)
 
 
 async def get_task_service(session: AsyncSession = Depends(get_db)) -> TaskService:
@@ -280,7 +265,32 @@ async def get_template_service(session: AsyncSession = Depends(get_db)) -> Templ
 
 async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> VulnerabilityFindingService:
     """Get VulnerabilityFindingService dependency."""
-    return VulnerabilityFindingService(session)
+    vulnerability_finding_repo = VulnerabilityFindingRepository(session)
+    return VulnerabilityFindingService(vulnerability_finding_repo)
+
+
+async def get_health_service() -> HealthService:
+    """Get health service dependency injection.
+
+    Provides HealthService instance for API endpoints.
+    Follows ADR-013 service layer integration patterns.
+
+    Returns:
+        HealthService: Configured health service instance
+    """
+    return HealthService()
+
+
+async def get_request_validation_service() -> RequestValidationService:
+    """Get request validation service dependency injection.
+
+    Provides RequestValidationService instance for API endpoints.
+    Follows ADR-013 service layer integration patterns.
+
+    Returns:
+        RequestValidationService: Configured request validation service instance
+    """
+    return RequestValidationService()
 
 
 # Repository dependency functions using container
@@ -516,3 +526,20 @@ async def get_health_repository() -> Any:
 # Legacy aliases for backward compatibility
 get_current_user_dep = get_current_user
 get_db_dep = get_db
+
+
+# Internal service factory functions to avoid direct repository imports in API layer
+# These functions encapsulate repository creation to maintain architectural boundaries
+
+
+def _create_mfa_service(session: AsyncSession) -> MFAService:
+    """Internal factory for MFAService creation.
+
+    Creates MFAService with session-based dependency injection.
+    Repository creation moved to service layer to maintain architectural boundaries.
+    """
+    # Create audit service (it handles its own repository internally)
+    audit_service = AuditService(session)
+
+    # MFAService now creates its own repositories internally
+    return MFAService(session=session, audit_service=audit_service)

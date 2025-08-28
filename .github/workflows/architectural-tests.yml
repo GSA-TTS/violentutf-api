@@ -42,6 +42,7 @@ jobs:
           - dependency-compliance
           - data-access-patterns
           - custom-rules
+          - integration-tests
 
     steps:
       - name: Checkout Code
@@ -75,7 +76,11 @@ jobs:
           # Install security scanning tools
           pip install pip-audit safety
           # Install test dependencies
-          pip install pytest pytest-asyncio pytest-timeout pytest-json-report
+          pip install pytest pytest-asyncio pytest-timeout pytest-json-report pytest-html
+          # Install integration test dependencies
+          pip install httpx aiosqlite asyncpg psycopg2-binary
+          # Install additional dependencies for repository pattern
+          pip install structlog passlib argon2-cffi redis
           # Install project in development mode
           pip install -e .
 
@@ -122,6 +127,14 @@ jobs:
                 -v --tb=short --timeout=60 \
                 --json-report --json-report-file=test-results-custom.json
               ;;
+            integration-tests)
+              pytest tests/integration/test_service_repository_integration.py::TestUserServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestAPIKeyServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestSessionServiceRepositoryIntegration \
+                tests/integration/test_service_repository_integration.py::TestAuditServiceRepositoryIntegration \
+                -v --tb=short --timeout=300 \
+                --json-report --json-report-file=test-results-integration.json
+              ;;
           esac
 
           # Check if JSON file was created
@@ -132,6 +145,7 @@ jobs:
             dependency-compliance) JSON_FILE="test-results-deps.json" ;;
             data-access-patterns) JSON_FILE="test-results-data.json" ;;
             custom-rules) JSON_FILE="test-results-custom.json" ;;
+            integration-tests) JSON_FILE="test-results-integration.json" ;;
           esac
 
           if [ -f "$JSON_FILE" ]; then
@@ -157,16 +171,30 @@ jobs:
             dependency-compliance) TEST_FILE="test_dependency_compliance.py" ;;
             data-access-patterns) TEST_FILE="test_data_access_patterns.py" ;;
             custom-rules) TEST_FILE="test_custom_rules.py" ;;
+            integration-tests) TEST_FILE="../integration/test_service_repository_integration.py" ;;
           esac
 
           # Generate HTML report for the specific test suite
-          if [ -n "$TEST_FILE" ] && [ -f "tests/architecture/$TEST_FILE" ]; then
-            pytest "tests/architecture/$TEST_FILE" \
-              --html=architectural-report-${{ matrix.test-suite }}.html \
-              --self-contained-html \
-              --timeout=60
-          else
-            echo "Test file not found for ${{ matrix.test-suite }}"
+          if [ -n "$TEST_FILE" ]; then
+            if [ "${{ matrix.test-suite }}" = "integration-tests" ]; then
+              # Special handling for integration tests
+              if [ -f "tests/integration/test_service_repository_integration.py" ]; then
+                pytest tests/integration/test_service_repository_integration.py::TestUserServiceRepositoryIntegration \
+                  tests/integration/test_service_repository_integration.py::TestAPIKeyServiceRepositoryIntegration \
+                  tests/integration/test_service_repository_integration.py::TestSessionServiceRepositoryIntegration \
+                  tests/integration/test_service_repository_integration.py::TestAuditServiceRepositoryIntegration \
+                  --html=architectural-report-${{ matrix.test-suite }}.html \
+                  --self-contained-html \
+                  --timeout=300
+              fi
+            elif [ -f "tests/architecture/$TEST_FILE" ]; then
+              pytest "tests/architecture/$TEST_FILE" \
+                --html=architectural-report-${{ matrix.test-suite }}.html \
+                --self-contained-html \
+                --timeout=60
+            else
+              echo "Test file not found for ${{ matrix.test-suite }}"
+            fi
           fi
 
       - name: Upload Test Reports
@@ -206,6 +234,9 @@ jobs:
               ;;
             custom-rules)
               JSON_FILE="test-results-custom.json"
+              ;;
+            integration-tests)
+              JSON_FILE="test-results-integration.json"
               ;;
           esac
 

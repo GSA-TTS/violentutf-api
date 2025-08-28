@@ -262,7 +262,6 @@ class TestHealthRepository:
             patch("psutil.getloadavg", return_value=(2.1, 1.8, 1.5)),
             patch("psutil.net_io_counters") as mock_net,
         ):
-
             # Configure mocks
             mock_memory.return_value.percent = 67.8
             mock_memory.return_value.total = 16384 * 1024 * 1024
@@ -293,7 +292,6 @@ class TestHealthRepository:
             patch("psutil.cpu_percent", side_effect=Exception("CPU info unavailable")),
             patch("psutil.virtual_memory", side_effect=Exception("Memory info unavailable")),
         ):
-
             # Act
             metrics = await health_repository.get_system_metrics()
 
@@ -312,7 +310,6 @@ class TestHealthRepository:
             patch("psutil.virtual_memory", side_effect=Exception("Memory unavailable")),
             patch("psutil.disk_usage") as mock_disk,
         ):
-
             mock_disk.return_value.percent = 60.0
             mock_disk.return_value.total = 1000 * 1024 * 1024 * 1024
             mock_disk.return_value.free = 400 * 1024 * 1024 * 1024
@@ -524,7 +521,6 @@ class TestHealthRepository:
             patch("psutil.virtual_memory") as mock_memory,
             patch("psutil.disk_usage") as mock_disk,
         ):
-
             mock_memory.return_value.percent = 85.0
             mock_disk.return_value.percent = 95.0
 

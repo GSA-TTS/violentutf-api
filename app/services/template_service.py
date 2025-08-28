@@ -1,12 +1,13 @@
 """Template management service for handling template operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
+from app.repositories.template import TemplateRepository
 
 logger = get_logger(__name__)
 
@@ -14,13 +15,16 @@ logger = get_logger(__name__)
 class TemplateService:
     """Service for managing templates with transaction management."""
 
-    def __init__(self, session: AsyncSession):
-        """Initialize template service with database session.
+    def __init__(self, repository_or_session: Union[TemplateRepository, AsyncSession]):
+        """Initialize template service with repository or database session.
 
         Args:
-            session: Database session for operations
+            repository_or_session: Template repository or AsyncSession
         """
-        self.session = session
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = TemplateRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_template(self, template_data: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         """Create a new template.
@@ -46,13 +50,12 @@ class TemplateService:
             )
 
             # Since no actual template model exists yet, simulate database operation
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("template_created", template_id=template_data["id"], name=template_data.get("name"))
             return template_data
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_create_template", error=str(e))
             raise ValidationError(f"Failed to create template: {str(e)}")
 
@@ -127,13 +130,12 @@ class TemplateService:
             # Update template data
             template.update(update_data)
 
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("template_updated", template_id=template_id, user_id=user_id)
             return template
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_update_template", template_id=template_id, error=str(e))
             raise ValidationError(f"Failed to update template: {str(e)}")
 
@@ -154,13 +156,12 @@ class TemplateService:
             await self.get_template(template_id)  # Validate template exists
 
             # Simulate deletion
-            await self.session.commit()
+            # Note: Repository handles session management
 
             logger.info("template_deleted", template_id=template_id, user_id=user_id)
             return True
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_delete_template", template_id=template_id, error=str(e))
             raise
 

@@ -257,7 +257,6 @@ async def create_scheduled_report(
     - Monthly: '0 9 1 * *' (9am first day of month)
     """
     try:
-
         # Build configuration
         config = {"report_type": report_type, "period_days": period_days, "include_sections": []}
 
@@ -332,7 +331,6 @@ async def update_scheduled_report(
 ) -> Dict[str, Any]:
     """Update a scheduled report configuration."""
     try:
-
         # Build updates
         updates = {}
         if is_active is not None:
