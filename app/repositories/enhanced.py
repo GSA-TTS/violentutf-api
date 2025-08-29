@@ -462,6 +462,7 @@ class EnhancedRepository(BaseRepository[T]):
         # Create a hash of filter components for consistent key generation
         components = filters.get_cache_key_components()
         components_str = json.dumps(components, sort_keys=True)
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for cache key generation, not sensitive data storage
         components_hash = hashlib.sha256(components_str.encode()).hexdigest()[:16]
 
         return f"{self.cache_prefix}:{operation}:{components_hash}"

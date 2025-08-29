@@ -734,7 +734,11 @@ async def execute_scheduled_reports_task_v2(self: AsyncTask) -> Dict[str, Any]:
 
         except Exception as e:
             logger.error(f"Error executing scheduled reports: {e}")
-            return {"status": "failed", "error": str(e), "execution_time": datetime.now(timezone.utc).isoformat()}
+            return {
+                "status": "failed",
+                "error": "Task execution failed",
+                "execution_time": datetime.now(timezone.utc).isoformat(),
+            }
 
 
 async def _send_webhook(task: TaskModel) -> None:

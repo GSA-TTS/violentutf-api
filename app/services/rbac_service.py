@@ -607,7 +607,7 @@ class RBACService:
 
         except Exception as e:
             logger.error("Failed to validate role assignment", user_id=user_id, role_id=role_id, error=str(e))
-            return False, f"Validation error: {str(e)}"
+            return False, "Validation failed"
 
     async def cleanup_expired_assignments(self) -> int:
         """Clean up expired role assignments.

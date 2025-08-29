@@ -239,7 +239,12 @@ class ScheduledReportService:
 
         except Exception as e:
             logger.error(f"Error executing schedule {schedule.id}: {e}")
-            return {"schedule_id": schedule.id, "schedule_name": schedule.name, "status": "failed", "error": str(e)}
+            return {
+                "schedule_id": schedule.id,
+                "schedule_name": schedule.name,
+                "status": "failed",
+                "error": "Report execution failed",
+            }
 
     async def _get_or_create_template(self, report_type: str) -> ReportTemplate:
         """Get or create a report template for architectural metrics.

@@ -72,7 +72,8 @@ async def create_mfa_policy(
             ),
         )
     except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA policy validation failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid MFA policy parameters")
     except Exception as e:
         logger.error("Failed to create MFA policy", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create MFA policy")
@@ -124,7 +125,8 @@ async def get_mfa_policy(
 
         return BaseResponse(status="success", message="MFA policy retrieved", data=MFAPolicyResponse(**policy))
     except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.warning("MFA policy not found", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to get MFA policy", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to get MFA policy")
@@ -177,7 +179,8 @@ async def update_mfa_policy(
             status="success", message="MFA policy updated successfully", data=MFAPolicyResponse(**policy_dict)
         )
     except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA policy validation failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid MFA policy parameters")
     except Exception as e:
         logger.error("Failed to update MFA policy", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update MFA policy")
@@ -257,7 +260,8 @@ async def check_user_mfa_requirement(
             ),
         )
     except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.warning("MFA policy not found", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to check MFA requirement", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to check MFA requirement")

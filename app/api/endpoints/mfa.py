@@ -50,7 +50,8 @@ async def setup_totp(
             data=MFASetupResponse(secret=secret, provisioning_uri=provisioning_uri, qr_code=qr_code),
         )
     except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA setup validation failed", user_id=current_user.id, error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid MFA setup parameters")
     except Exception as e:
         logger.error("TOTP setup failed", error=str(e), user_id=current_user.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to setup TOTP")
@@ -76,7 +77,8 @@ async def verify_totp_setup(
             data=MFABackupCodesResponse(backup_codes=backup_codes),
         )
     except (AuthenticationError, NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA verification failed", user_id=current_user.id, error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="MFA verification failed")
     except Exception as e:
         logger.error("TOTP verification failed", error=str(e), user_id=current_user.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to verify TOTP setup")
@@ -104,7 +106,8 @@ async def create_mfa_challenge(
             data=MFAChallengeResponse(challenge_id=challenge_id, expires_in=300),  # 5 minutes
         )
     except (NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA challenge creation failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid challenge parameters")
     except Exception as e:
         logger.error("Challenge creation failed", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create MFA challenge")
@@ -142,7 +145,8 @@ async def verify_mfa_challenge(
             status="success", message="MFA verification successful", data={"access_token": access_token}
         )
     except AuthenticationError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        logger.warning("MFA challenge verification failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
     except Exception as e:
         logger.error("Challenge verification failed", error=str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to verify MFA challenge")
@@ -184,7 +188,8 @@ async def remove_mfa_device(
 
         return BaseResponse(status="success", message="MFA device removed", data={"removed": success})
     except (NotFoundError, ValidationError, AuthenticationError) as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA device removal failed", user_id=current_user.id, error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to remove MFA device")
     except Exception as e:
         logger.error("Failed to remove device", error=str(e), user_id=current_user.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to remove MFA device")

@@ -119,7 +119,7 @@ class ABACServiceImpl(IABACService):
                 error=str(e),
             )
             # Fail-safe: deny access on errors
-            return False, f"Permission check error: {str(e)}"
+            return False, "Permission check failed"
 
     async def explain_decision(
         self,

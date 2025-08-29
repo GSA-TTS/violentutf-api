@@ -304,6 +304,7 @@ class DependencyCache:
             if hasattr(settings.SECRET_KEY, "get_secret_value")
             else str(settings.SECRET_KEY)
         )
+        # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for dependency versioning, not sensitive data storage
         hasher = hmac.new(secret_key.encode(), b"", hashlib.sha256)
 
         # Find requirements files

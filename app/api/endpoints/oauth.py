@@ -167,7 +167,9 @@ async def create_oauth_application(
         )
 
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("OAuth application validation failed", user_id=str(current_user.id), error_type=type(e).__name__)
+        # CodeQL [py/stack-trace-exposure] Sanitized error message prevents information disclosure
+        raise HTTPException(status_code=400, detail="Invalid application configuration")
     except Exception as e:
         logger.error(
             "Failed to create OAuth application",
@@ -608,9 +610,12 @@ async def oauth_token(
             )
 
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("OAuth token validation failed", error_type=type(e).__name__)
+        # CodeQL [py/stack-trace-exposure] Sanitized error message prevents information disclosure
+        raise HTTPException(status_code=400, detail="Invalid token request parameters")
     except AuthenticationError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        logger.warning("OAuth authentication failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=401, detail="Authentication failed")
     except HTTPException:
         raise
     except Exception as e:

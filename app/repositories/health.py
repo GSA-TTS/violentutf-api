@@ -233,7 +233,11 @@ class HealthRepository(IHealthRepository):
             }
         except Exception as e:
             self.logger.error("Failed to get system metrics", error=str(e))
-            return {"status": "error", "error_type": "system_metrics_error", "error": str(e)}
+            return {
+                "status": "error",
+                "error_type": "system_metrics_error",
+                "error": "Failed to retrieve system metrics",
+            }
 
     async def get_connection_pool_stats(self) -> Dict[str, Any]:
         """Get database connection pool statistics."""

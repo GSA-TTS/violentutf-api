@@ -225,6 +225,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
             )
 
             # Create expected signature
+            # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signature verification, not sensitive data storage
             expected_signature = hmac.new(
                 api_secret.encode(),
                 canonical_string.encode(),
@@ -280,6 +281,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
         canonical_headers_str = "\n".join(canonical_headers)
 
         # Body hash
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for request body integrity, not sensitive data storage
         body_hash = hashlib.sha256(body).hexdigest()
 
         # Combine all parts
@@ -384,6 +386,7 @@ class RequestSigner:
         canonical_string = self._create_canonical_request(method, path, query_params, headers, body, timestamp, nonce)
 
         # Create signature
+        # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signature generation, not sensitive data storage
         signature = hmac.new(
             self.api_secret.encode(),
             canonical_string.encode(),
@@ -423,6 +426,7 @@ class RequestSigner:
             canonical_headers.append(f"{header}:{value.strip()}")
         canonical_headers_str = "\n".join(canonical_headers)
 
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for request body integrity, not sensitive data storage
         body_hash = hashlib.sha256(body).hexdigest()
 
         canonical_request = "\n".join(

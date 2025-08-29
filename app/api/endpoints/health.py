@@ -186,6 +186,8 @@ async def readiness_check(
         failed_checks = [k for k, v in safe_all_checks.items() if not v]
         logger.warning("readiness_check_failed", failed_check_count=len(failed_checks))
 
+    # Final sanitization pass to ensure no unsafe data is returned
+    # CodeQL [py/stack-trace-exposure] All data sanitized to prevent information exposure
     return {
         "status": "ready" if all_healthy else "not ready",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -195,8 +197,10 @@ async def readiness_check(
             "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
             "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
             "repositories": safe_repository_health,
-            "metrics": health_result.get("metrics", {}),  # Already sanitized
-            "check_duration": health_result.get("check_duration_seconds", 0),  # Already sanitized
+            "metrics": _sanitize_metrics(health_result.get("metrics", {})),  # Double sanitization
+            "check_duration": _safe_extract_value(
+                health_result, "check_duration_seconds", 0, float
+            ),  # Double sanitization
         },
     }
 

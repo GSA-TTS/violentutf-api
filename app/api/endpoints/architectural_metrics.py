@@ -326,8 +326,8 @@ async def create_scheduled_report(
         }
 
     except Exception as e:
-        logger.error(f"Error creating scheduled report: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create scheduled report: {str(e)}")
+        logger.error("Error creating scheduled report", error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Failed to create scheduled report")
 
 
 @router.get("/schedules", summary="List scheduled reports")
