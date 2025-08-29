@@ -851,13 +851,27 @@ class TestServiceRepositoryIntegrationCoverage:
         try:
             session_service = SessionService(db_session)
 
+            # Create user for session service
+            user_repo = UserRepository(db_session)
+            user_service = UserServiceImpl(user_repo)
+            from app.schemas.user import UserCreate
+
+            user_data = UserCreate(
+                username=f"sessiontest_{uuid4().hex[:8]}",
+                email=f"sessiontest_{uuid4().hex[:8]}@example.com",
+                password="TestPassword123!",
+                full_name="Session Test User",
+                is_active=True,
+            )
+            session_test_user = await user_service.create_user(user_data)
+
             session = await session_service.create_session(
-                user=test_user, ip_address="127.0.0.1", user_agent="Coverage Test"
+                user=session_test_user, ip_address="127.0.0.1", user_agent="Coverage Test"
             )
 
             # Validate the session was created
             assert session.session_token is not None
-            assert str(session.user_id) == str(test_user.id)
+            assert str(session.user_id) == str(session_test_user.id)
 
             # Test session validation
             validation_result = await session_service.validate_session(session.session_token)
@@ -875,15 +889,32 @@ class TestServiceRepositoryIntegrationCoverage:
             audit_repo = ExtendedAuditLogRepository(db_session)
             audit_service = AuditService(audit_repo)
 
+            # Create user for audit service
+            user_repo = UserRepository(db_session)
+            user_service = UserServiceImpl(user_repo)
+            from app.schemas.user import UserCreate
+
+            user_data = UserCreate(
+                username=f"audittest_{uuid4().hex[:8]}",
+                email=f"audittest_{uuid4().hex[:8]}@example.com",
+                password="TestPassword123!",
+                full_name="Audit Test User",
+                is_active=True,
+            )
+            audit_test_user = await user_service.create_user(user_data)
+
             audit_log = await audit_service.log_event(
-                user_id=str(test_user.id),
-                action="coverage_test",
+                user_id=str(audit_test_user.id),
+                action="test.coverage",
                 resource_type="test",
                 resource_id="test_id",
                 metadata={"ip_address": "127.0.0.1"},
             )
 
-            logs = await audit_service.get_user_activity(str(test_user.id))
+            # Verify audit log was created
+            assert audit_log is not None, "Audit log creation failed"
+
+            logs = await audit_service.get_user_activity(str(audit_test_user.id))
             assert len(logs) > 0
 
             integration_results["audit_service"] = True

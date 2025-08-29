@@ -237,6 +237,7 @@ class TestAPIKeyValidations:
             "test123",  # Minimum length 6
             "prefix123",  # Alphanumeric
             "key_test1",  # With underscore
+            "test-123",  # With hyphen (now allowed)
             "ABC123DEF",  # Uppercase
             "1234567890",  # Maximum length 10
         ]
@@ -275,7 +276,6 @@ class TestAPIKeyValidations:
         api_key = APIKey()
 
         invalid_prefixes = [
-            "test-123",  # Hyphen not allowed
             "test.123",  # Dot not allowed
             "test@123",  # At symbol not allowed
             "test 123",  # Space not allowed
@@ -285,7 +285,7 @@ class TestAPIKeyValidations:
 
         for prefix in invalid_prefixes:
             with pytest.raises(
-                ValueError, match="Key prefix must contain only alphanumeric characters and underscores"
+                ValueError, match="Key prefix must contain only alphanumeric characters, underscores, and hyphens"
             ):
                 api_key.validate_key_prefix("key_prefix", prefix)
 
