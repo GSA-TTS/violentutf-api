@@ -226,8 +226,17 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         # Create prefix (first 8 characters after prefix)
         key_prefix = full_key[:12]  # "vutf_" + 7 chars
 
-        # Create SHA256 hash of the full key
-        key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+        # Create Argon2 hash of the full key for security
+        import argon2
+
+        ph = argon2.PasswordHasher(
+            time_cost=2,  # Number of iterations
+            memory_cost=65536,  # Memory usage in KB (64 MB)
+            parallelism=1,  # Number of parallel threads
+            hash_len=32,  # Length of hash in bytes
+            salt_len=16,  # Length of salt in bytes
+        )
+        key_hash = ph.hash(full_key)
 
         return full_key, key_prefix, key_hash
 

@@ -130,7 +130,7 @@ async def check_disk_space(threshold: float = 0.9) -> bool:
 
         return True
     except Exception as e:
-        logger.error("disk_space_check_failed", error=str(e))
+        logger.error("disk_space_check_failed", error_type=type(e).__name__)
         return False
 
 
@@ -153,7 +153,7 @@ async def check_memory(threshold: float = 0.9) -> bool:
 
         return True
     except Exception as e:
-        logger.error("memory_check_failed", error=str(e))
+        logger.error("memory_check_failed", error_type=type(e).__name__)
         return False
 
 
@@ -179,7 +179,7 @@ async def check_repository_health() -> Dict[str, Any]:
         return repository_status
 
     except Exception as e:
-        logger.error("repository_health_check_failed", error=str(e))
+        logger.error("repository_health_check_failed", error_type=type(e).__name__)
         return {
             "overall_status": "error",
             "healthy_count": 0,

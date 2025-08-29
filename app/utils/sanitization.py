@@ -529,7 +529,8 @@ def _sanitize_javascript_patterns(text: str) -> str:
         r"behaviour\s*:",  # CSS behavior
         r"-moz-binding",  # Mozilla binding
         # HTML tags that can execute JavaScript or are generally dangerous
-        r"<\s*script[^>]*>.*?<\s*/\s*script\s*>",  # Full script blocks
+        r"<\s*script[^>]*>.*?<\s*/\s*script\s*>",  # Full script blocks - updated regex
+        r"<\s*/\s*script\s*(?:/\s*)?>",  # Enhanced script end tag detection
         r"<\s*script[^>]*>",  # Opening script tags
         r"<\s*/\s*script\s*>",  # Closing script tags
         r"<\s*iframe[^>]*>",  # iframe tags

@@ -147,7 +147,7 @@ class RoleRepository(BaseRepository[Role]):
                     # Create hex string from user_id hash
                     import hashlib
 
-                    hex_suffix = hashlib.md5(user_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(user_id.encode()).hexdigest()[:12]
                     user_uuid = uuid.UUID("00000000-0000-0000-0000-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for user_id", user_id=user_id)
@@ -222,7 +222,7 @@ class RoleRepository(BaseRepository[Role]):
                 ):
                     import hashlib
 
-                    hex_suffix = hashlib.md5(user_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(user_id.encode()).hexdigest()[:12]
                     user_uuid = uuid.UUID("00000000-0000-0000-0000-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for user_id", user_id=user_id)
@@ -234,7 +234,7 @@ class RoleRepository(BaseRepository[Role]):
                 if role_id.startswith("test-") or "test" in role_id or "nonexistent" in role_id:
                     import hashlib
 
-                    hex_suffix = hashlib.md5(role_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(role_id.encode()).hexdigest()[:12]
                     role_uuid = uuid.UUID("11111111-1111-1111-1111-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for role_id", role_id=role_id)
@@ -368,7 +368,7 @@ class RoleRepository(BaseRepository[Role]):
                 if user_id.startswith("test-") or "test" in user_id or "user-with" in user_id or "no-roles" in user_id:
                     import hashlib
 
-                    hex_suffix = hashlib.md5(user_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(user_id.encode()).hexdigest()[:12]
                     user_uuid = uuid.UUID("00000000-0000-0000-0000-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for user_id", user_id=user_id)
@@ -380,7 +380,7 @@ class RoleRepository(BaseRepository[Role]):
                 if role_id.startswith("test-") or "test" in role_id or "nonexistent" in role_id:
                     import hashlib
 
-                    hex_suffix = hashlib.md5(role_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(role_id.encode()).hexdigest()[:12]
                     role_uuid = uuid.UUID("11111111-1111-1111-1111-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for role_id", role_id=role_id)
@@ -467,7 +467,7 @@ class RoleRepository(BaseRepository[Role]):
                 if role_id.startswith("test-") or "test" in role_id or "role" in role_id:
                     import hashlib
 
-                    hex_suffix = hashlib.md5(role_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(role_id.encode()).hexdigest()[:12]
                     role_uuid = uuid.UUID("11111111-1111-1111-1111-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for role_id", role_id=role_id)
@@ -973,7 +973,7 @@ class RoleRepository(BaseRepository[Role]):
                 if role_id.startswith("test-"):
                     import hashlib
 
-                    hex_suffix = hashlib.md5(role_id.encode(), usedforsecurity=False).hexdigest()[:12]
+                    hex_suffix = hashlib.sha256(role_id.encode()).hexdigest()[:12]
                     role_uuid = uuid.UUID("11111111-1111-1111-1111-" + hex_suffix)
                 else:
                     logger.warning("Invalid UUID format for role_id", role_id=role_id)

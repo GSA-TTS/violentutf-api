@@ -261,3 +261,4 @@ temp.md
 /agent_orchestrator
 /test_env
 bandit_results.json
+codeql-osx64.zip
