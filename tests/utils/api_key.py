@@ -34,10 +34,9 @@ async def create_test_user(
         "id": uuid.uuid4(),
         "email": email,
         "username": username,
-        "password_hash": "hashed_password_test",  # Fixed: changed from hashed_password to password_hash
+        "password_hash": argon2.hash("test_password"),  # Use proper Argon2 hash for test user
         "is_active": is_active,
         "is_superuser": False,
-        "email_verified": True,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }

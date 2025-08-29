@@ -25,16 +25,28 @@ class HealthService:
         try:
             return await check_database_health()
         except Exception as e:
-            logger.error("Database health check failed", error=str(e))
-            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
+            # Log detailed error information internally
+            logger.error("Database health check failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
+            return {
+                "status": "unhealthy",
+                "error": "Database connection failed",  # Generic error message
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     async def check_cache_health(self) -> Dict[str, Any]:
         """Check cache health through proper service layer."""
         try:
             return await check_cache_health()
         except Exception as e:
-            logger.error("Cache health check failed", error=str(e))
-            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
+            # Log detailed error information internally
+            logger.error("Cache health check failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
+            return {
+                "status": "unhealthy",
+                "error": "Cache service unavailable",  # Generic error message
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     async def check_dependency_health(self, cache_ttl: int = None) -> Dict[str, Any]:
         """Check dependency health through proper service layer."""
@@ -44,14 +56,16 @@ class HealthService:
             else:
                 return await check_dependency_health()
         except Exception as e:
-            logger.error("Dependency health check failed", error=str(e))
+            # Log detailed error information internally
+            logger.error("Dependency health check failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
             return {
                 "overall_healthy": False,
                 "checks": {
                     "database": False,
                     "cache": False,
                 },
-                "error": str(e),
+                "error": "Dependency check failed",  # Generic error message
                 "check_duration_seconds": 0,
             }
 
@@ -73,7 +87,9 @@ class HealthService:
             return repository_status
 
         except Exception as e:
-            logger.error("repository_health_check_failed", error=str(e))
+            # Log detailed error information internally
+            logger.error("repository_health_check_failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
             return {
                 "overall_status": "error",
                 "healthy_count": 0,
@@ -87,7 +103,7 @@ class HealthService:
                     "average_response_time_ms": 0,
                     "unhealthy_repositories": ["health_endpoint_error"],
                 },
-                "error": str(e),
+                "error": "Repository health check failed",  # Generic error message
             }
 
     async def get_comprehensive_health(self) -> Dict[str, Any]:
@@ -110,17 +126,17 @@ class HealthService:
                     "database": (
                         db_health
                         if not isinstance(db_health, Exception)
-                        else {"status": "error", "error": str(db_health)}
+                        else {"status": "error", "error": "Database check failed"}
                     ),
                     "cache": (
                         cache_health
                         if not isinstance(cache_health, Exception)
-                        else {"status": "error", "error": str(cache_health)}
+                        else {"status": "error", "error": "Cache check failed"}
                     ),
                     "dependencies": (
                         dep_health
                         if not isinstance(dep_health, Exception)
-                        else {"status": "error", "error": str(dep_health)}
+                        else {"status": "error", "error": "Dependencies check failed"}
                     ),
                 },
             }
@@ -133,5 +149,11 @@ class HealthService:
             return health_status
 
         except Exception as e:
-            logger.error("Comprehensive health check failed", error=str(e))
-            return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
+            # Log detailed error information internally
+            logger.error("Comprehensive health check failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
+            return {
+                "status": "unhealthy",
+                "error": "Health check service error",  # Generic error message
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
