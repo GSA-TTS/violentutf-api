@@ -1,10 +1,13 @@
 """OAuth2 schemas for request/response validation."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+if TYPE_CHECKING:
+    from app.models.oauth import OAuthApplication
 
 
 class OAuthApplicationCreate(BaseModel):
@@ -118,28 +121,28 @@ class OAuthApplicationResponse(BaseModel):
         from_attributes = True
 
     @classmethod
-    def from_orm(cls, obj: Any) -> "OAuthApplicationResponse":
+    def from_orm(cls, obj: "OAuthApplication") -> "OAuthApplicationResponse":
         """Create from ORM object."""
         import json
 
         return cls(
             id=str(obj.id),
-            name=obj.name,
-            description=obj.description,
-            client_id=obj.client_id,
-            redirect_uris=json.loads(obj.redirect_uris),
-            allowed_scopes=json.loads(obj.allowed_scopes),
-            grant_types=json.loads(obj.grant_types),
-            response_types=json.loads(obj.response_types),
-            application_type=obj.application_type,
-            is_confidential=obj.is_confidential,
-            is_active=obj.is_active,
-            is_trusted=obj.is_trusted,
+            name=str(obj.name),
+            description=str(obj.description) if obj.description else None,
+            client_id=str(obj.client_id),
+            redirect_uris=json.loads(str(obj.redirect_uris)),
+            allowed_scopes=json.loads(str(obj.allowed_scopes)),
+            grant_types=json.loads(str(obj.grant_types)),
+            response_types=json.loads(str(obj.response_types)),
+            application_type=str(obj.application_type),
+            is_confidential=bool(obj.is_confidential),
+            is_active=bool(obj.is_active),
+            is_trusted=bool(obj.is_trusted),
             owner_id=str(obj.owner_id),
-            logo_url=obj.logo_url,
-            homepage_url=obj.homepage_url,
-            privacy_policy_url=obj.privacy_policy_url,
-            terms_of_service_url=obj.terms_of_service_url,
+            logo_url=str(obj.logo_url) if obj.logo_url else None,
+            homepage_url=str(obj.homepage_url) if obj.homepage_url else None,
+            privacy_policy_url=str(obj.privacy_policy_url) if obj.privacy_policy_url else None,
+            terms_of_service_url=str(obj.terms_of_service_url) if obj.terms_of_service_url else None,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )

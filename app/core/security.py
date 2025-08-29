@@ -182,19 +182,23 @@ def create_token(
 
 
 def hash_token(token: str) -> str:
-    """Hash a token for storage lookup using secure deterministic hashing.
+    """Hash a token for storage lookup using HMAC-SHA256.
 
-    Uses HMAC-SHA256 with application secret for deterministic but secure hashing.
-    This is needed for OAuth token lookup where we need consistent hashes.
+    IMPORTANT: This function is NOT for password hashing - it's for OAuth token
+    and cache key hashing where deterministic results are required for lookup.
+    For password hashing, use hash_password(), hash_api_key(), or hash_client_secret().
+
+    Uses HMAC-SHA256 which is cryptographically secure for token hashing purposes.
+    HMAC provides both integrity and authenticity, making it suitable for tokens.
     """
     import hashlib
     import hmac
 
     from .config import settings
 
-    # Use HMAC with application secret for secure deterministic hashing
-    # This provides security while maintaining lookup compatibility
-    # NOTE: HMAC-SHA256 is cryptographically secure unlike plain SHA256
+    # HMAC-SHA256 is appropriate for token hashing (NOT password hashing)
+    # This provides deterministic hashing needed for OAuth token lookup
+    # while maintaining cryptographic security through HMAC construction
     secret_key = (
         settings.SECRET_KEY.get_secret_value()
         if hasattr(settings.SECRET_KEY, "get_secret_value")
@@ -203,7 +207,7 @@ def hash_token(token: str) -> str:
     return hmac.new(
         secret_key.encode(),
         token.encode(),
-        hashlib.sha256,  # nosec B303 - HMAC-SHA256 is secure for token hashing
+        hashlib.sha256,  # CodeQL [py/weak-crypto-algorithm] HMAC-SHA256 appropriate for token hashing, not passwords
     ).hexdigest()
 
 

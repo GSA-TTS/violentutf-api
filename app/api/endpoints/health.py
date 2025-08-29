@@ -78,20 +78,38 @@ def _sanitize_checks(all_checks: dict) -> dict:
     return safe_all_checks
 
 
+def _sanitize_health_result(health_result: Any) -> dict:
+    """Sanitize entire health_result to prevent stack trace exposure."""
+    if not isinstance(health_result, dict):
+        return {"status": "error", "checks": {}, "metrics": {}}
+
+    return {
+        "status": _safe_extract_value(health_result, "status", "unknown", str),
+        "checks": _sanitize_checks(health_result.get("checks", {})),
+        "metrics": _sanitize_metrics(health_result.get("metrics", {})),
+        "check_duration_seconds": _safe_extract_value(health_result, "check_duration_seconds", 0, float),
+    }
+
+
 @router.get("/health", status_code=status.HTTP_200_OK)
 @track_health_check
 async def health_check(health_service: HealthService = Depends(get_health_service)) -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
     # Get repository health for UAT compliance using health service
-    db_health = await health_service.check_database_health()
+    try:
+        db_health = await health_service.check_database_health()
+        # Ensure db_health is sanitized - convert to safe boolean
+        safe_db_status = bool(db_health) if not isinstance(db_health, Exception) else False
+    except Exception:
+        safe_db_status = False
 
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT,
-        "database": db_health,
+        "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
+        "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
+        "environment": str(settings.ENVIRONMENT)[:20] if settings.ENVIRONMENT else "unknown",
+        "database": safe_db_status,
     }
 
 
@@ -105,7 +123,10 @@ async def readiness_check(
     Returns 503 if any critical dependency is down.
     """
     # Use enhanced dependency health check with caching (10 second TTL)
-    health_result = await health_service.check_dependency_health()
+    raw_health_result = await health_service.check_dependency_health()
+
+    # Sanitize health result immediately to prevent stack trace exposure
+    health_result = _sanitize_health_result(raw_health_result)
 
     # Check repository health with exception protection
     try:
@@ -143,27 +164,27 @@ async def readiness_check(
     if isinstance(system_checks[1], Exception):
         logger.error("memory_check_exception", error_type=type(system_checks[1]).__name__)
 
-    # Combine all checks
+    # Sanitize repository health data using helper function first
+    safe_repository_health = _sanitize_repository_health(repository_health)
+
+    # Combine all checks using sanitized data only
     all_checks = {
-        "database": health_result["checks"]["database"],
-        "cache": health_result["checks"]["cache"],
-        "repositories": repository_health["overall_status"] == "healthy",
+        "database": bool(health_result.get("checks", {}).get("database", False)),
+        "cache": bool(health_result.get("checks", {}).get("cache", False)),
+        "repositories": safe_repository_health.get("overall_status") == "healthy",
         "disk_space": disk_healthy,
         "memory": memory_healthy,
     }
 
-    all_healthy = all(all_checks.values())
+    # Apply additional sanitization to ensure no unsafe data
+    safe_all_checks = _sanitize_checks(all_checks)
+    all_healthy = all(safe_all_checks.values())
 
     if not all_healthy:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        logger.warning("readiness_check_failed", failed_checks=[k for k, v in all_checks.items() if not v])
-
-    # Sanitize repository health data using helper function
-    safe_repository_health = _sanitize_repository_health(repository_health)
-
-    # Sanitize metrics and checks using helper functions
-    safe_metrics = _sanitize_metrics(health_result.get("metrics", {}))
-    safe_all_checks = _sanitize_checks(all_checks)
+        # Use sanitized data for logging
+        failed_checks = [k for k, v in safe_all_checks.items() if not v]
+        logger.warning("readiness_check_failed", failed_check_count=len(failed_checks))
 
     return {
         "status": "ready" if all_healthy else "not ready",
@@ -174,12 +195,8 @@ async def readiness_check(
             "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
             "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
             "repositories": safe_repository_health,
-            "metrics": safe_metrics,
-            "check_duration": (
-                float(health_result.get("check_duration_seconds", 0))
-                if isinstance(health_result.get("check_duration_seconds"), (int, float))
-                else 0
-            ),
+            "metrics": health_result.get("metrics", {}),  # Already sanitized
+            "check_duration": health_result.get("check_duration_seconds", 0),  # Already sanitized
         },
     }
 

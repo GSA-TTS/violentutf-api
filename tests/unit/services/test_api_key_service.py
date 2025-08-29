@@ -383,16 +383,34 @@ class TestAPIKeyService:
         assert key2.startswith(api_key_service.KEY_PREFIX)
 
     def test_hash_key(self, api_key_service):
-        """Test key hashing."""
+        """Test key hashing with Argon2."""
         # Arrange
         key = "test_key_123"
+        different_key = "different_key"
 
         # Act
         hash1 = api_key_service._hash_key(key)
         hash2 = api_key_service._hash_key(key)
-        hash3 = api_key_service._hash_key("different_key")
+        hash3 = api_key_service._hash_key(different_key)
 
         # Assert
-        assert hash1 == hash2  # Same key produces same hash
-        assert hash1 != hash3  # Different keys produce different hashes
-        assert len(hash1) == 64  # SHA256 produces 64 hex characters
+        # Argon2 hashes are different each time due to random salt
+        assert hash1 != hash2
+        assert hash1 != hash3
+        assert hash2 != hash3
+
+        # But verification should work for the original key
+        from app.core.security import verify_api_key
+
+        assert verify_api_key(key, hash1) is True
+        assert verify_api_key(key, hash2) is True
+        assert verify_api_key(different_key, hash3) is True
+
+        # Cross-verification should fail
+        assert verify_api_key(different_key, hash1) is False
+        assert verify_api_key(key, hash3) is False
+
+        # All hashes should start with $argon2id$ (Argon2 format)
+        assert hash1.startswith("$argon2id$")
+        assert hash2.startswith("$argon2id$")
+        assert hash3.startswith("$argon2id$")

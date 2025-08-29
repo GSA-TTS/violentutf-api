@@ -6,7 +6,7 @@ It consolidates authentication, database access, service layer dependencies, and
 Follows ADR-013 for API layer separation and service layer integration.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +75,7 @@ async def get_optional_user(request: Request) -> Optional["User"]:
 # Following ADR-013 API layer separation patterns
 
 
-async def get_user_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_user_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get user service dependency injection.
 
     Provides UserService instance with database session for API endpoints.
@@ -93,7 +93,7 @@ async def get_user_service(session: AsyncSession = Depends(get_db)) -> Any:
     return UserServiceImpl(session)
 
 
-async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get API key service dependency injection.
 
     Provides APIKeyService instance with database session for API endpoints.
@@ -110,7 +110,7 @@ async def get_api_key_service(session: AsyncSession = Depends(get_db)) -> Any:
     return APIKeyService(session)
 
 
-async def get_session_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_session_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get session service dependency injection.
 
     Provides SessionService instance for API endpoints.
@@ -127,7 +127,7 @@ async def get_session_service(session: AsyncSession = Depends(get_db)) -> Any:
     return SessionService(session)
 
 
-async def get_architectural_metrics_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_architectural_metrics_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get architectural metrics service dependency injection.
 
     Provides ArchitecturalMetricsService instance for API endpoints.
@@ -144,7 +144,7 @@ async def get_architectural_metrics_service(session: AsyncSession = Depends(get_
     return ArchitecturalMetricsService(session)
 
 
-async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get RBAC service dependency injection.
 
     Provides RBACService instance for API endpoints.
@@ -162,7 +162,7 @@ async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> Any:
     return RBACService(session)
 
 
-async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get VulnerabilityTaxonomyService dependency.
 
     Provides VulnerabilityTaxonomyService instance for API endpoints.
@@ -180,7 +180,7 @@ async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get
     return VulnerabilityTaxonomyService(session)
 
 
-async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get OAuth2Service dependency.
 
     Provides OAuth2Service instance for API endpoints.
@@ -197,7 +197,7 @@ async def get_oauth_service(session: AsyncSession = Depends(get_db)) -> Any:
     return OAuth2Service(session)
 
 
-async def get_audit_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_audit_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get AuditService dependency."""
     from app.services.audit_service import AuditService
 
@@ -205,13 +205,13 @@ async def get_audit_service(session: AsyncSession = Depends(get_db)) -> Any:
     return AuditService(session)
 
 
-async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_mfa_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get MFAService dependency."""
     # Use service factory to avoid direct repository imports in API layer
     return _create_mfa_service(session)
 
 
-async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get MFAPolicyService dependency."""
     from app.services.mfa_policy_service import MFAPolicyService
 
@@ -225,7 +225,7 @@ async def get_scheduled_report_service(session: AsyncSession = Depends(get_db)) 
     return ScheduledReportService(session)
 
 
-async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get PluginService dependency."""
     from app.services.plugin_service import PluginService
 
@@ -233,7 +233,7 @@ async def get_plugin_service(session: AsyncSession = Depends(get_db)) -> Any:
     return PluginService(session)
 
 
-async def get_report_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_report_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get ReportService dependency."""
     from app.services.report_service import ReportService
 
@@ -241,7 +241,7 @@ async def get_report_service(session: AsyncSession = Depends(get_db)) -> Any:
     return ReportService(session)
 
 
-async def get_scan_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_scan_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get ScanService dependency."""
     from app.services.scan_service import ScanService
 
@@ -249,7 +249,7 @@ async def get_scan_service(session: AsyncSession = Depends(get_db)) -> Any:
     return ScanService(session)
 
 
-async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get SecurityScanService dependency."""
     from app.services.security_scan_service import SecurityScanService
 
@@ -257,7 +257,7 @@ async def get_security_scan_service(session: AsyncSession = Depends(get_db)) -> 
     return SecurityScanService(session)
 
 
-async def get_task_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_task_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get TaskService dependency."""
     from app.services.task_service import TaskService
 
@@ -265,7 +265,7 @@ async def get_task_service(session: AsyncSession = Depends(get_db)) -> Any:
     return TaskService(session)
 
 
-async def get_template_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_template_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get TemplateService dependency."""
     from app.services.template_service import TemplateService
 
@@ -273,7 +273,7 @@ async def get_template_service(session: AsyncSession = Depends(get_db)) -> Any:
     return TemplateService(session)
 
 
-async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> Any:
+async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> object:
     """Get VulnerabilityFindingService dependency."""
     from app.services.vulnerability_finding_service import VulnerabilityFindingService
 
@@ -281,7 +281,7 @@ async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_
     return VulnerabilityFindingService(session)
 
 
-async def get_health_service() -> Any:
+async def get_health_service() -> object:
     """Get health service dependency injection.
 
     Provides HealthService instance for API endpoints.
@@ -295,7 +295,7 @@ async def get_health_service() -> Any:
     return HealthService()
 
 
-async def get_request_validation_service() -> Any:
+async def get_request_validation_service() -> object:
     """Get request validation service dependency injection.
 
     Provides RequestValidationService instance for API endpoints.
@@ -310,7 +310,7 @@ async def get_request_validation_service() -> Any:
 
 
 # Repository dependency functions using container
-async def get_user_repository_dep() -> Any:
+async def get_user_repository_dep() -> object:
     """Get user repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -320,7 +320,7 @@ async def get_user_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -333,7 +333,7 @@ async def get_user_repository_dep() -> Any:
     return repository
 
 
-async def get_api_key_repository_dep() -> Any:
+async def get_api_key_repository_dep() -> object:
     """Get API key repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -343,7 +343,7 @@ async def get_api_key_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -356,7 +356,7 @@ async def get_api_key_repository_dep() -> Any:
     return repository
 
 
-async def get_session_repository_dep() -> Any:
+async def get_session_repository_dep() -> object:
     """Get session repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -366,7 +366,7 @@ async def get_session_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -379,7 +379,7 @@ async def get_session_repository_dep() -> Any:
     return repository
 
 
-async def get_audit_repository_dep() -> Any:
+async def get_audit_repository_dep() -> object:
     """Get audit repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -389,7 +389,7 @@ async def get_audit_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -402,7 +402,7 @@ async def get_audit_repository_dep() -> Any:
     return repository
 
 
-async def get_security_scan_repository_dep() -> Any:
+async def get_security_scan_repository_dep() -> object:
     """Get security scan repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -412,7 +412,7 @@ async def get_security_scan_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -427,7 +427,7 @@ async def get_security_scan_repository_dep() -> Any:
     return repository
 
 
-async def get_vulnerability_repository_dep() -> Any:
+async def get_vulnerability_repository_dep() -> object:
     """Get vulnerability repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -437,7 +437,7 @@ async def get_vulnerability_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -452,7 +452,7 @@ async def get_vulnerability_repository_dep() -> Any:
     return repository
 
 
-async def get_role_repository_dep() -> Any:
+async def get_role_repository_dep() -> object:
     """Get role repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -462,7 +462,7 @@ async def get_role_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -475,7 +475,7 @@ async def get_role_repository_dep() -> Any:
     return repository
 
 
-async def get_health_repository_dep() -> Any:
+async def get_health_repository_dep() -> object:
     """Get health repository from container for FastAPI dependency injection."""
     from app.core import container
     from app.db.session import get_session_maker
@@ -485,7 +485,7 @@ async def get_health_repository_dep() -> Any:
         session_maker = get_session_maker()
         if session_maker:
 
-            def session_factory() -> Any:
+            def session_factory() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
@@ -499,42 +499,42 @@ async def get_health_repository_dep() -> Any:
 
 
 # UAT-compliant repository dependency functions (without _dep suffix)
-async def get_user_repository() -> Any:
+async def get_user_repository() -> object:
     """Get user repository from container for UAT compliance."""
     return await get_user_repository_dep()
 
 
-async def get_api_key_repository() -> Any:
+async def get_api_key_repository() -> object:
     """Get API key repository from container for UAT compliance."""
     return await get_api_key_repository_dep()
 
 
-async def get_session_repository() -> Any:
+async def get_session_repository() -> object:
     """Get session repository from container for UAT compliance."""
     return await get_session_repository_dep()
 
 
-async def get_audit_repository() -> Any:
+async def get_audit_repository() -> object:
     """Get audit repository from container for UAT compliance."""
     return await get_audit_repository_dep()
 
 
-async def get_security_scan_repository() -> Any:
+async def get_security_scan_repository() -> object:
     """Get security scan repository from container for UAT compliance."""
     return await get_security_scan_repository_dep()
 
 
-async def get_vulnerability_repository() -> Any:
+async def get_vulnerability_repository() -> object:
     """Get vulnerability repository from container for UAT compliance."""
     return await get_vulnerability_repository_dep()
 
 
-async def get_role_repository() -> Any:
+async def get_role_repository() -> object:
     """Get role repository from container for UAT compliance."""
     return await get_role_repository_dep()
 
 
-async def get_health_repository() -> Any:
+async def get_health_repository() -> object:
     """Get health repository from container for UAT compliance."""
     return await get_health_repository_dep()
 
@@ -548,7 +548,7 @@ get_db_dep = get_db
 # These functions encapsulate repository creation to maintain architectural boundaries
 
 
-def _create_mfa_service(session: AsyncSession) -> Any:
+def _create_mfa_service(session: AsyncSession) -> object:
     """Internal factory for MFAService creation.
 
     Creates MFAService with session-based dependency injection.
