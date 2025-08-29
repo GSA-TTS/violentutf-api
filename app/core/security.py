@@ -207,7 +207,7 @@ def hash_token(token: str) -> str:
     return hmac.new(
         secret_key.encode(),
         token.encode(),
-        hashlib.sha256,  # CodeQL [py/weak-crypto-algorithm] HMAC-SHA256 appropriate for token hashing, not passwords
+        hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for token hashing, not passwords
     ).hexdigest()
 
 

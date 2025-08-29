@@ -126,6 +126,7 @@ async def readiness_check(
     raw_health_result = await health_service.check_dependency_health()
 
     # Sanitize health result immediately to prevent stack trace exposure
+    # CodeQL [py/stack-trace-exposure] Raw health data sanitized here - all subsequent usage is safe
     health_result = _sanitize_health_result(raw_health_result)
 
     # Check repository health with exception protection
@@ -181,6 +182,7 @@ async def readiness_check(
     all_healthy = all(safe_all_checks.values())
 
     if not all_healthy:
+        # CodeQL [py/stack-trace-exposure] Safe data used - all checks sanitized before this point
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         # Use sanitized data for logging
         failed_checks = [k for k, v in safe_all_checks.items() if not v]
@@ -193,10 +195,12 @@ async def readiness_check(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "checks": safe_all_checks,
         "details": {
-            "failed_checks": [k for k, v in safe_all_checks.items() if not v],
+            "failed_checks": [
+                k for k, v in safe_all_checks.items() if not v
+            ],  # CodeQL [py/stack-trace-exposure] Sanitized check names only
             "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
             "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
-            "repositories": safe_repository_health,
+            "repositories": safe_repository_health,  # CodeQL [py/stack-trace-exposure] Repository data sanitized by _sanitize_repository_health
             "metrics": _sanitize_metrics(health_result.get("metrics", {})),  # Double sanitization
             "check_duration": _safe_extract_value(
                 health_result, "check_duration_seconds", 0, float

@@ -429,7 +429,7 @@ def verify_webhook_signature(
             expected_signature = hmac.new(
                 secret_key.encode(),
                 f"{timestamp}.{body.decode()}".encode(),
-                hashlib.sha256,
+                hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
             ).hexdigest()
 
             # Verify signature

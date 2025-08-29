@@ -229,7 +229,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
             expected_signature = hmac.new(
                 api_secret.encode(),
                 canonical_string.encode(),
-                hashlib.sha256,
+                hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
             ).hexdigest()
 
             # Constant-time comparison
@@ -390,7 +390,7 @@ class RequestSigner:
         signature = hmac.new(
             self.api_secret.encode(),
             canonical_string.encode(),
-            hashlib.sha256,
+            hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
         ).hexdigest()
 
         return {
