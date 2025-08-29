@@ -207,6 +207,29 @@ def hash_token(token: str) -> str:
     ).hexdigest()
 
 
+def hash_client_secret(client_secret: str) -> str:
+    """Hash an OAuth client secret using secure password hashing.
+
+    Uses Argon2 for secure password-based key derivation.
+    This is specifically for OAuth client secrets which should use
+    computationally expensive hashing algorithms.
+    """
+    return pwd_context.hash(client_secret)
+
+
+def verify_client_secret(client_secret: str, hashed_secret: str) -> bool:
+    """Verify an OAuth client secret against its hash.
+
+    Uses secure password verification with support for legacy hashes.
+    """
+    try:
+        # First try Argon2 verification
+        return pwd_context.verify(client_secret, hashed_secret)
+    except Exception:
+        # Fallback to legacy token hash verification if needed
+        return verify_token_hash(client_secret, hashed_secret)
+
+
 def verify_token_hash(token: str, stored_hash: str) -> bool:
     """Verify a token against a stored hash, supporting both new and legacy formats.
 

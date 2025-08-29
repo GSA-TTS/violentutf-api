@@ -13,7 +13,14 @@ from structlog.stdlib import get_logger
 
 from app.core.config import settings
 from app.core.errors import AuthenticationError, ForbiddenError, NotFoundError, ValidationError
-from app.core.security import create_token, hash_token, verify_password, verify_token_hash
+from app.core.security import (
+    create_token,
+    hash_client_secret,
+    hash_token,
+    verify_client_secret,
+    verify_password,
+    verify_token_hash,
+)
 from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken, OAuthScope
 from app.models.user import User
 from app.repositories.oauth_access_token import OAuthAccessTokenRepository
@@ -120,7 +127,7 @@ class OAuth2Service:
         # Generate client credentials
         client_id = self._generate_client_id()
         client_secret = self._generate_client_secret()
-        client_secret_hash = hash_token(client_secret)
+        client_secret_hash = hash_client_secret(client_secret)
 
         # Determine allowed grant types based on app type
         grant_types = self._get_grant_types_for_app_type(application_type, is_confidential)
@@ -212,7 +219,7 @@ class OAuth2Service:
             if not client_secret:
                 raise AuthenticationError("Client secret required")
 
-            if not verify_password(client_secret, app.client_secret_hash):
+            if not verify_client_secret(client_secret, app.client_secret_hash):
                 raise AuthenticationError("Invalid client credentials")
 
         return app

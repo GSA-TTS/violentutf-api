@@ -1,0 +1,50 @@
+Architectural Compliance Validation (custom-rules)	Run Architectural Test Suite - custom-rules	2025-08-29T20:07:52.9971070Z   - init_mfa_policies.py:121
+Architectural Compliance Validation (custom-rules)	Run Architectural Test Suite - custom-rules	2025-08-29T20:07:52.9971397Z   - init_mfa_policies.py:122
+Architectural Compliance Validation (custom-rules)	Run Architectural Test Suite - custom-rules	2025-08-29T20:07:52.9971891Z Replace with structured logging.
+Architectural Compliance Validation (custom-rules)	Run Architectural Test Suite - custom-rules	2025-08-29T20:07:52.9972323Z =================== 4 passed, 2 skipped, 1 warning in 2.07s ====================
+Architectural Compliance Validation (custom-rules)	Run Architectural Test Suite - custom-rules	2025-08-29T20:07:53.9021978Z ✓ JSON report created: test-results-custom.json
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	﻿2025-08-29T20:07:53.9071818Z ##[group]Run # Install pytest-html if not present
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9072292Z [36;1m# Install pytest-html if not present[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9072588Z [36;1mpip install pytest-html[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9072825Z [36;1m[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9073011Z [36;1m# Map test suite to file name[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9073258Z [36;1mTEST_FILE=""[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9073471Z [36;1mcase "custom-rules" in[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9073811Z [36;1m  security-patterns) TEST_FILE="test_security_patterns.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9074237Z [36;1m  layer-boundaries) TEST_FILE="test_layer_boundaries.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9074682Z [36;1m  dependency-compliance) TEST_FILE="test_dependency_compliance.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9075152Z [36;1m  data-access-patterns) TEST_FILE="test_data_access_patterns.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9075573Z [36;1m  custom-rules) TEST_FILE="test_custom_rules.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9076043Z [36;1m  integration-tests) TEST_FILE="../integration/test_service_repository_integration.py" ;;[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9076491Z [36;1mesac[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9076669Z [36;1m[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9076902Z [36;1m# Generate HTML report for the specific test suite[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9077208Z [36;1mif [ -n "$TEST_FILE" ]; then[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9077502Z [36;1m  if [ "custom-rules" = "integration-tests" ]; then[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9077828Z [36;1m    # Special handling for integration tests[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9078229Z [36;1m    if [ -f "tests/integration/test_service_repository_integration.py" ]; then[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9078847Z [36;1m      pytest tests/integration/test_service_repository_integration.py::TestUserServiceRepositoryIntegration \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9079573Z [36;1m        tests/integration/test_service_repository_integration.py::TestAPIKeyServiceRepositoryIntegration \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9080305Z [36;1m        tests/integration/test_service_repository_integration.py::TestSessionServiceRepositoryIntegration \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9081032Z [36;1m        tests/integration/test_service_repository_integration.py::TestAuditServiceRepositoryIntegration \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9082146Z [36;1m        --html=architectural-report-custom-rules.html \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9082488Z [36;1m        --self-contained-html \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9082749Z [36;1m        --timeout=300[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9082971Z [36;1m    fi[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9083213Z [36;1m  elif [ -f "tests/architecture/$TEST_FILE" ]; then[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9083561Z [36;1m    pytest "tests/architecture/$TEST_FILE" \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9083908Z [36;1m      --html=architectural-report-custom-rules.html \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9084229Z [36;1m      --self-contained-html \[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9084494Z [36;1m      --timeout=60[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9084708Z [36;1m  else[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9084939Z [36;1m    echo "Test file not found for custom-rules"[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9085214Z [36;1m  fi[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9085394Z [36;1mfi[0m
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9115973Z shell: /usr/bin/bash -e {0}
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9116220Z env:
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9116406Z   PYTHON_VERSION: 3.12
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9116637Z   PYTEST_CACHE_DIR: .pytest_cache
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9116897Z   COVERAGE_THRESHOLD: 80
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9117179Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.11/x64
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9117606Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.11/x64/lib/pkgconfig
+Architectural Compliance Validation (custom-rules)	Generate HTML Report	2025-08-29T20:07:53.9118007Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.11/x64

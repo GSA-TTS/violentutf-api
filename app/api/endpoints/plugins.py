@@ -105,14 +105,14 @@ async def list_plugins(
             )
             plugin_responses.append(plugin_info)
 
-        from app.utils.safe_logging import sanitize_log_value
+        from app.core.safe_logging import sanitize_log_value
 
         logger.info("User listed plugins", user=sanitize_log_value(current_user.username), count=len(plugin_responses))
 
         return PluginListResponse(plugins=plugin_responses, total=len(plugin_responses))
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message
+        from app.core.safe_logging import safe_error_message
 
         logger.error("Error listing plugins", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to list plugins")

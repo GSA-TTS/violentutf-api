@@ -49,7 +49,7 @@ async def get_leading_indicators(
 
         metrics = await architectural_metrics_service.calculate_leading_indicators(start_date, end_date)
 
-        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+        from app.core.safe_logging import safe_error_message, sanitize_log_value
 
         logger.info(
             "User retrieved leading indicators",
@@ -58,7 +58,7 @@ async def get_leading_indicators(
         return metrics
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message
+        from app.core.safe_logging import safe_error_message
 
         logger.error("Error getting leading indicators", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve leading indicators")
@@ -88,7 +88,7 @@ async def get_lagging_indicators(
 
         metrics = await architectural_metrics_service.calculate_lagging_indicators(start_date, end_date)
 
-        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+        from app.core.safe_logging import safe_error_message, sanitize_log_value
 
         logger.info(
             "User retrieved lagging indicators",
@@ -97,7 +97,7 @@ async def get_lagging_indicators(
         return metrics
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message
+        from app.core.safe_logging import safe_error_message
 
         logger.error("Error getting lagging indicators", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve lagging indicators")
@@ -142,7 +142,7 @@ async def get_roi_analysis(
 
         roi = await architectural_metrics_service.calculate_roi_analysis(start_date, end_date, cost_data)
 
-        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+        from app.core.safe_logging import safe_error_message, sanitize_log_value
 
         logger.info(
             "User retrieved ROI analysis",
@@ -151,7 +151,7 @@ async def get_roi_analysis(
         return roi
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message
+        from app.core.safe_logging import safe_error_message
 
         logger.error("Error getting ROI analysis", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to calculate ROI analysis")
@@ -238,7 +238,7 @@ async def generate_metrics_report(
         #     include_sections=sections,
         # )
 
-        from app.utils.safe_logging import sanitize_log_value
+        from app.core.safe_logging import sanitize_log_value
 
         logger.info(
             "User initiated report generation",
@@ -255,7 +255,7 @@ async def generate_metrics_report(
         }
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message
+        from app.core.safe_logging import safe_error_message
 
         logger.error("Error generating report", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to initiate report generation")
@@ -390,7 +390,7 @@ async def update_scheduled_report(
         }
 
     except Exception as e:
-        from app.utils.safe_logging import safe_error_message, safe_user_id
+        from app.core.safe_logging import safe_error_message, safe_user_id
 
         logger.error(
             "Error updating schedule",

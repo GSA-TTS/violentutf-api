@@ -11,12 +11,71 @@ from structlog.stdlib import get_logger
 
 from ...core.config import settings
 from ...core.rate_limiting import rate_limit
+from ...core.safe_logging import safe_error_message
 from ...services.health_service import HealthService
 from ...utils.monitoring import track_health_check
 from ..deps import get_health_service
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+
+def _safe_extract_value(data: dict, key: str, default_value: Any, value_type: type) -> Any:
+    """Safely extract and validate a value from potentially unsafe data."""
+    try:
+        value = data.get(key, default_value)
+        # Reject any non-primitive types that could contain stack traces
+        if isinstance(value, Exception) or hasattr(value, "__traceback__"):
+            return default_value
+        # Convert to expected type with bounds checking
+        if value_type == str:
+            return str(value)[:50] if value is not None else str(default_value)[:50]
+        elif value_type in (int, float):
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return value_type(max(0, min(value, 1000000)))  # Reasonable bounds
+            return value_type(default_value)
+        elif value_type == bool:
+            return bool(value) if not isinstance(value, Exception) else bool(default_value)
+    except (ValueError, TypeError, AttributeError):
+        return default_value
+    return default_value
+
+
+def _sanitize_repository_health(repository_health: dict) -> dict:
+    """Sanitize repository health data to prevent information disclosure."""
+    return {
+        "overall_status": _safe_extract_value(repository_health, "overall_status", "unknown", str),
+        "healthy_count": _safe_extract_value(repository_health, "healthy_count", 0, int),
+        "total_count": _safe_extract_value(repository_health, "total_count", 0, int),
+        "health_percentage": _safe_extract_value(repository_health.get("summary", {}), "health_percentage", 0, float),
+        "cache_hit": _safe_extract_value(repository_health, "cache_hit", False, bool),
+    }
+
+
+def _sanitize_metrics(metrics: dict) -> dict:
+    """Remove any potential error details or stack traces from metrics."""
+    safe_metrics = {}
+    for k, v in metrics.items():
+        if (
+            isinstance(v, (str, int, float, bool))
+            and not str(k).lower().startswith("error")
+            and not str(k).lower().startswith("exception")
+        ):
+            # Limit string values to prevent information disclosure
+            if isinstance(v, str):
+                safe_metrics[str(k)[:20]] = str(v)[:50]
+            else:
+                safe_metrics[str(k)[:20]] = v
+    return safe_metrics
+
+
+def _sanitize_checks(all_checks: dict) -> dict:
+    """Sanitize all_checks to ensure no exception objects leak through."""
+    safe_all_checks = {}
+    for check_name, check_result in all_checks.items():
+        # Only include boolean results, convert everything to boolean
+        safe_all_checks[str(check_name)[:20]] = bool(check_result) if not isinstance(check_result, Exception) else False
+    return safe_all_checks
 
 
 @router.get("/health", status_code=status.HTTP_200_OK)
@@ -48,8 +107,28 @@ async def readiness_check(
     # Use enhanced dependency health check with caching (10 second TTL)
     health_result = await health_service.check_dependency_health()
 
-    # Check repository health
-    repository_health = await health_service.check_repository_health()
+    # Check repository health with exception protection
+    try:
+        repository_health = await health_service.check_repository_health()
+        # Ensure repository_health is a dictionary to prevent stack trace exposure
+        if not isinstance(repository_health, dict) or not repository_health:
+            repository_health = {
+                "overall_status": "error",
+                "healthy_count": 0,
+                "total_count": 0,
+                "summary": {"health_percentage": 0},
+                "cache_hit": False,
+            }
+    except Exception as e:
+        # Log safely without exposing stack trace
+        logger.error("repository_health_check_failed", error=safe_error_message(e))
+        repository_health = {
+            "overall_status": "error",
+            "healthy_count": 0,
+            "total_count": 0,
+            "summary": {"health_percentage": 0},
+            "cache_hit": False,
+        }
 
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
@@ -79,46 +158,12 @@ async def readiness_check(
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         logger.warning("readiness_check_failed", failed_checks=[k for k, v in all_checks.items() if not v])
 
-    # Sanitize repository health data to prevent information disclosure
-    safe_repository_health = {
-        "overall_status": str(repository_health.get("overall_status", "unknown"))[:20],
-        "healthy_count": (
-            int(repository_health.get("healthy_count", 0))
-            if isinstance(repository_health.get("healthy_count"), (int, float))
-            else 0
-        ),
-        "total_count": (
-            int(repository_health.get("total_count", 0))
-            if isinstance(repository_health.get("total_count"), (int, float))
-            else 0
-        ),
-        "health_percentage": (
-            float(repository_health.get("summary", {}).get("health_percentage", 0))
-            if isinstance(repository_health.get("summary", {}).get("health_percentage"), (int, float))
-            else 0
-        ),
-        "cache_hit": bool(repository_health.get("cache_hit", False)),
-    }
+    # Sanitize repository health data using helper function
+    safe_repository_health = _sanitize_repository_health(repository_health)
 
-    # Remove any potential error details or stack traces - be more aggressive
-    safe_metrics = {}
-    for k, v in health_result.get("metrics", {}).items():
-        if (
-            isinstance(v, (str, int, float, bool))
-            and not str(k).lower().startswith("error")
-            and not str(k).lower().startswith("exception")
-        ):
-            # Limit string values to prevent information disclosure
-            if isinstance(v, str):
-                safe_metrics[str(k)[:20]] = str(v)[:50]
-            else:
-                safe_metrics[str(k)[:20]] = v
-
-    # Sanitize all_checks to ensure no exception objects leak through
-    safe_all_checks = {}
-    for check_name, check_result in all_checks.items():
-        # Only include boolean results, convert everything to boolean
-        safe_all_checks[str(check_name)[:20]] = bool(check_result) if not isinstance(check_result, Exception) else False
+    # Sanitize metrics and checks using helper functions
+    safe_metrics = _sanitize_metrics(health_result.get("metrics", {}))
+    safe_all_checks = _sanitize_checks(all_checks)
 
     return {
         "status": "ready" if all_healthy else "not ready",
