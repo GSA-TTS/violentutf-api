@@ -54,7 +54,7 @@ class TestHealthEndpointPerformance:
         """Test that readiness check completes within 200ms."""
         # Mock the dependency checks to ensure consistent timing
         with (
-            patch("app.api.endpoints.health.check_dependency_health") as mock_dep_health,
+            patch("app.services.health_service.HealthService.check_dependency_health") as mock_dep_health,
             patch("app.api.endpoints.health.check_disk_space") as mock_disk,
             patch("app.api.endpoints.health.check_memory") as mock_memory,
         ):

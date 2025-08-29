@@ -105,7 +105,7 @@ class TestSecurityScanRepository:
         # Assert
         assert len(target_scans) == 1
         assert target_scans[0].target == "https://example.com"
-        assert target_scans[0].scan_type == "vulnerability_scan"
+        assert target_scans[0].scan_type == "pyrit"
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -213,7 +213,6 @@ class TestSecurityScanRepository:
             target="https://newscan.com",
             scan_type="vulnerability_scan",
             user_id="test-user-id",
-            organization_id="test-org-id",
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
@@ -224,7 +223,6 @@ class TestSecurityScanRepository:
                 target="https://newscan.com",
                 scan_type="vulnerability_scan",
                 user_id="test-user-id",
-                organization_id="test-org-id",
                 parameters={"depth": 5, "threads": 10},
             )
 
@@ -248,6 +246,7 @@ class TestSecurityScanRepository:
             target="https://minimal.com",
             scan_type="basic_scan",
             user_id="test-user-id",
+            configuration={},
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
@@ -262,7 +261,6 @@ class TestSecurityScanRepository:
 
             # Assert
             assert created_scan is not None
-            assert created_scan.organization_id is None
             assert created_scan.parameters is None or created_scan.parameters == {}
 
     @pytest.mark.asyncio

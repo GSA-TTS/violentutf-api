@@ -43,7 +43,7 @@ class TestEnhancedHealthEndpoints:
         assert "version" in data
         assert "environment" in data
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_all_healthy(
@@ -77,7 +77,7 @@ class TestEnhancedHealthEndpoints:
         assert "metrics" in data["details"]
         assert "check_duration" in data["details"]
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_database_unhealthy(
@@ -107,7 +107,7 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["cache"] is True
         assert data["details"]["failed_checks"] == ["database"]
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_multiple_failures(
@@ -139,7 +139,7 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["memory"] is True
         assert set(data["details"]["failed_checks"]) == {"database", "cache", "disk_space"}
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_with_exceptions(
@@ -343,7 +343,7 @@ class TestHealthCheckTracking:
 
     @patch("app.utils.monitoring.health_check_total")
     @patch("app.utils.monitoring.health_check_duration")
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_metrics_tracked(

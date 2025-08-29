@@ -471,7 +471,8 @@ class TestSessionRepository:
             result = await session_repository.extend_session("test_token", extension_minutes=120)
 
             # Assert
-            assert result is True
+            assert result is not None
+            assert isinstance(result, type(sample_session))
             mock_extend.assert_called_once()
             mock_session.commit.assert_called_once()
 
@@ -484,7 +485,7 @@ class TestSessionRepository:
             result = await session_repository.extend_session("nonexistent_token")
 
             # Assert
-            assert result is False
+            assert result is None
             mock_session.commit.assert_not_called()
 
     # get_sessions_by_ip Tests

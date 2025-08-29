@@ -272,7 +272,7 @@ class TestDependencyCache:
         assert retrieved.name == "test-pkg"
 
         # Should now be in memory cache
-        assert "test-pkg" in [key for key in dependency_cache._memory_cache.keys() if "test-pkg" in key]
+        assert any("test-pkg" in key for key in dependency_cache._memory_cache.keys())
 
     @pytest.mark.asyncio
     async def test_cache_versioning_with_requirements_hash(self, dependency_cache):

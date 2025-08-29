@@ -133,7 +133,7 @@ class SimpleRoleFactory:
     def create(**kwargs) -> Role:
         """Create a Role instance with test data."""
         # Extract permissions to put in role_metadata
-        permissions = kwargs.pop("permissions", ["read", "write"])
+        permissions = kwargs.pop("permissions", ["users:read", "users:write"])
 
         defaults = {
             "id": str(uuid.uuid4()),

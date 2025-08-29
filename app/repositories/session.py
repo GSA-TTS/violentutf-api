@@ -535,7 +535,7 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
 
     async def extend_session(
         self, session_id: str, extension: Optional[timedelta] = None, extension_minutes: Optional[int] = None
-    ) -> bool:
+    ) -> Optional[Session]:
         """Extend session expiration time (interface method)."""
         try:
             # Handle both extension patterns
@@ -557,9 +557,9 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
                 new_expires_at = datetime.now(timezone.utc) + extension
                 session_obj.extend_session(new_expires_at)
                 await self.session.commit()
-                return True
+                return session_obj
 
-            return False
+            return None
         except Exception as e:
             self.logger.error("Failed to extend session", session_id=session_id, error=str(e))
             raise

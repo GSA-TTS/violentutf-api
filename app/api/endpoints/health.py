@@ -12,15 +12,15 @@ from structlog.stdlib import get_logger
 from ...core.config import settings
 from ...core.rate_limiting import rate_limit
 from ...services.health_service import HealthService
+from ...utils.monitoring import track_health_check
 from ..deps import get_health_service
-
-# Note: track_health_check removed from direct utils import
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.get("/health", status_code=status.HTTP_200_OK)
+@track_health_check
 async def health_check(health_service: HealthService = Depends(get_health_service)) -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
     # Get repository health for UAT compliance using health service
@@ -37,6 +37,7 @@ async def health_check(health_service: HealthService = Depends(get_health_servic
 
 
 @router.get("/ready")
+@track_health_check
 async def readiness_check(
     response: Response, health_service: HealthService = Depends(get_health_service)
 ) -> Dict[str, Any]:

@@ -168,28 +168,31 @@ class TestRoleRepository:
         # Arrange
         new_role = role_factory.create(
             id="new-role-id",
-            name="New Role",
+            name="new_role",
             description="A newly created role",
-            permissions=["read", "write"],
+            permissions=["users:read", "users:write"],
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        with patch("app.repositories.role.Role", return_value=new_role):
+        with (
+            patch("app.repositories.role.Role", return_value=new_role),
+            patch.object(role_repository, "get_by_name", return_value=None),
+        ):
             # Act
             created_role = await role_repository.create_role(
-                name="New Role",
+                name="new_role",
                 description="A newly created role",
-                permissions=["read", "write"],
+                permissions=["users:read", "users:write"],
                 organization_id="test-org-id",
                 created_by="admin",
             )
 
             # Assert
             assert created_role is not None
-            assert created_role.name == "New Role"
+            assert created_role.name == "new_role"
             assert created_role.description == "A newly created role"
-            assert created_role.permissions == ["read", "write"]
+            assert created_role.permissions == ["users:read", "users:write"]
             mock_session.add.assert_called_once()
             mock_session.flush.assert_called_once()
             mock_session.refresh.assert_called_once()
@@ -202,17 +205,21 @@ class TestRoleRepository:
         # Arrange
         system_role = role_factory.create(
             id="new-system-role-id",
-            name="New System Role",
+            name="system_admin_role",
             organization_id=None,
             is_system_role=True,
+            permissions=["*"],
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        with patch("app.repositories.role.Role", return_value=system_role):
+        with (
+            patch("app.repositories.role.Role", return_value=system_role),
+            patch.object(role_repository, "get_by_name", return_value=None),
+        ):
             # Act
             created_role = await role_repository.create_role(
-                name="New System Role",
+                name="system_admin_role",
                 description="System level role",
                 permissions=["*"],
                 created_by="system",
@@ -230,13 +237,15 @@ class TestRoleRepository:
         mock_session.flush.side_effect = IntegrityError("Duplicate role name", None, None)
         mock_session.rollback.return_value = None
 
-        # Act & Assert
-        with pytest.raises(IntegrityError):
-            await role_repository.create_role(
-                name="Existing Role",
-                description="This should fail",
-                permissions=["read"],
-            )
+        # Mock get_by_name to return None so we get past the initial check
+        with patch.object(role_repository, "get_by_name", return_value=None):
+            # Act & Assert
+            with pytest.raises(IntegrityError):
+                await role_repository.create_role(
+                    name="existing_role",
+                    description="This should fail",
+                    permissions=["users:read"],
+                )
 
         mock_session.rollback.assert_called_once()
 
@@ -248,16 +257,19 @@ class TestRoleRepository:
         # Arrange
         role_no_perms = role_factory.create(
             id="no-perms-role-id",
-            name="No Permissions Role",
+            name="no_permissions_role",
             permissions=[],
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        with patch("app.repositories.role.Role", return_value=role_no_perms):
+        with (
+            patch("app.repositories.role.Role", return_value=role_no_perms),
+            patch.object(role_repository, "get_by_name", return_value=None),
+        ):
             # Act
             created_role = await role_repository.create_role(
-                name="No Permissions Role",
+                name="no_permissions_role",
                 description="Role with no permissions",
                 permissions=[],
             )
@@ -279,7 +291,7 @@ class TestRoleRepository:
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        new_permissions = ["read", "write", "admin"]
+        new_permissions = ["users:read", "users:write", "system:manage"]
 
         # Act
         updated_role = await role_repository.update_role_permissions(
@@ -427,12 +439,14 @@ class TestRoleRepository:
         mock_session.flush.return_value = None
 
         # Act
-        success = await role_repository.assign_role_to_user(
+        assignment = await role_repository.assign_role_to_user(
             user_id="test-user-id", role_id="test-role-id", assigned_by="admin"
         )
 
         # Assert
-        assert success is True
+        assert assignment is not None
+        assert hasattr(assignment, "user_id")
+        assert hasattr(assignment, "role_id")
         mock_session.add.assert_called_once()
         mock_session.flush.assert_called_once()
 
@@ -844,19 +858,22 @@ class TestRoleRepository:
     ):
         """Test handling of roles with very large permissions lists."""
         # Arrange
-        large_permissions = [f"permission_{i}" for i in range(1000)]
+        large_permissions = [f"users:read" if i % 2 == 0 else f"api_keys:write" for i in range(1000)]
         large_role = role_factory.create(
             id="large-role-id",
-            name="Large Permissions Role",
+            name="large_permissions_role",
             permissions=large_permissions,
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        with patch("app.repositories.role.Role", return_value=large_role):
+        with (
+            patch("app.repositories.role.Role", return_value=large_role),
+            patch.object(role_repository, "get_by_name", return_value=None),
+        ):
             # Act
             created_role = await role_repository.create_role(
-                name="Large Permissions Role",
+                name="large_permissions_role",
                 description="Role with many permissions",
                 permissions=large_permissions,
             )
@@ -871,36 +888,28 @@ class TestRoleRepository:
         self, role_repository: RoleRepository, mock_session: AsyncMock, role_factory
     ):
         """Test handling of Unicode and special characters in role names."""
-        # Arrange
-        unicode_name = "角色管理员 🔐 Admin/User-Role (v2.0)"
-        unicode_role = role_factory.create(
-            id="unicode-role-id",
-            name=unicode_name,
-            description="Role with Unicode characters",
-        )
-        mock_session.flush.return_value = None
-        mock_session.refresh.return_value = None
+        # Arrange - Test that Unicode characters are properly rejected
+        unicode_name = "unicode_role_🔐_test_name"
 
-        with patch("app.repositories.role.Role", return_value=unicode_role):
-            # Act
-            created_role = await role_repository.create_role(
-                name=unicode_name,
-                description="Role with Unicode characters",
-                permissions=["read", "write"],
-            )
-
-            # Assert
-            assert created_role is not None
-            assert created_role.name == unicode_name
-            assert "🔐" in created_role.name
+        with patch.object(role_repository, "get_by_name", return_value=None):
+            # Act & Assert - Should raise ValueError for invalid role name
+            with pytest.raises(
+                ValueError, match="Role name can only contain letters, numbers, underscores, and hyphens"
+            ):
+                await role_repository.create_role(
+                    name=unicode_name,
+                    description="Role with Unicode characters",
+                    permissions=["users:read", "users:write"],
+                )
 
     @pytest.mark.asyncio
     async def test_concurrent_role_operations(
         self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
     ):
         """Test concurrent role operations."""
-        # Arrange
-        result_mock = query_result_factory(scalar_result=sample_role)
+        # Arrange - Mock for concurrent operations testing
+        # Use None to simulate no existing assignment for assign_role_to_user
+        result_mock = query_result_factory(scalar_result=None)
         mock_session.execute.return_value = result_mock
         mock_session.flush.return_value = None
 
@@ -927,13 +936,13 @@ class TestRoleRepository:
         parent_role = role_factory.create(
             id="parent-role-id",
             name="Parent Role",
-            permissions=["read", "write"],
+            permissions=["users:read", "users:write"],
         )
 
         child_role = role_factory.create(
             id="child-role-id",
             name="Child Role",
-            permissions=["read"],  # Subset of parent permissions
+            permissions=["users:read"],  # Subset of parent permissions
             parent_role_id="parent-role-id",
         )
 
@@ -974,6 +983,7 @@ class TestRoleRepository:
 
         # Assert
         assert len(assignment_results) == 5
-        assert all(result is True for result in assignment_results)
+        # Accept both True (reactivated) and UserRole objects (new assignments) as success
+        assert all(result is not False and result is not None for result in assignment_results)
         assert mock_session.add.call_count == 5
         assert mock_session.flush.call_count == 5

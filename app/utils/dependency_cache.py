@@ -356,7 +356,9 @@ class DependencyCache:
                 cached_data = await self.file_cache.get(cache_key)
                 if cached_data:
                     try:
-                        pkg_info = PackageInfo.from_dict(cached_data)
+                        # Filter out metadata fields added by file cache
+                        package_data = {k: v for k, v in cached_data.items() if k not in ["ttl", "key_hash"]}
+                        pkg_info = PackageInfo.from_dict(package_data)
                         if not pkg_info.is_expired(self.ttl):
                             # Promote to memory cache
                             self._evict_lru_memory_cache()

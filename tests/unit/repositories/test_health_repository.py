@@ -473,6 +473,7 @@ class TestHealthRepository:
         # Arrange - Database healthy
         result_mock = query_result_factory(data=[{"total_connections": 10}])
         mock_session.execute.return_value = result_mock
+        mock_session.get_bind.return_value.pool.size = 20
 
         # Mock high system resource usage
         with patch("psutil.cpu_percent", return_value=95.0), patch("psutil.virtual_memory") as mock_memory:

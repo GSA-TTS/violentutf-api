@@ -33,7 +33,7 @@ async def create_test_user(
         "id": uuid.uuid4(),
         "email": email,
         "username": username,
-        "hashed_password": "hashed_password_test",
+        "password_hash": "hashed_password_test",  # Fixed: changed from hashed_password to password_hash
         "is_active": is_active,
         "is_superuser": False,
         "email_verified": True,
