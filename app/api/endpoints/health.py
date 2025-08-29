@@ -79,17 +79,62 @@ async def readiness_check(
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         logger.warning("readiness_check_failed", failed_checks=[k for k, v in all_checks.items() if not v])
 
+    # Sanitize repository health data to prevent information disclosure
+    safe_repository_health = {
+        "overall_status": str(repository_health.get("overall_status", "unknown"))[:20],
+        "healthy_count": (
+            int(repository_health.get("healthy_count", 0))
+            if isinstance(repository_health.get("healthy_count"), (int, float))
+            else 0
+        ),
+        "total_count": (
+            int(repository_health.get("total_count", 0))
+            if isinstance(repository_health.get("total_count"), (int, float))
+            else 0
+        ),
+        "health_percentage": (
+            float(repository_health.get("summary", {}).get("health_percentage", 0))
+            if isinstance(repository_health.get("summary", {}).get("health_percentage"), (int, float))
+            else 0
+        ),
+        "cache_hit": bool(repository_health.get("cache_hit", False)),
+    }
+
+    # Remove any potential error details or stack traces - be more aggressive
+    safe_metrics = {}
+    for k, v in health_result.get("metrics", {}).items():
+        if (
+            isinstance(v, (str, int, float, bool))
+            and not str(k).lower().startswith("error")
+            and not str(k).lower().startswith("exception")
+        ):
+            # Limit string values to prevent information disclosure
+            if isinstance(v, str):
+                safe_metrics[str(k)[:20]] = str(v)[:50]
+            else:
+                safe_metrics[str(k)[:20]] = v
+
+    # Sanitize all_checks to ensure no exception objects leak through
+    safe_all_checks = {}
+    for check_name, check_result in all_checks.items():
+        # Only include boolean results, convert everything to boolean
+        safe_all_checks[str(check_name)[:20]] = bool(check_result) if not isinstance(check_result, Exception) else False
+
     return {
         "status": "ready" if all_healthy else "not ready",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "checks": all_checks,
+        "checks": safe_all_checks,
         "details": {
-            "failed_checks": [k for k, v in all_checks.items() if not v],
-            "service": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "repositories": repository_health,
-            "metrics": health_result.get("metrics", {}),
-            "check_duration": health_result.get("check_duration_seconds", 0),
+            "failed_checks": [k for k, v in safe_all_checks.items() if not v],
+            "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
+            "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
+            "repositories": safe_repository_health,
+            "metrics": safe_metrics,
+            "check_duration": (
+                float(health_result.get("check_duration_seconds", 0))
+                if isinstance(health_result.get("check_duration_seconds"), (int, float))
+                else 0
+            ),
         },
     }
 
@@ -197,5 +242,5 @@ async def check_repository_health() -> Dict[str, Any]:
                 "average_response_time_ms": 0,
                 "unhealthy_repositories": ["health_endpoint_error"],
             },
-            "error": f"Repository health check failed: {str(e)[:100]}",
+            "error": "Repository health check failed",
         }

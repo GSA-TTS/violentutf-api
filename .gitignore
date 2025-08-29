@@ -262,3 +262,6 @@ temp.md
 /test_env
 bandit_results.json
 codeql-osx64.zip
+/codeql-database-updated
+/codeql-db
+codeql.zip

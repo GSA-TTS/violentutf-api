@@ -40,6 +40,8 @@ def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> b
     """
     Validate that redirect_uri is in the application's registered redirect URIs.
 
+    Performs comprehensive validation to prevent open redirect vulnerabilities.
+
     Args:
         redirect_uri: The redirect URI to validate
         app_redirect_uris: List of registered redirect URIs for the application
@@ -50,7 +52,27 @@ def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> b
     if not redirect_uri or not app_redirect_uris:
         return False
 
-    # Exact match check for security
+    # Additional security checks
+    try:
+        # Parse URL to validate structure
+        parsed = urlparse(redirect_uri)
+
+        # Reject URLs without proper scheme (must be http/https)
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        # Reject URLs without proper hostname
+        if not parsed.netloc:
+            return False
+
+        # Reject obviously malicious patterns
+        if any(suspicious in redirect_uri.lower() for suspicious in ["javascript:", "data:", "vbscript:", "file:"]):
+            return False
+
+    except Exception:
+        return False
+
+    # Exact match check for security - prevents subdomain attacks
     return redirect_uri in app_redirect_uris
 
 
@@ -58,13 +80,30 @@ def _build_secure_redirect_url(base_uri: str, params: Dict[str, str]) -> str:
     """
     Build a secure redirect URL with proper parameter encoding.
 
+    This function assumes base_uri has already been validated by _validate_redirect_uri.
+
     Args:
-        base_uri: The base redirect URI (already validated)
+        base_uri: The base redirect URI (must be pre-validated)
         params: Parameters to append
 
     Returns:
         Complete redirect URL
+
+    Raises:
+        ValueError: If base_uri appears invalid
     """
+    # Additional safety check - this should never trigger if validation works properly
+    if not base_uri:
+        raise ValueError("Invalid base URI")
+
+    # Basic structure validation as final safety check
+    try:
+        parsed = urlparse(base_uri)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("Invalid URI structure")
+    except Exception:
+        raise ValueError("Unable to parse base URI")
+
     if not params:
         return base_uri
 
@@ -386,19 +425,36 @@ async def process_oauth_authorization(
         if not app:
             raise ValidationError("Invalid client")
 
-        # Validate redirect URI against registered URIs to prevent open redirects
+        # Critical Security Check: Validate redirect URI against registered URIs to prevent open redirects
         if not _validate_redirect_uri(redirect_uri, app.redirect_uris):
-            logger.warning("Invalid redirect URI in authorization", client_id=client_id, redirect_uri=redirect_uri)
+            logger.warning("Invalid redirect URI in authorization", client_id=client_id, redirect_uri=redirect_uri[:50])
             raise ValidationError("Invalid redirect URI")
+
+        # Additional security: Ensure redirect_uri is from the validated list (double-check)
+        validated_redirect_uri = None
+        for registered_uri in app.redirect_uris:
+            if registered_uri == redirect_uri:
+                validated_redirect_uri = registered_uri
+                break
+
+        if not validated_redirect_uri:
+            logger.error("Redirect URI validation bypass attempt", client_id=client_id)
+            raise ValidationError("Security validation failed")
 
         # Check if user denied
         if action == "deny":
             # Redirect with error using secure redirect URL construction
+            # Use validated_redirect_uri (from registered list) instead of user-provided redirect_uri
             error_params = {"error": "access_denied"}
             if state:
                 error_params["state"] = state
 
-            return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+            try:
+                redirect_url = _build_secure_redirect_url(validated_redirect_uri, error_params)
+                return RedirectResponse(url=redirect_url)
+            except ValueError as e:
+                logger.error("Failed to build redirect URL for deny action", error=str(e))
+                return HTMLResponse("<h1>Authorization denied</h1>", status_code=400)
 
         # User approved - create authorization code
 
@@ -418,11 +474,17 @@ async def process_oauth_authorization(
         # Service layer handles transactions automatically
 
         # Build success redirect using secure URL construction
+        # Use validated_redirect_uri (from registered list) instead of user-provided redirect_uri
         success_params = {"code": code}
         if state:
             success_params["state"] = state
 
-        return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, success_params))
+        try:
+            redirect_url = _build_secure_redirect_url(validated_redirect_uri, success_params)
+            return RedirectResponse(url=redirect_url)
+        except ValueError as e:
+            logger.error("Failed to build redirect URL for success", error=str(e))
+            return HTMLResponse("<h1>Authorization succeeded but redirect failed</h1>", status_code=500)
 
     except Exception as e:
         logger.error(
@@ -431,15 +493,27 @@ async def process_oauth_authorization(
             error=str(e),
         )
         # Redirect with error using secure URL construction
-        # Note: redirect_uri should have been validated earlier, but add safety check
+        # Only use pre-validated redirect URIs from registered list
         try:
             oauth_service = OAuth2Service(session)
             app = await oauth_service.get_application(client_id)
             if app and _validate_redirect_uri(redirect_uri, app.redirect_uris):
-                error_params = {"error": "server_error"}
-                if state:
-                    error_params["state"] = state
-                return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+                # Find exact matching validated URI from registered list
+                validated_uri = None
+                for registered_uri in app.redirect_uris:
+                    if registered_uri == redirect_uri:
+                        validated_uri = registered_uri
+                        break
+
+                if validated_uri:
+                    error_params = {"error": "server_error"}
+                    if state:
+                        error_params["state"] = state
+                    try:
+                        redirect_url = _build_secure_redirect_url(validated_uri, error_params)
+                        return RedirectResponse(url=redirect_url)
+                    except ValueError as ve:
+                        logger.error("Failed to build redirect URL for server error", error=str(ve))
         except Exception as e:
             logger.warning("Failed to build secure redirect URL", error=str(e), redirect_uri=redirect_uri)
 

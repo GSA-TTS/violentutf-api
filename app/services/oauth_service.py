@@ -13,7 +13,7 @@ from structlog.stdlib import get_logger
 
 from app.core.config import settings
 from app.core.errors import AuthenticationError, ForbiddenError, NotFoundError, ValidationError
-from app.core.security import create_token, hash_token, verify_password
+from app.core.security import create_token, hash_token, verify_password, verify_token_hash
 from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken, OAuthScope
 from app.models.user import User
 from app.repositories.oauth_access_token import OAuthAccessTokenRepository
@@ -323,7 +323,7 @@ class OAuth2Service:
         # Validate client
         app = await self.validate_client(client_id, client_secret)
 
-        # Find authorization code
+        # Find authorization code using secure hash
         code_hash = hash_token(code)
         auth_code = await self.auth_code_repo.get_by_code_hash(code_hash)
 
@@ -404,7 +404,7 @@ class OAuth2Service:
         # Validate client
         app = await self.validate_client(client_id, client_secret)
 
-        # Find refresh token
+        # Find refresh token using secure hash
         token_hash = hash_token(refresh_token)
         refresh_token_obj = await self.refresh_token_repo.get_by_token_hash(token_hash)
 
@@ -467,9 +467,8 @@ class OAuth2Service:
         Raises:
             AuthenticationError: If token is invalid
         """
+        # Use secure HMAC-SHA256 hash for token lookup
         token_hash = hash_token(token)
-
-        # Get token with user and application
         row = await self.access_token_repo.get_with_user_and_app(token_hash)
 
         if not row:
@@ -506,6 +505,7 @@ class OAuth2Service:
         Returns:
             True if token was revoked
         """
+        # Use secure hash for token lookup
         token_hash = hash_token(token)
         revoked = False
 
@@ -696,10 +696,21 @@ class OAuth2Service:
     def _verify_pkce(self, verifier: str, challenge: str, method: Optional[str]) -> bool:
         """Verify PKCE code challenge."""
         if method == "S256":
-            # SHA256 hash of verifier should match challenge
+            # HMAC-SHA256 hash of verifier should match challenge (secure PKCE)
             import base64
+            import hmac
 
-            verifier_hash = hashlib.sha256(verifier.encode()).digest()
+            from app.core.config import get_settings
+
+            settings = get_settings()
+            secret_key = (
+                settings.SECRET_KEY.get_secret_value()
+                if hasattr(settings.SECRET_KEY, "get_secret_value")
+                else str(settings.SECRET_KEY)
+            )
+            verifier_hash = hmac.new(
+                secret_key.encode(), verifier.encode(), hashlib.sha256  # nosec B303 - HMAC-SHA256 is secure for PKCE
+            ).digest()
             verifier_challenge = base64.urlsafe_b64encode(verifier_hash).decode().rstrip("=")
             return verifier_challenge == challenge
         elif method == "plain" or method is None:

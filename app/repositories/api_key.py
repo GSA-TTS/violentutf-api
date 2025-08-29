@@ -488,10 +488,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             APIKey instance if valid and active, None otherwise
         """
         try:
-            # Hash the provided key for lookup
-            import hashlib
+            # Hash the provided key for lookup using secure HMAC
+            from app.core.security import hash_token
 
-            key_hash = hashlib.sha256(key.encode()).hexdigest()
+            key_hash = hash_token(key)
 
             # Find the API key by hash
             query = select(self.model).where(and_(self.model.key_hash == key_hash, self.model.is_deleted == False))

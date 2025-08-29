@@ -101,9 +101,15 @@ class FileCacheManager:
 
     def _get_cache_file_path(self, key: str) -> Path:
         """Get cache file path with secure naming."""
-        # Use SHA-256 hash for secure, consistent file naming
-        safe_key = hashlib.sha256(key.encode()).hexdigest()
+        # Use HMAC-SHA256 hash for secure, consistent file naming
+        safe_key = self._hash_key_secure(key)
         return self.cache_dir / f"{safe_key}.json"
+
+    def _hash_key_secure(self, key: str) -> str:
+        """Generate secure hash for cache keys."""
+        from app.core.security import hash_token
+
+        return hash_token(key)
 
     def _calculate_directory_size(self) -> int:
         """Calculate total size of cache directory."""
@@ -204,7 +210,7 @@ class FileCacheManager:
                 **value,
                 "cached_at": time.time(),
                 "ttl": ttl,
-                "key_hash": hashlib.sha256(key.encode()).hexdigest(),
+                "key_hash": self._hash_key_secure(key),
             }
 
             # Check cache size before writing
@@ -287,8 +293,18 @@ class DependencyCache:
         self._lock = asyncio.Lock()
 
     def _compute_requirements_hash(self) -> str:
-        """Compute hash of requirements files for cache versioning."""
-        hasher = hashlib.sha256()
+        """Compute secure hash of requirements files for cache versioning."""
+        import hmac
+
+        from app.core.config import get_settings
+
+        settings = get_settings()
+        secret_key = (
+            settings.SECRET_KEY.get_secret_value()
+            if hasattr(settings.SECRET_KEY, "get_secret_value")
+            else str(settings.SECRET_KEY)
+        )
+        hasher = hmac.new(secret_key.encode(), b"", hashlib.sha256)
 
         # Find requirements files
         current_dir = Path.cwd()

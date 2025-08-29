@@ -41,7 +41,7 @@ class InputValidator:
 
     # Dangerous patterns to block
     DANGEROUS_PATTERNS = [
-        re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL),
+        re.compile(r"<script[^>]*>.*?</script[^>]*>", re.IGNORECASE | re.DOTALL),
         re.compile(r"javascript:", re.IGNORECASE),
         re.compile(r"on\w+\s*=", re.IGNORECASE),  # onclick, onerror, etc.
         re.compile(r"<iframe", re.IGNORECASE),
@@ -135,8 +135,10 @@ class InputValidator:
 
         except Exception as e:
             self._validation_stats["failed"] += 1
-            logger.error(f"Validation failed: {str(e)}")
-            raise ValidationError(f"Audit data validation failed: {str(e)}")
+            # Log detailed error internally without exposing to user
+            logger.error("Validation failed", error=str(e), exc_info=True)
+            # Return generic error message to prevent information disclosure
+            raise ValidationError("Audit data validation failed: Invalid or malformed audit data")
 
     def validate_file_path(self, path: Union[str, Path]) -> Path:
         """
@@ -183,7 +185,9 @@ class InputValidator:
             return validated_path
 
         except Exception as e:
-            raise ValidationError(f"Invalid path: {str(e)}")
+            # Log detailed error internally without exposing to user
+            logger.error("Path validation failed", path=path_str, error=str(e))
+            raise ValidationError("Invalid file path")
 
     def validate_string(self, value: str, field_name: str = "string") -> str:
         """
@@ -243,7 +247,9 @@ class InputValidator:
             try:
                 parsed = json.loads(data)
             except json.JSONDecodeError as e:
-                raise ValidationError(f"Invalid JSON: {str(e)}")
+                # Log detailed error internally without exposing to user
+                logger.error("JSON parsing failed", error=str(e), data_length=len(data))
+                raise ValidationError("Invalid JSON format")
         else:
             parsed = data
 

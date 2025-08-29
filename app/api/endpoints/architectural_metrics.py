@@ -49,11 +49,18 @@ async def get_leading_indicators(
 
         metrics = await architectural_metrics_service.calculate_leading_indicators(start_date, end_date)
 
-        logger.info(f"User {current_user.username} retrieved leading indicators")
+        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+
+        logger.info(
+            "User retrieved leading indicators",
+            user=sanitize_log_value(current_user.username),
+        )
         return metrics
 
     except Exception as e:
-        logger.error(f"Error getting leading indicators: {e}")
+        from app.utils.safe_logging import safe_error_message
+
+        logger.error("Error getting leading indicators", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve leading indicators")
 
 
@@ -81,11 +88,18 @@ async def get_lagging_indicators(
 
         metrics = await architectural_metrics_service.calculate_lagging_indicators(start_date, end_date)
 
-        logger.info(f"User {current_user.username} retrieved lagging indicators")
+        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+
+        logger.info(
+            "User retrieved lagging indicators",
+            user=sanitize_log_value(current_user.username),
+        )
         return metrics
 
     except Exception as e:
-        logger.error(f"Error getting lagging indicators: {e}")
+        from app.utils.safe_logging import safe_error_message
+
+        logger.error("Error getting lagging indicators", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve lagging indicators")
 
 
@@ -128,11 +142,18 @@ async def get_roi_analysis(
 
         roi = await architectural_metrics_service.calculate_roi_analysis(start_date, end_date, cost_data)
 
-        logger.info(f"User {current_user.username} retrieved ROI analysis")
+        from app.utils.safe_logging import safe_error_message, sanitize_log_value
+
+        logger.info(
+            "User retrieved ROI analysis",
+            user=sanitize_log_value(current_user.username),
+        )
         return roi
 
     except Exception as e:
-        logger.error(f"Error getting ROI analysis: {e}")
+        from app.utils.safe_logging import safe_error_message
+
+        logger.error("Error getting ROI analysis", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to calculate ROI analysis")
 
 
@@ -217,7 +238,13 @@ async def generate_metrics_report(
         #     include_sections=sections,
         # )
 
-        logger.info(f"User {current_user.username} initiated report generation: {report.id}")
+        from app.utils.safe_logging import sanitize_log_value
+
+        logger.info(
+            "User initiated report generation",
+            user=sanitize_log_value(current_user.username),
+            report_id=sanitize_log_value(str(report.id)),
+        )
 
         return {
             "report_id": report.id,
@@ -228,7 +255,9 @@ async def generate_metrics_report(
         }
 
     except Exception as e:
-        logger.error(f"Error generating report: {e}")
+        from app.utils.safe_logging import safe_error_message
+
+        logger.error("Error generating report", error=safe_error_message(e))
         raise HTTPException(status_code=500, detail="Failed to initiate report generation")
 
 
@@ -258,7 +287,11 @@ async def create_scheduled_report(
     """
     try:
         # Build configuration
-        config = {"report_type": report_type, "period_days": period_days, "include_sections": []}
+        config = {
+            "report_type": report_type,
+            "period_days": period_days,
+            "include_sections": [],
+        }
 
         if include_leading:
             config["include_sections"].append("leading")
@@ -287,7 +320,7 @@ async def create_scheduled_report(
             "schedule_id": schedule.id,
             "name": schedule.name,
             "cron_expression": schedule.cron_expression,
-            "next_run_at": schedule.next_run_at.isoformat() if schedule.next_run_at else None,
+            "next_run_at": (schedule.next_run_at.isoformat() if schedule.next_run_at else None),
             "is_active": schedule.is_active,
             "message": "Scheduled report created successfully",
         }
@@ -352,13 +385,19 @@ async def update_scheduled_report(
             "schedule_id": schedule.id,
             "name": schedule.name,
             "is_active": schedule.is_active,
-            "next_run_at": schedule.next_run_at.isoformat() if schedule.next_run_at else None,
+            "next_run_at": (schedule.next_run_at.isoformat() if schedule.next_run_at else None),
             "message": "Schedule updated successfully",
         }
 
     except Exception as e:
-        logger.error(f"Error updating schedule {schedule_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update schedule: {str(e)}")
+        from app.utils.safe_logging import safe_error_message, safe_user_id
+
+        logger.error(
+            "Error updating schedule",
+            schedule_id=safe_user_id(schedule_id),
+            error=safe_error_message(e),
+        )
+        raise HTTPException(status_code=500, detail="Failed to update schedule")
 
 
 @router.delete("/schedules/{schedule_id}", summary="Delete scheduled report")
@@ -406,7 +445,7 @@ async def get_schedule_history(
                 "format": r.format.value,
                 "status": r.status.value,
                 "generated_at": r.generated_at.isoformat() if r.generated_at else None,
-                "download_url": f"/api/v1/reports/{r.id}/download" if r.status.value == "completed" else None,
+                "download_url": (f"/api/v1/reports/{r.id}/download" if r.status.value == "completed" else None),
                 "error_message": r.error_message,
             }
             for r in reports
@@ -435,7 +474,10 @@ async def execute_scheduled_reports(
 
         logger.info(f"User {current_user.username} triggered scheduled report execution")
 
-        return {"status": "initiated", "message": "Scheduled report execution initiated"}
+        return {
+            "status": "initiated",
+            "message": "Scheduled report execution initiated",
+        }
 
     except Exception as e:
         logger.error(f"Error executing scheduled reports: {e}")

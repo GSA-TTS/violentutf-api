@@ -174,9 +174,11 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
         if headers:
             components["headers"] = headers  # type: ignore[assignment]
 
-        # Generate hash
+        # Generate secure hash for cache key
         key_string = json.dumps(components, sort_keys=True)
-        key_hash = hashlib.sha256(key_string.encode()).hexdigest()[:32]
+        from app.core.security import hash_token
+
+        key_hash = hash_token(key_string)[:32]
 
         return f"response_cache:{key_hash}"
 

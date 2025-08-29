@@ -448,17 +448,21 @@ class MFAService:
             unused_codes = result.scalars().all()
 
             for backup_code in unused_codes:
-                # Check if it's an Argon2 hash (preferred) or SHA256 (legacy)
+                # Only accept Argon2 hashes for security compliance
                 if backup_code.code_hash.startswith("$argon2"):
-                    # Use Argon2 verification
+                    # Use Argon2 verification (secure)
                     if argon2.verify(code, backup_code.code_hash):
                         await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
                         return True
                 else:
-                    # Legacy SHA256 verification - delegate to separate method for CodeQL clarity
-                    if self._verify_legacy_mfa_code_hash(code, backup_code.code_hash):
-                        await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
-                        return True
+                    # Legacy SHA256 hash detected - reject and log for regeneration
+                    logger.warning(
+                        "Legacy SHA256 MFA backup code detected - codes must be regenerated",
+                        user_id=backup_code.user_id,
+                        code_id=backup_code.id,
+                        migration_required=True,
+                    )
+                    # Continue to next code without marking as used
 
         return False
 
@@ -534,32 +538,3 @@ class MFAService:
                 **(details or {}),
             },
         )
-
-    def _verify_legacy_mfa_code_hash(self, code: str, stored_hash: str) -> bool:
-        """
-        Legacy SHA256 hash verification for MFA backup codes - backward compatibility only.
-
-        WARNING: This method is DEPRECATED and exists only for compatibility
-        with existing MFA backup codes created before Argon2 migration.
-
-        New MFA codes MUST use Argon2 hashing for security.
-        This method should be removed in future versions once all legacy
-        codes have been migrated.
-
-        Args:
-            code: The MFA backup code to verify (not sensitive in this context - used for comparison only)
-            stored_hash: The stored SHA256 hash from database
-
-        Returns:
-            True if the hash matches, False otherwise
-        """
-        import hashlib
-
-        # Create SHA256 hash for comparison with legacy stored hash
-        # This is acceptable only because:
-        # 1. It's for legacy compatibility, not new code creation
-        # 2. The code value here is used for verification, not storage
-        # 3. All new codes use Argon2
-        # 4. MFA codes are single-use and short-lived
-        computed_hash = hashlib.sha256(code.encode()).hexdigest()
-        return computed_hash == stored_hash

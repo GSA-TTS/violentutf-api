@@ -29,8 +29,10 @@ class APIKeyService:
         return self.KEY_PREFIX + secrets.token_urlsafe(length)
 
     def _hash_key(self, key: str) -> str:
-        """Hash an API key."""
-        return hashlib.sha256(key.encode()).hexdigest()
+        """Hash an API key using secure HMAC-SHA256."""
+        from app.core.security import hash_token
+
+        return hash_token(key)
 
     async def create_api_key(
         self,

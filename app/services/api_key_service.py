@@ -500,13 +500,18 @@ class APIKeyService:
             True if key matches hash, False otherwise
         """
         try:
-            # Detect hash type based on format
+            # Only accept Argon2 hashes for security compliance
             if stored_hash.startswith("$argon2"):
-                # Argon2 hash verification
+                # Argon2 hash verification (secure)
                 return argon2.verify(key_value, stored_hash)
             elif len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
-                # Legacy SHA256 verification - delegate to separate method for CodeQL clarity
-                return self._verify_legacy_sha256_hash(key_value, stored_hash)
+                # Legacy SHA256 hash detected - reject and log for migration
+                logger.warning(
+                    "Legacy SHA256 API key detected - key must be regenerated",
+                    key_id=getattr(self, "_current_key_id", "unknown"),
+                    migration_required=True,
+                )
+                return False
             else:
                 # Unknown hash format
                 logger.warning("Unknown API key hash format", hash_prefix=stored_hash[:20])
@@ -517,7 +522,7 @@ class APIKeyService:
             logger.error(
                 "API key verification error",
                 error=str(e),
-                hash_type="argon2" if stored_hash.startswith("$argon2") else "sha256",
+                hash_type="argon2" if stored_hash.startswith("$argon2") else "unknown",
             )
             return False
 
@@ -691,31 +696,3 @@ class APIKeyService:
             }
 
         return recent_usage
-
-    def _verify_legacy_sha256_hash(self, key_value: str, stored_hash: str) -> bool:
-        """
-        Legacy SHA256 hash verification for backward compatibility only.
-
-        WARNING: This method is DEPRECATED and exists only for compatibility
-        with existing API keys created before Argon2 migration.
-
-        New API keys MUST use Argon2 hashing for security.
-        This method should be removed in future versions once all legacy
-        keys have been migrated.
-
-        Args:
-            key_value: The API key value to verify (not sensitive in this context - used for comparison only)
-            stored_hash: The stored SHA256 hash from database
-
-        Returns:
-            True if the hash matches, False otherwise
-        """
-        import hashlib
-
-        # Create SHA256 hash for comparison with legacy stored hash
-        # This is acceptable only because:
-        # 1. It's for legacy compatibility, not new key creation
-        # 2. The key_value here is used for verification, not storage
-        # 3. All new keys use Argon2
-        computed_hash = hashlib.sha256(key_value.encode()).hexdigest()
-        return computed_hash == stored_hash
