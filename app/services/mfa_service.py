@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pyotp
 import qrcode
+from passlib.hash import argon2
 from sqlalchemy import and_, select
 from structlog.stdlib import get_logger
 
@@ -431,18 +432,37 @@ class MFAService:
 
     async def _verify_backup_code(self, user_id: str, code: str) -> bool:
         """Verify and consume backup code."""
-        # Hash the code
-        import hashlib
+        # For MFA backup codes, we need to check all unused codes for this user
+        # because Argon2 creates different hashes each time (rainbow table protection)
 
-        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        # Import here to avoid circular dependency
+        from sqlalchemy import select
 
-        # Find unused code
-        backup_code = await self.mfa_backup_code_repo.get_by_hash(code_hash)
+        # Get all unused backup codes for the user
+        async with self.db_session() as session:
+            stmt = select(self.mfa_backup_code_repo._model).where(
+                self.mfa_backup_code_repo._model.user_id == user_id,
+                self.mfa_backup_code_repo._model.is_used == False,  # noqa: E712
+            )
+            result = await session.execute(stmt)
+            unused_codes = result.scalars().all()
 
-        if backup_code and backup_code.user_id == user_id and not backup_code.is_used:
-            # Mark as used
-            await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
-            return True
+            for backup_code in unused_codes:
+                # Check if it's an Argon2 hash (preferred) or SHA256 (legacy)
+                if backup_code.code_hash.startswith("$argon2"):
+                    # Use Argon2 verification
+                    if argon2.verify(code, backup_code.code_hash):
+                        await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
+                        return True
+                else:
+                    # Legacy SHA256 verification (for backward compatibility)
+                    # nosec B324 - SHA256 used only for legacy MFA code verification
+                    import hashlib
+
+                    code_hash = hashlib.sha256(code.encode()).hexdigest()  # nosec B324
+                    if backup_code.code_hash == code_hash:
+                        await self.mfa_backup_code_repo.mark_code_used(backup_code.id)
+                        return True
 
         return False
 
@@ -455,10 +475,8 @@ class MFAService:
             code = MFABackupCode.generate_code()
             codes.append(code)
 
-            # Hash and store
-            import hashlib
-
-            code_hash = hashlib.sha256(code.encode()).hexdigest()
+            # Hash and store using Argon2 for security
+            code_hash = argon2.hash(code)
 
             backup_code_data = {
                 "user_id": user_id,

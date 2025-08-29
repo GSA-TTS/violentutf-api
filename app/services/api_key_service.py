@@ -505,10 +505,13 @@ class APIKeyService:
                 # Argon2 hash verification
                 return argon2.verify(key_value, stored_hash)
             elif len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
-                # SHA256 hash verification (legacy support)
+                # SHA256 hash verification (LEGACY SUPPORT ONLY)
+                # NOTE: This is only for backward compatibility with existing API keys.
+                # All new API keys use Argon2. This path should be removed in future versions.
+                # nosec B324 - SHA256 used only for legacy API key verification, not new hashing
                 import hashlib
 
-                computed_hash = hashlib.sha256(key_value.encode()).hexdigest()
+                computed_hash = hashlib.sha256(key_value.encode()).hexdigest()  # nosec B324
                 return computed_hash == stored_hash
             else:
                 # Unknown hash format
