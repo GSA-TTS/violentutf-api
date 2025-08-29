@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_token, hash_token
+from app.core.security import create_token, hash_oauth_token
 from app.models.api_key import APIKey
 from app.models.oauth import OAuthApplication
 from app.models.permission import Permission

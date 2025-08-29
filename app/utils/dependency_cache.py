@@ -107,9 +107,9 @@ class FileCacheManager:
 
     def _hash_key_secure(self, key: str) -> str:
         """Generate secure hash for cache keys."""
-        from app.core.security import hash_token
+        from app.core.security import hash_cache_key
 
-        return hash_token(key)
+        return hash_cache_key(key)
 
     def _calculate_directory_size(self) -> int:
         """Calculate total size of cache directory."""

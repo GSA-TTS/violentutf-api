@@ -71,9 +71,11 @@ def _sanitize_metrics(metrics: dict) -> dict:
 
 def _sanitize_checks(all_checks: dict) -> dict:
     """Sanitize all_checks to ensure no exception objects leak through."""
+    # CodeQL [py/stack-trace-exposure] Function specifically designed to filter out exception objects - no exposure possible
     safe_all_checks = {}
     for check_name, check_result in all_checks.items():
         # Only include boolean results, convert everything to boolean
+        # CodeQL [py/stack-trace-exposure] Exception objects explicitly filtered out here
         safe_all_checks[str(check_name)[:20]] = bool(check_result) if not isinstance(check_result, Exception) else False
     return safe_all_checks
 
@@ -156,6 +158,7 @@ async def readiness_check(
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
 
     # Process system check results safely without exposing exception details
+    # CodeQL [py/stack-trace-exposure] Exception objects filtered out here - only boolean values passed forward
     disk_healthy = not isinstance(system_checks[0], Exception) and system_checks[0]
     memory_healthy = not isinstance(system_checks[1], Exception) and system_checks[1]
 
@@ -169,6 +172,7 @@ async def readiness_check(
     safe_repository_health = _sanitize_repository_health(repository_health)
 
     # Combine all checks using sanitized data only
+    # CodeQL [py/stack-trace-exposure] Exception objects filtered out before this point - system_checks processed safely above
     all_checks = {
         "database": bool(health_result.get("checks", {}).get("database", False)),
         "cache": bool(health_result.get("checks", {}).get("cache", False)),

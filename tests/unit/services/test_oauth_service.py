@@ -215,8 +215,8 @@ class TestOAuth2Service:
         scopes = ["read:users", "write:users"]
 
         with patch.object(oauth_service, "_generate_authorization_code", return_value="auth_code_123"):
-            # Mock hash_token function
-            with patch("app.services.oauth_service.hash_token", return_value="hashed_auth_code"):
+            # Mock hash_oauth_token function
+            with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_auth_code"):
                 # Mock the OAuthAuthorizationCode constructor to handle the correct fields
                 with patch("app.services.oauth_service.OAuthAuthorizationCode") as mock_auth_code_class:
                     mock_auth_code = MagicMock()
@@ -382,8 +382,8 @@ class TestOAuth2Service:
         mock_refresh_token.use_count = 0
         mock_refresh_token.last_used_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_refresh_token"):
+        # Mock hash_oauth_token
+        with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_refresh_token"):
             # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
             mock_result = MagicMock()
             mock_result.rowcount = 1  # For UPDATE operations
@@ -424,8 +424,8 @@ class TestOAuth2Service:
         mock_refresh_token.use_count = 0
         mock_refresh_token.last_used_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_refresh_token"):
+        # Mock hash_oauth_token
+        with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_refresh_token"):
             # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
             mock_result = MagicMock()
             mock_result.rowcount = 1  # For UPDATE operations
@@ -522,8 +522,8 @@ class TestOAuth2Service:
         mock_access_token.application_id = uuid.uuid4()
         mock_access_token.revoked_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_access_token"):
+        # Mock hash_oauth_token
+        with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_access_token"):
             # Create universal mock result for both SELECT and UPDATE operations
             mock_result = MagicMock()
             mock_result.scalar_one_or_none.return_value = mock_access_token  # For SELECT operations
@@ -560,8 +560,8 @@ class TestOAuth2Service:
             MagicMock(spec=OAuthAccessToken, id=uuid.uuid4(), is_revoked=False, revoked_at=None),
         ]
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_token"):
+        # Mock hash_oauth_token
+        with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_token"):
             # Create universal mock result for all operations
             mock_result = MagicMock()
             mock_result.scalar_one_or_none.return_value = mock_refresh_token  # For SELECT operations

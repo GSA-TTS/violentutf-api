@@ -16,7 +16,7 @@ from app.core.errors import AuthenticationError, ForbiddenError, NotFoundError, 
 from app.core.security import (
     create_token,
     hash_client_secret,
-    hash_token,
+    hash_oauth_token,
     verify_client_secret,
     verify_password,
     verify_token_hash,
@@ -252,7 +252,7 @@ class OAuth2Service:
         """
         # Generate code
         code = self._generate_authorization_code()
-        code_hash = hash_token(code)
+        code_hash = hash_oauth_token(code)
 
         # Set expiration
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.AUTHORIZATION_CODE_EXPIRE_MINUTES)
@@ -331,7 +331,7 @@ class OAuth2Service:
         app = await self.validate_client(client_id, client_secret)
 
         # Find authorization code using secure hash
-        code_hash = hash_token(code)
+        code_hash = hash_oauth_token(code)
         auth_code = await self.auth_code_repo.get_by_code_hash(code_hash)
 
         if not auth_code:
@@ -412,7 +412,7 @@ class OAuth2Service:
         app = await self.validate_client(client_id, client_secret)
 
         # Find refresh token using secure hash
-        token_hash = hash_token(refresh_token)
+        token_hash = hash_oauth_token(refresh_token)
         refresh_token_obj = await self.refresh_token_repo.get_by_token_hash(token_hash)
 
         if not refresh_token_obj:
@@ -475,7 +475,7 @@ class OAuth2Service:
             AuthenticationError: If token is invalid
         """
         # Use secure HMAC-SHA256 hash for token lookup
-        token_hash = hash_token(token)
+        token_hash = hash_oauth_token(token)
         row = await self.access_token_repo.get_with_user_and_app(token_hash)
 
         if not row:
@@ -513,7 +513,7 @@ class OAuth2Service:
             True if token was revoked
         """
         # Use secure hash for token lookup
-        token_hash = hash_token(token)
+        token_hash = hash_oauth_token(token)
         revoked = False
 
         # Try access token first (unless hint says otherwise)
@@ -757,8 +757,8 @@ class OAuth2Service:
         )
 
         # Hash tokens for storage
-        access_token_hash = hash_token(access_token)
-        refresh_token_hash = hash_token(refresh_token)
+        access_token_hash = hash_oauth_token(access_token)
+        refresh_token_hash = hash_oauth_token(refresh_token)
 
         # Extract request metadata
         ip_address = None
