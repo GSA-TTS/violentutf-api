@@ -175,7 +175,7 @@ class TestOAuth2Service:
         """Test successful client validation."""
         # Arrange
         with patch.object(oauth_service, "get_application", return_value=mock_oauth_app):
-            with patch("app.services.oauth_service.verify_password", return_value=True):
+            with patch("app.services.oauth_service.verify_client_secret", return_value=True):
                 # Act
                 result = await oauth_service.validate_client(
                     client_id="client_test123",

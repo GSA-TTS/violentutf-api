@@ -220,14 +220,15 @@ def hash_client_secret(client_secret: str) -> str:
 def verify_client_secret(client_secret: str, hashed_secret: str) -> bool:
     """Verify an OAuth client secret against its hash.
 
-    Uses secure password verification with support for legacy hashes.
+    Uses secure password verification with Argon2 only.
+    Legacy client secrets must be re-hashed using proper password hashing.
     """
     try:
-        # First try Argon2 verification
+        # Only use Argon2 verification - no fallback to weak hashing
         return pwd_context.verify(client_secret, hashed_secret)
     except Exception:
-        # Fallback to legacy token hash verification if needed
-        return verify_token_hash(client_secret, hashed_secret)
+        # Return False for any verification failure - no weak hash fallback
+        return False
 
 
 def verify_token_hash(token: str, stored_hash: str) -> bool:

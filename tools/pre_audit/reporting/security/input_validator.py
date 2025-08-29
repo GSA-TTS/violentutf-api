@@ -133,10 +133,14 @@ class InputValidator:
             self._validation_stats["passed"] += 1
             return validated
 
+        except ValidationError:
+            # Re-raise validation errors as-is (they're safe to expose)
+            self._validation_stats["failed"] += 1
+            raise
         except Exception as e:
             self._validation_stats["failed"] += 1
             # Log detailed error internally without exposing to user
-            logger.error("Validation failed", error=str(e), exc_info=True)
+            logger.error(f"Validation failed: {e}", exc_info=True)
             # Return generic error message to prevent information disclosure
             raise ValidationError("Audit data validation failed: Invalid or malformed audit data")
 
