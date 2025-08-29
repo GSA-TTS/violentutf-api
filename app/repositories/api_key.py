@@ -477,22 +477,17 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             self.logger.error("Failed to get expired API keys", error=str(e))
             raise
 
-    async def validate(self, key: str) -> Optional[APIKey]:
+    async def validate_by_hash(self, key_hash: str) -> Optional[APIKey]:
         """
-        Validate an API key string and return the APIKey if valid.
+        Validate an API key by its pre-computed hash.
 
         Args:
-            key: The raw API key string to validate
+            key_hash: The pre-computed hash of the API key
 
         Returns:
-            APIKey instance if valid and active, None otherwise
+            APIKey instance if found and active, None otherwise
         """
         try:
-            # Hash the provided key for lookup using secure HMAC
-            from app.core.security import hash_token
-
-            key_hash = hash_token(key)
-
             # Find the API key by hash
             query = select(self.model).where(and_(self.model.key_hash == key_hash, self.model.is_deleted == False))
 
@@ -502,6 +497,31 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             if api_key and api_key.is_active():
                 return api_key
 
+            return None
+
+        except Exception as e:
+            self.logger.error("Failed to validate API key by hash", error=str(e))
+            raise
+
+    async def validate(self, key: str) -> Optional[APIKey]:
+        """
+        Validate an API key string and return the APIKey if valid.
+
+        DEPRECATED: This method uses weak cryptography for API key hashing.
+        Use validate_by_hash() with proper Argon2 hashing instead.
+
+        Args:
+            key: The raw API key string to validate
+
+        Returns:
+            APIKey instance if valid and active, None otherwise
+        """
+        try:
+            # For security compliance, reject API key validation at repository level
+            # API keys should be hashed at service level with proper password hashing
+            self.logger.warning(
+                "Deprecated API key validation method used - use service layer validation instead", method="validate"
+            )
             return None
 
         except Exception as e:

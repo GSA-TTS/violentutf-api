@@ -217,6 +217,16 @@ def hash_client_secret(client_secret: str) -> str:
     return pwd_context.hash(client_secret)
 
 
+def hash_api_key(api_key: str) -> str:
+    """Hash an API key using secure password hashing.
+
+    Uses Argon2 for secure password-based key derivation.
+    API keys are sensitive authentication credentials and should use
+    computationally expensive hashing algorithms like passwords.
+    """
+    return pwd_context.hash(api_key)
+
+
 def verify_client_secret(client_secret: str, hashed_secret: str) -> bool:
     """Verify an OAuth client secret against its hash.
 
@@ -226,6 +236,20 @@ def verify_client_secret(client_secret: str, hashed_secret: str) -> bool:
     try:
         # Only use Argon2 verification - no fallback to weak hashing
         return pwd_context.verify(client_secret, hashed_secret)
+    except Exception:
+        # Return False for any verification failure - no weak hash fallback
+        return False
+
+
+def verify_api_key(api_key: str, hashed_key: str) -> bool:
+    """Verify an API key against its hash.
+
+    Uses secure password verification with Argon2 only.
+    Legacy API keys must be re-hashed using proper password hashing.
+    """
+    try:
+        # Only use Argon2 verification - no fallback to weak hashing
+        return pwd_context.verify(api_key, hashed_key)
     except Exception:
         # Return False for any verification failure - no weak hash fallback
         return False
