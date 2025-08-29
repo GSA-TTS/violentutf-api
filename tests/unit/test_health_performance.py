@@ -54,7 +54,8 @@ class TestHealthEndpointPerformance:
         """Test that readiness check completes within 200ms."""
         # Mock the dependency checks to ensure consistent timing
         with (
-            patch("app.api.endpoints.health.check_dependency_health") as mock_dep_health,
+            patch("app.services.health_service.HealthService.check_repository_health") as mock_repo_health,
+            patch("app.services.health_service.HealthService.check_dependency_health") as mock_dep_health,
             patch("app.api.endpoints.health.check_disk_space") as mock_disk,
             patch("app.api.endpoints.health.check_memory") as mock_memory,
         ):
@@ -63,6 +64,11 @@ class TestHealthEndpointPerformance:
                 "checks": {"database": True, "cache": True},
                 "metrics": {},
                 "check_duration_seconds": 0.05,
+            }
+            mock_repo_health.return_value = {
+                "overall_status": "healthy",
+                "healthy_count": 5,
+                "total_count": 5,
             }
             mock_disk.return_value = True
             mock_memory.return_value = True
@@ -101,11 +107,17 @@ class TestHealthEndpointPerformance:
             },
         )
 
-        # Mock disk and memory checks to be fast
+        # Mock disk, memory, and repository checks to be fast
         with (
+            patch("app.services.health_service.HealthService.check_repository_health") as mock_repo_health,
             patch("app.api.endpoints.health.check_disk_space") as mock_disk,
             patch("app.api.endpoints.health.check_memory") as mock_memory,
         ):
+            mock_repo_health.return_value = {
+                "overall_status": "healthy",
+                "healthy_count": 5,
+                "total_count": 5,
+            }
             mock_disk.return_value = True
             mock_memory.return_value = True
 
@@ -165,11 +177,17 @@ class TestHealthEndpointPerformance:
             return True
 
         with (
+            patch("app.services.health_service.HealthService.check_repository_health") as mock_repo_health,
             patch("app.db.session.check_database_health", side_effect=slow_db_check),
             patch("app.utils.cache.check_cache_health", side_effect=slow_cache_check),
             patch("app.api.endpoints.health.check_disk_space") as mock_disk,
             patch("app.api.endpoints.health.check_memory") as mock_memory,
         ):
+            mock_repo_health.return_value = {
+                "overall_status": "healthy",
+                "healthy_count": 5,
+                "total_count": 5,
+            }
             mock_disk.return_value = True
             mock_memory.return_value = True
 

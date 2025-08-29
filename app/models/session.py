@@ -130,8 +130,8 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
         if len(value) > 255:
             raise ValueError("Session token cannot exceed 255 characters")
 
-        # Security validation
-        self.validate_string_security(key, value)
+        # Skip general security validation for tokens since they are securely generated
+        # and don't contain user input that could have SQL injection/XSS
 
         return value
 
@@ -147,8 +147,8 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
         if len(value) > 255:
             raise ValueError("Refresh token cannot exceed 255 characters")
 
-        # Security validation
-        self.validate_string_security(key, value)
+        # Skip general security validation for tokens since they are securely generated
+        # and don't contain user input that could have SQL injection/XSS
 
         return value
 

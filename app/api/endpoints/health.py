@@ -6,14 +6,14 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 import psutil
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from structlog.stdlib import get_logger
 
 from ...core.config import settings
 from ...core.rate_limiting import rate_limit
-from ...db.session import check_database_health
-from ...utils.cache import check_cache_health
-from ...utils.monitoring import check_dependency_health, track_health_check
+from ...services.health_service import HealthService
+from ...utils.monitoring import track_health_check
+from ..deps import get_health_service
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -21,26 +21,35 @@ router = APIRouter()
 
 @router.get("/health", status_code=status.HTTP_200_OK)
 @track_health_check
-async def health_check() -> Dict[str, Any]:
+async def health_check(health_service: HealthService = Depends(get_health_service)) -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
+    # Get repository health for UAT compliance using health service
+    db_health = await health_service.check_database_health()
+
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
+        "database": db_health,
     }
 
 
 @router.get("/ready")
 @track_health_check
-async def readiness_check(response: Response) -> Dict[str, Any]:
+async def readiness_check(
+    response: Response, health_service: HealthService = Depends(get_health_service)
+) -> Dict[str, Any]:
     """Return comprehensive readiness check - verifies all dependencies.
 
     Returns 503 if any critical dependency is down.
     """
     # Use enhanced dependency health check with caching (10 second TTL)
-    health_result = await check_dependency_health(cache_ttl=10)
+    health_result = await health_service.check_dependency_health()
+
+    # Check repository health
+    repository_health = await health_service.check_repository_health()
 
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
@@ -59,6 +68,7 @@ async def readiness_check(response: Response) -> Dict[str, Any]:
     all_checks = {
         "database": health_result["checks"]["database"],
         "cache": health_result["checks"]["cache"],
+        "repositories": repository_health["overall_status"] == "healthy",
         "disk_space": disk_healthy,
         "memory": memory_healthy,
     }
@@ -77,6 +87,7 @@ async def readiness_check(response: Response) -> Dict[str, Any]:
             "failed_checks": [k for k, v in all_checks.items() if not v],
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
+            "repositories": repository_health,
             "metrics": health_result.get("metrics", {}),
             "check_duration": health_result.get("check_duration_seconds", 0),
         },
@@ -144,3 +155,47 @@ async def check_memory(threshold: float = 0.9) -> bool:
     except Exception as e:
         logger.error("memory_check_failed", error=str(e))
         return False
+
+
+async def check_repository_health() -> Dict[str, Any]:
+    """Check health of all registered repositories with caching and timeout protection."""
+    try:
+        from ...core.container import get_repository_health_with_timeout
+
+        # Get comprehensive health status with caching and timeout protection
+        repository_status = await get_repository_health_with_timeout(timeout_seconds=30, use_cache=True)
+
+        logger.debug(
+            "repository_health_check_complete",
+            overall_status=repository_status["overall_status"],
+            healthy_count=repository_status["healthy_count"],
+            total_count=repository_status["total_count"],
+            total_check_time_ms=repository_status["total_check_time_ms"],
+            health_percentage=repository_status["summary"]["health_percentage"],
+            cache_hit=repository_status.get("cache_hit", False),
+            timeout_occurred=repository_status.get("timeout_occurred", False),
+        )
+
+        return repository_status
+
+    except Exception as e:
+        logger.error("repository_health_check_failed", error=str(e))
+        return {
+            "overall_status": "error",
+            "healthy_count": 0,
+            "degraded_count": 0,
+            "unhealthy_count": 8,
+            "total_count": 8,
+            "total_check_time_ms": 0,
+            "repositories": {},
+            "cache_hit": False,
+            "cache_age_seconds": 0,
+            "timeout_occurred": False,
+            "timeout_seconds": 30,
+            "summary": {
+                "health_percentage": 0,
+                "average_response_time_ms": 0,
+                "unhealthy_repositories": ["health_endpoint_error"],
+            },
+            "error": f"Repository health check failed: {str(e)[:100]}",
+        }

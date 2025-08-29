@@ -89,7 +89,7 @@ class TestSecurityHeadersMiddleware:
         response = client.get("/test")
 
         assert "X-Frame-Options" in response.headers
-        assert response.headers["X-Frame-Options"] == "deny"
+        assert response.headers["X-Frame-Options"] == "DENY"
 
     def test_referrer_policy(self, client: TestClient) -> None:
         """Test Referrer-Policy header."""

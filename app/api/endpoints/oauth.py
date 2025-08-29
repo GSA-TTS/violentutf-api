@@ -10,10 +10,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.api.deps import get_oauth_service
+from app.api.deps import get_db, get_oauth_service
 from app.core.auth import get_current_user
 from app.core.errors import AuthenticationError, ForbiddenError, ValidationError
-from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import BaseResponse
 from app.schemas.oauth import (

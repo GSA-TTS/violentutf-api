@@ -144,7 +144,24 @@ class FileSecretsManager(SecretsManagerProvider):
         try:
             secret_path = self._get_secret_path(secret_name)
             if os.path.exists(secret_path):
-                os.remove(secret_path)
+                # Windows-compatible file removal with retries
+                import platform
+                import time
+
+                if platform.system() == "Windows":
+                    # Retry logic for Windows file locking issues
+                    for attempt in range(3):
+                        try:
+                            os.remove(secret_path)
+                            break
+                        except PermissionError:
+                            if attempt < 2:
+                                time.sleep(0.1 * (2**attempt))
+                                continue
+                            else:
+                                raise
+                else:
+                    os.remove(secret_path)
                 logger.info("Secret deleted from file", secret_name=secret_name)
             return True
 

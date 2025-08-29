@@ -23,14 +23,16 @@ logger = get_logger(__name__)
 class UserServiceImpl(IUserService):
     """User service implementation using repository pattern."""
 
-    def __init__(self, session: AsyncSession):
-        """Initialize with database session.
+    def __init__(self, repository_or_session: Union[UserRepository, AsyncSession]):
+        """Initialize with user repository or database session.
 
         Args:
-            session: Database session for operations
+            repository_or_session: User repository or AsyncSession
         """
-        self.session = session
-        self.user_repo = UserRepository(session)
+        if isinstance(repository_or_session, AsyncSession):
+            self.user_repo = UserRepository(repository_or_session)
+        else:
+            self.user_repo = repository_or_session
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserData]:
         """Get user by ID.
@@ -134,9 +136,6 @@ class UserServiceImpl(IUserService):
                 created_by=created_by,
             )
 
-            # Commit transaction
-            await self.session.commit()
-
             logger.info(
                 "user_created",
                 user_id=str(user.id),
@@ -148,10 +147,8 @@ class UserServiceImpl(IUserService):
             return user
 
         except (ConflictError, ValidationError):
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_creation_error",
                 error=str(e),
@@ -188,11 +185,11 @@ class UserServiceImpl(IUserService):
                 if existing_user and str(existing_user.id) != user_id:
                     raise ConflictError(f"Email '{user_data.email}' already exists")
 
-            # Update user
-            updated_user = await self.user_repo.update_profile(user_id, user_data, updated_by)
-
-            # Commit transaction
-            await self.session.commit()
+            # Update user using base update method
+            update_data = user_data.model_dump(exclude_unset=True)
+            if updated_by:
+                update_data["updated_by"] = updated_by
+            updated_user = await self.user_repo.update(user_id, **update_data)
 
             logger.info(
                 "user_profile_updated",
@@ -203,10 +200,8 @@ class UserServiceImpl(IUserService):
             return updated_user
 
         except (NotFoundError, ConflictError):
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_profile_update_error",
                 user_id=user_id,
@@ -241,9 +236,6 @@ class UserServiceImpl(IUserService):
             # Change password using repository method
             updated_user = await self.user_repo.change_password(user_id, password_data, updated_by)
 
-            # Commit transaction
-            await self.session.commit()
-
             logger.info(
                 "user_password_changed",
                 user_id=user_id,
@@ -253,10 +245,8 @@ class UserServiceImpl(IUserService):
             return updated_user
 
         except (NotFoundError, ValidationError):
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_password_change_error",
                 user_id=user_id,
@@ -286,9 +276,6 @@ class UserServiceImpl(IUserService):
             # Verify email using repository method
             updated_user = await self.user_repo.verify_email(user_id, updated_by)
 
-            # Commit transaction
-            await self.session.commit()
-
             logger.info(
                 "user_email_verified",
                 user_id=user_id,
@@ -298,10 +285,8 @@ class UserServiceImpl(IUserService):
             return updated_user
 
         except NotFoundError:
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_email_verification_error",
                 user_id=user_id,
@@ -329,10 +314,12 @@ class UserServiceImpl(IUserService):
                 raise NotFoundError(f"User with ID {user_id} not found")
 
             # Activate user using repository method
-            updated_user = await self.user_repo.activate(user_id, updated_by)
+            success = await self.user_repo.activate_user(user_id, updated_by or "system")
+            if not success:
+                raise ValidationError(f"Failed to activate user {user_id}")
 
-            # Commit transaction
-            await self.session.commit()
+            # Get updated user
+            updated_user = await self.user_repo.get(user_id)
 
             logger.info(
                 "user_activated",
@@ -343,10 +330,8 @@ class UserServiceImpl(IUserService):
             return updated_user
 
         except NotFoundError:
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_activation_error",
                 user_id=user_id,
@@ -374,10 +359,12 @@ class UserServiceImpl(IUserService):
                 raise NotFoundError(f"User with ID {user_id} not found")
 
             # Deactivate user using repository method
-            updated_user = await self.user_repo.deactivate(user_id, updated_by)
+            success = await self.user_repo.deactivate_user(user_id, updated_by or "system")
+            if not success:
+                raise ValidationError(f"Failed to deactivate user {user_id}")
 
-            # Commit transaction
-            await self.session.commit()
+            # Get updated user
+            updated_user = await self.user_repo.get(user_id)
 
             logger.info(
                 "user_deactivated",
@@ -388,10 +375,8 @@ class UserServiceImpl(IUserService):
             return updated_user
 
         except NotFoundError:
-            await self.session.rollback()
             raise
         except Exception as e:
-            await self.session.rollback()
             logger.error(
                 "user_deactivation_error",
                 user_id=user_id,

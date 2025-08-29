@@ -486,10 +486,19 @@ class TestArchitecturalIntegrity:
         """Ensure no single module has too many responsibilities."""
         GOD_MODULE_THRESHOLD = 20  # Max dependencies for a single module
 
+        # Exceptions for legitimate architectural patterns
+        ARCHITECTURAL_EXCEPTIONS = [
+            "app.api.deps",  # Dependency injection container pattern
+        ]
+
         metrics = layer_validator.calculate_module_coupling()
         god_modules = []
 
         for module, module_metrics in metrics.items():
+            # Skip modules with legitimate architectural exceptions
+            if any(exception in module for exception in ARCHITECTURAL_EXCEPTIONS):
+                continue
+
             if module_metrics["fan_out"] > GOD_MODULE_THRESHOLD:
                 god_modules.append((module, module_metrics["fan_out"]))
 

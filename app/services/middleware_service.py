@@ -180,7 +180,7 @@ class MiddlewareService:
             api_key_model: API key model
         """
         api_key_model.record_usage()
-        await self.session.commit()
+        # Note: Transaction management handled by the calling layer
 
     def _get_oauth_service(self) -> OAuth2Service:
         """Get OAuth2 service instance (lazy initialization).

@@ -61,10 +61,35 @@ async def _initialize_database() -> None:
         session_maker = get_session_maker()
         if session_maker:
             logger.info("database_initialized")
+
+            # Register repositories after successful database initialization
+            await _initialize_repositories()
         else:
             logger.info("database_not_configured")
     except Exception as e:
         logger.error("database_initialization_failed", error=str(e))
+
+
+async def _initialize_repositories() -> None:
+    """Initialize repository registrations in dependency container."""
+    try:
+        from .core.container import register_repositories
+        from .db.session import get_session_maker
+
+        # Create session factory for repositories using the session maker
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await register_repositories(session_factory)
+            logger.info("repositories_initialized")
+        else:
+            logger.warning("repositories_not_initialized_no_session_maker")
+    except Exception as e:
+        logger.error("repository_initialization_failed", error=str(e))
+        # Don't raise here to allow graceful degradation
 
 
 async def _initialize_cache() -> None:
@@ -81,9 +106,23 @@ async def _initialize_cache() -> None:
         logger.error("cache_initialization_failed", error=str(e))
 
 
+async def _shutdown_repositories() -> None:
+    """Clean up repository registrations."""
+    try:
+        from .core.container import clear_repository_registrations
+
+        clear_repository_registrations()
+        logger.info("repository_registrations_cleared")
+    except Exception as e:
+        logger.error("repository_shutdown_error", error=str(e))
+
+
 async def _shutdown_database() -> None:
     """Close database connections."""
     try:
+        # Clean up repositories before closing database connections
+        await _shutdown_repositories()
+
         from .db.session import close_database_connections
 
         await close_database_connections()

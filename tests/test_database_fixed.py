@@ -18,7 +18,15 @@ class DatabaseTestManager:
 
     def __init__(self, database_url: str | None = None):
         """Initialize test database manager."""
-        self.database_url = database_url or "sqlite+aiosqlite:///./test_violentutf.db"
+        if database_url:
+            self.database_url = database_url
+        else:
+            try:
+                from tests.helpers.windows_compat import get_test_db_path
+
+                self.database_url = get_test_db_path()
+            except ImportError:
+                self.database_url = "sqlite+aiosqlite:///./test_violentutf.db"
         self.engine: AsyncEngine | None = None
         self.session_maker: async_sessionmaker[AsyncSession] | None = None
 

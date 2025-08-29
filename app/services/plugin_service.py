@@ -1,6 +1,6 @@
 """Plugin management service for handling plugin lifecycle and operations."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,14 +16,18 @@ logger = get_logger(__name__)
 class PluginService:
     """Service for managing plugins with transaction management."""
 
-    def __init__(self, session: AsyncSession):
-        """Initialize plugin service with database session.
+    def __init__(self, repository_or_session: Union[BaseRepository, AsyncSession]):
+        """Initialize plugin service with repository or database session.
 
         Args:
-            session: Database session for operations
+            repository_or_session: Plugin repository or AsyncSession
         """
-        self.session = session
-        self.repository: BaseRepository = BaseRepository(Plugin, session)
+        if isinstance(repository_or_session, AsyncSession):
+            from app.repositories.plugin import PluginRepository
+
+            self.repository = PluginRepository(repository_or_session)
+        else:
+            self.repository = repository_or_session
 
     async def create_plugin(self, plugin_data: Dict[str, Any], user_id: str) -> Plugin:
         """Create a new plugin.
@@ -49,13 +53,10 @@ class PluginService:
             )
 
             plugin = await self.repository.create(plugin_data)
-            await self.session.commit()
-
             logger.info("plugin_created", plugin_id=plugin.id, name=plugin_data.get("name"))
             return plugin
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_create_plugin", error=str(e))
             raise ValidationError(f"Failed to create plugin: {str(e)}")
 
@@ -113,13 +114,10 @@ class PluginService:
             update_data["updated_by"] = user_id
 
             updated_plugin = await self.repository.update(plugin_id, update_data)
-            await self.session.commit()
-
             logger.info("plugin_updated", plugin_id=plugin_id, user_id=user_id)
             return updated_plugin
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_update_plugin", plugin_id=plugin_id, error=str(e))
             raise ValidationError(f"Failed to update plugin: {str(e)}")
 
@@ -142,15 +140,10 @@ class PluginService:
 
             success = await self.repository.delete(plugin_id)
             if success:
-                await self.session.commit()
                 logger.info("plugin_deleted", plugin_id=plugin_id, user_id=user_id)
-            else:
-                await self.session.rollback()
-
             return success
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("failed_to_delete_plugin", plugin_id=plugin_id, error=str(e))
             raise
 

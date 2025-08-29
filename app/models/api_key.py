@@ -164,9 +164,9 @@ class APIKey(Base, BaseModelMixin):
         if len(value) > 10:
             raise ValueError("Key prefix cannot exceed 10 characters")
 
-        # Should only contain alphanumeric characters and underscores
-        if not all(c.isalnum() or c == "_" for c in value):
-            raise ValueError("Key prefix must contain only alphanumeric characters and underscores")
+        # Should only contain URL-safe base64 characters (alphanumeric, underscores, hyphens)
+        if not all(c.isalnum() or c in "_-" for c in value):
+            raise ValueError("Key prefix must contain only alphanumeric characters, underscores, and hyphens")
 
         return value
 
@@ -239,7 +239,8 @@ class APIKey(Base, BaseModelMixin):
         """Check if the API key is active and valid."""
         # Handle case where is_deleted might be None before database save
         is_not_deleted = self.is_deleted is False or self.is_deleted is None
-        return is_not_deleted and not self.is_expired()
+        is_not_revoked = self.revoked_at is None
+        return is_not_deleted and is_not_revoked and not self.is_expired()
 
     @property
     def is_valid(self: "APIKey") -> bool:

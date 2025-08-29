@@ -258,9 +258,13 @@ class TestDatabaseHealthCheck:
     """Test database health check functionality."""
 
     @pytest.mark.asyncio
+    @patch("app.db.session.settings")
     @patch("app.db.session.get_db")
-    async def test_check_database_health_success(self, mock_get_db):
+    async def test_check_database_health_success(self, mock_get_db, mock_settings):
         """Test successful health check."""
+        # Configure mock settings
+        mock_settings.DATABASE_URL = "sqlite+aiosqlite:///test.db"
+
         # Mock healthy database
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
@@ -277,9 +281,13 @@ class TestDatabaseHealthCheck:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
+    @patch("app.db.session.settings")
     @patch("app.db.session.get_db")
-    async def test_check_database_health_failure(self, mock_get_db):
+    async def test_check_database_health_failure(self, mock_get_db, mock_settings):
         """Test health check with database error."""
+        # Configure mock settings
+        mock_settings.DATABASE_URL = "sqlite+aiosqlite:///test.db"
+
         # Mock unhealthy database - use a non-SQLAlchemy error that won't be retried
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.execute.side_effect = Exception("Connection lost")
@@ -293,10 +301,14 @@ class TestDatabaseHealthCheck:
         assert result is False
 
     @pytest.mark.asyncio
+    @patch("app.db.session.settings")
     @patch("app.db.session.logger")
     @patch("app.db.session.get_db")
-    async def test_check_database_health_timeout(self, mock_get_db, mock_logger):
+    async def test_check_database_health_timeout(self, mock_get_db, mock_logger, mock_settings):
         """Test health check with timeout."""
+        # Configure mock settings
+        mock_settings.DATABASE_URL = "sqlite+aiosqlite:///test.db"
+
         # Mock database that raises asyncio.TimeoutError
         mock_get_db.side_effect = asyncio.TimeoutError()
 
@@ -307,9 +319,13 @@ class TestDatabaseHealthCheck:
         mock_logger.error.assert_called_with("Database health check timed out", timeout=0.1)
 
     @pytest.mark.asyncio
+    @patch("app.db.session.settings")
     @patch("app.db.session.get_db")
-    async def test_check_database_health_circuit_breaker_open(self, mock_get_db):
+    async def test_check_database_health_circuit_breaker_open(self, mock_get_db, mock_settings):
         """Test health check when circuit breaker is open."""
+        # Configure mock settings
+        mock_settings.DATABASE_URL = "sqlite+aiosqlite:///test.db"
+
         from app.utils.circuit_breaker import CircuitBreakerException
 
         # Mock circuit breaker open

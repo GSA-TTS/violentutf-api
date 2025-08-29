@@ -9,11 +9,12 @@ from structlog.stdlib import get_logger
 
 from ..models.api_key import APIKey
 from .base import BaseRepository
+from .interfaces.api_key import IApiKeyRepository
 
 logger = get_logger(__name__)
 
 
-class APIKeyRepository(BaseRepository[APIKey]):
+class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
     """
     API Key repository with authentication and permission management.
 
@@ -25,18 +26,26 @@ class APIKeyRepository(BaseRepository[APIKey]):
         """Initialize API key repository."""
         super().__init__(session, APIKey)
 
-    async def get_by_hash(self, key_hash: str, organization_id: Optional[str] = None) -> Optional[APIKey]:
+    async def get_by_key_hash(self, key_hash: str) -> Optional[APIKey]:
+        """Get API key by key hash (interface method)."""
+        return await self.get_by_hash(key_hash)
+
+    async def get_by_hash(self, key_hash: Optional[str], organization_id: Optional[str] = None) -> Optional[APIKey]:
         """
         Get API key by hash with optional organization filtering.
 
         Args:
-            key_hash: SHA256 hash of the API key
+            key_hash: SHA256 hash of the API key (can be None for validation testing)
             organization_id: Optional organization ID for multi-tenant filtering
 
         Returns:
             APIKey if found and valid, None otherwise
         """
         try:
+            # Check for null input
+            if key_hash is None:
+                return None
+
             # Build filters for key hash and soft delete
             filters = [self.model.key_hash == key_hash, self.model.is_deleted == False]  # noqa: E712
 
@@ -62,7 +71,8 @@ class APIKeyRepository(BaseRepository[APIKey]):
             return api_key
 
         except Exception as e:
-            self.logger.error("Failed to get API key by hash", key_hash=key_hash[:8] + "...", error=str(e))
+            key_hash_safe = key_hash[:8] + "..." if key_hash else "None"
+            self.logger.error("Failed to get API key by hash", key_hash=key_hash_safe, error=str(e))
             raise
 
     async def get_by_prefix(self, key_prefix: str, organization_id: Optional[str] = None) -> List[APIKey]:
@@ -98,7 +108,7 @@ class APIKeyRepository(BaseRepository[APIKey]):
             self.logger.error("Failed to get API keys by prefix", key_prefix=key_prefix, error=str(e))
             raise
 
-    async def get_by_user_id(self, user_id: str, include_expired: bool = False) -> List[APIKey]:
+    async def get_by_user_id(self, user_id: Optional[str], include_expired: bool = False) -> List[APIKey]:
         """
         Get all API keys for a user.
 
@@ -110,6 +120,10 @@ class APIKeyRepository(BaseRepository[APIKey]):
             List of user's API keys
         """
         try:
+            # Check for null input
+            if user_id is None:
+                return []
+
             query = (
                 select(self.model)
                 .where(and_(self.model.user_id == user_id, self.model.is_deleted == False))  # noqa: E712
@@ -242,7 +256,7 @@ class APIKeyRepository(BaseRepository[APIKey]):
 
     async def record_usage(
         self,
-        api_key_id: str,
+        api_key_id: Optional[str],
         ip_address: Optional[str] = None,
         usage_metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
@@ -258,6 +272,10 @@ class APIKeyRepository(BaseRepository[APIKey]):
             True if usage was recorded, False if key not found
         """
         try:
+            # Check for null input
+            if api_key_id is None:
+                return False
+
             # Update usage statistics
             update_data = {
                 "usage_count": self.model.usage_count + 1,
@@ -271,7 +289,7 @@ class APIKeyRepository(BaseRepository[APIKey]):
             # Increment version for optimistic locking
             current_key = await self.get_by_id(api_key_id)
             if current_key:
-                update_data["version"] = current_key.version + 1
+                update_data["version"] = (current_key.version or 0) + 1
 
                 updated_key = await self.update(api_key_id, **update_data)
                 success = updated_key is not None
@@ -490,22 +508,31 @@ class APIKeyRepository(BaseRepository[APIKey]):
             self.logger.error("Failed to validate API key", error=str(e))
             raise
 
-    async def revoke(self, key_id: str) -> bool:
+    async def revoke(self, key_id: Optional[str]) -> bool:
         """
         Revoke an API key by setting its revoked_at timestamp.
 
         Args:
-            key_id: The ID of the API key to revoke
+            key_id: The ID of the API key to revoke (can be None for validation testing)
 
         Returns:
             True if successfully revoked, False if not found
         """
         try:
+            # Check for null input
+            if key_id is None:
+                return False
+
             # Find the API key
             api_key = await self.get_by_id(key_id)
 
             if not api_key:
                 self.logger.warning("API key not found for revocation", key_id=key_id)
+                return False
+
+            # Check if already revoked
+            if api_key.revoked_at is not None:
+                self.logger.info("API key is already revoked", key_id=key_id)
                 return False
 
             # Set revoked timestamp
@@ -622,3 +649,129 @@ class APIKeyRepository(BaseRepository[APIKey]):
         except Exception as e:
             self.logger.error("Failed to get API key statistics", error=str(e))
             raise
+
+    # Interface methods implementation
+    async def get_user_api_keys(self, user_id: str, include_inactive: bool = False) -> List[APIKey]:
+        """Get all API keys for a user (interface method)."""
+        return await self.get_by_user_id(user_id, include_expired=include_inactive)
+
+    async def create_api_key_interface(
+        self,
+        user_id: str,
+        name: str,
+        key_hash: str,
+        expires_at: Optional[datetime] = None,
+        scopes: Optional[List[str]] = None,
+        created_by: str = "system",
+    ) -> APIKey:
+        """Create a new API key (interface method)."""
+        # Convert scopes to permissions dict if provided
+        permissions = {"scopes": scopes} if scopes else None
+
+        # Extract key prefix from hash (first 8 characters for display)
+        key_prefix = key_hash[:8] if key_hash else "unknown"
+
+        return await self.create_api_key(
+            user_id=user_id,
+            name=name,
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            permissions=permissions,
+            expires_at=expires_at,
+            created_by=created_by,
+        )
+
+    async def revoke_api_key(self, key_id: Optional[str], revoked_by: str = "system") -> bool:
+        """Revoke an API key (interface method)."""
+        return await self.revoke(key_id)
+
+    async def revoke_user_api_keys(self, user_id: str, revoked_by: str = "system") -> int:
+        """Revoke all API keys for a user (interface method)."""
+        try:
+            user_keys = await self.get_user_api_keys(user_id)
+            revoked_count = 0
+
+            for key in user_keys:
+                if await self.revoke_api_key(key.id, revoked_by):
+                    revoked_count += 1
+
+            return revoked_count
+        except Exception as e:
+            self.logger.error("Failed to revoke user API keys", user_id=user_id, error=str(e))
+            raise
+
+    async def update_last_used(self, key_id: Optional[str], ip_address: Optional[str] = None) -> bool:
+        """Update the last used timestamp for an API key (interface method)."""
+        return await self.record_usage(key_id, ip_address)
+
+    async def get_expired_api_keys(self) -> List[APIKey]:
+        """Get all expired API keys (interface method)."""
+        return await self.get_expired_keys()
+
+    async def cleanup_expired_api_keys(self) -> int:
+        """Clean up expired API keys (interface method)."""
+        try:
+            expired_keys = await self.get_expired_api_keys()
+            cleanup_count = 0
+
+            for key in expired_keys:
+                if await self.delete(key.id, hard_delete=True):
+                    cleanup_count += 1
+
+            return cleanup_count
+        except Exception as e:
+            self.logger.error("Failed to cleanup expired API keys", error=str(e))
+            raise
+
+    async def rotate_api_key(
+        self,
+        key_id: str,
+        new_key_hash: str,
+        rotated_by: str = "system",
+    ) -> Optional[APIKey]:
+        """Rotate an API key with a new hash (interface method)."""
+        try:
+            # Get current key
+            current_key = await self.get_by_id(key_id)
+            if not current_key:
+                return None
+
+            # Update with new hash and prefix
+            new_prefix = new_key_hash[:8] if new_key_hash else "unknown"
+
+            updated_key = await self.update(
+                key_id,
+                key_hash=new_key_hash,
+                key_prefix=new_prefix,
+                updated_by=rotated_by,
+                version=(current_key.version or 0) + 1,
+            )
+
+            if updated_key:
+                self.logger.info("API key rotated", key_id=key_id, rotated_by=rotated_by)
+
+            return updated_key
+        except Exception as e:
+            self.logger.error("Failed to rotate API key", key_id=key_id, error=str(e))
+            raise
+
+    async def get_api_key_usage_stats(self, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get API key usage statistics (interface method)."""
+        if user_id:
+            # Get stats for specific user
+            try:
+                user_keys = await self.get_user_api_keys(user_id, include_inactive=True)
+                total_usage = sum(key.usage_count or 0 for key in user_keys)
+
+                return {
+                    "user_id": user_id,
+                    "total_keys": len(user_keys),
+                    "active_keys": len([k for k in user_keys if k.is_active()]),
+                    "total_usage": total_usage,
+                }
+            except Exception as e:
+                self.logger.error("Failed to get user API key stats", user_id=user_id, error=str(e))
+                raise
+        else:
+            # Get global stats
+            return await self.get_statistics()

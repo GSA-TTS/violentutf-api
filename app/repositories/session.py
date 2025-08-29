@@ -10,11 +10,12 @@ from structlog.stdlib import get_logger
 
 from ..models.session import Session
 from .base import BaseRepository
+from .interfaces.session import ISessionRepository
 
 logger = get_logger(__name__)
 
 
-class SessionRepository(BaseRepository[Session]):
+class SessionRepository(BaseRepository[Session], ISessionRepository):
     """
     Session repository with authentication and session management.
 
@@ -26,7 +27,7 @@ class SessionRepository(BaseRepository[Session]):
         """Initialize session repository."""
         super().__init__(session, Session)
 
-    async def get_by_token(self, session_token: str) -> Optional[Session]:
+    async def get_by_session_token(self, session_token: str) -> Optional[Session]:
         """
         Get session by token hash.
 
@@ -107,7 +108,7 @@ class SessionRepository(BaseRepository[Session]):
             self.logger.error("Failed to get user sessions", user_id=str(user_id), error=str(e))
             raise
 
-    async def get_active_sessions(self, limit: int = 100) -> List[Session]:
+    async def get_all_active_sessions(self, limit: int = 100) -> List[Session]:
         """
         Get all currently active sessions.
 
@@ -320,7 +321,7 @@ class SessionRepository(BaseRepository[Session]):
             await self.session.rollback()
             raise
 
-    async def extend_session(self, session_token: str, extension_minutes: int = 60) -> bool:
+    async def extend_session_by_token(self, session_token: str, extension_minutes: int = 60) -> bool:
         """
         Extend session expiration time.
 
@@ -446,3 +447,123 @@ class SessionRepository(BaseRepository[Session]):
         except Exception as e:
             self.logger.error("Failed to get session statistics", error=str(e))
             raise
+
+    # Interface methods implementation
+    async def get_active_sessions(self, user_id: str = None, limit: int = 10) -> List[Session]:
+        """Get all active sessions or active sessions for a specific user (interface method)."""
+        if user_id:
+            user_uuid = uuid.UUID(user_id)
+            sessions = await self.get_user_sessions(user_uuid, include_inactive=False)
+        else:
+            # Get all active sessions across all users
+            query = (
+                select(self.model)
+                .where(
+                    and_(self.model.is_active == True, self.model.expires_at > datetime.now(timezone.utc))  # noqa: E712
+                )
+                .order_by(self.model.last_activity_at.desc())
+            )
+
+            if limit and limit > 0:
+                query = query.limit(limit)
+
+            result = await self.session.execute(query)
+            sessions = list(result.scalars().all())
+
+        return sessions[:limit] if limit and limit > 0 and user_id else sessions
+
+    async def get_user_sessions_interface(self, user_id: str, limit: int = 10) -> List[Session]:
+        """Get user sessions with optional limit (interface method)."""
+        user_uuid = uuid.UUID(user_id)
+        sessions = await self.get_user_sessions(user_uuid, include_inactive=True)
+        return sessions[:limit]
+
+    async def create_session(
+        self,
+        user_id: str,
+        token: str,
+        expires_at: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+    ) -> Session:
+        """Create a new session (interface method)."""
+        # Convert expires_at string to datetime if provided
+        expires_datetime = None
+        if expires_at:
+            expires_datetime = datetime.fromisoformat(expires_at)
+
+        # Create session data
+        session_data = {
+            "user_id": uuid.UUID(user_id),
+            "session_token": token,
+            "expires_at": expires_datetime,
+            "ip_address": ip_address,
+            "device_info": user_agent,  # Map user_agent to device_info field
+            "is_active": True,
+        }
+
+        return await self.create(session_data)
+
+    async def get_by_token(self, token: str) -> Optional[Session]:
+        """Get session by token (interface method - delegates to get_by_session_token)."""
+        return await self.get_by_session_token(token)
+
+    async def invalidate_session(self, session_id: str) -> bool:
+        """Invalidate a specific session (interface method)."""
+        session_uuid = uuid.UUID(session_id)
+        return await self.revoke_session(session_uuid, "system", "Session invalidated")
+
+    async def invalidate_user_sessions(self, user_id: str, exclude_session_id: Optional[str] = None) -> int:
+        """Invalidate all sessions for a user, optionally excluding one session (interface method)."""
+        user_uuid = uuid.UUID(user_id)
+
+        if exclude_session_id:
+            # Get all user sessions and revoke individually (excluding one)
+            sessions = await self.get_user_sessions(user_uuid, include_inactive=False)
+            exclude_uuid = uuid.UUID(exclude_session_id)
+            revoked_count = 0
+
+            for session in sessions:
+                if session.id != exclude_uuid:
+                    if await self.revoke_session(session.id, "system", "User session invalidation"):
+                        revoked_count += 1
+
+            return revoked_count
+        else:
+            # Revoke all user sessions
+            return await self.revoke_user_sessions(user_uuid, "system", "All sessions invalidated")
+
+    async def extend_session(
+        self, session_id: str, extension: Optional[timedelta] = None, extension_minutes: Optional[int] = None
+    ) -> Optional[Session]:
+        """Extend session expiration time (interface method)."""
+        try:
+            # Handle both extension patterns
+            if extension_minutes is not None:
+                extension = timedelta(minutes=extension_minutes)
+            elif extension is None:
+                extension = timedelta(minutes=60)  # Default extension
+            # else: extension is already a timedelta, use as-is
+
+            # Try to parse as UUID first, if that fails assume it's a token
+            try:
+                session_uuid = uuid.UUID(session_id)
+                session_obj = await self.get(session_uuid)
+            except ValueError:
+                # Assume it's a token instead of UUID
+                session_obj = await self.get_by_token(session_id)
+
+            if session_obj:
+                new_expires_at = datetime.now(timezone.utc) + extension
+                session_obj.extend_session(new_expires_at)
+                await self.session.commit()
+                return session_obj
+
+            return None
+        except Exception as e:
+            self.logger.error("Failed to extend session", session_id=session_id, error=str(e))
+            raise
+
+    async def get_session_statistics(self) -> Dict[str, Any]:
+        """Get session statistics (interface method - already implemented)."""
+        return await self.get_statistics()

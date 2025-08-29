@@ -541,7 +541,7 @@ class TestSecretsManagerEnhancedAPIMethods:
     async def test_store_api_key_hash_sha256_legacy(self, secrets_manager, mock_provider):
         """Test storing SHA256 API key hash (legacy support)."""
         key_id = "legacy-key-456"
-        key_hash = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"
+        key_hash = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"[:64]
 
         result = await secrets_manager.store_api_key_hash(key_id, key_hash)
 

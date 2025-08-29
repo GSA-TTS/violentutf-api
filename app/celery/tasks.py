@@ -670,12 +670,8 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
         end_date = None
 
         if "start_date" in config:
-            from datetime import datetime, timezone
-
             start_date = datetime.fromisoformat(config["start_date"])
         if "end_date" in config:
-            from datetime import datetime, timezone
-
             end_date = datetime.fromisoformat(config["end_date"])
 
         # Generate the report

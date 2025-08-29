@@ -17,7 +17,9 @@ from app.core.errors import ConflictError, ForbiddenError, NotFoundError, Valida
 from app.db.base_class import Base
 from app.db.session import get_db
 from app.models.mixins import BaseModelMixin
-from app.repositories.base import BaseRepository
+
+# Removed BaseRepository import to comply with Clean Architecture
+# Repository access moved to service layer
 from app.schemas.base import (
     AdvancedFilter,
     BaseFilter,
@@ -53,7 +55,6 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
     def __init__(
         self,
         model: Type[ModelType],
-        repository: Type[BaseRepository[ModelType]],
         create_schema: Type[CreateSchemaType],
         update_schema: Type[UpdateSchemaType],
         response_schema: Type[ResponseSchemaType],
@@ -63,13 +64,14 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
         dependencies: Optional[List[Any]] = None,
         require_auth: bool = True,
         require_admin: bool = False,
+        repository: Optional[Type[Any]] = None,  # DEPRECATED: Use service layer instead
     ):
         """
         Initialize CRUD router.
 
         Args:
             model: SQLAlchemy model class
-            repository: Repository class for database operations
+            repository: DEPRECATED - Repository class for database operations (use service layer)
             create_schema: Pydantic schema for create operations
             update_schema: Pydantic schema for update operations
             response_schema: Pydantic schema for responses
@@ -81,7 +83,7 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             require_admin: Whether admin privileges are required
         """
         self.model = model
-        self.repository = repository
+        self.repository = repository  # DEPRECATED: Child classes should use service layer DI
         self.create_schema = create_schema
         self.update_schema = update_schema
         self.response_schema = response_schema
@@ -218,6 +220,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "read")
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Build filters with organization context for multi-tenant isolation
@@ -292,6 +299,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "read", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation
@@ -340,6 +352,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "create")
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Prepare data for creation
@@ -420,6 +437,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "update", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation
@@ -488,6 +510,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "delete", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation

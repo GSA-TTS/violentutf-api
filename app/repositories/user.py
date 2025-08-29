@@ -10,11 +10,12 @@ from structlog.stdlib import get_logger
 from ..core.security import hash_password, verify_password
 from ..models.user import User
 from .base import BaseRepository, Page
+from .interfaces.user import IUserRepository
 
 logger = get_logger(__name__)
 
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User], IUserRepository):
     """
     User repository with authentication-specific methods.
 
@@ -66,7 +67,7 @@ class UserRepository(BaseRepository[User]):
             self.logger.error("Failed to get user by username", username=username, error=str(e))
             raise
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: Optional[str]) -> Optional[User]:
         """
         Get user by email address.
 
@@ -77,6 +78,10 @@ class UserRepository(BaseRepository[User]):
             User if found, None otherwise
         """
         try:
+            # Validate email input
+            if email is None:
+                return None
+
             # Case-insensitive email lookup
             query = select(self.model).where(
                 and_(self.model.email.ilike(email.lower()), self.model.is_deleted == False)  # noqa: E712

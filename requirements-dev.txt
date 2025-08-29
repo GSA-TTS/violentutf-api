@@ -30,14 +30,14 @@ faker>=37.0.0,<38.0.0
 factory-boy>=3.3.0,<4.0.0
 
 # Code Quality & Linting
-black>=24.0.0,<25.0.0
-isort>=5.13.0,<6.0.0
-flake8>=7.0.0,<8.0.0
+black>=25.1.0,<26.0.0
+isort>=6.0.1,<7.0.0
+flake8>=7.3.0,<8.0.0
 flake8-docstrings>=1.7.0,<2.0.0
 flake8-annotations>=3.0.0,<4.0.0
-mypy>=1.17.0,<2.0.0
+mypy>=1.17.1,<2.0.0
 pylint>=3.0.0,<4.0.0
-bandit[toml]>=1.7.5,<2.0.0
+bandit[toml]>=1.8.6,<2.0.0
 safety>=3.0.0,<4.0.0
 pre-commit>=3.6.0,<4.0.0
 
@@ -55,3 +55,6 @@ sphinx-autodoc-typehints>=2.0.0,<3.0.0
 
 # Performance Testing
 locust>=2.20.0,<3.0.0
+
+# HTTP Client Testing (Optional)
+aiohttp>=3.9.0,<4.0.0

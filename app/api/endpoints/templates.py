@@ -5,12 +5,14 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+# TECHNICAL DEBT: Direct SQLAlchemy usage violates Clean Architecture
+# TODO: Move SQL queries to service layer
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_template_service
+from app.api.deps import get_db, get_template_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
 from app.models.report import ReportTemplate, TemplateType
 from app.models.user import User
 from app.schemas.report import (
@@ -379,8 +381,6 @@ async def preview_template(
             raise HTTPException(status_code=404, detail="Template not found")
 
         # Generate preview using template content
-        from datetime import timezone
-
         preview_data = {
             "template_id": template.id,
             "template_name": template.name,

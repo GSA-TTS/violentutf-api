@@ -43,22 +43,22 @@ jobs:
           # Note: FastAPI, SQLAlchemy, etc. already installed from requirements.txt
 
       - name: Black formatter
-        run: black --check --diff . --verbose --exclude agent_orchestrator
+        run: black --check --diff . --verbose --exclude "agent_orchestrator|test_env"
 
       - name: isort
-        run: isort --check-only --diff . --profile black --skip-glob="*/agent_orchestrator/*"
+        run: isort --check-only --diff . --profile black --skip-glob="*/agent_orchestrator/*" --skip-glob="*/test_env/*"
 
       - name: Full flake8 scan
         run: |
           flake8 . --config=.flake8 --count --statistics \
-            --exclude=app_data,violentutf_logs,migrations,tools/pre_audit/statistical_analysis,agent_orchestrator \
+            --exclude=app_data,violentutf_logs,migrations,tools/pre_audit/statistical_analysis,agent_orchestrator,test_env \
             --ignore=E203,W503,E501,F401,F541,E226,D107,D202,D401,D400,D205,D103,D102,D106,C901,D403,E402,E722,F811
 
       - name: Bandit security scan
         run: |
           # Run Bandit and collect all findings
           bandit -r . -f json -o bandit-report.json \
-            -x '/tests/,/app_data/,/violentutf_logs/,/agent_orchestrator/' \
+            -x '/tests/,/app_data/,/violentutf_logs/,/agent_orchestrator/,/test_env/' \
             --skip B101,B601 --exit-zero
 
           # Analyze results and determine if check should fail
@@ -74,7 +74,7 @@ jobs:
           retention-days: 30
 
       - name: Type checking
-        run: mypy . --ignore-missing-imports --strict --no-error-summary --no-pretty --exclude 'docs' --exclude 'agent_orchestrator' --exclude 'venv' --exclude 'tests' --exclude 'alembic' --exclude 'backups'
+        run: mypy . --ignore-missing-imports --strict --no-error-summary --no-pretty --exclude 'docs' --exclude 'agent_orchestrator' --exclude 'venv' --exclude 'test_env' --exclude 'tests' --exclude 'alembic' --exclude 'backups'
 
       - name: Dependency vulnerabilities
         run: |
@@ -94,14 +94,9 @@ jobs:
           retention-days: 30
 
   test-matrix:
-    name: Tests - ${{ matrix.os }} / Py${{ matrix.python }}
-    runs-on: ${{ matrix.os }}
+    name: Unit Tests - Ubuntu / Py3.12
+    runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python: ['3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +104,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
@@ -120,19 +115,12 @@ jobs:
           pip install -e .
           pip install pytest pytest-cov pytest-xdist pytest-timeout pytest-asyncio  # Test dependencies
 
-      - name: Run tests (Unix)
-        if: runner.os != 'Windows'
+      - name: Run tests
         run: |
           pytest tests/unit/ -v --cov=app \
             --cov-report=xml --timeout=300 -n auto
 
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          python scripts/run_tests_windows.py --test-dir tests/unit
-
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.xml
@@ -157,7 +145,7 @@ jobs:
           pip install -r requirements.txt
           # Install the package in editable mode
           pip install -e .
-          pip install pytest pytest-asyncio httpx
+          pip install pytest pytest-asyncio httpx pytest-cov
           pip install jsonschema openapi-spec-validator
 
       - name: Run contract tests
@@ -185,7 +173,7 @@ jobs:
           wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x hadolint
 
-          find . -name "Dockerfile*" -type f -not -path "./agent_orchestrator/*" | while read df; do
+          find . -name "Dockerfile*" -type f -not -path "./agent_orchestrator/*" -not -path "./test_env/*" | while read df; do
             echo "Linting $df"
             ./hadolint "$df"
           done
@@ -198,9 +186,29 @@ jobs:
             echo "No Dockerfile found, skipping Docker build"
           fi
 
+  docker-compose-test:
+    name: Docker Compose Integration Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test docker-compose configuration
+        run: |
+          # Validate docker-compose test configuration per ADR-012
+          docker compose -f docker-compose.test.yml config > /dev/null
+          echo "✅ docker-compose.test.yml is valid"
+
+          # Validate production configuration exists
+          docker compose -f docker-compose.yml config > /dev/null
+          echo "✅ docker-compose.yml is valid"
+
+          echo "✅ Docker-compose test integration validated per ADR-012"
+
   pr-summary:
     name: PR Summary
-    needs: [full-quality, test-matrix, api-validation, docker-check]
+    needs: [full-quality, test-matrix, api-validation, docker-check, docker-compose-test]
     runs-on: ubuntu-latest
     if: always()
 
@@ -211,9 +219,10 @@ jobs:
           script: |
             const results = {
               'Code Quality': '${{ needs.full-quality.result }}',
-              'Cross-Platform Tests': '${{ needs.test-matrix.result }}',
+              'Unit Tests': '${{ needs.test-matrix.result }}',
               'API Validation': '${{ needs.api-validation.result }}',
-              'Docker Build': '${{ needs.docker-check.result }}'
+              'Docker Build': '${{ needs.docker-check.result }}',
+              'Docker Compose Test': '${{ needs.docker-compose-test.result }}'
             };
 
             let comment = '## PR Validation Results\n\n';

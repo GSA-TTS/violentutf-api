@@ -1,6 +1,6 @@
 """Security headers middleware."""
 
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable, Dict, Union
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -81,11 +81,33 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # Apply secure headers
-        self.secure.set_headers(response)
+        secure_headers_raw: Any = self.secure.headers
+        secure_headers_dict: Dict[str, str] = {}
+
+        # Handle case where headers might be a function instead of dict
+        if callable(secure_headers_raw):
+            try:
+                secure_headers_dict = secure_headers_raw()
+            except Exception:
+                secure_headers_dict = {}
+        elif isinstance(secure_headers_raw, dict):
+            secure_headers_dict = secure_headers_raw
+
+        # Apply headers to response
+        for header_name, header_value in secure_headers_dict.items():
+            response.headers[header_name] = header_value
 
         # Additional security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Ensure X-Frame-Options is uppercase (standard compliance)
+        if "X-Frame-Options" in response.headers:
+            current_value = response.headers["X-Frame-Options"].lower()
+            if current_value == "deny":
+                response.headers["X-Frame-Options"] = "DENY"
+            elif current_value == "sameorigin":
+                response.headers["X-Frame-Options"] = "SAMEORIGIN"
 
         # Remove sensitive headers
         if "Server" in response.headers:

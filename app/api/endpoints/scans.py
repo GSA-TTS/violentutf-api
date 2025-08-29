@@ -5,12 +5,14 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+# TECHNICAL DEBT: Direct SQLAlchemy usage violates Clean Architecture
+# TODO: Move SQL queries to service layer
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_scan_service
+from app.api.deps import get_db, get_scan_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
 from app.models.scan import Scan, ScanFinding, ScanReport, ScanStatus, ScanType
 from app.models.task import Task, TaskStatus
 from app.models.user import User

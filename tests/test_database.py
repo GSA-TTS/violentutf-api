@@ -24,14 +24,16 @@ class DatabaseTestManager:
     async def initialize(self, database_url: str | None = None) -> None:
         """Initialize test database with tables."""
         if database_url is None:
-            database_url = "sqlite+aiosqlite:///./test_violentutf.db"
+            # Use unique database file per process to avoid conflicts
+            from tests.helpers.windows_compat import get_test_db_path
+
+            database_url = get_test_db_path()
 
         # Clean up any existing database file for SQLite
         if "sqlite" in database_url:
-            db_file = "./test_violentutf.db"
-            if os.path.exists(db_file):
-                os.remove(db_file)
-                print(f"Removed existing test database: {db_file}")
+            from tests.helpers.windows_compat import cleanup_test_db_file
+
+            cleanup_test_db_file(database_url)
 
         # Import all models to ensure they're registered with Base
         from app.models import (  # noqa: F401
@@ -86,19 +88,33 @@ class DatabaseTestManager:
     async def cleanup(self) -> None:
         """Clean up test database."""
         if self.engine:
-            # Drop all tables
-            async with self.engine.begin() as connection:
-                await connection.run_sync(Base.metadata.drop_all)
+            try:
+                # Drop all tables
+                async with self.engine.begin() as connection:
+                    await connection.run_sync(Base.metadata.drop_all)
+            except Exception as e:
+                print(f"Warning: Error dropping tables: {e}")
 
-            # Dispose engine
-            await self.engine.dispose()
+            try:
+                # Close all connections
+                await self.engine.dispose()
+            except Exception as e:
+                print(f"Warning: Error disposing engine: {e}")
 
-        # Remove SQLite file if it exists
-        db_file = "./test_violentutf.db"
-        if os.path.exists(db_file):
-            os.remove(db_file)
+        # Windows-compatible file removal
+        from tests.helpers.windows_compat import cleanup_test_db_file, force_close_sqlite_connections, safe_file_remove
 
-        print("Test database cleaned up")
+        force_close_sqlite_connections()
+
+        # Try to get the database URL from engine if available
+        db_url = None
+        if self.engine:
+            db_url = str(self.engine.url)
+
+        if db_url and cleanup_test_db_file(db_url):
+            print("Test database cleaned up")
+        else:
+            print(f"Warning: Could not remove test database file")
 
     async def get_session(self) -> AsyncSession:
         """Get database session for testing."""
@@ -174,9 +190,21 @@ async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[Asy
     try:
         yield session
     finally:
-        # Always rollback the transaction to maintain test isolation
-        await transaction.rollback()
-        await session.close()
+        # Rollback transaction only if it's still active
+        try:
+            if transaction.is_active:
+                await transaction.rollback()
+        except Exception as e:
+            # Transaction might already be closed by service commits
+            print(f"Transaction rollback failed (expected for committed transactions): {e}")
+
+        # Close session safely
+        try:
+            await session.close()
+        except Exception as e:
+            print(f"Session close failed: {e}")
+
+        print("Test database cleaned up")
 
 
 @pytest_asyncio.fixture

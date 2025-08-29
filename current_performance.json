@@ -1,0 +1,84 @@
+{
+  "/api/v1/health": {
+    "avg_time": 0.0031784472637809815,
+    "median_time": 0.0031009170052129775,
+    "min_time": 0.0027383749838918447,
+    "max_time": 0.004029457981232554,
+    "p95_time": 0.004029457981232554,
+    "p99_time": 0.004029457981232554,
+    "std_dev": 0.00041144813083330244,
+    "success_rate": 1.0,
+    "error_rate": 0.0,
+    "total_requests": 15,
+    "error_count": 0,
+    "throughput_rps": 314.6190315614774,
+    "method": "GET",
+    "endpoint": "/api/v1/health",
+    "system_metrics": {
+      "start": {
+        "cpu_percent": 1.8,
+        "memory_rss_mb": 235.71875,
+        "memory_vms_mb": 401883.59375,
+        "memory_percent": 0.1798391342163086,
+        "num_threads": 3,
+        "timestamp": "2025-08-27T14:57:09.657457"
+      },
+      "end": {
+        "cpu_percent": 0.0,
+        "memory_rss_mb": 236.296875,
+        "memory_vms_mb": 401883.59375,
+        "memory_percent": 0.18028020858764648,
+        "num_threads": 3,
+        "timestamp": "2025-08-27T14:57:09.810341"
+      },
+      "cpu_change": -1.8,
+      "memory_change_mb": 0.578125
+    }
+  },
+  "/": {
+    "avg_time": 0.002643472262813399,
+    "median_time": 0.001992000004975125,
+    "min_time": 0.0016699169937055558,
+    "max_time": 0.006117417011409998,
+    "p95_time": 0.006117417011409998,
+    "p99_time": 0.006117417011409998,
+    "std_dev": 0.0013219452509797601,
+    "success_rate": 0.0,
+    "error_rate": 1.0,
+    "total_requests": 15,
+    "error_count": 15,
+    "throughput_rps": 378.2903320255452,
+    "method": "GET",
+    "endpoint": "/",
+    "system_metrics": {
+      "start": {
+        "cpu_percent": 0.0,
+        "memory_rss_mb": 236.359375,
+        "memory_vms_mb": 401883.59375,
+        "memory_percent": 0.1803278923034668,
+        "num_threads": 3,
+        "timestamp": "2025-08-27T14:57:09.922125"
+      },
+      "end": {
+        "cpu_percent": 0.0,
+        "memory_rss_mb": 237.53125,
+        "memory_vms_mb": 402297.609375,
+        "memory_percent": 0.18122196197509766,
+        "num_threads": 3,
+        "timestamp": "2025-08-27T14:57:10.067053"
+      },
+      "cpu_change": 0.0,
+      "memory_change_mb": 1.171875
+    }
+  },
+  "overall": {
+    "avg_response_time": 0.0031784472637809815,
+    "median_response_time": 0.0031784472637809815,
+    "p95_response_time": 0.004029457981232554,
+    "total_endpoints_measured": 2,
+    "successful_endpoints": 1,
+    "overall_success_rate": 1.0,
+    "measurement_timestamp": "2025-08-27T14:57:10.067282",
+    "monitoring_type": "comprehensive_current_performance"
+  }
+}

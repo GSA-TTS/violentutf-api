@@ -15,11 +15,6 @@ from structlog.stdlib import get_logger
 from app.core.errors import AuthenticationError, NotFoundError, ValidationError
 from app.models.mfa import MFABackupCode, MFAChallenge, MFADevice, MFAEvent, MFAMethod
 from app.models.user import User
-from app.repositories.mfa_backup_code import MFABackupCodeRepository
-from app.repositories.mfa_challenge import MFAChallengeRepository
-from app.repositories.mfa_device import MFADeviceRepository
-from app.repositories.mfa_event import MFAEventRepository
-from app.repositories.user import UserRepository
 from app.services.audit_service import AuditService
 
 logger = get_logger(__name__)
@@ -36,22 +31,32 @@ class MFAService:
     CHALLENGE_EXPIRY_MINUTES = 5
     MAX_CHALLENGE_ATTEMPTS = 3
 
-    def __init__(
-        self,
-        mfa_device_repo: MFADeviceRepository,
-        mfa_challenge_repo: MFAChallengeRepository,
-        mfa_backup_code_repo: MFABackupCodeRepository,
-        mfa_event_repo: MFAEventRepository,
-        user_repo: UserRepository,
-        audit_service: AuditService,
-    ) -> None:
-        """Initialize MFA service."""
-        self.mfa_device_repo = mfa_device_repo
-        self.mfa_challenge_repo = mfa_challenge_repo
-        self.mfa_backup_code_repo = mfa_backup_code_repo
-        self.mfa_event_repo = mfa_event_repo
-        self.user_repo = user_repo
-        self.audit_service = audit_service
+    def __init__(self, session, audit_service: Optional[AuditService] = None) -> None:
+        """Initialize MFA service with session-based repository creation.
+
+        Args:
+            session: Database session for repository initialization
+            audit_service: Optional audit service instance
+        """
+        # Store session for test access
+        self.session = session
+
+        # Import repositories locally to avoid API layer violations
+        from app.repositories.mfa_backup_code import MFABackupCodeRepository
+        from app.repositories.mfa_challenge import MFAChallengeRepository
+        from app.repositories.mfa_device import MFADeviceRepository
+        from app.repositories.mfa_event import MFAEventRepository
+        from app.repositories.user import UserRepository
+
+        # Create repository instances
+        self.mfa_device_repo = MFADeviceRepository(session)
+        self.mfa_challenge_repo = MFAChallengeRepository(session)
+        self.mfa_backup_code_repo = MFABackupCodeRepository(session)
+        self.mfa_event_repo = MFAEventRepository(session)
+        self.user_repo = UserRepository(session)
+
+        # Create or use provided audit service
+        self.audit_service = audit_service or AuditService(session)
 
     async def setup_totp(self, user: User, device_name: str) -> Tuple[str, str, str]:
         """

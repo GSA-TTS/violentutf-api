@@ -254,7 +254,7 @@ class TestCheckDatabaseHealth:
             mock_logger.debug.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_success(self, mock_session):
+    async def test_health_check_success(self, mock_session, mock_settings):
         """Test successful health check."""
         # Mock query result
         mock_result = MagicMock()
@@ -271,7 +271,7 @@ class TestCheckDatabaseHealth:
             mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_timeout(self, mock_session):
+    async def test_health_check_timeout(self, mock_session, mock_settings):
         """Test health check timeout."""
 
         async def slow_execute(*args):
@@ -290,7 +290,7 @@ class TestCheckDatabaseHealth:
                 mock_logger.error.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_circuit_breaker_open(self):
+    async def test_health_check_circuit_breaker_open(self, mock_settings):
         """Test health check when circuit breaker is open."""
         from app.utils.circuit_breaker import CircuitBreakerException
 
@@ -302,7 +302,7 @@ class TestCheckDatabaseHealth:
                 mock_logger.warning.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_unexpected_result(self, mock_session):
+    async def test_health_check_unexpected_result(self, mock_session, mock_settings):
         """Test health check with unexpected query result."""
         mock_result = MagicMock()
         mock_result.fetchone.return_value = (2,)  # Not 1
@@ -319,7 +319,7 @@ class TestCheckDatabaseHealth:
                 mock_logger.error.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_sqlalchemy_error(self, mock_session):
+    async def test_health_check_sqlalchemy_error(self, mock_session, mock_settings):
         """Test health check with SQLAlchemy error."""
         mock_session.execute.side_effect = SQLAlchemyError("Connection lost")
 

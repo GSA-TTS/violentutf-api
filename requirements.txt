@@ -72,3 +72,11 @@ apscheduler>=3.10.0,<4.0.0
 hypothesis>=6.100.0,<7.0.0
 behave>=1.2.6,<2.0.0
 networkx>=3.0,<4.0.0
+
+# Type Stubs for MyPy (development)
+types-bleach>=6.2.0
+types-redis>=4.6.0
+types-passlib>=1.7.7
+types-psutil>=7.0.0
+types-requests>=2.32.0
+types-PyYAML>=6.0.0

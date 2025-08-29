@@ -5,10 +5,12 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_security_scan_service
+from app.api.deps import get_db, get_security_scan_service
 from app.core.enums import ScanStatus, ScanType
 from app.core.errors import NotFoundError, ValidationError
-from app.db.session import get_db
+
+# TECHNICAL DEBT: Direct repository usage violates Clean Architecture
+# TODO: Replace with complete service layer methods
 from app.repositories.security_scan import SecurityScanRepository
 from app.schemas.base import BaseResponse
 from app.schemas.security_scan import (

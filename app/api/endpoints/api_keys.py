@@ -13,7 +13,6 @@ from app.api.base import BaseCRUDRouter
 from app.api.deps import get_api_key_service
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.api_key import APIKey
-from app.repositories.api_key import APIKeyRepository
 
 # Repository import removed - using service layer instead
 from app.schemas.api_key import (
@@ -40,7 +39,6 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
         """Initialize API Key CRUD router."""
         super().__init__(
             model=APIKey,
-            repository=APIKeyRepository,
             create_schema=APIKeyCreate,
             update_schema=APIKeyUpdate,
             response_schema=APIKeyResponse,
@@ -49,6 +47,7 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             tags=["API Keys"],
             require_auth=True,
             require_admin=False,  # Users can manage their own API keys
+            repository=None,  # Service layer handles data access
         )
 
         # Note: custom endpoints are now registered in _register_endpoints() to control routing order
@@ -296,9 +295,11 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             trace_id=getattr(request.state, "trace_id", None),
         )
 
-    async def _validate_key_name_availability(self, repo: APIKeyRepository, key_name: str, user_id: str) -> None:
+    async def _validate_key_name_availability(
+        self, api_key_service: APIKeyService, key_name: str, user_id: str
+    ) -> None:
         """Validate that API key name is available for the user."""
-        existing_keys = await repo.list_user_keys(user_id)
+        existing_keys = await api_key_service.list_user_keys(user_id)
         if any(key.name == key_name for key in existing_keys):
             raise ConflictError(message=f"API key with name '{key_name}' already exists")
 
