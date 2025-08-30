@@ -136,7 +136,9 @@ def _sanitize_health_result(health_result: Any) -> dict:
 
 @router.get("/health", status_code=status.HTTP_200_OK)
 @track_health_check
-async def health_check(health_service: HealthService = Depends(get_health_service)) -> Dict[str, Any]:
+async def health_check(
+    health_service: HealthService = Depends(get_health_service),
+) -> Dict[str, Any]:
     """Return basic health check - always returns 200 if service is running."""
     # Get repository health for UAT compliance using health service
     try:
@@ -149,9 +151,9 @@ async def health_check(health_service: HealthService = Depends(get_health_servic
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
+        "service": (str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown"),
         "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
-        "environment": str(settings.ENVIRONMENT)[:20] if settings.ENVIRONMENT else "unknown",
+        "environment": (str(settings.ENVIRONMENT)[:20] if settings.ENVIRONMENT else "unknown"),
         "database": safe_db_status,
     }
 
@@ -266,7 +268,7 @@ async def readiness_check(
         "checks": safe_all_checks,
         "details": {
             "failed_checks": safe_failed_checks,
-            "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
+            "service": (str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown"),
             "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
             "repositories": safe_repository_data,
             "metrics": safe_metrics,

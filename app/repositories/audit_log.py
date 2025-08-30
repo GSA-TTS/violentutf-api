@@ -115,7 +115,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
 
         except Exception as e:
             self.logger.error(
-                "Failed to log action to audit trail", action=action, resource_type=resource_type, error=str(e)
+                "Failed to log action to audit trail",
+                action=action,
+                resource_type=resource_type,
+                error=str(e),
             )
             raise
 
@@ -199,9 +202,11 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             # Build base query
             query = select(self.model).where(self.model.user_id == user_id_str)
 
-            # Apply action pattern filter
+            # Apply action pattern filter (SQL injection safe)
             if action_pattern:
-                query = query.where(self.model.action.like(f"%{action_pattern}%"))
+                # Escape SQL wildcards to prevent injection
+                escaped_pattern = action_pattern.replace("%", "\\%").replace("_", "\\_")
+                query = query.where(self.model.action.like(f"%{escaped_pattern}%", escape="\\"))
 
             # Apply date range filters
             if start_date:
@@ -395,14 +400,21 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
         """
         try:
             if not search_fields:
-                search_fields = ["action", "resource_type", "user_email", "error_message"]
+                search_fields = [
+                    "action",
+                    "resource_type",
+                    "user_email",
+                    "error_message",
+                ]
 
-            # Build search conditions
+            # Build search conditions (SQL injection safe)
             search_conditions = []
             for field in search_fields:
                 if hasattr(self.model, field):
                     field_attr = getattr(self.model, field)
-                    search_conditions.append(field_attr.like(f"%{search_term}%"))
+                    # Escape SQL wildcards to prevent injection
+                    escaped_term = search_term.replace("%", "\\%").replace("_", "\\_")
+                    search_conditions.append(field_attr.like(f"%{escaped_term}%", escape="\\"))
 
             if not search_conditions:
                 raise ValueError("No valid search fields provided")
@@ -471,7 +483,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
 
         This method is overridden to prevent accidental deletion of audit records.
         """
-        self.logger.warning("Attempt to delete audit log denied - audit logs are immutable", entity_id=str(entity_id))
+        self.logger.warning(
+            "Attempt to delete audit log denied - audit logs are immutable",
+            entity_id=str(entity_id),
+        )
         raise ValueError("Audit logs are immutable and cannot be deleted")
 
     # Override update method to prevent audit log modification
@@ -486,7 +501,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
 
         This method is overridden to prevent accidental modification of audit records.
         """
-        self.logger.warning("Attempt to update audit log denied - audit logs are immutable", entity_id=str(entity_id))
+        self.logger.warning(
+            "Attempt to update audit log denied - audit logs are immutable",
+            entity_id=str(entity_id),
+        )
         raise ValueError("Audit logs are immutable and cannot be updated")
 
     def _build_search_conditions(
@@ -616,7 +634,11 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             self.logger.debug(
                 "Searched audit logs",
                 count=len(audit_logs),
-                filters={"action": action, "user_id": user_id, "resource_type": resource_type},
+                filters={
+                    "action": action,
+                    "user_id": user_id,
+                    "resource_type": resource_type,
+                },
             )
 
             return list(audit_logs)
@@ -714,7 +736,7 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                 "success_rate": round(success_rate, 2),
                 "failure_rate": round(failure_rate, 2),
                 "error_rate": round(error_rate, 2),
-                "avg_duration_ms": round(avg_duration_ms, 2) if avg_duration_ms else None,
+                "avg_duration_ms": (round(avg_duration_ms, 2) if avg_duration_ms else None),
                 "top_actions": top_actions,
                 "top_users": top_users,
                 "top_resource_types": top_resource_types,
@@ -741,7 +763,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
         try:
             # Check if any logs exist for this resource
             count_query = select(func.count(self.model.id)).where(
-                and_(self.model.resource_type == resource_type, self.model.resource_id == resource_id)
+                and_(
+                    self.model.resource_type == resource_type,
+                    self.model.resource_id == resource_id,
+                )
             )
             count_result = await self.session.execute(count_query)
             total_actions = count_result.scalar() or 0
@@ -753,7 +778,12 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             timestamps_query = select(
                 func.min(self.model.created_at).label("first_action"),
                 func.max(self.model.created_at).label("last_action"),
-            ).where(and_(self.model.resource_type == resource_type, self.model.resource_id == resource_id))
+            ).where(
+                and_(
+                    self.model.resource_type == resource_type,
+                    self.model.resource_id == resource_id,
+                )
+            )
             timestamps_result = await self.session.execute(timestamps_query)
             timestamps_row = timestamps_result.first()
 
@@ -771,7 +801,12 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             # Get action breakdown
             actions_query = (
                 select(self.model.action, func.count(self.model.id).label("count"))
-                .where(and_(self.model.resource_type == resource_type, self.model.resource_id == resource_id))
+                .where(
+                    and_(
+                        self.model.resource_type == resource_type,
+                        self.model.resource_id == resource_id,
+                    )
+                )
                 .group_by(self.model.action)
             )
 
@@ -781,7 +816,12 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             # Get status breakdown
             status_query = (
                 select(self.model.status, func.count(self.model.id).label("count"))
-                .where(and_(self.model.resource_type == resource_type, self.model.resource_id == resource_id))
+                .where(
+                    and_(
+                        self.model.resource_type == resource_type,
+                        self.model.resource_id == resource_id,
+                    )
+                )
                 .group_by(self.model.status)
             )
 
@@ -792,8 +832,8 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                 "resource_type": resource_type,
                 "resource_id": resource_id,
                 "total_actions": total_actions,
-                "first_action_at": timestamps_row.first_action if timestamps_row else None,
-                "last_action_at": timestamps_row.last_action if timestamps_row else None,
+                "first_action_at": (timestamps_row.first_action if timestamps_row else None),
+                "last_action_at": (timestamps_row.last_action if timestamps_row else None),
                 "unique_users": unique_users,
                 "action_breakdown": action_breakdown,
                 "status_breakdown": status_breakdown,
@@ -850,7 +890,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
         return conditions
 
     async def list_for_export(
-        self, filters: Optional[Dict[str, object]] = None, include_metadata: bool = False, limit: int = 10000
+        self,
+        filters: Optional[Dict[str, object]] = None,
+        include_metadata: bool = False,
+        limit: int = 10000,
     ) -> List[AuditLog]:
         """
         Get audit logs for export with optional filters.
@@ -876,7 +919,11 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
             result = await self.session.execute(query)
             audit_logs = list(result.scalars().all())
 
-            self.logger.info("Audit logs prepared for export", count=len(audit_logs), include_metadata=include_metadata)
+            self.logger.info(
+                "Audit logs prepared for export",
+                count=len(audit_logs),
+                include_metadata=include_metadata,
+            )
 
             return audit_logs
 
@@ -945,7 +992,7 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                         [
                             log.user_agent or "",
                             json.dumps(log.changes) if log.changes else "",
-                            json.dumps(log.action_metadata) if log.action_metadata else "",
+                            (json.dumps(log.action_metadata) if log.action_metadata else ""),
                         ]
                     )
 
@@ -983,7 +1030,7 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                     "status": log.status,
                     "error_message": log.error_message,
                     "duration_ms": log.duration_ms,
-                    "created_at": log.created_at.isoformat() if log.created_at else None,
+                    "created_at": (log.created_at.isoformat() if log.created_at else None),
                     "created_by": log.created_by,
                 }
 
@@ -991,7 +1038,7 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                     log_data.update(
                         {
                             "user_agent": log.user_agent,
-                            "changes": log.changes if isinstance(log.changes, (str, int)) else None,
+                            "changes": (log.changes if isinstance(log.changes, (str, int)) else None),
                             "action_metadata": (
                                 log.action_metadata if isinstance(log.action_metadata, (str, int)) else None
                             ),
@@ -1031,7 +1078,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
         end_datetime = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
         # Build query filters
-        filters = [self.model.created_at >= start_datetime, self.model.created_at <= end_datetime]
+        filters = [
+            self.model.created_at >= start_datetime,
+            self.model.created_at <= end_datetime,
+        ]
 
         # Note: organization_id is not supported in current AuditLog model
         # This parameter is kept for interface compatibility but ignored
@@ -1087,7 +1137,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
 
         # Execute a basic query to satisfy mock expectations
         query = select(func.count(self.model.id)).where(
-            and_(self.model.action == "login_failed", self.model.created_at >= cutoff_time)
+            and_(
+                self.model.action == "login_failed",
+                self.model.created_at >= cutoff_time,
+            )
         )
         await self.session.execute(query)
 
@@ -1258,6 +1311,10 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
         if deleted_count > 0:
             await self.session.commit()
 
-            self.logger.info("Cleaned up old audit logs", deleted_count=deleted_count, retention_days=retention_days)
+            self.logger.info(
+                "Cleaned up old audit logs",
+                deleted_count=deleted_count,
+                retention_days=retention_days,
+            )
 
         return deleted_count

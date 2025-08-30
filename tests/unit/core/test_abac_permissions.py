@@ -94,7 +94,7 @@ class TestRequireABACPermission:
             with pytest.raises(ForbiddenError) as exc_info:
                 await test_endpoint(mock_request, mock_session)
 
-            assert "Access denied: Insufficient authority level" in str(exc_info.value)
+            assert "Access denied" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_missing_authentication(self, mock_session):
@@ -176,7 +176,9 @@ class TestRequireABACPermission:
         """Test additional environmental context."""
 
         @require_abac_permission(
-            resource_type="users", action="read", environment_context={"source": "api", "feature": "user_list"}
+            resource_type="users",
+            action="read",
+            environment_context={"source": "api", "feature": "user_list"},
         )
         async def test_endpoint(request: Request, session: AsyncSession):
             return {"success": True}
@@ -204,7 +206,10 @@ class TestRequireABACPermission:
         with patch("app.core.abac_permissions.check_abac_permission") as mock_check:
             with patch("app.core.abac_permissions.explain_abac_decision") as mock_explain:
                 mock_check.return_value = (False, "Access denied")
-                mock_explain.return_value = {"decision": "DENY", "detailed_reason": "Low authority"}
+                mock_explain.return_value = {
+                    "decision": "DENY",
+                    "detailed_reason": "Low authority",
+                }
 
                 with patch("app.core.abac_permissions.logger") as mock_logger:
                     with pytest.raises(ForbiddenError):
@@ -435,7 +440,10 @@ class TestABACPermissionChecker:
     def permission_checker(self) -> ABACPermissionChecker:
         """Create ABAC permission checker."""
         return ABACPermissionChecker(
-            resource_type="users", action="read", resource_id_param="user_id", resource_owner_param="owner_id"
+            resource_type="users",
+            action="read",
+            resource_id_param="user_id",
+            resource_owner_param="owner_id",
         )
 
     @pytest.fixture
@@ -480,7 +488,7 @@ class TestABACPermissionChecker:
             with pytest.raises(ForbiddenError) as exc_info:
                 await permission_checker(mock_request, mock_session)
 
-            assert "Access denied: Access denied - insufficient privileges" in str(exc_info.value)
+            assert "Access denied" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_dependency_missing_authentication(self, permission_checker, mock_session):
@@ -573,7 +581,10 @@ class TestPreConfiguredDependencies:
     def test_abac_permission_checker_factory(self):
         """Test abac_permission_checker factory function."""
         checker = abac_permission_checker(
-            resource_type="sessions", action="delete", resource_id_param="session_id", resource_owner_param="user_id"
+            resource_type="sessions",
+            action="delete",
+            resource_id_param="session_id",
+            resource_owner_param="user_id",
         )
 
         assert isinstance(checker, ABACPermissionChecker)
@@ -609,7 +620,10 @@ class TestABACPermissionIntegration:
             environment_context={"operation": "profile_update"},
         )
         async def update_user_profile(request: Request, session: AsyncSession, **kwargs):
-            return {"updated": True, "abac_decision": kwargs.get("abac_context", {}).get("decision_reason")}
+            return {
+                "updated": True,
+                "abac_decision": kwargs.get("abac_context", {}).get("decision_reason"),
+            }
 
         with patch("app.core.abac_permissions.check_abac_permission") as mock_check:
             mock_check.return_value = (True, "Ownership rule allowed access")
@@ -686,13 +700,16 @@ class TestABACPermissionIntegration:
 
         with patch("app.core.abac_permissions.check_abac_permission") as mock_check:
             # Simulate organization isolation violation
-            mock_check.return_value = (False, "Organization isolation rule denied access")
+            mock_check.return_value = (
+                False,
+                "Organization isolation rule denied access",
+            )
 
             with pytest.raises(ForbiddenError) as exc_info:
                 await sensitive_operation(request, session)
 
-            # Verify error message includes ABAC decision reason
-            assert "Organization isolation rule denied access" in str(exc_info.value)
+            # Verify error message is security-hardened (no detailed reason exposed)
+            assert "Access denied" in str(exc_info.value)
 
             # Verify structured logging occurs
             with patch("structlog.stdlib.get_logger") as mock_logger:

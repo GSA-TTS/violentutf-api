@@ -156,7 +156,14 @@ class Settings(BaseSettings):  # type: ignore[misc]
     @classmethod
     def validate_database_url(cls: type["Settings"], v: Optional[str]) -> Optional[str]:
         """Validate database URL format."""
-        if v and not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://", "sqlite+aiosqlite://")):
+        if v and not v.startswith(
+            (
+                "postgresql://",
+                "postgresql+asyncpg://",
+                "sqlite://",
+                "sqlite+aiosqlite://",
+            )
+        ):
             raise ValueError("Invalid database URL. Must be PostgreSQL or SQLite.")
         return v
 
@@ -350,7 +357,11 @@ class Settings(BaseSettings):  # type: ignore[misc]
 
     def get_redis_config(self: "Settings") -> Dict[str, Any]:
         """Get Redis configuration dictionary."""
-        return {"url": self.redis_url_safe, "ttl": self.CACHE_TTL, "enabled": bool(self.REDIS_URL)}
+        return {
+            "url": self.redis_url_safe,
+            "ttl": self.CACHE_TTL,
+            "enabled": bool(self.REDIS_URL),
+        }
 
     def get_security_config(self: "Settings") -> Dict[str, Any]:
         """Get security configuration dictionary."""

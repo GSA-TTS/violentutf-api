@@ -140,7 +140,7 @@ def require_abac_permission(
                 )
 
                 if not is_allowed:
-                    error_detail = f"Access denied: {reason}"
+                    error_detail = "Access denied"
 
                     if explain_on_deny:
                         try:
@@ -153,7 +153,11 @@ def require_abac_permission(
                                 resource_owner_id=resource_owner_id,
                                 environment=env_context,
                             )
-                            logger.info("ABAC decision explanation", subject_id=subject_id, explanation=explanation)
+                            logger.info(
+                                "ABAC decision explanation",
+                                subject_id=subject_id,
+                                explanation=explanation,
+                            )
                         except Exception as e:
                             logger.error("Failed to generate explanation", error=str(e))
 
@@ -375,7 +379,7 @@ class ABACPermissionChecker:
                 action=self.action,
                 reason=reason,
             )
-            raise ForbiddenError(detail=f"Access denied: {reason}")
+            raise ForbiddenError(detail="Access denied")
 
         return {
             "subject_id": subject_id,

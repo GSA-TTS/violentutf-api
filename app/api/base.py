@@ -1,7 +1,18 @@
 """Base CRUD router with standardized patterns and comprehensive validation."""
 
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 if TYPE_CHECKING:
     pass
@@ -13,7 +24,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.context import get_organization_id
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.db.base_class import Base
 from app.db.session import get_db
 from app.models.mixins import BaseModelMixin
@@ -39,7 +55,15 @@ ResponseSchemaType = TypeVar("ResponseSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseFilter)
 
 
-class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType, FilterSchemaType]):
+class BaseCRUDRouter(
+    Generic[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        ResponseSchemaType,
+        FilterSchemaType,
+    ]
+):
     """
     Base CRUD router providing standardized endpoints for database models.
 
@@ -129,7 +153,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request,
+            item_id: uuid.UUID,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[ResponseSchemaType]:
             return await self._get_item(request, item_id, session)
 
@@ -146,7 +172,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             },
         )
         async def create_item(
-            request: Request, item_data: CreateSchemaType, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request,
+            item_data: CreateSchemaType,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[ResponseSchemaType]:
             return await self._create_item(request, item_data, session)
 
@@ -325,7 +353,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             )
 
             return BaseResponse(
-                data=response_item, message="Success", trace_id=getattr(request.state, "trace_id", None)
+                data=response_item,
+                message="Success",
+                trace_id=getattr(request.state, "trace_id", None),
             )
 
         except Exception as e:
@@ -549,7 +579,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
                 operation_id=str(uuid.uuid4()),
             )
 
-            return BaseResponse(data=result, message="Success", trace_id=getattr(request.state, "trace_id", None))
+            return BaseResponse(
+                data=result,
+                message="Success",
+                trace_id=getattr(request.state, "trace_id", None),
+            )
 
         except Exception as e:
             if not isinstance(e, (NotFoundError, ForbiddenError)):
@@ -580,7 +614,7 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             "check_permissions",
             has_user=user is not None,
             user_id=getattr(request.state, "user_id", None),
-            request_state_attrs=list(vars(request.state).keys()) if hasattr(request, "state") else None,
+            request_state_attrs=(list(vars(request.state).keys()) if hasattr(request, "state") else None),
         )
         if not user:
             raise ForbiddenError(message="Authentication required")

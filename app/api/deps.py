@@ -12,7 +12,11 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import existing authentication functions (frequently used)
-from app.core.auth import get_current_active_user, get_current_superuser, get_current_user
+from app.core.auth import (
+    get_current_active_user,
+    get_current_superuser,
+    get_current_user,
+)
 
 # Import db session dependency for service layer initialization
 from app.db.session import get_db_dependency as get_db
@@ -32,7 +36,9 @@ else:
     from app.models.user import User
 
 
-async def get_current_verified_user(current_user: "User" = Depends(get_current_active_user)) -> "User":
+async def get_current_verified_user(
+    current_user: "User" = Depends(get_current_active_user),
+) -> "User":
     """Get verified user dependency injection.
 
     Ensures the current user is verified (email verified).
@@ -127,7 +133,9 @@ async def get_session_service(session: AsyncSession = Depends(get_db)) -> object
     return SessionService(session)
 
 
-async def get_architectural_metrics_service(session: AsyncSession = Depends(get_db)) -> object:
+async def get_architectural_metrics_service(
+    session: AsyncSession = Depends(get_db),
+) -> object:
     """Get architectural metrics service dependency injection.
 
     Provides ArchitecturalMetricsService instance for API endpoints.
@@ -162,7 +170,9 @@ async def get_rbac_service(session: AsyncSession = Depends(get_db)) -> object:
     return RBACService(session)
 
 
-async def get_vulnerability_taxonomy_service(session: AsyncSession = Depends(get_db)) -> object:
+async def get_vulnerability_taxonomy_service(
+    session: AsyncSession = Depends(get_db),
+) -> object:
     """Get VulnerabilityTaxonomyService dependency.
 
     Provides VulnerabilityTaxonomyService instance for API endpoints.
@@ -218,7 +228,9 @@ async def get_mfa_policy_service(session: AsyncSession = Depends(get_db)) -> obj
     return MFAPolicyService(session)
 
 
-async def get_scheduled_report_service(session: AsyncSession = Depends(get_db)) -> "ScheduledReportService":
+async def get_scheduled_report_service(
+    session: AsyncSession = Depends(get_db),
+) -> "ScheduledReportService":
     """Get ScheduledReportService dependency."""
     from app.services.scheduled_report_service import ScheduledReportService
 
@@ -273,7 +285,9 @@ async def get_template_service(session: AsyncSession = Depends(get_db)) -> objec
     return TemplateService(session)
 
 
-async def get_vulnerability_finding_service(session: AsyncSession = Depends(get_db)) -> object:
+async def get_vulnerability_finding_service(
+    session: AsyncSession = Depends(get_db),
+) -> object:
     """Get VulnerabilityFindingService dependency."""
     from app.services.vulnerability_finding_service import VulnerabilityFindingService
 
@@ -329,7 +343,10 @@ async def get_user_repository_dep() -> object:
 
     repository = container.get_user_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="User repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="User repository not available",
+        )
     return repository
 
 
@@ -352,7 +369,10 @@ async def get_api_key_repository_dep() -> object:
 
     repository = container.get_api_key_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="API key repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="API key repository not available",
+        )
     return repository
 
 
@@ -375,7 +395,10 @@ async def get_session_repository_dep() -> object:
 
     repository = container.get_session_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Session repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session repository not available",
+        )
     return repository
 
 
@@ -398,7 +421,10 @@ async def get_audit_repository_dep() -> object:
 
     repository = container.get_audit_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Audit repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Audit repository not available",
+        )
     return repository
 
 
@@ -422,7 +448,8 @@ async def get_security_scan_repository_dep() -> object:
     repository = container.get_security_scan_repository()
     if repository is None:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Security scan repository not available"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Security scan repository not available",
         )
     return repository
 
@@ -447,7 +474,8 @@ async def get_vulnerability_repository_dep() -> object:
     repository = container.get_vulnerability_repository()
     if repository is None:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vulnerability repository not available"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vulnerability repository not available",
         )
     return repository
 
@@ -471,7 +499,10 @@ async def get_role_repository_dep() -> object:
 
     repository = container.get_role_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Role repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Role repository not available",
+        )
     return repository
 
 
@@ -494,7 +525,10 @@ async def get_health_repository_dep() -> object:
 
     repository = container.get_health_repository()
     if repository is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Health repository not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Health repository not available",
+        )
     return repository
 
 

@@ -12,9 +12,6 @@ from app.api.deps import get_audit_service, get_db
 from app.core.errors import ForbiddenError, NotFoundError, ValidationError
 from app.models.audit_log import AuditLog
 from app.repositories.audit_log_extensions import ExtendedAuditLogRepository as AuditLogRepository
-
-# TECHNICAL DEBT: Direct repository usage violates Clean Architecture
-# TODO: Replace with complete service layer methods
 from app.schemas.audit_log import (
     AuditLogExportRequest,
     AuditLogFilter,
@@ -292,7 +289,9 @@ class AuditLogRouter:
                 response_log = self._build_audit_log_response(audit_log)
 
                 return BaseResponse(
-                    data=response_log, message="Success", trace_id=getattr(request.state, "trace_id", None)
+                    data=response_log,
+                    message="Success",
+                    trace_id=getattr(request.state, "trace_id", None),
                 )
 
             except Exception as e:
@@ -533,7 +532,9 @@ class AuditLogRouter:
                 audit_stats = self._build_audit_statistics(stats)
 
                 return BaseResponse(
-                    data=audit_stats, message="Success", trace_id=getattr(request.state, "trace_id", None)
+                    data=audit_stats,
+                    message="Success",
+                    trace_id=getattr(request.state, "trace_id", None),
                 )
 
             except Exception as e:
@@ -574,7 +575,9 @@ class AuditLogRouter:
                 audit_summary = self._build_audit_summary(summary, resource_type, resource_id)
 
                 return BaseResponse(
-                    data=audit_summary, message="Success", trace_id=getattr(request.state, "trace_id", None)
+                    data=audit_summary,
+                    message="Success",
+                    trace_id=getattr(request.state, "trace_id", None),
                 )
 
             except Exception as e:

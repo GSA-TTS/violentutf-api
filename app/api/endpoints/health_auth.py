@@ -64,11 +64,16 @@ async def get_auth_health(
 
         # CodeQL [py/stack-trace-exposure] Health data sanitized to prevent information exposure
         health_data = _sanitize_health_data(raw_health_data)
-        return BaseResponse(status="success", message=f"Auth health status: {health_data['status']}", data=health_data)
+        return BaseResponse(
+            status="success",
+            message=f"Auth health status: {health_data['status']}",
+            data=health_data,
+        )
     except Exception as e:
         logger.error("Failed to get auth health", error=str(e))
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve health status"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health status",
         )
 
 
@@ -96,7 +101,10 @@ async def get_component_health(
         elif component == "circuit_breakers":
             raw_health_data = await health_service.check_circuit_breakers()
         else:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown component: {component}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Unknown component: {component}",
+            )
 
         # CodeQL [py/stack-trace-exposure] Component health data sanitized to prevent information exposure
         health_data = _sanitize_health_data(raw_health_data)
@@ -110,7 +118,8 @@ async def get_component_health(
     except Exception as e:
         logger.error(f"Failed to get {component} health", error=str(e))
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to retrieve {component} health status"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve {component} health status",
         )
 
 
@@ -132,7 +141,10 @@ async def get_auth_metrics(
         return BaseResponse(status="success", message="Authentication metrics retrieved", data=metrics)
     except Exception as e:
         logger.error("Failed to get auth metrics", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve metrics")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve metrics",
+        )
 
 
 @router.get("/degraded-mode", response_model=BaseResponse[Dict])
@@ -150,9 +162,14 @@ async def get_degraded_mode_status(
 
         # CodeQL [py/stack-trace-exposure] Degraded mode data sanitized to prevent information exposure
         degraded_info = _sanitize_health_data(raw_degraded_info)
-        return BaseResponse(status="success", message="Degraded mode status retrieved", data=degraded_info)
+        return BaseResponse(
+            status="success",
+            message="Degraded mode status retrieved",
+            data=degraded_info,
+        )
     except Exception as e:
         logger.error("Failed to get degraded mode status", error=str(e))
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve degraded mode status"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve degraded mode status",
         )

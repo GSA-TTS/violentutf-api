@@ -1,5 +1,6 @@
 """Email utility functions for sending notifications."""
 
+import html
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -91,7 +92,11 @@ async def send_email(
 
 
 async def send_report_notification(
-    recipients: List[str], report_name: str, report_id: str, download_url: str, period_days: int = 30
+    recipients: List[str],
+    report_name: str,
+    report_id: str,
+    download_url: str,
+    period_days: int = 30,
 ) -> bool:
     """Send a report notification email.
 
@@ -105,26 +110,32 @@ async def send_report_notification(
     Returns:
         Success status
     """
-    subject = f"Report Available: {report_name}"
+    # HTML escape all user inputs to prevent XSS
+    escaped_report_name = html.escape(report_name)
+    escaped_report_id = html.escape(report_id)
+    escaped_download_url = html.escape(download_url)
+    escaped_period_days = html.escape(str(period_days))
+
+    subject = f"Report Available: {escaped_report_name}"
 
     body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2 style="color: #667eea;">Architectural Metrics Report Available</h2>
 
-        <p>Your scheduled report <strong>{report_name}</strong> has been generated successfully.</p>
+        <p>Your scheduled report <strong>{escaped_report_name}</strong> has been generated successfully.</p>
 
         <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3 style="color: #333; margin-top: 0;">Report Details:</h3>
             <ul style="list-style-type: none; padding: 0;">
-                <li>📊 <strong>Report ID:</strong> {report_id}</li>
-                <li>📅 <strong>Period:</strong> Last {period_days} days</li>
+                <li>📊 <strong>Report ID:</strong> {escaped_report_id}</li>
+                <li>📅 <strong>Period:</strong> Last {escaped_period_days} days</li>
                 <li>🕐 <strong>Generated:</strong> Just now</li>
             </ul>
         </div>
 
         <div style="margin: 30px 0;">
-            <a href="{download_url}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            <a href="{escaped_download_url}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
                 Download Report
             </a>
         </div>
@@ -153,18 +164,22 @@ async def send_failure_notification(recipients: List[str], report_name: str, err
     Returns:
         Success status
     """
-    subject = f"Report Generation Failed: {report_name}"
+    # HTML escape all user inputs to prevent XSS
+    escaped_report_name = html.escape(report_name)
+    escaped_error_message = html.escape(error_message)
+
+    subject = f"Report Generation Failed: {escaped_report_name}"
 
     body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2 style="color: #dc3545;">Report Generation Failed</h2>
 
-        <p>The scheduled report <strong>{report_name}</strong> failed to generate.</p>
+        <p>The scheduled report <strong>{escaped_report_name}</strong> failed to generate.</p>
 
         <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Error Details:</h3>
-            <p style="margin: 0; font-family: monospace;">{error_message}</p>
+            <p style="margin: 0; font-family: monospace;">{escaped_error_message}</p>
         </div>
 
         <p>Please contact your system administrator for assistance.</p>

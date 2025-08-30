@@ -24,10 +24,16 @@ def upgrade() -> None:
         "task",
         sa.Column("id", sa.String(255), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column("created_by", sa.String(255), server_default="system", nullable=False),
         sa.Column("updated_by", sa.String(255), server_default="system", nullable=False),
@@ -39,7 +45,15 @@ def upgrade() -> None:
         sa.Column("task_type", sa.String(100), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED", "RETRY", name="taskstatus"),
+            sa.Enum(
+                "PENDING",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED",
+                "RETRY",
+                name="taskstatus",
+            ),
             nullable=False,
         ),
         sa.Column("description", sa.Text(), nullable=True),
@@ -73,10 +87,16 @@ def upgrade() -> None:
         "task_result",
         sa.Column("id", sa.String(255), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column("created_by", sa.String(255), server_default="system", nullable=False),
         sa.Column("updated_by", sa.String(255), server_default="system", nullable=False),
@@ -101,10 +121,16 @@ def upgrade() -> None:
         "scan",
         sa.Column("id", sa.String(255), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column("created_by", sa.String(255), server_default="system", nullable=False),
         sa.Column("updated_by", sa.String(255), server_default="system", nullable=False),
@@ -128,7 +154,14 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "PENDING", "INITIALIZING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED", "TIMEOUT", name="scanstatus"
+                "PENDING",
+                "INITIALIZING",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED",
+                "TIMEOUT",
+                name="scanstatus",
             ),
             nullable=False,
             default="PENDING",
@@ -167,10 +200,16 @@ def upgrade() -> None:
         "scan_finding",
         sa.Column("id", sa.String(255), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column("created_by", sa.String(255), server_default="system", nullable=False),
         sa.Column("updated_by", sa.String(255), server_default="system", nullable=False),
@@ -182,7 +221,9 @@ def upgrade() -> None:
         sa.Column("title", sa.String(500), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column(
-            "severity", sa.Enum("INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL", name="scanseverity"), nullable=False
+            "severity",
+            sa.Enum("INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL", name="scanseverity"),
+            nullable=False,
         ),
         sa.Column("category", sa.String(100), nullable=False),
         sa.Column("subcategory", sa.String(100), nullable=True),
@@ -212,10 +253,16 @@ def upgrade() -> None:
         "scan_report",
         sa.Column("id", sa.String(255), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
         ),
         sa.Column("created_by", sa.String(255), server_default="system", nullable=False),
         sa.Column("updated_by", sa.String(255), server_default="system", nullable=False),
@@ -254,10 +301,20 @@ def upgrade() -> None:
 
     op.create_index(op.f("ix_scan_finding_severity"), "scan_finding", ["severity"], unique=False)
     op.create_index(op.f("ix_scan_finding_category"), "scan_finding", ["category"], unique=False)
-    op.create_index(op.f("ix_scan_finding_vulnerability_type"), "scan_finding", ["vulnerability_type"], unique=False)
+    op.create_index(
+        op.f("ix_scan_finding_vulnerability_type"),
+        "scan_finding",
+        ["vulnerability_type"],
+        unique=False,
+    )
 
     op.create_index(op.f("ix_scan_report_report_type"), "scan_report", ["report_type"], unique=False)
-    op.create_index(op.f("ix_scan_report_generated_at"), "scan_report", ["generated_at"], unique=False)
+    op.create_index(
+        op.f("ix_scan_report_generated_at"),
+        "scan_report",
+        ["generated_at"],
+        unique=False,
+    )
 
 
 def downgrade() -> None:

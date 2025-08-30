@@ -3,7 +3,18 @@
 import hashlib
 import secrets
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +22,12 @@ from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
 from app.api.deps import get_api_key_service
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models.api_key import APIKey
 
 # Repository import removed - using service layer instead
@@ -24,7 +40,12 @@ from app.schemas.api_key import (
     APIKeyUpdate,
     APIKeyUsageStats,
 )
-from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult, PaginatedResponse
+from app.schemas.base import (
+    AdvancedFilter,
+    BaseResponse,
+    OperationResult,
+    PaginatedResponse,
+)
 from app.services.api_key_service import APIKeyService
 
 logger = get_logger(__name__)
@@ -286,7 +307,11 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
 
     def _build_base_response(self, data: T, message: str, request: Request) -> BaseResponse[T]:
         """Build base response object."""
-        return BaseResponse(data=data, message=message, trace_id=getattr(request.state, "trace_id", None))
+        return BaseResponse(
+            data=data,
+            message=message,
+            trace_id=getattr(request.state, "trace_id", None),
+        )
 
     def _build_operation_result(
         self, success: bool, message: str, request: Request, affected_rows: int = 1
@@ -486,7 +511,8 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get analytics and usage statistics for current user's API keys.",
         )
         async def get_my_analytics(
-            request: Request, api_key_service: APIKeyService = Depends(get_api_key_service)  # noqa: B008
+            request: Request,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[Dict[str, Any]]:
             """Get analytics for current user's API keys."""
             try:
@@ -532,7 +558,8 @@ class APIKeyCRUDRouter(BaseCRUDRouter[APIKey, APIKeyCreate, APIKeyUpdate, APIKey
             description="Get usage statistics for API keys (admin only).",
         )
         async def get_usage_stats(
-            request: Request, api_key_service: APIKeyService = Depends(get_api_key_service)  # noqa: B008
+            request: Request,
+            api_key_service: APIKeyService = Depends(get_api_key_service),  # noqa: B008
         ) -> BaseResponse[APIKeyUsageStats]:
             """Get API key usage statistics (admin only)."""
             # Check admin permissions

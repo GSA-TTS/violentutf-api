@@ -29,7 +29,11 @@ from ...core.input_validation import (
     validate_request_data,
 )
 from ...core.rate_limiting import rate_limit
-from ...core.security import create_access_token, create_refresh_token, validate_password_strength
+from ...core.security import (
+    create_access_token,
+    create_refresh_token,
+    validate_password_strength,
+)
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -174,7 +178,7 @@ async def login(
         token_data = {
             "sub": str(user.id),
             "roles": user.roles,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
         }
         access_token = create_access_token(data=token_data)
         refresh_token = create_refresh_token(data=token_data)
@@ -356,7 +360,7 @@ async def refresh_token(
         token_data = {
             "sub": str(user.id),
             "roles": user.roles,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
         }
         new_access_token = create_access_token(data=token_data)
         new_refresh_token = create_refresh_token(data=token_data)
