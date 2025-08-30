@@ -357,4 +357,4 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             logger.error("Failed to get cache stats", error=str(e))
-            return {"error": str(e)}
+            return {"error": "Cache statistics unavailable"}

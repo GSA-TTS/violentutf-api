@@ -109,8 +109,8 @@ def validate_url(url: str, allowed_schemes: Optional[List[str]] = None) -> Valid
 
         return ValidationResult(is_valid=True, cleaned_value=url.strip())
 
-    except Exception as e:
-        return ValidationResult(is_valid=False, errors=[f"URL parsing error: {str(e)}"])
+    except Exception:
+        return ValidationResult(is_valid=False, errors=["Invalid URL format"])
 
 
 def validate_ip_address(ip: str) -> ValidationResult:
@@ -294,8 +294,8 @@ def validate_json_payload(payload: object, max_depth: int = 10, max_keys: int = 
 
         return ValidationResult(is_valid=len(errors) == 0, errors=errors, warnings=warnings)
 
-    except Exception as e:
-        return ValidationResult(is_valid=False, errors=[f"JSON validation error: {str(e)}"])
+    except Exception:
+        return ValidationResult(is_valid=False, errors=["Invalid JSON format"])
 
 
 def validate_input_length(

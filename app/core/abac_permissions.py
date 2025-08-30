@@ -206,7 +206,7 @@ def require_abac_permission(
                     action=action,
                     error=str(e),
                 )
-                raise ForbiddenError(detail=f"Permission evaluation error: {str(e)}")
+                raise ForbiddenError(detail="Permission evaluation failed")
 
         return wrapper
 

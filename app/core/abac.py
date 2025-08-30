@@ -555,7 +555,7 @@ class ABACPolicyEngine:
                 error=str(e),
             )
             # Fail-secure: deny access on evaluation errors
-            return False, f"Policy evaluation error: {str(e)}"
+            return False, "Access denied due to policy evaluation failure"
 
     async def explain_decision(self, context: ABACContext) -> Dict[str, Any]:
         """Provide detailed explanation of access decision for debugging/auditing."""

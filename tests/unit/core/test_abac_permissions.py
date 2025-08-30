@@ -248,7 +248,7 @@ class TestRequireABACPermission:
             with pytest.raises(ForbiddenError) as exc_info:
                 await test_endpoint(mock_request, mock_session)
 
-            assert "Permission evaluation error" in str(exc_info.value)
+            assert "Permission evaluation failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_missing_request_object(self, mock_session):

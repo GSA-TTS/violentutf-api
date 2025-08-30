@@ -277,7 +277,7 @@ class AuthorityEvaluator:
                 target_id=str(target_user.id),
                 error=str(e),
             )
-            return False, f"Authority evaluation error: {str(e)}"
+            return False, "Authority evaluation failed"
 
     def get_authority_capabilities(self, authority_level: AuthorityLevel) -> Dict[str, Any]:
         """Get capabilities associated with an authority level.
