@@ -39,15 +39,12 @@ class InputValidator:
     MAX_ARRAY_SIZE = 10000
     MAX_DICT_DEPTH = 10
 
-    # Dangerous patterns to block
+    # Dangerous patterns to block - using safe detection instead of HTML parsing
     DANGEROUS_PATTERNS = [
-        re.compile(r"<script[^>]*>.*?</script[^>]*>", re.IGNORECASE | re.DOTALL),
+        # Block any HTML-like tags entirely for security
+        re.compile(r"<[^>]*>", re.IGNORECASE),  # Any HTML tags
         re.compile(r"javascript:", re.IGNORECASE),
         re.compile(r"on\w+\s*=", re.IGNORECASE),  # onclick, onerror, etc.
-        re.compile(r"<iframe", re.IGNORECASE),
-        re.compile(r"<object", re.IGNORECASE),
-        re.compile(r"<embed", re.IGNORECASE),
-        re.compile(r"<link", re.IGNORECASE),
         re.compile(r"@import", re.IGNORECASE),
         re.compile(r"expression\s*\(", re.IGNORECASE),  # CSS expression
         re.compile(r"vbscript:", re.IGNORECASE),

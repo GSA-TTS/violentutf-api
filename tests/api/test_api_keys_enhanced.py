@@ -1,6 +1,5 @@
 """Comprehensive tests for enhanced API key endpoints and service."""
 
-import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict

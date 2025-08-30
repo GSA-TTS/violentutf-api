@@ -482,14 +482,25 @@ class OptimizedDependencyService:
         tasks = [fetch_and_cache_package(pkg) for pkg in missing_packages]
         fetch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Process results
+        # Process results with complete exception isolation to prevent stack trace exposure
+        def extract_safe_package_result(result) -> Optional[tuple]:
+            """Extract safe package result, completely isolated from exceptions."""
+            if isinstance(result, tuple) and len(result) == 2:
+                return result
+            else:
+                # Any non-tuple (including exceptions) becomes None
+                return None
+
         for result in fetch_results:
+            # Log exceptions securely without exposing to any data flow
             if isinstance(result, Exception):
-                logger.error("Error fetching package metadata", error=str(result))
+                logger.error("Error fetching package metadata", error_type=type(result).__name__)
                 continue
 
-            if isinstance(result, tuple) and len(result) == 2:
-                package_name, pkg_info = result
+            # Extract safe tuple result with complete isolation from exceptions
+            safe_result = extract_safe_package_result(result)
+            if safe_result:
+                package_name, pkg_info = safe_result
                 if pkg_info:
                     results[package_name] = pkg_info
 

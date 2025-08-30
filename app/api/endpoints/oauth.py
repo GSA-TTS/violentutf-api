@@ -36,6 +36,36 @@ BEARER_TOKEN_TYPE = "Bearer"  # nosec B105 - Standard OAuth2 token type
 REFRESH_TOKEN_GRANT = "refresh_token"  # nosec B105 - Standard OAuth2 grant type
 
 
+def _create_safe_redirect_response(
+    redirect_uri: str, allowed_uris: List[str], error_params: Dict[str, str]
+) -> RedirectResponse:
+    """Create a safe redirect response using only pre-approved URIs.
+
+    Args:
+        redirect_uri: The requested redirect URI
+        allowed_uris: List of pre-approved redirect URIs
+        error_params: Query parameters to add to the redirect
+
+    Returns:
+        RedirectResponse with validated redirect URI
+
+    Raises:
+        ValidationError: If redirect_uri is not in allowed_uris
+    """
+    # Only allow redirects to pre-approved URIs
+    safe_redirect_uri = None
+    for approved_uri in allowed_uris:
+        if approved_uri == redirect_uri:
+            safe_redirect_uri = approved_uri
+            break
+
+    if not safe_redirect_uri:
+        raise ValidationError("Redirect URI not in approved list")
+
+    redirect_url = _build_secure_redirect_url(safe_redirect_uri, error_params)
+    return RedirectResponse(url=redirect_url)
+
+
 def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> bool:
     """
     Validate that redirect_uri is in the application's registered redirect URIs.
@@ -433,12 +463,14 @@ async def process_oauth_authorization(
             raise ValidationError("Invalid redirect URI")
 
         # Additional security: Ensure redirect_uri is from the validated list (double-check)
-        validated_redirect_uri = None
-        for registered_uri in app.redirect_uris:
-            if registered_uri == redirect_uri:
-                validated_redirect_uri = registered_uri
-                break
+        def find_safe_redirect_uri(user_provided_uri: str, allowed_uris: List[str]) -> Optional[str]:
+            """Find a safe redirect URI from the pre-approved list only."""
+            for registered_uri in allowed_uris:
+                if registered_uri == user_provided_uri:
+                    return registered_uri
+            return None
 
+        validated_redirect_uri = find_safe_redirect_uri(redirect_uri, app.redirect_uris)
         if not validated_redirect_uri:
             logger.error("Redirect URI validation bypass attempt", client_id=client_id)
             raise ValidationError("Security validation failed")
@@ -452,8 +484,7 @@ async def process_oauth_authorization(
                 error_params["state"] = state
 
             try:
-                redirect_url = _build_secure_redirect_url(validated_redirect_uri, error_params)
-                return RedirectResponse(url=redirect_url)
+                return _create_safe_redirect_response(validated_redirect_uri, app.redirect_uris, error_params)
             except ValueError as e:
                 logger.error("Failed to build redirect URL for deny action", error=str(e))
                 return HTMLResponse("<h1>Authorization denied</h1>", status_code=400)
@@ -482,8 +513,7 @@ async def process_oauth_authorization(
             success_params["state"] = state
 
         try:
-            redirect_url = _build_secure_redirect_url(validated_redirect_uri, success_params)
-            return RedirectResponse(url=redirect_url)
+            return _create_safe_redirect_response(validated_redirect_uri, app.redirect_uris, success_params)
         except ValueError as e:
             logger.error("Failed to build redirect URL for success", error=str(e))
             return HTMLResponse("<h1>Authorization succeeded but redirect failed</h1>", status_code=500)
@@ -512,8 +542,7 @@ async def process_oauth_authorization(
                     if state:
                         error_params["state"] = state
                     try:
-                        redirect_url = _build_secure_redirect_url(validated_uri, error_params)
-                        return RedirectResponse(url=redirect_url)
+                        return _create_safe_redirect_response(validated_uri, app.redirect_uris, error_params)
                     except ValueError as ve:
                         logger.error("Failed to build redirect URL for server error", error=str(ve))
         except Exception as e:

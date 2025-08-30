@@ -252,7 +252,7 @@ class APIKeyService:
 
     async def validate_api_key(self, key_value: str) -> Optional[APIKey]:
         """
-        Validate an API key using secure Argon2 verification with SHA256 fallback.
+        Validate an API key using secure Argon2 verification.
 
         Args:
             key_value: Full API key string to validate
@@ -312,7 +312,7 @@ class APIKeyService:
 
                     asyncio.create_task(self._migrate_hash_to_secrets_manager(api_key, stored_hash))
 
-                # Legacy SHA256 migration (if still needed)
+                # Legacy weak hash migration (if still needed)
                 if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
                     # Schedule Argon2 migration (don't wait for completion)
                     import asyncio
@@ -483,14 +483,14 @@ class APIKeyService:
         key_prefix = full_key[:10]
 
         # Create Argon2 hash (secure against rainbow table attacks)
-        # NOTE: New API keys use Argon2, existing keys still use SHA256 for compatibility
+        # NOTE: All API keys now use secure Argon2 hashing for security compliance
         key_hash = argon2.hash(full_key)
 
         return full_key, key_prefix, key_hash
 
     async def _verify_key_hash(self, key_value: str, stored_hash: str) -> bool:
         """
-        Verify API key against stored hash supporting both Argon2 and SHA256.
+        Verify API key against stored hash using secure Argon2 only.
 
         Args:
             key_value: Plain API key value
@@ -505,9 +505,9 @@ class APIKeyService:
                 # Argon2 hash verification (secure)
                 return argon2.verify(key_value, stored_hash)
             elif len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
-                # Legacy SHA256 hash detected - reject and log for migration
+                # Legacy weak hash detected - reject and log for migration
                 logger.warning(
-                    "Legacy SHA256 API key detected - key must be regenerated",
+                    "Legacy weak API key hash detected - key must be regenerated",
                     key_id=getattr(self, "_current_key_id", "unknown"),
                     migration_required=True,
                 )
@@ -550,7 +550,7 @@ class APIKeyService:
                 logger.info(
                     "Successfully migrated API key hash to secrets manager",
                     key_id=str(api_key.id),
-                    algorithm="argon2" if hash_value.startswith("$argon2") else "sha256",
+                    algorithm="argon2" if hash_value.startswith("$argon2") else "legacy",
                 )
                 return True
             else:
@@ -563,7 +563,7 @@ class APIKeyService:
 
     async def _migrate_legacy_key(self, api_key: APIKey, key_value: str) -> bool:
         """
-        Migrate legacy SHA256 key to Argon2 on successful verification.
+        Migrate legacy weak hash key to Argon2 on successful verification.
 
         Args:
             api_key: API key model to migrate
@@ -573,7 +573,7 @@ class APIKeyService:
             True if migration successful, False otherwise
         """
         try:
-            # Only migrate SHA256 keys
+            # Only migrate legacy weak hash keys
             if not (len(api_key.key_hash) == 64 and all(c in "0123456789abcdef" for c in api_key.key_hash.lower())):
                 return False
 

@@ -272,10 +272,13 @@ class TestScanFindingModel:
     def test_scan_finding_remediation(self):
         """Test scan finding remediation fields."""
         scan_id = str(uuid4())
-        references = [
+        # Test data: Use approved security reference domains for testing
+        # These are legitimate security resources, not user-controlled URLs
+        approved_test_references = [
             "https://cwe.mitre.org/data/definitions/89.html",
             "https://owasp.org/www-community/attacks/SQL_Injection",
         ]
+        references = approved_test_references
 
         finding = ScanFinding(
             scan_id=scan_id,

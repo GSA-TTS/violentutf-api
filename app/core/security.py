@@ -182,28 +182,17 @@ def create_token(
 
 
 def hash_oauth_token(token: str) -> str:
-    """Hash an OAuth token for secure storage lookup using BLAKE2b.
+    """Hash an OAuth token for secure storage using Argon2.
 
-    This function is ONLY for OAuth tokens, authorization codes, and cache keys.
-    DO NOT use for passwords - use hash_password(), hash_api_key(), or hash_client_secret().
+    Uses Argon2 which is a computationally expensive hash function appropriate
+    for sensitive data like OAuth tokens, authorization codes, and refresh tokens.
+    This ensures protection against brute force attacks even if the database is compromised.
 
-    Uses BLAKE2b which is a cryptographically secure hash function designed for
-    high-performance applications and is recognized by security scanners as appropriate
-    for token hashing (not password hashing).
+    OAuth tokens are considered sensitive authentication credentials similar to passwords
+    and should use computationally expensive hashing algorithms per OWASP recommendations.
     """
-    import hashlib
-
-    from .config import settings
-
-    secret_key = (
-        settings.SECRET_KEY.get_secret_value()
-        if hasattr(settings.SECRET_KEY, "get_secret_value")
-        else str(settings.SECRET_KEY)
-    )
-    # BLAKE2b with key is cryptographically secure for token hashing
-    return hashlib.blake2b(
-        token.encode(), key=secret_key.encode()[:64], digest_size=32  # BLAKE2b key max 64 bytes
-    ).hexdigest()
+    pwd_context = _get_pwd_context()
+    return pwd_context.hash(token)
 
 
 def hash_cache_key(key: str) -> str:
@@ -282,33 +271,27 @@ def verify_api_key(api_key: str, hashed_key: str) -> bool:
 
 
 def verify_token_hash(token: str, stored_hash: str) -> bool:
-    """Verify a token against a stored hash, supporting both new and legacy formats.
+    """Verify a token against a stored hash using Argon2.
 
-    This function uses only secure cryptographic methods:
-    1. HMAC-SHA256 for new tokens (secure)
-    2. Direct comparison for legacy hashes (secure verification without re-hashing)
+    Uses secure Argon2 verification for OAuth tokens, authorization codes,
+    and refresh tokens. This ensures protection against timing attacks and
+    provides proper cryptographic verification.
 
     Args:
         token: The plain token to verify
-        stored_hash: The stored hash to verify against
+        stored_hash: The stored Argon2 hash to verify against
 
     Returns:
         True if the token matches the stored hash
     """
-    # First try the new HMAC-SHA256 hash
-    if stored_hash == hash_oauth_token(token):
-        return True
+    try:
+        pwd_context = _get_pwd_context()
+        return pwd_context.verify(token, stored_hash)
+    except Exception:
+        # Log migration warning for legacy hashes
+        if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
+            from structlog.stdlib import get_logger
 
-    # For legacy SHA256 hashes, verify by checking hash length and format
-    # without re-computing the weak hash
-    if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
-        # This is likely a legacy SHA256 hash - log migration needed but don't verify
-        from structlog.stdlib import get_logger
-
-        logger = get_logger(__name__)
-        logger.warning("Legacy SHA256 token detected - token should be regenerated for security")
-        # For migration period, we could verify against a lookup table
-        # but for security, we reject all legacy tokens
+            logger = get_logger(__name__)
+            logger.warning("Legacy token hash detected - token should be regenerated for security")
         return False
-
-    return False

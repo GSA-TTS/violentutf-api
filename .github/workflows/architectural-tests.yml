@@ -27,6 +27,12 @@ env:
   PYTEST_CACHE_DIR: .pytest_cache
   COVERAGE_THRESHOLD: 80
 
+# CodeQL compliance: Restrict permissions to minimum required
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
 jobs:
   architectural-tests:
     name: Architectural Compliance Validation

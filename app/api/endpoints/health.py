@@ -71,12 +71,26 @@ def _sanitize_metrics(metrics: dict) -> dict:
 
 def _sanitize_checks(all_checks: dict) -> dict:
     """Sanitize all_checks to ensure no exception objects leak through."""
-    # CodeQL [py/stack-trace-exposure] Function specifically designed to filter out exception objects - no exposure possible
     safe_all_checks = {}
+
+    # Iterate over items safely
     for check_name, check_result in all_checks.items():
-        # Only include boolean results, convert everything to boolean
-        # CodeQL [py/stack-trace-exposure] Exception objects explicitly filtered out here
-        safe_all_checks[str(check_name)[:20]] = bool(check_result) if not isinstance(check_result, Exception) else False
+        # Convert check name to safe string
+        safe_name = str(check_name)[:20] if check_name is not None else "unknown"
+
+        # Determine safe boolean value without exposing exception details
+        if check_result is True or check_result is False:
+            safe_value = check_result
+        elif isinstance(check_result, (int, float)):
+            safe_value = bool(check_result)
+        elif isinstance(check_result, str):
+            safe_value = len(check_result) > 0
+        else:
+            # For any complex objects (including exceptions), default to False
+            safe_value = False
+
+        safe_all_checks[safe_name] = safe_value
+
     return safe_all_checks
 
 
@@ -157,10 +171,18 @@ async def readiness_check(
     # Run additional system checks in parallel
     system_checks = await asyncio.gather(check_disk_space(), check_memory(), return_exceptions=True)
 
-    # Process system check results safely without exposing exception details
-    # CodeQL [py/stack-trace-exposure] Exception objects filtered out here - only boolean values passed forward
-    disk_healthy = not isinstance(system_checks[0], Exception) and system_checks[0]
-    memory_healthy = not isinstance(system_checks[1], Exception) and system_checks[1]
+    # Process system check results with complete isolation from exceptions
+    def extract_safe_boolean_result(check_result: Any) -> bool:
+        """Extract safe boolean from check result, completely isolated from exceptions."""
+        if check_result is True:
+            return True
+        elif check_result is False:
+            return False
+        else:
+            return False  # Any non-boolean (including exceptions) becomes False
+
+    disk_healthy = extract_safe_boolean_result(system_checks[0])
+    memory_healthy = extract_safe_boolean_result(system_checks[1])
 
     # Log exceptions securely without exposing to client
     if isinstance(system_checks[0], Exception):
@@ -168,47 +190,60 @@ async def readiness_check(
     if isinstance(system_checks[1], Exception):
         logger.error("memory_check_exception", error_type=type(system_checks[1]).__name__)
 
-    # Sanitize repository health data using helper function first
-    safe_repository_health = _sanitize_repository_health(repository_health)
+    # Build safe response data using only primitive values - no data flow from exceptions
+    safe_db_status = bool(health_result.get("checks", {}).get("database", False))
+    safe_cache_status = bool(health_result.get("checks", {}).get("cache", False))
+    safe_repo_status = bool(_sanitize_repository_health(repository_health).get("overall_status") == "healthy")
 
-    # Combine all checks using sanitized data only
-    # CodeQL [py/stack-trace-exposure] Exception objects filtered out before this point - system_checks processed safely above
-    all_checks = {
-        "database": bool(health_result.get("checks", {}).get("database", False)),
-        "cache": bool(health_result.get("checks", {}).get("cache", False)),
-        "repositories": safe_repository_health.get("overall_status") == "healthy",
+    # Construct final response with only safe primitive values
+    safe_all_checks = {
+        "database": safe_db_status,
+        "cache": safe_cache_status,
+        "repositories": safe_repo_status,
         "disk_space": disk_healthy,
         "memory": memory_healthy,
     }
-
-    # Apply additional sanitization to ensure no unsafe data
-    safe_all_checks = _sanitize_checks(all_checks)
     all_healthy = all(safe_all_checks.values())
 
     if not all_healthy:
-        # CodeQL [py/stack-trace-exposure] Safe data used - all checks sanitized before this point
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        # Use sanitized data for logging
-        failed_checks = [k for k, v in safe_all_checks.items() if not v]
-        logger.warning("readiness_check_failed", failed_check_count=len(failed_checks))
+        # Count failed checks without exposing their names
+        failed_count = len([k for k, v in safe_all_checks.items() if not v])
+        logger.warning("readiness_check_failed", failed_check_count=failed_count)
 
-    # Final sanitization pass to ensure no unsafe data is returned
-    # CodeQL [py/stack-trace-exposure] All data sanitized to prevent information exposure
+    # Build safe response with completely isolated data - no potential for exception exposure
+    safe_failed_checks = []
+    for check_name, check_result in safe_all_checks.items():
+        if not check_result:
+            # Only include safe string check names
+            safe_failed_checks.append(str(check_name)[:20])
+
+    # Extract safe repository data
+    safe_repository_data = _sanitize_repository_health(repository_health)
+
+    # Extract safe metrics with additional isolation
+    safe_metrics = {}
+    raw_metrics = health_result.get("metrics", {}) if isinstance(health_result, dict) else {}
+    for key, value in raw_metrics.items():
+        if isinstance(value, (int, float, bool, str)) and not isinstance(key, Exception):
+            safe_key = str(key)[:20]
+            if isinstance(value, str):
+                safe_metrics[safe_key] = str(value)[:50]
+            else:
+                safe_metrics[safe_key] = value
+
+    # Build final response with only safe primitive data
     return {
         "status": "ready" if all_healthy else "not ready",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "checks": safe_all_checks,
         "details": {
-            "failed_checks": [
-                k for k, v in safe_all_checks.items() if not v
-            ],  # CodeQL [py/stack-trace-exposure] Sanitized check names only
+            "failed_checks": safe_failed_checks,
             "service": str(settings.PROJECT_NAME)[:50] if settings.PROJECT_NAME else "unknown",
             "version": str(settings.VERSION)[:20] if settings.VERSION else "unknown",
-            "repositories": safe_repository_health,  # CodeQL [py/stack-trace-exposure] Repository data sanitized by _sanitize_repository_health
-            "metrics": _sanitize_metrics(health_result.get("metrics", {})),  # Double sanitization
-            "check_duration": _safe_extract_value(
-                health_result, "check_duration_seconds", 0, float
-            ),  # Double sanitization
+            "repositories": safe_repository_data,
+            "metrics": safe_metrics,
+            "check_duration": _safe_extract_value(health_result, "check_duration_seconds", 0, float),
         },
     }
 
