@@ -496,7 +496,7 @@ async def process_oauth_authorization(
         code = await oauth_service.create_authorization_code(
             application_id=str(app.id),
             user_id=str(current_user.id),
-            redirect_uri=redirect_uri,
+            redirect_uri=validated_redirect_uri,
             scopes=scopes,
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,

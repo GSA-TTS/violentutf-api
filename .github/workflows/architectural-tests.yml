@@ -38,6 +38,9 @@ jobs:
     name: Architectural Compliance Validation
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Allow sufficient time for security scanning
+    permissions:
+      contents: read
+      pull-requests: write
 
     strategy:
       fail-fast: false
@@ -417,6 +420,7 @@ jobs:
     if: failure()
     permissions:
       contents: read
+      issues: write
 
     steps:
       - name: Send Notification

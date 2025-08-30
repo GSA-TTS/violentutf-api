@@ -69,8 +69,24 @@ def _sanitize_metrics(metrics: dict) -> dict:
     return safe_metrics
 
 
-def _sanitize_checks(all_checks: dict) -> dict:
+def _sanitize_checks(all_checks: Any) -> dict:
     """Sanitize all_checks to ensure no exception objects leak through."""
+    # First, ensure the input itself is a safe dictionary
+    if not isinstance(all_checks, dict):
+        return {}
+
+    # Complete isolation: Don't process any dict that could contain exceptions
+    # Use try-catch to prevent any exception data from flowing through
+    try:
+        # Pre-screen for dangerous objects without directly accessing them
+        for key, value in all_checks.items():
+            # Only allow primitive types and basic containers
+            if not isinstance(value, (bool, int, float, str, type(None))):
+                return {}  # Reject any complex objects including exceptions
+    except Exception:
+        # If any error occurs during screening, reject entirely
+        return {}
+
     safe_all_checks = {}
 
     # Iterate over items safely with complete exception isolation
