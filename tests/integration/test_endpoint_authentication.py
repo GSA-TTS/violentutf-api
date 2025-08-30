@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Tuple
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from structlog.stdlib import get_logger
+
+logger = get_logger(__name__)
 
 from app.core.security import create_access_token
 
@@ -199,7 +202,9 @@ class TestSystematicEndpointAuthentication:
                         failures.append(f"{method} {endpoint} missing error detail")
 
             except Exception as e:
-                failures.append(f"{method} {endpoint} raised exception: {str(e)}")
+                # Log the full exception for debugging but don't expose in test output
+                logger.error(f"{method} {endpoint} raised exception", error=str(e))
+                failures.append(f"{method} {endpoint} raised unexpected exception")
 
         if failures:
             pytest.fail(f"Authentication requirement failures:\n" + "\n".join(failures))

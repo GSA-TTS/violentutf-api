@@ -73,20 +73,31 @@ def _sanitize_checks(all_checks: dict) -> dict:
     """Sanitize all_checks to ensure no exception objects leak through."""
     safe_all_checks = {}
 
-    # Iterate over items safely
+    # Iterate over items safely with complete exception isolation
     for check_name, check_result in all_checks.items():
-        # Convert check name to safe string
-        safe_name = str(check_name)[:20] if check_name is not None else "unknown"
+        # Convert check name to safe string without any exception exposure
+        if isinstance(check_name, str):
+            safe_name = check_name[:20]
+        elif isinstance(check_name, (int, float, bool)):
+            safe_name = str(check_name)[:20]
+        else:
+            # For any complex objects (including exceptions), use generic name
+            safe_name = "check"
 
-        # Determine safe boolean value without exposing exception details
-        if check_result is True or check_result is False:
-            safe_value = check_result
-        elif isinstance(check_result, (int, float)):
-            safe_value = bool(check_result)
+        # Determine safe boolean value with complete isolation from exceptions
+        if check_result is True:
+            safe_value = True
+        elif check_result is False:
+            safe_value = False
+        elif isinstance(check_result, int) and not isinstance(check_result, bool):
+            safe_value = check_result != 0
+        elif isinstance(check_result, float):
+            safe_value = check_result != 0.0
         elif isinstance(check_result, str):
             safe_value = len(check_result) > 0
         else:
             # For any complex objects (including exceptions), default to False
+            # This completely isolates exception objects from any data flow
             safe_value = False
 
         safe_all_checks[safe_name] = safe_value

@@ -7,9 +7,9 @@ from typing import Any, Dict
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from passlib.hash import argon2
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_api_key, verify_api_key
 from app.models.api_key import APIKey
 from app.services.api_key_service import APIKeyService
 from tests.utils.api_key import create_test_api_key, create_test_user
@@ -56,10 +56,8 @@ class TestAPIKeyService:
         assert full_key.startswith("vutf_")
         assert len(full_key) > 20  # Should be longer with high entropy
 
-        # Verify hash matches (using Argon2 verification)
-        from passlib.hash import argon2
-
-        assert argon2.verify(full_key, api_key.key_hash)
+        # Verify hash matches (using secure API key verification)
+        assert verify_api_key(full_key, api_key.key_hash)
 
     async def test_rotate_api_key(
         self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
@@ -81,8 +79,8 @@ class TestAPIKeyService:
         assert rotated_key.key_prefix != original_prefix
         assert new_full_key.startswith("vutf_")
 
-        # Verify new hash matches (using Argon2 verification)
-        assert argon2.verify(new_full_key, rotated_key.key_hash)
+        # Verify new hash matches (using secure API key verification)
+        assert verify_api_key(new_full_key, rotated_key.key_hash)
 
     async def test_validate_api_key(
         self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
@@ -91,9 +89,9 @@ class TestAPIKeyService:
         # Create API key
         api_key = await create_test_api_key(clean_db_session, test_user["id"], name="Validation Test Key")
 
-        # Generate a valid key for testing with Argon2 hash
+        # Generate a valid key for testing with secure hashing
         full_key = "vutf_test_key_value"
-        key_hash = argon2.hash(full_key)
+        key_hash = hash_api_key(full_key)
         api_key.key_hash = key_hash
         await clean_db_session.commit()
 
@@ -406,9 +404,9 @@ class TestAPIKeySecurityValidation:
             expires_at=datetime.now(timezone.utc) - timedelta(days=1),
         )
 
-        # Generate a valid key for testing with Argon2 hash
+        # Generate a valid key for testing with secure hashing
         full_key = "vutf_expired_test_key"
-        key_hash = argon2.hash(full_key)
+        key_hash = hash_api_key(full_key)
         api_key.key_hash = key_hash
         await clean_db_session.commit()
 

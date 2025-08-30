@@ -131,11 +131,14 @@ async def execute_task(
             if "task" in locals() and task is not None:
                 task.status = TaskStatus.FAILED
                 task.completed_at = datetime.now(timezone.utc)
-                task.error_message = str(e)
+                task.error_message = "Task execution failed"
+                # Log detailed error information securely without exposing to external users
+                logger.error(
+                    "Task execution failed", error=str(e), error_type=type(e).__name__, worker_id=self.request.id
+                )
                 task.error_details = {
-                    "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc(),
                     "worker_id": self.request.id,
+                    "failed_at": datetime.now(timezone.utc).isoformat(),
                 }
                 await db.commit()
 
@@ -217,14 +220,14 @@ async def execute_scan_task(
             if "scan" in locals() and scan is not None:
                 scan.status = ScanStatus.FAILED
                 scan.completed_at = datetime.now(timezone.utc)
-                scan.error_message = str(e)
-                scan.error_details = {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
+                scan.error_message = "Scan execution failed"
+                scan.error_details = {"failed_at": datetime.now(timezone.utc).isoformat()}
 
             if "task" in locals() and task is not None:
                 task.status = TaskStatus.FAILED
                 task.completed_at = datetime.now(timezone.utc)
-                task.error_message = str(e)
-                task.error_details = {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
+                task.error_message = "Scan task execution failed"
+                task.error_details = {"failed_at": datetime.now(timezone.utc).isoformat()}
 
             await db.commit()
             raise
@@ -271,8 +274,8 @@ async def generate_report_task(self: AsyncTask, report_id: str) -> Dict[str, Any
             # Update report as failed
             if "report" in locals() and report is not None:
                 report.status = ReportStatus.FAILED
-                report.error_message = str(e)
-                report.error_details = {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
+                report.error_message = "Report generation failed"
+                report.error_details = {"failed_at": datetime.now(timezone.utc).isoformat()}
                 await db.commit()
 
             raise

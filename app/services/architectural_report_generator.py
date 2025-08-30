@@ -502,7 +502,7 @@ class ArchitecturalReportGenerator:
 
         except Exception as e:
             logger.error(f"Error generating architectural metrics report: {e}")
-            await self._update_report_status(report_id, ReportStatus.FAILED, error_message=str(e))
+            await self._update_report_status(report_id, ReportStatus.FAILED, error_message="Report generation failed")
             raise
 
     async def _gather_metrics_data(

@@ -39,10 +39,19 @@ class InputValidator:
     MAX_ARRAY_SIZE = 10000
     MAX_DICT_DEPTH = 10
 
-    # Dangerous patterns to block - using safe detection instead of HTML parsing
+    # Dangerous patterns to block - comprehensive security patterns
     DANGEROUS_PATTERNS = [
-        # Block any HTML-like tags entirely for security
-        re.compile(r"<[^>]*>", re.IGNORECASE),  # Any HTML tags
+        # Block script tags with comprehensive patterns to prevent XSS
+        re.compile(r"<\s*script[^>]*>.*?</\s*script\s*>", re.IGNORECASE | re.DOTALL),
+        re.compile(r"<\s*script[^>]*>", re.IGNORECASE),
+        re.compile(r"</\s*script\s*>", re.IGNORECASE),
+        # Block other dangerous tags
+        re.compile(r"<\s*iframe[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*object[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*embed[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*link[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*style[^>]*>.*?</\s*style\s*>", re.IGNORECASE | re.DOTALL),
+        # Block protocol handlers and event handlers
         re.compile(r"javascript:", re.IGNORECASE),
         re.compile(r"on\w+\s*=", re.IGNORECASE),  # onclick, onerror, etc.
         re.compile(r"@import", re.IGNORECASE),

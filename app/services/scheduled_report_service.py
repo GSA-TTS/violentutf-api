@@ -219,11 +219,16 @@ class ScheduledReportService:
                 except Exception as e:
                     logger.error(f"Error generating report {report.id}: {e}")
                     report.status = ReportStatus.FAILED
-                    report.error_message = str(e)
+                    report.error_message = "Report generation failed"
                     await self.db.commit()
 
                     report_results.append(
-                        {"report_id": report.id, "format": format_str, "status": "failed", "error": str(e)}
+                        {
+                            "report_id": report.id,
+                            "format": format_str,
+                            "status": "failed",
+                            "error": "Report generation failed",
+                        }
                     )
 
             # Send notifications

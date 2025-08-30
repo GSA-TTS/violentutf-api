@@ -1163,14 +1163,14 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
                     except Exception as conn_e:
                         repo_health["status"] = "unhealthy"
                         repo_health["connectivity_test"] = False
-                        repo_health["error_message"] = f"Connectivity test failed: {str(conn_e)[:100]}"
+                        repo_health["error_message"] = "Database connectivity test failed"
                         logger.warning("repository_connectivity_failed", repository=name, error=str(conn_e))
                 else:
                     repo_health["status"] = "degraded"
                     repo_health["error_message"] = "No database session available"
 
         except Exception as e:
-            repo_health.update({"status": "error", "error_message": f"{type(e).__name__}: {str(e)[:100]}"})
+            repo_health.update({"status": "error", "error_message": "Repository health check failed"})
             logger.error("repository_health_check_failed", repository=name, error=str(e))
 
         # Calculate response time

@@ -323,14 +323,17 @@ class TestAllowedOrigins:
         with patch.dict(os.environ, clean_env, clear=True):
             settings = SettingsForTesting()
 
-            # Use proper URL validation instead of substring checking
-            from urllib.parse import urlparse
+            # Use exact URL matching to prevent URL substring vulnerabilities
+            expected_valid_origins = {"http://valid.com", "https://also-valid.com"}
+            expected_invalid_origins = {"invalid-url", "ftp://not-allowed.com"}
 
-            valid_origins = [urlparse(origin).geturl() for origin in settings.ALLOWED_ORIGINS]
-            assert "http://valid.com" in valid_origins
-            assert "https://also-valid.com" in valid_origins
-            assert "invalid-url" not in valid_origins
-            assert "ftp://not-allowed.com" not in valid_origins
+            # Convert to sets for exact matching
+            actual_origins = set(settings.ALLOWED_ORIGINS)
+
+            # Check that valid origins are present
+            assert expected_valid_origins.issubset(actual_origins)
+            # Check that invalid origins are not present
+            assert not expected_invalid_origins.intersection(actual_origins)
 
 
 class TestGetSettings:

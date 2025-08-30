@@ -602,7 +602,9 @@ async def bulk_task_action(
 
             except Exception as e:
                 failed += 1
-                errors.append({"task_id": task.id, "error": str(e)})
+                # Log the full exception for debugging but don't expose to external users
+                logger.error(f"Task bulk action failed for task {task.id}", error=str(e))
+                errors.append({"task_id": task.id, "error": "Task operation failed"})
 
         # Service layer handles transactions automatically
 

@@ -343,6 +343,9 @@ jobs:
     needs: architectural-tests
     runs-on: ubuntu-latest
     if: always()
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Download All Artifacts
@@ -393,6 +396,8 @@ jobs:
     needs: architectural-tests
     runs-on: ubuntu-latest
     if: always()
+    permissions:
+      contents: read
 
     steps:
       - name: Check Execution Time
@@ -410,6 +415,8 @@ jobs:
     needs: [architectural-tests, aggregate-results]
     runs-on: ubuntu-latest
     if: failure()
+    permissions:
+      contents: read
 
     steps:
       - name: Send Notification

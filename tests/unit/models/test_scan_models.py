@@ -294,13 +294,13 @@ class TestScanFindingModel:
 
         assert "parameterized queries" in finding.remediation
         assert len(finding.references) == 2
-        # Validate references are proper URLs with expected domains
-        from urllib.parse import urlparse
-
-        ref0_parsed = urlparse(finding.references[0])
-        ref1_parsed = urlparse(finding.references[1])
-        assert ref0_parsed.netloc == "cwe.mitre.org"
-        assert ref1_parsed.netloc == "owasp.org"
+        # Validate references are exact expected URLs (no partial matching)
+        expected_urls = {
+            "https://cwe.mitre.org/data/definitions/89.html",
+            "https://owasp.org/www-community/attacks/SQL_Injection",
+        }
+        # Use exact URL matching instead of substring/domain extraction
+        assert set(finding.references) == expected_urls
 
     def test_scan_finding_status_tracking(self):
         """Test scan finding status tracking."""
