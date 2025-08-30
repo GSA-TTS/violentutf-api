@@ -225,7 +225,13 @@ class ABACContext:
 
     def _load_action_attributes(self) -> Dict[str, Any]:
         """Load action attributes."""
-        action_risk_levels = {"read": "low", "write": "medium", "delete": "high", "manage": "high", "*": "critical"}
+        action_risk_levels = {
+            "read": "low",
+            "write": "medium",
+            "delete": "high",
+            "manage": "high",
+            "*": "critical",
+        }
 
         return {
             "action": self.action,
@@ -507,7 +513,10 @@ class ABACPolicyEngine:
 
                 except Exception as e:
                     logger.error(
-                        "Rule evaluation error", rule_id=rule.rule_id, subject_id=context.subject_id, error=str(e)
+                        "Rule evaluation error",
+                        rule_id=rule.rule_id,
+                        subject_id=context.subject_id,
+                        error=str(e),
                     )
                     # Fail-secure: treat evaluation errors as denials
                     deny_reasons.append(f"Rule {rule.rule_id} evaluation failed")
@@ -600,7 +609,11 @@ class ABACPolicyEngine:
             return explanation
 
         except Exception as e:
-            logger.error("Failed to generate decision explanation", subject_id=context.subject_id, error=str(e))
+            logger.error(
+                "Failed to generate decision explanation",
+                subject_id=context.subject_id,
+                error=str(e),
+            )
             return {
                 "decision": "DENY",
                 "reason": f"Explanation generation failed: {str(e)}",

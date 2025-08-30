@@ -19,14 +19,43 @@ class LayerBoundaryValidator:
 
     # Define architectural layers and their allowed dependencies
     LAYER_HIERARCHY = {
-        "api": ["services", "schemas", "dependencies", "middleware", "core", "models"],  # Allow models for CRUD
+        "api": [
+            "services",
+            "schemas",
+            "dependencies",
+            "middleware",
+            "core",
+            "models",
+        ],  # Allow models for CRUD
         "services": ["repositories", "models", "schemas", "core", "utils"],
         "repositories": ["models", "db", "core"],
-        "models": ["core", "db"],  # Models need db for SQLAlchemy Base class inheritance
-        "schemas": ["core", "models"],  # Schemas can reference models for type conversion
-        "middleware": ["core", "dependencies", "services", "utils"],  # Allow utils for caching
-        "dependencies": ["services", "repositories", "core", "db", "utils"],  # Dependencies need db for session
-        "core": ["db", "repositories", "services", "dependencies"],  # Core startup needs db access
+        "models": [
+            "core",
+            "db",
+        ],  # Models need db for SQLAlchemy Base class inheritance
+        "schemas": [
+            "core",
+            "models",
+        ],  # Schemas can reference models for type conversion
+        "middleware": [
+            "core",
+            "dependencies",
+            "services",
+            "utils",
+        ],  # Allow utils for caching
+        "dependencies": [
+            "services",
+            "repositories",
+            "core",
+            "db",
+            "utils",
+        ],  # Dependencies need db for session
+        "core": [
+            "db",
+            "repositories",
+            "services",
+            "dependencies",
+        ],  # Core startup needs db access
         "utils": ["core"],  # Utils can use core config
         "db": ["models", "core", "services"],  # Database init can use services
     }
@@ -49,9 +78,18 @@ class LayerBoundaryValidator:
         ("api/base", "db"),
         ("api/base", "models.mixins"),
         ("api/base", "repositories.base"),  # Base CRUD needs repository base
-        ("api/endpoints", "db.session"),  # Endpoints need DB session for dependency injection
-        ("api/endpoints", "repositories"),  # Some endpoints use repositories directly for performance
-        ("api/deps", "db.session"),  # API deps needs db session for dependency injection compatibility
+        (
+            "api/endpoints",
+            "db.session",
+        ),  # Endpoints need DB session for dependency injection
+        (
+            "api/endpoints",
+            "repositories",
+        ),  # Some endpoints use repositories directly for performance
+        (
+            "api/deps",
+            "db.session",
+        ),  # API deps needs db session for dependency injection compatibility
         # Services that need direct DB access for performance
         ("services/health_service", "db.session"),  # Health checks need direct DB
         # Schemas importing models for type conversion
@@ -253,7 +291,12 @@ class LayerBoundaryValidator:
                 allowed_layers = self.LAYER_HIERARCHY.get(source_layer, [])
                 if target_layer not in allowed_layers and target_layer != source_layer:
                     violations.append(
-                        (str(py_file.relative_to(self.project_root)), source_layer, imported_module, target_layer)
+                        (
+                            str(py_file.relative_to(self.project_root)),
+                            source_layer,
+                            imported_module,
+                            target_layer,
+                        )
                     )
 
         return violations
@@ -267,9 +310,18 @@ class LayerBoundaryValidator:
 
         # Define prohibited imports
         prohibited_patterns = [
-            (r"from\s+app\.api.*import.*Repository", "API layer directly importing Repository"),
-            (r"from\s+app\.repositories.*import.*api", "Repository importing from API layer"),
-            (r"from\s+app\.models.*import.*\b(api|services|repositories)\b", "Model importing from higher layers"),
+            (
+                r"from\s+app\.api.*import.*Repository",
+                "API layer directly importing Repository",
+            ),
+            (
+                r"from\s+app\.repositories.*import.*api",
+                "Repository importing from API layer",
+            ),
+            (
+                r"from\s+app\.models.*import.*\b(api|services|repositories)\b",
+                "Model importing from higher layers",
+            ),
             (r"import\s+app\.api.*Repository", "Direct repository import in API layer"),
         ]
 
@@ -285,7 +337,11 @@ class LayerBoundaryValidator:
                     for pattern, description in prohibited_patterns:
                         if re.search(pattern, line):
                             violations.append(
-                                (str(py_file.relative_to(self.project_root)), f"{line.strip()} ({description})", i)
+                                (
+                                    str(py_file.relative_to(self.project_root)),
+                                    f"{line.strip()} ({description})",
+                                    i,
+                                )
                             )
             except Exception:
                 continue

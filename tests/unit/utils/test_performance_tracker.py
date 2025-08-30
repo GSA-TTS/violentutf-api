@@ -512,7 +512,13 @@ class TestCachePerformanceMetrics:
         """Test cache efficiency rating calculation."""
         tracker = PerformanceTracker()
 
-        test_cases = [(0.95, "Excellent"), (0.85, "Good"), (0.75, "Fair"), (0.50, "Poor"), (0.25, "Critical")]
+        test_cases = [
+            (0.95, "Excellent"),
+            (0.85, "Good"),
+            (0.75, "Fair"),
+            (0.50, "Poor"),
+            (0.25, "Critical"),
+        ]
 
         for hit_rate, expected_rating in test_cases:
             # Create mock cache stats with specific hit rate

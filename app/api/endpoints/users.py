@@ -9,7 +9,12 @@ from structlog.stdlib import get_logger
 from app.api.base import BaseCRUDRouter
 from app.api.deps import get_user_service
 from app.core.config import settings
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.rate_limiting import rate_limit
 from app.core.security import hash_password
 from app.models.user import User
@@ -174,7 +179,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, user_service: UserServiceImpl = Depends(get_user_service)
+            request: Request,
+            item_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[UserResponse]:
             return await self._get_item(request, item_id, user_service)
 
@@ -232,7 +239,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def delete_item(
-            request: Request, item_id: uuid.UUID, user_service: UserServiceImpl = Depends(get_user_service)
+            request: Request,
+            item_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[OperationResult]:
             # Check admin permission before proceeding
             self._check_admin_permission(request)
@@ -295,7 +304,8 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Get the current authenticated user's profile.",
         )
         async def get_current_user(
-            request: Request, user_service: UserServiceImpl = Depends(get_user_service)  # noqa: B008
+            request: Request,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get current user profile."""
             current_user_id = self._get_current_user_id(request)
@@ -399,7 +409,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_user_by_username(
-            request: Request, username: str, user_service: UserServiceImpl = Depends(get_user_service)  # noqa: B008
+            request: Request,
+            username: str,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get user by username."""
             user = await user_service.get_user_by_username(username)

@@ -114,7 +114,12 @@ def should_check_file(file_path: Path) -> bool:
         return True
 
     # Check CI configuration files
-    ci_files = [".travis.yml", ".circleci/config.yml", "azure-pipelines.yml", "Jenkinsfile"]
+    ci_files = [
+        ".travis.yml",
+        ".circleci/config.yml",
+        "azure-pipelines.yml",
+        "Jenkinsfile",
+    ]
     if any(ci_file in path_str for ci_file in ci_files):
         return True
 

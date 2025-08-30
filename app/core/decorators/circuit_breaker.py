@@ -14,7 +14,11 @@ else:
 
 from structlog.stdlib import get_logger
 
-from ...utils.circuit_breaker import CircuitBreakerConfig, CircuitBreakerException, get_circuit_breaker
+from ...utils.circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitBreakerException,
+    get_circuit_breaker,
+)
 
 logger = get_logger(__name__)
 
@@ -212,7 +216,12 @@ def database_operation(
             return await db.get(User, user_id)
         ```
     """
-    from sqlalchemy.exc import DBAPIError, DisconnectionError, OperationalError, TimeoutError
+    from sqlalchemy.exc import (
+        DBAPIError,
+        DisconnectionError,
+        OperationalError,
+        TimeoutError,
+    )
 
     config = CircuitBreakerConfig(
         failure_threshold=failure_threshold,

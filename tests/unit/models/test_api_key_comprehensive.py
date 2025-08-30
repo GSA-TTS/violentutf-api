@@ -285,7 +285,8 @@ class TestAPIKeyValidations:
 
         for prefix in invalid_prefixes:
             with pytest.raises(
-                ValueError, match="Key prefix must contain only alphanumeric characters, underscores, and hyphens"
+                ValueError,
+                match="Key prefix must contain only alphanumeric characters, underscores, and hyphens",
             ):
                 api_key.validate_key_prefix("key_prefix", prefix)
 
@@ -380,7 +381,11 @@ class TestAPIKeyValidations:
         api_key = APIKey()
 
         # Wildcard scopes should be valid even if not in VALID_SCOPES
-        wildcard_permissions = [{"custom:*": True}, {"resource:*": False}, {"another_resource:*": True}]
+        wildcard_permissions = [
+            {"custom:*": True},
+            {"resource:*": False},
+            {"another_resource:*": True},
+        ]
 
         for perms in wildcard_permissions:
             result = api_key.validate_permissions("permissions", perms)
@@ -831,7 +836,11 @@ class TestAPIKeyValidationEdgeCases:
         """Test validation when security validation fails."""
         api_key = APIKey()
 
-        with patch.object(api_key, "validate_string_security", side_effect=ValueError("Security validation failed")):
+        with patch.object(
+            api_key,
+            "validate_string_security",
+            side_effect=ValueError("Security validation failed"),
+        ):
             with pytest.raises(ValueError, match="Security validation failed"):
                 api_key.validate_name("name", "Valid Name")
 

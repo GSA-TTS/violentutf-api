@@ -12,7 +12,12 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel, ValidationError
+from tools.pre_audit.reporting import (
+    ExportManager,
+    ReportConfig,
+    SecurityLevel,
+    ValidationError,
+)
 
 
 class TestExportManager:
@@ -27,7 +32,11 @@ class TestExportManager:
     @pytest.fixture
     def config(self, temp_dir):
         """Create test configuration."""
-        return ReportConfig(output_dir=temp_dir, enable_parallel_export=True, export_formats=["html", "json", "pdf"])
+        return ReportConfig(
+            output_dir=temp_dir,
+            enable_parallel_export=True,
+            export_formats=["html", "json", "pdf"],
+        )
 
     @pytest.fixture
     def manager(self, config):
@@ -38,7 +47,10 @@ class TestExportManager:
     def sample_audit_data(self):
         """Create sample audit data."""
         return {
-            "audit_metadata": {"total_files_analyzed": 100, "repository_path": "/test/repo"},
+            "audit_metadata": {
+                "total_files_analyzed": 100,
+                "repository_path": "/test/repo",
+            },
             "overall_compliance_score": 85.0,
             "all_violations": [],
         }
@@ -131,7 +143,10 @@ class TestExportManager:
             manager.export_all(invalid_data)
 
         # Test with minimal but valid data
-        minimal_valid_data = {"all_violations": [], "audit_metadata": {"timestamp": "2025-08-20T15:00:00Z"}}
+        minimal_valid_data = {
+            "all_violations": [],
+            "audit_metadata": {"timestamp": "2025-08-20T15:00:00Z"},
+        }
 
         # This should work gracefully
         results = manager.export_all(minimal_valid_data)
@@ -153,7 +168,9 @@ class TestExportManager:
         """Test handling of generator errors."""
         # Mock the HTML generator to fail
         with patch.object(
-            manager.generators.get("html", MagicMock()), "generate", side_effect=Exception("Generator failed")
+            manager.generators.get("html", MagicMock()),
+            "generate",
+            side_effect=Exception("Generator failed"),
         ):
             results = manager.export_all(sample_audit_data)
 

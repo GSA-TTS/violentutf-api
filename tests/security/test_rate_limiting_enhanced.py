@@ -22,7 +22,13 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.rate_limiting import RATE_LIMITS, add_rate_limit_headers, get_rate_limit, get_rate_limit_key, rate_limit
+from app.core.rate_limiting import (
+    RATE_LIMITS,
+    add_rate_limit_headers,
+    get_rate_limit,
+    get_rate_limit_key,
+    rate_limit,
+)
 from tests.utils.testclient import SafeTestClient as FastAPITestClient
 
 
@@ -602,7 +608,12 @@ class TestRateLimitingCustomConfiguration:
         """Test dynamic rate limit calculation."""
 
         def get_dynamic_limit(user_tier: str) -> str:
-            tiers = {"free": "10/hour", "basic": "100/hour", "premium": "1000/hour", "enterprise": "10000/hour"}
+            tiers = {
+                "free": "10/hour",
+                "basic": "100/hour",
+                "premium": "1000/hour",
+                "enterprise": "10000/hour",
+            }
             return tiers.get(user_tier, "10/hour")
 
         # Test tier-based limits

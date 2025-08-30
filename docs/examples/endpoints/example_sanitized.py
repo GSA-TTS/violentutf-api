@@ -169,12 +169,14 @@ async def update_profile(
         # Validate sanitized data still meets requirements
         if not sanitized_data.get("username"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Username cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username cannot be empty after sanitization",
             )
 
         if not sanitized_data.get("email"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Email cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email cannot be empty after sanitization",
             )
 
         # Here you would save the sanitized data to database
@@ -188,7 +190,10 @@ async def update_profile(
         raise
     except Exception as e:
         logger.error("profile_update_error", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update profile")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update profile",
+        )
 
 
 @router.post("/blog/posts")
@@ -218,12 +223,14 @@ async def create_blog_post(
         # Additional validation for sanitized content
         if not sanitized_data.get("title"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Title cannot be empty after sanitization",
             )
 
         if not sanitized_data.get("content"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Content cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Content cannot be empty after sanitization",
             )
 
         # Ensure tags are still valid after sanitization
@@ -244,7 +251,10 @@ async def create_blog_post(
         raise
     except Exception as e:
         logger.error("blog_post_creation_error", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create blog post")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create blog post",
+        )
 
 
 @router.post("/blog/posts/{post_id}/comments")
@@ -275,12 +285,14 @@ async def create_comment(
         # Validate sanitized data
         if not sanitized_data.get("author_name"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Author name cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Author name cannot be empty after sanitization",
             )
 
         if not sanitized_data.get("content"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content cannot be empty after sanitization"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Comment content cannot be empty after sanitization",
             )
 
         return {
@@ -294,7 +306,10 @@ async def create_comment(
         raise
     except Exception as e:
         logger.error("comment_creation_error", error=str(e), post_id=post_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create comment")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create comment",
+        )
 
 
 class ContactForm(BaseModel):
@@ -374,4 +389,7 @@ async def submit_contact_form(
         raise
     except Exception as e:
         logger.error("contact_form_error", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to submit contact form")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit contact form",
+        )

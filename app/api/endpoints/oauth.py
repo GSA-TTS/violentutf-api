@@ -197,7 +197,11 @@ async def create_oauth_application(
         )
 
     except ValidationError as e:
-        logger.warning("OAuth application validation failed", user_id=str(current_user.id), error_type=type(e).__name__)
+        logger.warning(
+            "OAuth application validation failed",
+            user_id=str(current_user.id),
+            error_type=type(e).__name__,
+        )
         # CodeQL [py/stack-trace-exposure] Sanitized error message prevents information disclosure
         raise HTTPException(status_code=400, detail="Invalid application configuration")
     except Exception as e:
@@ -459,7 +463,11 @@ async def process_oauth_authorization(
 
         # Critical Security Check: Validate redirect URI against registered URIs to prevent open redirects
         if not _validate_redirect_uri(redirect_uri, app.redirect_uris):
-            logger.warning("Invalid redirect URI in authorization", client_id=client_id, redirect_uri=redirect_uri[:50])
+            logger.warning(
+                "Invalid redirect URI in authorization",
+                client_id=client_id,
+                redirect_uri=redirect_uri[:50],
+            )
             raise ValidationError("Invalid redirect URI")
 
         # Additional security: Ensure redirect_uri is from the validated list (double-check)
@@ -544,13 +552,21 @@ async def process_oauth_authorization(
                     try:
                         return _create_safe_redirect_response(validated_uri, app.redirect_uris, error_params)
                     except ValueError as ve:
-                        logger.error("Failed to build redirect URL for server error", error=str(ve))
+                        logger.error(
+                            "Failed to build redirect URL for server error",
+                            error=str(ve),
+                        )
         except Exception as e:
-            logger.warning("Failed to build secure redirect URL", error=str(e), redirect_uri=redirect_uri)
+            logger.warning(
+                "Failed to build secure redirect URL",
+                error=str(e),
+                redirect_uri=redirect_uri,
+            )
 
         # Fallback to generic error page if redirect_uri validation fails
         return HTMLResponse(
-            "<h1>Authorization Error</h1><p>An error occurred during authorization.</p>", status_code=500
+            "<h1>Authorization Error</h1><p>An error occurred during authorization.</p>",
+            status_code=500,
         )
 
 
@@ -759,7 +775,7 @@ async def revoke_authorization(
 
         return BaseResponse(
             data={"revoked": revoked},
-            message="Authorization revoked successfully" if revoked else "No active authorization found",
+            message=("Authorization revoked successfully" if revoked else "No active authorization found"),
             trace_id=getattr(request.state, "trace_id", None),
         )
 

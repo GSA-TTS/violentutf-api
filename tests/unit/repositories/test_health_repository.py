@@ -9,7 +9,12 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy.exc import DatabaseError, IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.exc import (
+    DatabaseError,
+    IntegrityError,
+    OperationalError,
+    SQLAlchemyError,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.health import HealthRepository
@@ -161,7 +166,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_get_database_stats_with_minimal_data(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test database stats with minimal data available."""
         # Arrange
@@ -189,7 +197,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_check_database_connectivity_healthy(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test database connectivity check when healthy."""
         # Arrange
@@ -290,7 +301,10 @@ class TestHealthRepository:
         # Mock psutil errors
         with (
             patch("psutil.cpu_percent", side_effect=Exception("CPU info unavailable")),
-            patch("psutil.virtual_memory", side_effect=Exception("Memory info unavailable")),
+            patch(
+                "psutil.virtual_memory",
+                side_effect=Exception("Memory info unavailable"),
+            ),
         ):
             # Act
             metrics = await health_repository.get_system_metrics()
@@ -326,7 +340,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_get_connection_pool_stats_success(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, sample_connection_pool_stats: Dict[str, Any]
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        sample_connection_pool_stats: Dict[str, Any],
     ):
         """Test successful connection pool statistics retrieval."""
         # Mock the engine and pool
@@ -433,7 +450,10 @@ class TestHealthRepository:
         mock_session.execute.return_value = result_mock
         mock_session.get_bind.return_value.pool.size = 20
 
-        with patch("psutil.cpu_percent", return_value=45.0), patch("psutil.virtual_memory") as mock_memory:
+        with (
+            patch("psutil.cpu_percent", return_value=45.0),
+            patch("psutil.virtual_memory") as mock_memory,
+        ):
             mock_memory.return_value.percent = 60.0
             mock_memory.return_value.total = 16 * 1024 * 1024 * 1024
 
@@ -467,7 +487,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_run_health_checks_system_degraded(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test health checks with degraded system performance."""
         # Arrange - Database healthy
@@ -476,7 +499,10 @@ class TestHealthRepository:
         mock_session.get_bind.return_value.pool.size = 20
 
         # Mock high system resource usage
-        with patch("psutil.cpu_percent", return_value=95.0), patch("psutil.virtual_memory") as mock_memory:
+        with (
+            patch("psutil.cpu_percent", return_value=95.0),
+            patch("psutil.virtual_memory") as mock_memory,
+        ):
             mock_memory.return_value.percent = 95.0
 
             # Act
@@ -509,7 +535,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_run_health_checks_with_thresholds(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test health checks with configurable thresholds."""
         # Arrange
@@ -536,7 +565,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_run_health_checks_response_time_tracking(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test health checks include response time tracking."""
         # Arrange
@@ -557,7 +589,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_concurrent_health_checks(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test concurrent health check operations."""
         # Arrange
@@ -598,14 +633,20 @@ class TestHealthRepository:
         try:
             health_status = await asyncio.wait_for(health_repository.run_health_checks(), timeout=5.0)
         except asyncio.TimeoutError:
-            health_status = {"overall_status": "timeout", "error": "Health check timed out"}
+            health_status = {
+                "overall_status": "timeout",
+                "error": "Health check timed out",
+            }
 
         # Assert
         assert health_status["overall_status"] == "timeout"
 
     @pytest.mark.asyncio
     async def test_memory_usage_during_health_checks(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test memory usage patterns during health checks."""
         # This test ensures health checks don't cause memory leaks
@@ -626,7 +667,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_health_check_data_integrity(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test data integrity in health check responses."""
         # Arrange
@@ -640,7 +684,10 @@ class TestHealthRepository:
         result_mock = query_result_factory(data=stats_data)
         mock_session.execute.return_value = result_mock
 
-        with patch("psutil.cpu_percent", return_value=55.5), patch("psutil.virtual_memory") as mock_memory:
+        with (
+            patch("psutil.cpu_percent", return_value=55.5),
+            patch("psutil.virtual_memory") as mock_memory,
+        ):
             mock_memory.return_value.percent = 72.3
             mock_memory.return_value.total = 8 * 1024 * 1024 * 1024
 
@@ -674,7 +721,10 @@ class TestHealthRepository:
 
     @pytest.mark.asyncio
     async def test_health_checks_with_custom_configuration(
-        self, health_repository: HealthRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        health_repository: HealthRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test health checks with custom configuration parameters."""
         # This test would verify health checks can be customized

@@ -223,7 +223,9 @@ class CircuitBreaker:
             self.stats.failure_count = 0  # Reset failure count
 
             logger.info(
-                "Circuit breaker closed", name=self.name, consecutive_successes=self.stats.consecutive_successes
+                "Circuit breaker closed",
+                name=self.name,
+                consecutive_successes=self.stats.consecutive_successes,
             )
 
     async def _half_open_circuit(self: "CircuitBreaker") -> None:
@@ -324,7 +326,9 @@ def with_circuit_breaker(
             pass
     """
 
-    def decorator(func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, T]],
+    ) -> Callable[..., Coroutine[Any, Any, T]]:
         circuit_breaker = get_circuit_breaker(name, config)
 
         @functools.wraps(func)

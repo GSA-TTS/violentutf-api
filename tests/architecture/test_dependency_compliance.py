@@ -178,7 +178,12 @@ class DependencyComplianceValidator:
     def get_installed_packages(self) -> Dict[str, str]:
         """Get currently installed packages and versions."""
         try:
-            result = subprocess.run(["pip", "list", "--format=json"], capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                ["pip", "list", "--format=json"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             packages = json.loads(result.stdout)
             return {pkg["name"].lower(): pkg["version"] for pkg in packages}
         except (subprocess.CalledProcessError, json.JSONDecodeError):
@@ -334,7 +339,13 @@ class DependencyComplianceValidator:
             # Check for restricted licenses that need review
             for restricted in self.RESTRICTED_LICENSES:
                 if restricted.lower() in license_info.lower():
-                    violations.append((package, license_info, f"Restricted license requiring review: {restricted}"))
+                    violations.append(
+                        (
+                            package,
+                            license_info,
+                            f"Restricted license requiring review: {restricted}",
+                        )
+                    )
                     break
 
         return violations
@@ -398,7 +409,10 @@ class DependencyComplianceValidator:
         try:
             # Get outdated packages
             result = subprocess.run(
-                ["pip", "list", "--outdated", "--format=json"], capture_output=True, text=True, check=True
+                ["pip", "list", "--outdated", "--format=json"],
+                capture_output=True,
+                text=True,
+                check=True,
             )
 
             if result.stdout:

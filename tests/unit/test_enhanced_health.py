@@ -48,7 +48,12 @@ class TestEnhancedHealthEndpoints:
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_all_healthy(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, mock_repository: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check when all dependencies are healthy."""
         # Mock all checks to return healthy
@@ -88,7 +93,12 @@ class TestEnhancedHealthEndpoints:
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_database_unhealthy(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, mock_repository: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check when database is unhealthy."""
         # Mock database as unhealthy
@@ -124,7 +134,12 @@ class TestEnhancedHealthEndpoints:
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_multiple_failures(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, mock_repository: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check with multiple failed dependencies."""
         # Mock multiple failures
@@ -155,7 +170,11 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["cache"] is False
         assert data["checks"]["disk_space"] is False
         assert data["checks"]["memory"] is True
-        assert set(data["details"]["failed_checks"]) == {"database", "cache", "disk_space"}
+        assert set(data["details"]["failed_checks"]) == {
+            "database",
+            "cache",
+            "disk_space",
+        }
 
     @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
@@ -424,7 +443,10 @@ class TestHealthEndpointIntegration:
 
         # Test readiness (might fail due to no real database/cache, but should be structured)
         ready_response = client.get("/api/v1/ready")
-        assert ready_response.status_code in [200, 503]  # Either all good or some services down
+        assert ready_response.status_code in [
+            200,
+            503,
+        ]  # Either all good or some services down
         ready_data = ready_response.json()
         assert "status" in ready_data
         assert "checks" in ready_data

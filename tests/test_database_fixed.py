@@ -8,7 +8,12 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.db.base import Base
 
@@ -186,7 +191,9 @@ async def function_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session(module_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    module_db_manager: DatabaseTestManager,
+) -> AsyncGenerator[AsyncSession, None]:
     """Provide database session with transaction rollback for test isolation."""
     async with module_db_manager.session_scope() as session:
         yield session
@@ -203,6 +210,8 @@ async def isolated_db_session(
 
 # For backward compatibility, provide test_db_manager as module-scoped
 @pytest_asyncio.fixture(scope="module")
-async def test_db_manager(module_db_manager: DatabaseTestManager) -> DatabaseTestManager:
+async def test_db_manager(
+    module_db_manager: DatabaseTestManager,
+) -> DatabaseTestManager:
     """Backward compatible test database manager (module-scoped)."""
     return module_db_manager

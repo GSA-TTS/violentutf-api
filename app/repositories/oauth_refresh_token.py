@@ -29,7 +29,10 @@ class OAuthRefreshTokenRepository(BaseRepository[OAuthRefreshToken]):
     ) -> List[OAuthRefreshToken]:
         """Get all refresh tokens for a user-application pair."""
         query = select(self.model).where(
-            and_(self.model.user_id == str(user_id), self.model.application_id == str(application_id))
+            and_(
+                self.model.user_id == str(user_id),
+                self.model.application_id == str(application_id),
+            )
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
@@ -41,7 +44,10 @@ class OAuthRefreshTokenRepository(BaseRepository[OAuthRefreshToken]):
         now = datetime.now(timezone.utc)
         query = (
             select(OAuthApplication, OAuthRefreshToken)
-            .join(OAuthRefreshToken, OAuthApplication.id == OAuthRefreshToken.application_id)
+            .join(
+                OAuthRefreshToken,
+                OAuthApplication.id == OAuthRefreshToken.application_id,
+            )
             .where(
                 and_(
                     OAuthRefreshToken.user_id == str(user_id),

@@ -501,7 +501,11 @@ class TestRetryIntegration:
     async def test_mixed_retryable_exceptions(self) -> None:
         """Test retry with multiple exception types."""
         call_count = 0
-        errors = [ConnectionError("No connection"), TimeoutError("Timeout"), ValueError("Bad value")]
+        errors = [
+            ConnectionError("No connection"),
+            TimeoutError("Timeout"),
+            ValueError("Bad value"),
+        ]
 
         async def mixed_errors() -> str:
             nonlocal call_count

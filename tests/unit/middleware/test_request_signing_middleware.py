@@ -186,7 +186,9 @@ class TestRequestSigningMiddleware:
 
         # Make request with signed headers - use content to control body exactly
         response = client.post(
-            "/api/v1/admin/secret", content=body, headers={**signed_headers, "content-type": "application/json"}
+            "/api/v1/admin/secret",
+            content=body,
+            headers={**signed_headers, "content-type": "application/json"},
         )
 
         assert response.status_code == 200
@@ -277,7 +279,9 @@ class TestRequestSigner:
         signer = RequestSigner("test_key", "test_secret")
 
         headers = signer.sign_request(
-            method="GET", path="/api/v1/test", query_params={"param1": "value1", "param2": "value2"}
+            method="GET",
+            path="/api/v1/test",
+            query_params={"param1": "value1", "param2": "value2"},
         )
 
         assert len(headers[SIGNATURE_HEADER]) == 64
@@ -317,7 +321,10 @@ class TestRequestSigner:
         nonce = "fixed_nonce"
 
         # Mock time and random generation
-        with patch("time.time", return_value=1234567890), patch("secrets.token_urlsafe", return_value="fixed_nonce"):
+        with (
+            patch("time.time", return_value=1234567890),
+            patch("secrets.token_urlsafe", return_value="fixed_nonce"),
+        ):
             headers1 = signer.sign_request("GET", "/test")
             headers2 = signer.sign_request("GET", "/test")
 
@@ -373,7 +380,15 @@ class TestRequestSigner:
 
         # Test validation
         is_valid = middleware._verify_signature(
-            method, path, query_params, headers, body, timestamp, nonce, expected_signature, api_secret
+            method,
+            path,
+            query_params,
+            headers,
+            body,
+            timestamp,
+            nonce,
+            expected_signature,
+            api_secret,
         )
 
         # Note: This is a sync test of async method, would need adjustment

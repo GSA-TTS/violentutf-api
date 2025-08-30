@@ -225,7 +225,9 @@ class TestMFAService:
                 with patch.object(mfa_service, "_verify_totp", return_value=True):
                     # Act
                     verified, returned_user = await mfa_service.verify_mfa_challenge(
-                        challenge_id="test_challenge_id", token="123456", ip_address="127.0.0.1"
+                        challenge_id="test_challenge_id",
+                        token="123456",
+                        ip_address="127.0.0.1",
                     )
 
         # Assert
@@ -313,7 +315,11 @@ class TestMFAService:
         with patch("app.services.mfa_policy_service.MFAPolicyService") as mock_policy_service_class:
             mock_policy_service = MagicMock()
             mock_policy_service.check_mfa_requirement = AsyncMock(
-                return_value=(False, None, {"enforcement_level": "recommended"})  # is_required  # policy  # details
+                return_value=(
+                    False,
+                    None,
+                    {"enforcement_level": "recommended"},
+                )  # is_required  # policy  # details
             )
             mock_policy_service_class.return_value = mock_policy_service
 
@@ -333,7 +339,11 @@ class TestMFAService:
         with patch("app.services.mfa_policy_service.MFAPolicyService") as mock_policy_service_class:
             mock_policy_service = MagicMock()
             mock_policy_service.check_mfa_requirement = AsyncMock(
-                return_value=(False, None, {"enforcement_level": "optional"})  # is_required  # policy  # details
+                return_value=(
+                    False,
+                    None,
+                    {"enforcement_level": "optional"},
+                )  # is_required  # policy  # details
             )
             mock_policy_service_class.return_value = mock_policy_service
 

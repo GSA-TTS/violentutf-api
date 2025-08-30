@@ -7,10 +7,22 @@ from typing import AsyncGenerator, Optional
 from uuid import uuid4
 
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.db.session import get_engine, get_session_maker, reset_engine
-from app.models.scan import Scan, ScanFinding, ScanReport, ScanSeverity, ScanStatus, ScanType
+from app.models.scan import (
+    Scan,
+    ScanFinding,
+    ScanReport,
+    ScanSeverity,
+    ScanStatus,
+    ScanType,
+)
 from app.models.task import Task, TaskPriority, TaskResult, TaskStatus
 from app.models.user import User
 
@@ -79,7 +91,10 @@ def reset_test_database():
 
 
 async def create_test_user(
-    db_session: AsyncSession, username: str = "testuser", email: str = "test@example.com", **kwargs
+    db_session: AsyncSession,
+    username: str = "testuser",
+    email: str = "test@example.com",
+    **kwargs,
 ) -> User:
     """Create a test user."""
     user_data = {
@@ -202,7 +217,14 @@ async def create_test_scan_finding(
         **{
             k: v
             for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
-            if k not in ["description", "category", "vulnerability_type", "confidence_score", "evidence"]
+            if k
+            not in [
+                "description",
+                "category",
+                "vulnerability_type",
+                "confidence_score",
+                "evidence",
+            ]
         },
     }
     finding = ScanFinding(**finding_data)

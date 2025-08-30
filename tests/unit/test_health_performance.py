@@ -91,7 +91,10 @@ class TestHealthEndpointPerformance:
     @pytest.mark.asyncio
     async def test_readiness_with_slow_dependencies(self) -> None:
         """Test readiness check with slow dependencies still uses caching effectively."""
-        from app.utils.monitoring import cache_health_check_result, clear_health_check_cache
+        from app.utils.monitoring import (
+            cache_health_check_result,
+            clear_health_check_cache,
+        )
 
         # Clear any existing cache
         clear_health_check_cache()

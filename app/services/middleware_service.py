@@ -199,7 +199,12 @@ class MiddlewareService:
             audit_service = AuditService(audit_repo)
 
             self._oauth_service = OAuth2Service(
-                app_repo, access_token_repo, refresh_token_repo, auth_code_repo, scope_repo, audit_service
+                app_repo,
+                access_token_repo,
+                refresh_token_repo,
+                auth_code_repo,
+                scope_repo,
+                audit_service,
             )
 
         return self._oauth_service

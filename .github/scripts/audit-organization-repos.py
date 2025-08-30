@@ -95,7 +95,14 @@ DANGEROUS_PATTERNS = [
 class RepoViolation:
     """Represents a violation found in a repository."""
 
-    def __init__(self, repo_name: str, file_path: str, line_num: int, line_content: str, pattern: DangerousPattern):
+    def __init__(
+        self,
+        repo_name: str,
+        file_path: str,
+        line_num: int,
+        line_content: str,
+        pattern: DangerousPattern,
+    ):
         self.repo_name = repo_name
         self.file_path = file_path
         self.line_num = line_num
@@ -167,7 +174,12 @@ class OrganizationAuditor:
             # Check individual files
             individual_files = []
             for content in contents:
-                if content.name in ["Makefile", ".travis.yml", "azure-pipelines.yml", "Jenkinsfile"]:
+                if content.name in [
+                    "Makefile",
+                    ".travis.yml",
+                    "azure-pipelines.yml",
+                    "Jenkinsfile",
+                ]:
                     individual_files.append(content.path)
 
             # Scan all identified files
@@ -242,7 +254,12 @@ class OrganizationAuditor:
         """Generate a comprehensive audit report."""
 
         # Organize violations by severity and repository
-        by_severity: Dict[str, List[RepoViolation]] = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": []}
+        by_severity: Dict[str, List[RepoViolation]] = {
+            "CRITICAL": [],
+            "HIGH": [],
+            "MEDIUM": [],
+            "LOW": [],
+        }
         by_repo: Dict[str, List[RepoViolation]] = {}
 
         for violation in self.violations:
@@ -272,13 +289,17 @@ class OrganizationAuditor:
 
         # Top violating repositories
         top_violators = sorted(
-            [(repo, len(violations)) for repo, violations in by_repo.items()], key=lambda x: x[1], reverse=True
+            [(repo, len(violations)) for repo, violations in by_repo.items()],
+            key=lambda x: x[1],
+            reverse=True,
         )[:10]
 
         report = {
             "audit_metadata": stats,
             "summary": {
-                "total_repositories_scanned": len(set(v.repo_name for v in self.violations)) if self.violations else 0,
+                "total_repositories_scanned": (
+                    len(set(v.repo_name for v in self.violations)) if self.violations else 0
+                ),
                 "violations_by_severity": {k: len(v) for k, v in by_severity.items()},
                 "top_violating_repositories": [{"repo": repo, "violations": count} for repo, count in top_violators],
             },

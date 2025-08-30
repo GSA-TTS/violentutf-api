@@ -53,27 +53,68 @@ class TestHTMLTemplateRendering:
             "period_end": datetime.now(timezone.utc).isoformat(),
             "executive_summary": "<p>Test executive summary with <strong>HTML</strong> content</p>",
             "leading_indicators": {
-                "automation_coverage": {"automation_percentage": 75.5, "automated_scans": 150, "manual_scans": 50},
-                "detection_time": {"average_detection_hours": 2.5, "min_hours": 0.5, "max_hours": 8.0},
-                "developer_adoption_rate": {"adoption_rate": 80.0, "active_users": 16, "total_users": 20},
-                "compliance_scores": {"overall_score": 85.0, "security_score": 90.0, "quality_score": 80.0},
+                "automation_coverage": {
+                    "automation_percentage": 75.5,
+                    "automated_scans": 150,
+                    "manual_scans": 50,
+                },
+                "detection_time": {
+                    "average_detection_hours": 2.5,
+                    "min_hours": 0.5,
+                    "max_hours": 8.0,
+                },
+                "developer_adoption_rate": {
+                    "adoption_rate": 80.0,
+                    "active_users": 16,
+                    "total_users": 20,
+                },
+                "compliance_scores": {
+                    "overall_score": 85.0,
+                    "security_score": 90.0,
+                    "quality_score": 80.0,
+                },
                 "violation_frequency": {
                     "top_violations": [
-                        {"category": "Security", "count": 45, "percentage": 30.0, "trend": "decreasing"},
-                        {"category": "Quality", "count": 30, "percentage": 20.0, "trend": "stable"},
-                        {"category": "Performance", "count": 15, "percentage": 10.0, "trend": "increasing"},
+                        {
+                            "category": "Security",
+                            "count": 45,
+                            "percentage": 30.0,
+                            "trend": "decreasing",
+                        },
+                        {
+                            "category": "Quality",
+                            "count": 30,
+                            "percentage": 20.0,
+                            "trend": "stable",
+                        },
+                        {
+                            "category": "Performance",
+                            "count": 15,
+                            "percentage": 10.0,
+                            "trend": "increasing",
+                        },
                     ]
                 },
             },
             "lagging_indicators": {
-                "architectural_debt_velocity": {"daily_velocity": -2.5, "trend": "improving", "total_debt_reduced": 75},
+                "architectural_debt_velocity": {
+                    "daily_velocity": -2.5,
+                    "trend": "improving",
+                    "total_debt_reduced": 75,
+                },
                 "security_incident_reduction": {
                     "reduction_percentage": 45.0,
                     "trend": "improving",
                     "incidents_prevented": 12,
                 },
-                "maintainability_improvements": {"improvement_rate": 15.0, "complexity_reduction": 20.0},
-                "development_velocity_impact": {"success_rate": 92.0, "average_time_saved": 4.5},
+                "maintainability_improvements": {
+                    "improvement_rate": 15.0,
+                    "complexity_reduction": 20.0,
+                },
+                "development_velocity_impact": {
+                    "success_rate": 92.0,
+                    "average_time_saved": 4.5,
+                },
             },
             "roi_analysis": {
                 "total_costs": 50000,
@@ -81,10 +122,23 @@ class TestHTMLTemplateRendering:
                 "net_benefit": 75000,
                 "roi_percentage": 150.0,
                 "payback_period_months": 6,
-                "implementation_costs": {"developer_time": 30000, "tool_licensing": 15000, "training": 5000},
-                "cost_avoidance": {"security_incidents": 60000, "technical_debt": 40000},
-                "productivity_gains": {"automation_savings": 15000, "faster_deployment": 10000},
-                "quality_improvements": {"defect_reduction": 8000, "customer_satisfaction": 7000},
+                "implementation_costs": {
+                    "developer_time": 30000,
+                    "tool_licensing": 15000,
+                    "training": 5000,
+                },
+                "cost_avoidance": {
+                    "security_incidents": 60000,
+                    "technical_debt": 40000,
+                },
+                "productivity_gains": {
+                    "automation_savings": 15000,
+                    "faster_deployment": 10000,
+                },
+                "quality_improvements": {
+                    "defect_reduction": 8000,
+                    "customer_satisfaction": 7000,
+                },
             },
             "recommendations": [
                 "Increase automation coverage to 90%",
@@ -110,7 +164,9 @@ class TestHTMLTemplateRendering:
         assert "{% if roi_analysis %}" in content
 
     def test_html_template_rendering_with_full_data(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test HTML template rendering with complete data."""
         report_generator._create_default_templates()
@@ -119,7 +175,8 @@ class TestHTMLTemplateRendering:
         from jinja2 import Environment, FileSystemLoader, select_autoescape
 
         env = Environment(
-            loader=FileSystemLoader(str(report_generator.template_dir)), autoescape=select_autoescape(["html", "xml"])
+            loader=FileSystemLoader(str(report_generator.template_dir)),
+            autoescape=select_autoescape(["html", "xml"]),
         )
         template = env.get_template("architectural_metrics.html")
 
@@ -160,7 +217,8 @@ class TestHTMLTemplateRendering:
         from jinja2 import Environment, FileSystemLoader, select_autoescape
 
         env = Environment(
-            loader=FileSystemLoader(str(report_generator.template_dir)), autoescape=select_autoescape(["html", "xml"])
+            loader=FileSystemLoader(str(report_generator.template_dir)),
+            autoescape=select_autoescape(["html", "xml"]),
         )
         template = env.get_template("architectural_metrics.html")
 
@@ -170,19 +228,25 @@ class TestHTMLTemplateRendering:
         assert "Executive Summary" not in html_output  # Section should be skipped
 
     def test_html_xss_prevention(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test XSS prevention in HTML templates."""
         report_generator._create_default_templates()
 
         # Inject potential XSS content
         sample_metrics_data["title"] = "<script>alert('XSS')</script>Test Report"
-        sample_metrics_data["recommendations"] = ["<img src=x onerror=alert('XSS')>", "Normal recommendation"]
+        sample_metrics_data["recommendations"] = [
+            "<img src=x onerror=alert('XSS')>",
+            "Normal recommendation",
+        ]
 
         from jinja2 import Environment, FileSystemLoader, select_autoescape
 
         env = Environment(
-            loader=FileSystemLoader(str(report_generator.template_dir)), autoescape=select_autoescape(["html", "xml"])
+            loader=FileSystemLoader(str(report_generator.template_dir)),
+            autoescape=select_autoescape(["html", "xml"]),
         )
         template = env.get_template("architectural_metrics.html")
 
@@ -208,7 +272,8 @@ class TestHTMLTemplateRendering:
         from jinja2 import Environment, FileSystemLoader, select_autoescape
 
         env = Environment(
-            loader=FileSystemLoader(str(report_generator.template_dir)), autoescape=select_autoescape(["html", "xml"])
+            loader=FileSystemLoader(str(report_generator.template_dir)),
+            autoescape=select_autoescape(["html", "xml"]),
         )
         template = env.get_template("architectural_metrics.html")
 
@@ -273,7 +338,11 @@ class TestChartGeneration:
     def test_automation_trend_chart_creation(self, report_generator: ArchitecturalReportGenerator):
         """Test automation trend chart generation."""
         leading_indicators = {
-            "automation_coverage": {"automated_scans": 150, "manual_scans": 50, "automation_percentage": 75.0}
+            "automation_coverage": {
+                "automated_scans": 150,
+                "manual_scans": 50,
+                "automation_percentage": 75.0,
+            }
         }
 
         chart_base64 = report_generator._create_automation_trend_chart(leading_indicators)
@@ -292,7 +361,14 @@ class TestChartGeneration:
         """Test security trend chart with monthly data."""
         lagging_indicators = {
             "security_incident_reduction": {
-                "monthly_data": {"2024-01": 10, "2024-02": 8, "2024-03": 6, "2024-04": 5, "2024-05": 4, "2024-06": 3},
+                "monthly_data": {
+                    "2024-01": 10,
+                    "2024-02": 8,
+                    "2024-03": 6,
+                    "2024-04": 5,
+                    "2024-05": 4,
+                    "2024-06": 3,
+                },
                 "reduction_percentage": 70.0,
             }
         }
@@ -309,7 +385,11 @@ class TestChartGeneration:
     def test_roi_breakdown_chart_generation(self, report_generator: ArchitecturalReportGenerator):
         """Test ROI breakdown pie chart generation."""
         roi_analysis = {
-            "implementation_costs": {"developer_time": 30000, "tool_licensing": 15000, "training": 5000},
+            "implementation_costs": {
+                "developer_time": 30000,
+                "tool_licensing": 15000,
+                "training": 5000,
+            },
             "cost_avoidance": {"security_incidents": 60000, "technical_debt": 40000},
             "productivity_gains": {"automation_savings": 15000},
             "quality_improvements": {"defect_reduction": 8000},
@@ -381,8 +461,14 @@ class TestPDFReportGeneration:
                 "compliance_scores": {"overall_score": 85.0},
             },
             "lagging_indicators": {
-                "architectural_debt_velocity": {"daily_velocity": -2.5, "trend": "improving"},
-                "security_incident_reduction": {"reduction_percentage": 45.0, "trend": "improving"},
+                "architectural_debt_velocity": {
+                    "daily_velocity": -2.5,
+                    "trend": "improving",
+                },
+                "security_incident_reduction": {
+                    "reduction_percentage": 45.0,
+                    "trend": "improving",
+                },
                 "maintainability_improvements": {"improvement_rate": 15.0},
                 "development_velocity_impact": {"success_rate": 92.0},
             },
@@ -402,7 +488,9 @@ class TestPDFReportGeneration:
 
     @pytest.mark.asyncio
     async def test_pdf_generation_basic(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test basic PDF generation."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -425,7 +513,9 @@ class TestPDFReportGeneration:
 
     @pytest.mark.asyncio
     async def test_pdf_generation_with_charts(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test PDF generation with embedded charts."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -445,7 +535,9 @@ class TestPDFReportGeneration:
 
     @pytest.mark.asyncio
     async def test_pdf_table_generation(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test PDF table generation with proper styling."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -463,7 +555,9 @@ class TestPDFReportGeneration:
 
     @pytest.mark.asyncio
     async def test_pdf_page_breaks(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test PDF page breaks between sections."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -481,7 +575,9 @@ class TestPDFReportGeneration:
 
     @pytest.mark.asyncio
     async def test_pdf_error_handling(
-        self, report_generator: ArchitecturalReportGenerator, sample_metrics_data: Dict[str, Any]
+        self,
+        report_generator: ArchitecturalReportGenerator,
+        sample_metrics_data: Dict[str, Any],
     ):
         """Test PDF generation error handling."""
         # Use invalid directory
@@ -562,7 +658,11 @@ class TestEmailTemplates:
         schedule = MagicMock()
         schedule.name = "Multi-Recipient Report"
         schedule.report_config = {}
-        schedule.notification_emails = ["user1@example.com", "user2@example.com", "user3@example.com"]
+        schedule.notification_emails = [
+            "user1@example.com",
+            "user2@example.com",
+            "user3@example.com",
+        ]
 
         report_results = [{"status": "success", "format": "pdf", "report_id": "123"}]
 
@@ -680,17 +780,30 @@ class TestUIComponents:
         template = Template(template_str)
 
         # Test ascending sort
-        output = template.render(column_name="Category", column_id="category", sort_column="category", sort_order="asc")
+        output = template.render(
+            column_name="Category",
+            column_id="category",
+            sort_column="category",
+            sort_order="asc",
+        )
         assert "<span>↑</span>" in output
 
         # Test descending sort
         output = template.render(
-            column_name="Category", column_id="category", sort_column="category", sort_order="desc"
+            column_name="Category",
+            column_id="category",
+            sort_column="category",
+            sort_order="desc",
         )
         assert "<span>↓</span>" in output
 
         # Test no sort
-        output = template.render(column_name="Category", column_id="category", sort_column="other", sort_order="asc")
+        output = template.render(
+            column_name="Category",
+            column_id="category",
+            sort_column="other",
+            sort_order="asc",
+        )
         assert "<span>↑</span>" not in output
         assert "<span>↓</span>" not in output
 
@@ -794,7 +907,9 @@ class TestTemplateValidation:
         template = env.from_string(template_str)
 
         output = template.render(
-            number=12345.67, date=datetime(2024, 1, 15), text="This is a long text that should be truncated"
+            number=12345.67,
+            date=datetime(2024, 1, 15),
+            text="This is a long text that should be truncated",
         )
 
         assert "$12,345.67" in output
@@ -821,7 +936,11 @@ class TestPerformance:
                 for i in range(1000)
             ],
             "metrics": {
-                f"metric_{i}": {"value": i * 1.5, "trend": ["up", "down", "stable"][i % 3]} for i in range(100)
+                f"metric_{i}": {
+                    "value": i * 1.5,
+                    "trend": ["up", "down", "stable"][i % 3],
+                }
+                for i in range(100)
             },
         }
 
@@ -875,7 +994,11 @@ class TestPerformance:
         {% endfor %}
         """
 
-        env = Environment(loader=DictLoader({"test.html": template_content}), cache_size=50, autoescape=True)
+        env = Environment(
+            loader=DictLoader({"test.html": template_content}),
+            cache_size=50,
+            autoescape=True,
+        )
 
         # First render (compiles template)
         import time
@@ -1146,7 +1269,11 @@ class TestIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             report_path = f"{temp_dir}/report.pdf"
             with patch.object(service.report_generator, "generate_architectural_metrics_report") as mock_generate:
-                mock_generate.return_value = {"report_id": "report-123", "file_path": report_path, "format": "pdf"}
+                mock_generate.return_value = {
+                    "report_id": "report-123",
+                    "file_path": report_path,
+                    "format": "pdf",
+                }
 
                 with patch("app.services.scheduled_report_service.send_email") as mock_email:
                     result = await service._execute_schedule(schedule)
@@ -1212,7 +1339,11 @@ class TestErrorRecovery:
         mock_db = AsyncMock()
         generator = ArchitecturalReportGenerator(mock_db)
 
-        with patch.object(generator, "_create_automation_trend_chart", side_effect=Exception("Chart error")):
+        with patch.object(
+            generator,
+            "_create_automation_trend_chart",
+            side_effect=Exception("Chart error"),
+        ):
             metrics_data = {"leading_indicators": {"automation_coverage": {"automated_scans": 100, "manual_scans": 50}}}
 
             # Should not crash, just return empty charts
@@ -1290,7 +1421,11 @@ class TestAdvancedTemplateFeatures:
         env = Environment(loader=DictLoader(templates), autoescape=True)
         template = env.get_template("main.html")
 
-        output = template.render(title="Test Report", content="Report content here", timestamp="2024-01-15 10:30:00")
+        output = template.render(
+            title="Test Report",
+            content="Report content here",
+            timestamp="2024-01-15 10:30:00",
+        )
 
         assert "<h1>Test Report</h1>" in output
         assert "<main>Report content here</main>" in output
@@ -1446,7 +1581,7 @@ class TestAdvancedTemplateFeatures:
         # Add global functions
         env.globals["current_year"] = lambda: datetime.now().year
         env.globals["format_bytes"] = lambda b: f"{b / 1024 / 1024:.2f} MB"
-        env.globals["calculate_percentage"] = lambda part, total: (part / total * 100) if total else 0
+        env.globals["calculate_percentage"] = lambda part, total: ((part / total * 100) if total else 0)
 
         template_str = """
         Copyright © {{ current_year() }}
@@ -1510,7 +1645,14 @@ class TestUIComponentInteractions:
         """
 
         form_fields = [
-            {"id": "name", "name": "name", "type": "text", "label": "Full Name", "required": True, "value": "John Doe"},
+            {
+                "id": "name",
+                "name": "name",
+                "type": "text",
+                "label": "Full Name",
+                "required": True,
+                "value": "John Doe",
+            },
             {
                 "id": "report_type",
                 "name": "report_type",
@@ -1740,9 +1882,21 @@ class TestUIComponentInteractions:
         """
 
         notifications = [
-            {"type": "success", "title": "Success!", "message": "Report generated successfully."},
-            {"type": "error", "title": "Error", "message": "Failed to connect to database."},
-            {"type": "warning", "message": "Low disk space detected.", "dismissible": False},
+            {
+                "type": "success",
+                "title": "Success!",
+                "message": "Report generated successfully.",
+            },
+            {
+                "type": "error",
+                "title": "Error",
+                "message": "Failed to connect to database.",
+            },
+            {
+                "type": "warning",
+                "message": "Low disk space detected.",
+                "dismissible": False,
+            },
             {"type": "info", "title": "Info", "message": "New version available."},
         ]
 
@@ -1809,7 +1963,12 @@ class TestMobileResponsiveness:
         output = template.render(
             brand_name="Report System",
             nav_items=[
-                {"url": "/dashboard", "label": "Dashboard", "icon": "📊", "active": True},
+                {
+                    "url": "/dashboard",
+                    "label": "Dashboard",
+                    "icon": "📊",
+                    "active": True,
+                },
                 {"url": "/reports", "label": "Reports", "icon": "📄"},
                 {"url": "/settings", "label": "Settings", "icon": "⚙️"},
             ],
@@ -1921,7 +2080,9 @@ class TestMobileResponsiveness:
 
         template = Template(template_str)
         output = template.render(
-            title="Responsive Typography", subtitle="Scales with viewport", content="This text adjusts to screen size."
+            title="Responsive Typography",
+            subtitle="Scales with viewport",
+            content="This text adjusts to screen size.",
         )
 
         # Check clamp functions for fluid typography
@@ -2395,4 +2556,12 @@ class TestDataVisualization:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--cov=app.services", "--cov=app.utils", "--cov-report=term-missing"])
+    pytest.main(
+        [
+            __file__,
+            "-v",
+            "--cov=app.services",
+            "--cov=app.utils",
+            "--cov-report=term-missing",
+        ]
+    )

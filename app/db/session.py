@@ -7,11 +7,21 @@ from typing import AsyncGenerator, Dict, Optional, Union
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
-from ..utils.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerException, CircuitState
+from ..utils.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerException,
+    CircuitState,
+)
 from ..utils.retry import with_retry
 
 logger = get_logger(__name__)
@@ -105,7 +115,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
             "Database engine created successfully",
             pool_size=pool_settings.get("pool_size", "N/A"),
             max_overflow=pool_settings.get("max_overflow", "N/A"),
-            database_type="sqlite" if database_url and "sqlite" in database_url else "postgresql",
+            database_type=("sqlite" if database_url and "sqlite" in database_url else "postgresql"),
         )
 
         # Sync public engine attribute for testing compatibility
@@ -446,7 +456,9 @@ async def init_database() -> None:
     logger.info("Database initialized successfully")
 
 
-def create_async_session_maker(bind_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+def create_async_session_maker(
+    bind_engine: AsyncEngine,
+) -> async_sessionmaker[AsyncSession]:
     """
     Create an async session maker with the given engine.
 
@@ -474,7 +486,11 @@ async def recover_database_connection(max_attempts: int = 3, retry_delay: float 
     Returns:
         True if recovery succeeded, False otherwise
     """
-    logger.warning("Starting database connection recovery", max_attempts=max_attempts, retry_delay=retry_delay)
+    logger.warning(
+        "Starting database connection recovery",
+        max_attempts=max_attempts,
+        retry_delay=retry_delay,
+    )
 
     for attempt in range(1, max_attempts + 1):
         try:

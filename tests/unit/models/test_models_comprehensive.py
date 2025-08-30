@@ -29,7 +29,12 @@ class TestAPIKeyModel:
 
     def test_api_key_str_representation(self):
         """Test APIKey string representation."""
-        api_key = APIKey(id=str(uuid.uuid4()), name="Test Key", user_id=str(uuid.uuid4()), key_prefix="test123")
+        api_key = APIKey(
+            id=str(uuid.uuid4()),
+            name="Test Key",
+            user_id=str(uuid.uuid4()),
+            key_prefix="test123",
+        )
 
         result = str(api_key)
 
@@ -41,7 +46,12 @@ class TestAPIKeyModel:
 
     def test_api_key_repr(self):
         """Test APIKey repr."""
-        api_key = APIKey(id=str(uuid.uuid4()), name="Test Key", user_id=str(uuid.uuid4()), key_prefix="test123")
+        api_key = APIKey(
+            id=str(uuid.uuid4()),
+            name="Test Key",
+            user_id=str(uuid.uuid4()),
+            key_prefix="test123",
+        )
 
         result = repr(api_key)
 
@@ -141,7 +151,11 @@ class TestAuditLogModel:
     def test_audit_log_str_representation(self):
         """Test AuditLog string representation."""
         audit_log = AuditLog(
-            id=str(uuid.uuid4()), action="user.create", resource_type="user", resource_id="12345", status="success"
+            id=str(uuid.uuid4()),
+            action="user.create",
+            resource_type="user",
+            resource_id="12345",
+            status="success",
         )
 
         result = str(audit_log)

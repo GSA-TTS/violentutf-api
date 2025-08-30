@@ -5,7 +5,14 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.scan import Scan, ScanFinding, ScanReport, ScanSeverity, ScanStatus, ScanType
+from app.models.scan import (
+    Scan,
+    ScanFinding,
+    ScanReport,
+    ScanSeverity,
+    ScanStatus,
+    ScanType,
+)
 
 
 class TestScanModel:
@@ -153,7 +160,10 @@ class TestScanModel:
     def test_scan_repr(self):
         """Test scan string representation."""
         scan = Scan(
-            name="Test Scan", scan_type=ScanType.PYRIT_ORCHESTRATOR, status=ScanStatus.RUNNING, created_by="testuser"
+            name="Test Scan",
+            scan_type=ScanType.PYRIT_ORCHESTRATOR,
+            status=ScanStatus.RUNNING,
+            created_by="testuser",
         )
         scan.id = "scan-id-123"
 
@@ -498,7 +508,11 @@ class TestScanReportModel:
         }
 
         complex_summary = {
-            "scan_metrics": {"duration_minutes": 30, "requests_sent": 1500, "responses_received": 1498},
+            "scan_metrics": {
+                "duration_minutes": 30,
+                "requests_sent": 1500,
+                "responses_received": 1498,
+            },
             "finding_summary": {
                 "total": 8,
                 "by_severity": {"critical": 0, "high": 2, "medium": 3, "low": 3},

@@ -47,7 +47,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
                 return None
 
             # Build filters for key hash and soft delete
-            filters = [self.model.key_hash == key_hash, self.model.is_deleted == False]  # noqa: E712
+            filters = [
+                self.model.key_hash == key_hash,
+                self.model.is_deleted == False,
+            ]  # noqa: E712
 
             # Add organization filtering if provided
             if organization_id:
@@ -88,7 +91,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
         """
         try:
             # Build filters for prefix and soft delete
-            filters = [self.model.key_prefix == key_prefix, self.model.is_deleted == False]  # noqa: E712
+            filters = [
+                self.model.key_prefix == key_prefix,
+                self.model.is_deleted == False,
+            ]  # noqa: E712
 
             # Add organization filtering if provided
             if organization_id:
@@ -100,7 +106,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             api_keys = list(result.scalars().all())
 
             self.logger.debug(
-                "API keys found by prefix", key_prefix=key_prefix, organization_id=organization_id, count=len(api_keys)
+                "API keys found by prefix",
+                key_prefix=key_prefix,
+                organization_id=organization_id,
+                count=len(api_keys),
             )
             return api_keys
 
@@ -138,7 +147,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
                 api_keys = [key for key in api_keys if not key.is_expired()]
 
             self.logger.debug(
-                "API keys found for user", user_id=user_id, count=len(api_keys), include_expired=include_expired
+                "API keys found for user",
+                user_id=user_id,
+                count=len(api_keys),
+                include_expired=include_expired,
             )
             return api_keys
 
@@ -236,7 +248,9 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
         try:
             query = select(self.model).where(
                 and_(
-                    self.model.name == name, self.model.user_id == user_id, self.model.is_deleted == False  # noqa: E712
+                    self.model.name == name,
+                    self.model.user_id == user_id,
+                    self.model.is_deleted == False,  # noqa: E712
                 )
             )
 
@@ -251,7 +265,12 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             return api_key
 
         except Exception as e:
-            self.logger.error("Failed to get API key by name and user", name=name, user_id=user_id, error=str(e))
+            self.logger.error(
+                "Failed to get API key by name and user",
+                name=name,
+                user_id=user_id,
+                error=str(e),
+            )
             raise
 
     async def record_usage(
@@ -348,7 +367,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
 
         except Exception as e:
             self.logger.error(
-                "Failed to check API key permission", api_key_id=api_key_id, permission=permission, error=str(e)
+                "Failed to check API key permission",
+                api_key_id=api_key_id,
+                permission=permission,
+                error=str(e),
             )
             raise
 
@@ -387,7 +409,11 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             return success
 
         except Exception as e:
-            self.logger.error("Failed to update API key permissions", api_key_id=api_key_id, error=str(e))
+            self.logger.error(
+                "Failed to update API key permissions",
+                api_key_id=api_key_id,
+                error=str(e),
+            )
             raise
 
     async def extend_expiration(
@@ -444,7 +470,11 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             return success
 
         except Exception as e:
-            self.logger.error("Failed to update API key expiration", api_key_id=api_key_id, error=str(e))
+            self.logger.error(
+                "Failed to update API key expiration",
+                api_key_id=api_key_id,
+                error=str(e),
+            )
             raise
 
     async def get_expired_keys(self, limit: int = 100) -> List[APIKey]:
@@ -462,7 +492,12 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
 
             query = (
                 select(self.model)
-                .where(and_(self.model.expires_at < current_time, self.model.is_deleted == False))  # noqa: E712
+                .where(
+                    and_(
+                        self.model.expires_at < current_time,
+                        self.model.is_deleted == False,
+                    )
+                )  # noqa: E712
                 .order_by(self.model.expires_at.asc())
                 .limit(limit)
             )
@@ -520,7 +555,8 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             # For security compliance, reject API key validation at repository level
             # API keys should be hashed at service level with proper password hashing
             self.logger.warning(
-                "Deprecated API key validation method used - use service layer validation instead", method="validate"
+                "Deprecated API key validation method used - use service layer validation instead",
+                method="validate",
             )
             return None
 
@@ -592,7 +628,9 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
                 select(self.model)
                 .where(
                     and_(
-                        self.model.user_id == user_uuid, self.model.is_deleted == False, self.model.revoked_at.is_(None)
+                        self.model.user_id == user_uuid,
+                        self.model.is_deleted == False,
+                        self.model.revoked_at.is_(None),
                     )
                 )
                 .order_by(self.model.created_at.desc())
@@ -626,7 +664,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
                 and_(
                     self.model.is_deleted == False,
                     self.model.revoked_at.is_(None),
-                    or_(self.model.expires_at.is_(None), self.model.expires_at > datetime.now(timezone.utc)),
+                    or_(
+                        self.model.expires_at.is_(None),
+                        self.model.expires_at > datetime.now(timezone.utc),
+                    ),
                 )
             )
             active_result = await self.session.execute(active_query)
@@ -634,7 +675,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
 
             # Expired keys count
             expired_query = select(func.count(self.model.id)).where(
-                and_(self.model.expires_at.is_not(None), self.model.expires_at <= datetime.now(timezone.utc))
+                and_(
+                    self.model.expires_at.is_not(None),
+                    self.model.expires_at <= datetime.now(timezone.utc),
+                )
             )
             expired_result = await self.session.execute(expired_query)
             expired_keys = expired_result.scalar() or 0
@@ -647,7 +691,10 @@ class APIKeyRepository(BaseRepository[APIKey], IApiKeyRepository):
             # Keys used today
             today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             used_today_query = select(func.count(self.model.id)).where(
-                and_(self.model.last_used_at.is_not(None), self.model.last_used_at >= today_start)
+                and_(
+                    self.model.last_used_at.is_not(None),
+                    self.model.last_used_at >= today_start,
+                )
             )
             used_today_result = await self.session.execute(used_today_query)
             keys_used_today = used_today_result.scalar() or 0

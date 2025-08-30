@@ -139,7 +139,10 @@ class TestAuthenticationFlowIntegration:
             assert "token" in response.json()
 
             # SQL injection attempt - should be blocked
-            response = client.post("/auth/login", json={"username": "admin' OR '1'='1", "password": "anything"})
+            response = client.post(
+                "/auth/login",
+                json={"username": "admin' OR '1'='1", "password": "anything"},
+            )
             assert response.status_code == 422  # Validation error
 
             # Rate limiting - make multiple requests
@@ -157,7 +160,11 @@ class TestAuthenticationFlowIntegration:
         with SafeTestClient(security_app) as client:
             # XSS attempt in username
             response = client.post(
-                "/auth/login", json={"username": "<script>alert('xss')</script>", "password": "test123"}
+                "/auth/login",
+                json={
+                    "username": "<script>alert('xss')</script>",
+                    "password": "test123",
+                },
             )
             assert response.status_code == 422
 
@@ -185,7 +192,12 @@ class TestUserCreationIntegration:
         with SafeTestClient(security_app) as client:
             # Unsigned request should fail
             response = client.post(
-                "/api/users", json={"username": "newuser", "email": "new@example.com", "bio": "Test bio"}
+                "/api/users",
+                json={
+                    "username": "newuser",
+                    "email": "new@example.com",
+                    "bio": "Test bio",
+                },
             )
             assert response.status_code == 401  # No signing headers
 
@@ -205,11 +217,16 @@ class TestUserCreationIntegration:
 
             # Mock API secret lookup
             with patch(
-                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret", return_value="test_secret"
+                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret",
+                return_value="test_secret",
             ):
                 response = client.post(
                     "/api/users",
-                    json={"username": "newuser", "email": "new@example.com", "bio": "Test bio"},
+                    json={
+                        "username": "newuser",
+                        "email": "new@example.com",
+                        "bio": "Test bio",
+                    },
                     headers=headers,
                 )
 
@@ -223,16 +240,29 @@ class TestUserCreationIntegration:
 
         with SafeTestClient(security_app) as client:
             with patch(
-                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret", return_value="test_secret"
+                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret",
+                return_value="test_secret",
             ):
                 # Invalid email
                 test_cases = [
                     # Invalid email
-                    {"username": "validuser", "email": "not-an-email", "bio": "Valid bio"},
+                    {
+                        "username": "validuser",
+                        "email": "not-an-email",
+                        "bio": "Valid bio",
+                    },
                     # SQL injection in username
-                    {"username": "user'; DROP TABLE users; --", "email": "valid@example.com", "bio": "Bio"},
+                    {
+                        "username": "user'; DROP TABLE users; --",
+                        "email": "valid@example.com",
+                        "bio": "Bio",
+                    },
                     # XSS in bio
-                    {"username": "validuser", "email": "valid@example.com", "bio": "<script>alert('XSS')</script>"},
+                    {
+                        "username": "validuser",
+                        "email": "valid@example.com",
+                        "bio": "<script>alert('XSS')</script>",
+                    },
                 ]
 
                 for test_data in test_cases:
@@ -262,11 +292,16 @@ class TestUserCreationIntegration:
 
         with SafeTestClient(security_app) as client:
             with patch(
-                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret", return_value="test_secret"
+                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret",
+                return_value="test_secret",
             ):
                 # Make requests up to rate limit
                 for i in range(11):  # Rate limit is 10/minute
-                    user_data = {"username": f"user{i}", "email": f"user{i}@example.com", "bio": f"Bio for user {i}"}
+                    user_data = {
+                        "username": f"user{i}",
+                        "email": f"user{i}@example.com",
+                        "bio": f"Bio for user {i}",
+                    }
 
                     body = json.dumps(user_data).encode()
                     headers = signer.sign_request(
@@ -381,7 +416,11 @@ class TestSearchEndpointIntegration:
 
             # Search with nested objects (potential security risk)
             response = client.post(
-                "/api/search", json={"query": "test", "filters": {"nested": {"deep": {"value": "test"}}}}
+                "/api/search",
+                json={
+                    "query": "test",
+                    "filters": {"nested": {"deep": {"value": "test"}}},
+                },
             )
             assert response.status_code == 200  # Should handle safely
 
@@ -487,7 +526,10 @@ class TestPerformanceWithSecurity:
                 # Different operations to test various security features
                 if index % 3 == 0:
                     # Test rate limiting
-                    return client.post("/auth/login", json={"username": f"user{index}", "password": "pass"})
+                    return client.post(
+                        "/auth/login",
+                        json={"username": f"user{index}", "password": "pass"},
+                    )
                 elif index % 3 == 1:
                     # Test circuit breaker
                     return client.get("/api/external")
@@ -511,7 +553,10 @@ class TestSecurityMonitoring:
                     # Trigger various security events
 
                     # SQL injection attempt
-                    client.post("/auth/login", json={"username": "admin' OR '1'='1", "password": "test"})
+                    client.post(
+                        "/auth/login",
+                        json={"username": "admin' OR '1'='1", "password": "test"},
+                    )
 
                     # Rate limiting
                     for _ in range(10):

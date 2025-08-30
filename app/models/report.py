@@ -68,24 +68,36 @@ class Report(BaseModelMixin, Base):
 
     # Template information
     template_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("report_template.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("report_template.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     template: Mapped[Optional["ReportTemplate"]] = relationship("ReportTemplate")
     template_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Source data references
     scan_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("scan.id", ondelete="CASCADE"), nullable=True, index=True
+        String(255),
+        ForeignKey("scan.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     scan: Mapped[Optional[Scan]] = relationship("Scan")
 
     execution_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("orchestrator_execution.id", ondelete="CASCADE"), nullable=True, index=True
+        String(255),
+        ForeignKey("orchestrator_execution.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     execution: Mapped[Optional[OrchestratorExecution]] = relationship("OrchestratorExecution")
 
     task_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("task.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("task.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     task: Mapped[Optional[Task]] = relationship("Task")
 
@@ -195,7 +207,10 @@ class ReportSchedule(BaseModelMixin, Base):
 
     # Report configuration
     report_template_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("report_template.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("report_template.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     report_template: Mapped[ReportTemplate] = relationship("ReportTemplate")
 

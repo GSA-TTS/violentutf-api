@@ -210,7 +210,9 @@ class FilterOperator(BaseSchema):
     @field_validator("value")
     @classmethod
     def validate_value_for_operator(
-        cls: Type["FilterOperator"], v: Union[str, int, float, bool, List[object], None], info: ValidationInfo
+        cls: Type["FilterOperator"],
+        v: Union[str, int, float, bool, List[object], None],
+        info: ValidationInfo,
     ) -> Union[str, int, float, bool, List[object], None]:
         """Validate value based on operator."""
         if not hasattr(info, "data") or "operator" not in info.data:
@@ -235,7 +237,11 @@ class AdvancedFilter(BaseFilter):
     filters: Optional[List[FilterOperator]] = Field(None, description="Advanced filter operations")
 
     # Logical operators for combining filters
-    filter_logic: str = Field(default="and", pattern="^(and|or)$", description="Logic for combining filters (and/or)")
+    filter_logic: str = Field(
+        default="and",
+        pattern="^(and|or)$",
+        description="Logic for combining filters (and/or)",
+    )
 
 
 class BaseEntityResponse(BaseSchema):

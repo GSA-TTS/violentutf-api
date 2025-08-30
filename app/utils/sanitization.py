@@ -163,7 +163,11 @@ def sanitize_html(
         for pattern in XSS_PATTERNS:
             sanitized = re.sub(pattern, "", sanitized, flags=re.IGNORECASE)
 
-        logger.debug("HTML sanitized", original_length=len(html_content), sanitized_length=len(sanitized))
+        logger.debug(
+            "HTML sanitized",
+            original_length=len(html_content),
+            sanitized_length=len(sanitized),
+        )
         return sanitized
 
     except Exception as e:
@@ -559,7 +563,11 @@ def _sanitize_javascript_patterns(text: str) -> str:
 
 
 def sanitize_string(
-    text: str, max_length: int = 1000, allow_html: bool = False, strip_sql: bool = True, strip_js: bool = False
+    text: str,
+    max_length: int = 1000,
+    allow_html: bool = False,
+    strip_sql: bool = True,
+    strip_js: bool = False,
 ) -> str:
     """
     Sanitize a string for general use.
@@ -606,7 +614,10 @@ def sanitize_string(
 
 
 def sanitize_dict(
-    data: Any, max_key_length: int = 100, max_value_length: int = 1000, allow_html: bool = False  # noqa: ANN401
+    data: Any,
+    max_key_length: int = 100,
+    max_value_length: int = 1000,
+    allow_html: bool = False,  # noqa: ANN401
 ) -> Dict[str, Any]:  # noqa: C901
     """
     Sanitize all string values in a dictionary.

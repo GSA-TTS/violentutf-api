@@ -97,7 +97,7 @@ class GitTemporalAnalysisResult:
         return {
             "file_path": self.file_path,
             "temporal_violations": [v.to_dict() for v in self.temporal_violations],
-            "weighting_result": self.weighting_result.to_dict() if self.weighting_result else None,
+            "weighting_result": (self.weighting_result.to_dict() if self.weighting_result else None),
             "git_fixes": [f.to_dict() for f in self.git_fixes],
             "temporal_patterns": self.temporal_patterns,
             "risk_score": self.risk_score,
@@ -297,7 +297,10 @@ class GitTemporalIntegrator:
             business_impact = self._map_fix_type_to_impact(fix.fix_type)
 
             # Calculate severity based on fix confidence and type
-            severity = min(fix.confidence * self._get_fix_type_severity_multiplier(fix.fix_type), 1.0)
+            severity = min(
+                fix.confidence * self._get_fix_type_severity_multiplier(fix.fix_type),
+                1.0,
+            )
 
             violation = TemporalViolation(
                 file_path=fix.files_changed[0] if fix.files_changed else "unknown",
@@ -425,7 +428,7 @@ class GitTemporalIntegrator:
             "pattern_detected": True,
             "total_violations": len(violations),
             "time_span_days": ((max(timestamps) - min(timestamps)).days if len(timestamps) > 1 else 0),
-            "average_severity": float(sum(severities) / len(severities)) if severities else 0.0,
+            "average_severity": (float(sum(severities) / len(severities)) if severities else 0.0),
             "severity_trend": "stable",
         }
 

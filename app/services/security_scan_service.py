@@ -70,7 +70,11 @@ class SecurityScanService:
         return scan
 
     async def list_security_scans(
-        self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
     ) -> List[SecurityScan]:
         """List security scans with pagination and filtering.
 

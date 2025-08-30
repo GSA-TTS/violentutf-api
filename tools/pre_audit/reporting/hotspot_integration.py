@@ -228,7 +228,8 @@ class HotspotDataTransformer:
         transformed_hotspots = []
         for hotspot in hotspots_raw:
             transformed = self.transform_hotspot_for_report(
-                hotspot, config.get("security_level", "internal") if config else "internal"
+                hotspot,
+                config.get("security_level", "internal") if config else "internal",
             )
             transformed_hotspots.append(transformed)
 
@@ -253,8 +254,8 @@ class HotspotDataTransformer:
             "analysis_timestamp": datetime.now().isoformat(),
             "total_files_analyzed": len(set(h.get("file_path") for h in transformed_hotspots)),
             "statistical_analysis_available": HAS_STATISTICAL_ANALYSIS,
-            "confidence_threshold": config.get("statistical_confidence_threshold", 0.95) if config else 0.95,
-            "temporal_window_months": config.get("temporal_window_months", 6) if config else 6,
+            "confidence_threshold": (config.get("statistical_confidence_threshold", 0.95) if config else 0.95),
+            "temporal_window_months": (config.get("temporal_window_months", 6) if config else 6),
         }
 
         return HotspotAnalysisResult(
@@ -320,7 +321,11 @@ class HotspotDataTransformer:
         else:
             trend_percentages = trends
 
-        return {"counts": trends, "percentages": trend_percentages, "summary": self._summarize_trends(trends)}
+        return {
+            "counts": trends,
+            "percentages": trend_percentages,
+            "summary": self._summarize_trends(trends),
+        }
 
     def _summarize_trends(self, trends: Dict[str, int]) -> str:
         """Create a summary of temporal trends."""
@@ -416,7 +421,7 @@ class HotspotDataTransformer:
             "available": True,
             "confidence_distribution": confidence_levels,
             "average_p_value": float(np.mean(p_values)) if p_values else None,
-            "average_effect_size": float(np.mean(effect_sizes)) if effect_sizes else None,
+            "average_effect_size": (float(np.mean(effect_sizes)) if effect_sizes else None),
             "high_confidence_percentage": self._calculate_high_confidence_percentage(confidence_levels),
         }
 
@@ -450,10 +455,21 @@ class HotspotDataTransformer:
             "risk_std_dev": 0,
             "temporal_trends": {
                 "counts": {"improving": 0, "stable": 0, "degrading": 0, "unknown": 0},
-                "percentages": {"improving": 0, "stable": 0, "degrading": 0, "unknown": 0},
+                "percentages": {
+                    "improving": 0,
+                    "stable": 0,
+                    "degrading": 0,
+                    "unknown": 0,
+                },
                 "summary": "No hotspot data available",
             },
             "top_risk_areas": [],
             "confidence_statistics": {"available": False},
-            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0, "minimal": 0},
+            "risk_distribution": {
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "minimal": 0,
+            },
         }

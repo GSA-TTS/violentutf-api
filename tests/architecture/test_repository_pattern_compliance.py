@@ -191,7 +191,12 @@ class TestDatabaseAccessPatterns:
         Only specific modules should handle session creation/management.
         """
         architecture = get_evaluable_architecture(root_path=".", module_path="app")
-        allowed_session_modules = ["app.db.session", "app.api.deps", "app.repositories", "app.core.container"]
+        allowed_session_modules = [
+            "app.db.session",
+            "app.api.deps",
+            "app.repositories",
+            "app.core.container",
+        ]
 
         for module_pattern in allowed_session_modules:
             rule = (

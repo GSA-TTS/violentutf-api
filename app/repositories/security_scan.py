@@ -22,7 +22,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         self, status: ScanStatus, organization_id: Optional[str] = None, limit: int = 50
     ) -> List[SecurityScan]:
         """Get scans by status."""
-        filters = [self.model.status == status, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.status == status,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if organization_id:
             filters.append(self.model.organization_id == organization_id)
@@ -40,7 +43,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         limit: int = 100,
     ) -> List[SecurityScan]:
         """Get scans by type."""
-        filters = [self.model.scan_type == scan_type, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.scan_type == scan_type,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if not include_completed:
             filters.append(self.model.status != ScanStatus.COMPLETED)
@@ -55,7 +61,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
 
     async def get_running_scans(self, organization_id: Optional[str] = None) -> List[SecurityScan]:
         """Get all currently running scans."""
-        filters = [self.model.status == ScanStatus.RUNNING, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.status == ScanStatus.RUNNING,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if organization_id:
             filters.append(self.model.organization_id == organization_id)
@@ -87,7 +96,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         self, target: str, organization_id: Optional[str] = None, limit: int = 50
     ) -> List[SecurityScan]:
         """Get scans for a specific target."""
-        filters = [self.model.target == target, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.target == target,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if organization_id:
             filters.append(self.model.organization_id == organization_id)
@@ -98,10 +110,16 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         return list(result.scalars().all())
 
     async def get_scans_by_initiator(
-        self, initiator: str, organization_id: Optional[str] = None, days_back: Optional[int] = None
+        self,
+        initiator: str,
+        organization_id: Optional[str] = None,
+        days_back: Optional[int] = None,
     ) -> List[SecurityScan]:
         """Get scans initiated by a specific user."""
-        filters = [self.model.initiated_by == initiator, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.initiated_by == initiator,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if days_back:
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
@@ -116,7 +134,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         return list(result.scalars().all())
 
     async def get_baseline_scans(
-        self, scan_type: Optional[ScanType] = None, target: Optional[str] = None, organization_id: Optional[str] = None
+        self,
+        scan_type: Optional[ScanType] = None,
+        target: Optional[str] = None,
+        organization_id: Optional[str] = None,
     ) -> List[SecurityScan]:
         """Get baseline scans for comparison purposes."""
         filters = [
@@ -143,7 +164,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         self, pipeline_id: str, organization_id: Optional[str] = None
     ) -> List[SecurityScan]:
         """Get all scans belonging to a specific pipeline."""
-        filters = [self.model.pipeline_id == pipeline_id, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.pipeline_id == pipeline_id,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if organization_id:
             filters.append(self.model.organization_id == organization_id)
@@ -305,7 +329,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
             "current_scan": {
                 "id": current_scan.id,
                 "name": current_scan.name,
-                "completed_at": current_scan.completed_at.isoformat() if current_scan.completed_at else None,
+                "completed_at": (current_scan.completed_at.isoformat() if current_scan.completed_at else None),
                 "total_findings": current_scan.total_findings,
                 "findings_by_severity": {
                     "critical": current_scan.critical_findings,
@@ -318,7 +342,7 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
             "baseline_scan": {
                 "id": baseline_scan.id,
                 "name": baseline_scan.name,
-                "completed_at": baseline_scan.completed_at.isoformat() if baseline_scan.completed_at else None,
+                "completed_at": (baseline_scan.completed_at.isoformat() if baseline_scan.completed_at else None),
                 "total_findings": baseline_scan.total_findings,
                 "findings_by_severity": {
                     "critical": baseline_scan.critical_findings,
@@ -345,7 +369,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         }
 
     async def cleanup_old_scans(
-        self, retention_days: int = 90, organization_id: Optional[str] = None, dry_run: bool = False
+        self,
+        retention_days: int = 90,
+        organization_id: Optional[str] = None,
+        dry_run: bool = False,
     ) -> int:
         """Clean up old scan records (soft delete)."""
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
@@ -379,13 +406,20 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
         return result.rowcount or 0
 
     async def get_user_scans(
-        self, user_id: str, limit: int = 50, status_filter: Optional[str] = None, organization_id: Optional[str] = None
+        self,
+        user_id: str,
+        limit: int = 50,
+        status_filter: Optional[str] = None,
+        organization_id: Optional[str] = None,
     ) -> List[SecurityScan]:
         """Get scans for a specific user."""
         if not user_id:
             return []
 
-        filters = [self.model.initiated_by == user_id, self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.initiated_by == user_id,
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if status_filter:
             # Convert string status to enum if needed
@@ -469,7 +503,10 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
             # QUEUED status might not exist in the enum
             pass
 
-        filters = [self.model.status.in_(active_statuses), self.model.is_deleted == False]  # noqa: E712
+        filters = [
+            self.model.status.in_(active_statuses),
+            self.model.is_deleted == False,
+        ]  # noqa: E712
 
         if organization_id:
             # TODO: SecurityScan model doesn't have organization_id field yet
@@ -529,7 +566,11 @@ class SecurityScanRepository(BaseRepository[SecurityScan]):
             if scan.started_at:
                 duration = (now - scan.started_at).total_seconds()
                 scan.duration_seconds = int(duration)
-        elif status_enum in [ScanStatus.FAILED, ScanStatus.CANCELLED, ScanStatus.TIMEOUT]:
+        elif status_enum in [
+            ScanStatus.FAILED,
+            ScanStatus.CANCELLED,
+            ScanStatus.TIMEOUT,
+        ]:
             scan.completed_at = now
 
         # Update results if provided

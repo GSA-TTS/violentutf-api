@@ -42,7 +42,10 @@ class OAuthAccessTokenRepository(BaseRepository[OAuthAccessToken]):
     ) -> List[OAuthAccessToken]:
         """Get all access tokens for a user-application pair."""
         query = select(self.model).where(
-            and_(self.model.user_id == str(user_id), self.model.application_id == str(application_id))
+            and_(
+                self.model.user_id == str(user_id),
+                self.model.application_id == str(application_id),
+            )
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())

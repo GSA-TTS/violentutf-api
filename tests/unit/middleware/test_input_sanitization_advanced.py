@@ -419,7 +419,9 @@ class TestPerformanceAndDoS:
         for attack in memory_attacks[:1]:  # Test conservatively
             try:
                 response = client.post(
-                    "/text", content=attack[:10000], headers={"Content-Type": "text/plain"}  # Limit size
+                    "/text",
+                    content=attack[:10000],
+                    headers={"Content-Type": "text/plain"},  # Limit size
                 )
                 assert response.status_code in [200, 413]
             except Exception:
@@ -487,7 +489,11 @@ class TestEncodingAttacks:
 
         for attack in charset_attacks:
             if isinstance(attack, bytes):
-                response = client.post("/text", content=attack, headers={"Content-Type": "text/plain; charset=latin-1"})
+                response = client.post(
+                    "/text",
+                    content=attack,
+                    headers={"Content-Type": "text/plain; charset=latin-1"},
+                )
             else:
                 response = client.post("/text", content=attack)
             # Should handle charset issues
@@ -538,7 +544,11 @@ class TestEdgeCasesAndSpecialScenarios:
         ]
 
         for ct in content_types:
-            response = client.post("/json", json={"test": "<script>alert(1)</script>"}, headers={"Content-Type": ct})
+            response = client.post(
+                "/json",
+                json={"test": "<script>alert(1)</script>"},
+                headers={"Content-Type": ct},
+            )
             # Should handle various content type formats
             assert response.status_code in [200, 400]
 

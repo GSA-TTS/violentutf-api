@@ -87,7 +87,12 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
             return response
 
         except Exception as e:
-            logger.error("rate_limiting_middleware_error", error=str(e), path=request.url.path, method=request.method)
+            logger.error(
+                "rate_limiting_middleware_error",
+                error=str(e),
+                path=request.url.path,
+                method=request.method,
+            )
             # Continue processing on middleware errors
             return await call_next(request)
 
@@ -145,7 +150,10 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         # For now, since we're in test environment with RATE_LIMIT_ENABLED=False,
         # we'll just log the rate limiting attempt and not actually enforce limits
         logger.debug(
-            "rate_limit_check", rate_limit_str=rate_limit_str, rate_limit_key=rate_limit_key, path=request.url.path
+            "rate_limit_check",
+            rate_limit_str=rate_limit_str,
+            rate_limit_key=rate_limit_key,
+            path=request.url.path,
         )
 
         # Skip actual rate limiting in test/development mode
@@ -191,7 +199,11 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         Returns:
             JSON response with rate limit exceeded message
         """
-        logger.warning("rate_limit_exceeded_middleware", endpoint_type=endpoint_type, detail=str(exc))
+        logger.warning(
+            "rate_limit_exceeded_middleware",
+            endpoint_type=endpoint_type,
+            detail=str(exc),
+        )
 
         return JSONResponse(
             status_code=429,
@@ -200,7 +212,11 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 "type": "rate_limit_exceeded",
                 "endpoint_type": endpoint_type,
             },
-            headers={"Retry-After": "60", "X-RateLimit-Limit": "varies", "X-RateLimit-Remaining": "0"},
+            headers={
+                "Retry-After": "60",
+                "X-RateLimit-Limit": "varies",
+                "X-RateLimit-Remaining": "0",
+            },
         )
 
     def _add_rate_limit_headers(self, response: Response, request: Request, endpoint_type: str) -> None:

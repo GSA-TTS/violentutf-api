@@ -81,7 +81,11 @@ class EnhancedRepository(BaseRepository[T]):
         self.cache_prefix = f"repo:{self.model.__name__.lower()}"
 
     async def list_with_filters(
-        self, filters: EnhancedFilter, *, eager_load: bool = True, use_cache: Optional[bool] = None
+        self,
+        filters: EnhancedFilter,
+        *,
+        eager_load: bool = True,
+        use_cache: Optional[bool] = None,
     ) -> Page[T]:
         """
         List entities with advanced filtering, sorting, and caching.
@@ -207,7 +211,11 @@ class EnhancedRepository(BaseRepository[T]):
             return self._build_operator_condition(field, operator, value, field_filter.case_sensitive)
         except Exception as e:
             logger.error(
-                "Error building field condition", field=field_name, operator=operator, value=value, error=str(e)
+                "Error building field condition",
+                field=field_name,
+                operator=operator,
+                value=value,
+                error=str(e),
             )
             return None
 
@@ -223,7 +231,12 @@ class EnhancedRepository(BaseRepository[T]):
         if operator in (FilterOperator.EQ, FilterOperator.NE):
             return self._build_equality_condition(field, operator, value)
         # Comparison operators
-        if operator in (FilterOperator.GT, FilterOperator.GTE, FilterOperator.LT, FilterOperator.LTE):
+        if operator in (
+            FilterOperator.GT,
+            FilterOperator.GTE,
+            FilterOperator.LT,
+            FilterOperator.LTE,
+        ):
             return self._build_comparison_condition(field, operator, value)
         # Collection operators
         if operator in (FilterOperator.IN, FilterOperator.NIN):
@@ -252,13 +265,19 @@ class EnhancedRepository(BaseRepository[T]):
         return None
 
     def _build_equality_condition(
-        self, field: Union[str, object], operator: FilterOperator, value: Union[str, int, float, bool, None]
+        self,
+        field: Union[str, object],
+        operator: FilterOperator,
+        value: Union[str, int, float, bool, None],
     ) -> ColumnElement[bool]:
         """Build equality condition."""
         return field == value if operator == FilterOperator.EQ else field != value
 
     def _build_comparison_condition(
-        self, field: Union[str, object], operator: FilterOperator, value: Union[str, int, float]
+        self,
+        field: Union[str, object],
+        operator: FilterOperator,
+        value: Union[str, int, float],
     ) -> ColumnElement[bool]:
         """Build comparison condition."""
         if operator == FilterOperator.GT:
@@ -271,13 +290,20 @@ class EnhancedRepository(BaseRepository[T]):
             return field <= value
 
     def _build_collection_condition(
-        self, field: Union[str, object], operator: FilterOperator, value: List[Union[str, int, float]]
+        self,
+        field: Union[str, object],
+        operator: FilterOperator,
+        value: List[Union[str, int, float]],
     ) -> ColumnElement[bool]:
         """Build collection condition."""
         return field.in_(value) if operator == FilterOperator.IN else ~field.in_(value)
 
     def _build_string_condition(
-        self, field: Union[str, object], operator: FilterOperator, value: str, case_sensitive: bool
+        self,
+        field: Union[str, object],
+        operator: FilterOperator,
+        value: str,
+        case_sensitive: bool,
     ) -> ColumnElement[bool]:
         """Build string condition."""
         # Handle case sensitivity
@@ -302,7 +328,10 @@ class EnhancedRepository(BaseRepository[T]):
         return field.op(op_symbol)(value)
 
     def _build_null_condition(
-        self, field: Union[str, object], operator: FilterOperator, value: Union[bool, None]
+        self,
+        field: Union[str, object],
+        operator: FilterOperator,
+        value: Union[bool, None],
     ) -> ColumnElement[bool]:
         """Build null condition."""
         if operator == FilterOperator.ISNULL:
@@ -531,7 +560,11 @@ class EnhancedRepository(BaseRepository[T]):
         try:
             # This is a simplified cache invalidation
             # In production, you'd want more sophisticated cache tagging and invalidation
-            logger.info("Cache invalidation requested", repository=self.__class__.__name__, operation=operation)
+            logger.info(
+                "Cache invalidation requested",
+                repository=self.__class__.__name__,
+                operation=operation,
+            )
 
             # For now, just log the invalidation
             # Implement actual cache key pattern deletion based on your Redis setup

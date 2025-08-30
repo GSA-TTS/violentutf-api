@@ -115,7 +115,11 @@ class SafeMemoryCacheTier(ABC):
 
                 # Add/update entry
                 entry = CacheEntry(
-                    key=key, data=value, timestamp=datetime.now().isoformat(), size_bytes=size, metadata=metadata or {}
+                    key=key,
+                    data=value,
+                    timestamp=datetime.now().isoformat(),
+                    size_bytes=size,
+                    metadata=metadata or {},
                 )
 
                 # Remove old entry if exists
@@ -146,7 +150,12 @@ class SafeMemoryCacheTier(ABC):
 class SafeDiskCacheTier(ABC):
     """Disk-based cache using JSON serialization"""
 
-    def __init__(self, cache_dir: str = ".cache/analysis", max_size_mb: int = 1024, ttl_hours: int = 72):
+    def __init__(
+        self,
+        cache_dir: str = ".cache/analysis",
+        max_size_mb: int = 1024,
+        ttl_hours: int = 72,
+    ):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.max_size_bytes = max_size_mb * 1024 * 1024
@@ -299,7 +308,8 @@ class SafeMultiTierCacheManager:
         # Memory tier (always enabled)
         memory_config = self.config.get("memory", {})
         self.memory_tier = SafeMemoryCacheTier(
-            max_size_mb=memory_config.get("max_size_mb", 100), ttl_hours=memory_config.get("ttl_hours", 24)
+            max_size_mb=memory_config.get("max_size_mb", 100),
+            ttl_hours=memory_config.get("ttl_hours", 24),
         )
         self.tiers.append(self.memory_tier)
 

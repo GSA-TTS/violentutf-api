@@ -321,7 +321,10 @@ class ArchitecturalFixPatternMatcher:
         (r"#ADR-?(\d{1,6})\b", 0.95),  # #ADR-001, #ADR001
         (r"\badr[-_]?(\d{1,6})\b", 0.9),  # adr-001, adr_001, adr001
         (r"\bADR\s+(\d{1,6})\b", 0.85),  # ADR 001
-        (r"(?:architecture|architectural)\s+decision\s+(?:record\s+)?#?(\d{1,6})", 0.8),  # Full form
+        (
+            r"(?:architecture|architectural)\s+decision\s+(?:record\s+)?#?(\d{1,6})",
+            0.8,
+        ),  # Full form
     ]
 
     def __init__(self, custom_patterns: Optional[List[PatternConfig]] = None):
@@ -445,14 +448,21 @@ class ArchitecturalFixPatternMatcher:
             line = re.sub(r"[ \t]+", " ", line.strip())
             # Remove common prefixes but keep the content
             line = re.sub(
-                r"^(?:feat|fix|chore|docs|style|refactor|test|build)(?:\([^)]+\))?:\s*", "", line, flags=re.IGNORECASE
+                r"^(?:feat|fix|chore|docs|style|refactor|test|build)(?:\([^)]+\))?:\s*",
+                "",
+                line,
+                flags=re.IGNORECASE,
             )
             if line:  # Only add non-empty lines
                 processed_lines.append(line)
         return "\n".join(processed_lines)
 
     def _calculate_confidence(
-        self, base_confidence: float, match: Match[str], full_message: str, file_paths: Optional[List[str]]
+        self,
+        base_confidence: float,
+        match: Match[str],
+        full_message: str,
+        file_paths: Optional[List[str]],
     ) -> float:
         """
         Calculate confidence score based on multiple factors.
@@ -470,13 +480,29 @@ class ArchitecturalFixPatternMatcher:
             confidence *= 1.1
 
         # Boost for additional architectural keywords
-        arch_keywords = ["architecture", "design", "pattern", "structure", "layer", "module", "boundary"]
+        arch_keywords = [
+            "architecture",
+            "design",
+            "pattern",
+            "structure",
+            "layer",
+            "module",
+            "boundary",
+        ]
         keyword_count = sum(1 for kw in arch_keywords if kw in full_message.lower())
         confidence *= 1 + (keyword_count * 0.05)
 
         # Boost based on file paths
         if file_paths:
-            arch_paths = ["arch", "architecture", "design", "structure", "core", "base", "foundation"]
+            arch_paths = [
+                "arch",
+                "architecture",
+                "design",
+                "structure",
+                "core",
+                "base",
+                "foundation",
+            ]
             path_boost = sum(0.05 for path in file_paths for arch_path in arch_paths if arch_path in path.lower())
             confidence *= 1 + path_boost
 
@@ -488,7 +514,12 @@ class ArchitecturalFixPatternMatcher:
     ) -> Dict[str, Any]:
         """Build context information for a match."""
         groups_dict: Dict[str, str] = {}
-        context = {"start_pos": match.start(), "end_pos": match.end(), "pattern": config.pattern, "groups": groups_dict}
+        context = {
+            "start_pos": match.start(),
+            "end_pos": match.end(),
+            "pattern": config.pattern,
+            "groups": groups_dict,
+        }
 
         # Extract named groups if specified
         if config.capture_groups:

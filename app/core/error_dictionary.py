@@ -272,13 +272,34 @@ class ErrorDictionary:
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "type": {"type": "string", "example": example_error.type},
-                                "title": {"type": "string", "example": example_error.title},
-                                "status": {"type": "integer", "example": example_error.status},
-                                "detail": {"type": "string", "example": example_error.description},
-                                "instance": {"type": "string", "example": "/api/v1/example"},
-                                "correlation_id": {"type": "string", "example": "123e4567-e89b-12d3-a456-426614174000"},
-                                "error_code": {"type": "string", "example": example_error.error_code},
+                                "type": {
+                                    "type": "string",
+                                    "example": example_error.type,
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": example_error.title,
+                                },
+                                "status": {
+                                    "type": "integer",
+                                    "example": example_error.status,
+                                },
+                                "detail": {
+                                    "type": "string",
+                                    "example": example_error.description,
+                                },
+                                "instance": {
+                                    "type": "string",
+                                    "example": "/api/v1/example",
+                                },
+                                "correlation_id": {
+                                    "type": "string",
+                                    "example": "123e4567-e89b-12d3-a456-426614174000",
+                                },
+                                "error_code": {
+                                    "type": "string",
+                                    "example": example_error.error_code,
+                                },
                                 "timestamp": {"type": "string", "format": "date-time"},
                             },
                             "required": ["type", "title", "status", "error_code"],

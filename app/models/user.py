@@ -23,7 +23,12 @@ if TYPE_CHECKING:
     from app.models.api_key import APIKey
     from app.models.audit_log import AuditLog
     from app.models.mfa import MFABackupCode, MFAChallenge, MFADevice, MFAEvent
-    from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken
+    from app.models.oauth import (
+        OAuthAccessToken,
+        OAuthApplication,
+        OAuthAuthorizationCode,
+        OAuthRefreshToken,
+    )
     from app.models.session import Session
     from app.models.user_role import UserRole
 
@@ -43,7 +48,11 @@ class User(Base, BaseModelMixin):
 
     # User-specific fields
     username: Mapped[str] = mapped_column(
-        String(100), unique=True, nullable=False, index=True, comment="Unique username for login"
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="Unique username for login",
     )
 
     email: Mapped[str] = mapped_column(
@@ -59,7 +68,11 @@ class User(Base, BaseModelMixin):
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, comment="User's full display name")
 
     is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False, server_default="true", comment="Whether the user account is active"
+        Boolean,
+        default=True,
+        nullable=False,
+        server_default="true",
+        comment="Whether the user account is active",
     )
 
     is_superuser: Mapped[bool] = mapped_column(
@@ -115,7 +128,11 @@ class User(Base, BaseModelMixin):
     )
 
     audit_logs: Mapped[List["AuditLog"]] = relationship(
-        "AuditLog", back_populates="user", foreign_keys="AuditLog.user_id", lazy="dynamic", cascade="all, delete-orphan"
+        "AuditLog",
+        back_populates="user",
+        foreign_keys="AuditLog.user_id",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
     )
 
     sessions: Mapped[List["Session"]] = relationship(
@@ -332,7 +349,7 @@ class User(Base, BaseModelMixin):
             "full_name": self.full_name,
             "is_active": self.is_active,
             "roles": self.roles,
-            "organization_id": str(self.organization_id) if self.organization_id else None,
+            "organization_id": (str(self.organization_id) if self.organization_id else None),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -18,9 +18,15 @@ import psutil
 import pytest
 import pytest_asyncio
 
-from app.services.dependency_service import OptimizedDependencyService, create_dependency_service
+from app.services.dependency_service import (
+    OptimizedDependencyService,
+    create_dependency_service,
+)
 from app.utils.dependency_cache import DependencyCache, get_dependency_cache
-from app.utils.performance_tracker import PerformanceTracker, get_global_performance_tracker
+from app.utils.performance_tracker import (
+    PerformanceTracker,
+    get_global_performance_tracker,
+)
 
 
 @pytest_asyncio.fixture
@@ -30,7 +36,9 @@ async def optimized_dependency_service():
     with tempfile.TemporaryDirectory() as temp_dir:
         cache_dir = Path(temp_dir) / "dependency_cache"
         service = await create_dependency_service(
-            cache_dir=cache_dir, max_concurrent_requests=5, cache_ttl=3600  # Reduced for tests  # 1 hour for tests
+            cache_dir=cache_dir,
+            max_concurrent_requests=5,
+            cache_ttl=3600,  # Reduced for tests  # 1 hour for tests
         )
         try:
             yield service
@@ -336,7 +344,14 @@ class TestOptimizedDependencyCompliance:
         health = await optimized_dependency_service.health_check()
 
         # Must include required health components
-        required_components = ["service", "status", "cache", "http_client", "circuit_breaker", "performance_tracker"]
+        required_components = [
+            "service",
+            "status",
+            "cache",
+            "http_client",
+            "circuit_breaker",
+            "performance_tracker",
+        ]
         for component in required_components:
             assert component in health, f"Health check missing {component}"
 

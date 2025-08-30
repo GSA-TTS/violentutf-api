@@ -232,7 +232,9 @@ class ArchitecturalReportGenerator:
     <div class="section">
         <h2>Executive Summary</h2>
         <div class="summary-box">
-            {{ executive_summary | safe }}
+            {% for line in executive_summary.split('\n') %}
+                <p>{{ line }}</p>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
@@ -473,7 +475,13 @@ class ArchitecturalReportGenerator:
 
             # Default sections
             if not include_sections:
-                include_sections = ["leading", "lagging", "roi", "executive_summary", "recommendations"]
+                include_sections = [
+                    "leading",
+                    "lagging",
+                    "roi",
+                    "executive_summary",
+                    "recommendations",
+                ]
 
             # Gather metrics data
             metrics_data = await self._gather_metrics_data(start_date, end_date, include_sections)
@@ -497,7 +505,10 @@ class ArchitecturalReportGenerator:
                 "file_path": file_path,
                 "format": format.value,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
-                "metrics_period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
+                "metrics_period": {
+                    "start": start_date.isoformat(),
+                    "end": end_date.isoformat(),
+                },
             }
 
         except Exception as e:
@@ -546,9 +557,9 @@ class ArchitecturalReportGenerator:
             compliance = leading.get("compliance_scores", {}).get("overall_score", 0)
 
             summary_parts.append(
-                f"<p><strong>Current Performance:</strong> The architectural audit system shows "
-                f"<strong>{automation:.1f}%</strong> automation coverage with a compliance score of "
-                f"<strong>{compliance:.1f}%</strong>.</p>"
+                f"Current Performance: The architectural audit system shows "
+                f"{automation:.1f}% automation coverage with a compliance score of "
+                f"{compliance:.1f}%."
             )
 
         # Lagging indicators summary
@@ -559,8 +570,8 @@ class ArchitecturalReportGenerator:
 
             trend_text = "improving" if debt_trend == "improving" else "needs attention"
             summary_parts.append(
-                f"<p><strong>Historical Trends:</strong> Architectural debt velocity is <strong>{trend_text}</strong>, "
-                f"with a <strong>{security_reduction:.1f}%</strong> reduction in security incidents.</p>"
+                f"Historical Trends: Architectural debt velocity is {trend_text}, "
+                f"with a {security_reduction:.1f}% reduction in security incidents."
             )
 
         # ROI summary
@@ -570,11 +581,11 @@ class ArchitecturalReportGenerator:
             payback = roi.get("payback_period_months", "N/A")
 
             summary_parts.append(
-                f"<p><strong>Financial Impact:</strong> The initiative shows a <strong>{roi_percentage:.1f}%</strong> ROI "
-                f"with a payback period of <strong>{payback} months</strong>.</p>"
+                f"Financial Impact: The initiative shows a {roi_percentage:.1f}% ROI "
+                f"with a payback period of {payback} months."
             )
 
-        return "\n".join(summary_parts) if summary_parts else "<p>No data available for summary.</p>"
+        return "\n".join(summary_parts) if summary_parts else "No data available for summary."
 
     def _generate_recommendations(self, metrics_data: Dict[str, Any]) -> List[str]:
         """Generate recommendations based on metrics analysis."""
@@ -783,7 +794,12 @@ class ArchitecturalReportGenerator:
                 benefit_values = list(benefits.values())
                 colors2 = plt.cm.Greens(range(50, 250, 25))[: len(benefit_labels)]
 
-                ax2.pie(benefit_values, labels=benefit_labels, autopct="%1.1f%%", colors=colors2)
+                ax2.pie(
+                    benefit_values,
+                    labels=benefit_labels,
+                    autopct="%1.1f%%",
+                    colors=colors2,
+                )
                 ax2.set_title("Benefits Distribution")
 
             plt.suptitle("ROI Analysis Breakdown", fontsize=16)
@@ -836,7 +852,11 @@ class ArchitecturalReportGenerator:
 
             # Title
             title_style = ParagraphStyle(
-                "CustomTitle", parent=styles["Title"], fontSize=24, textColor=colors.HexColor("#667eea"), spaceAfter=30
+                "CustomTitle",
+                parent=styles["Title"],
+                fontSize=24,
+                textColor=colors.HexColor("#667eea"),
+                spaceAfter=30,
             )
             story.append(Paragraph(metrics_data["title"], title_style))
             story.append(Spacer(1, 12))
@@ -866,10 +886,26 @@ class ArchitecturalReportGenerator:
                 leading = metrics_data["leading_indicators"]
                 metrics_table_data = [
                     ["Metric", "Value", "Status"],
-                    ["Automation Coverage", f"{leading['automation_coverage']['automation_percentage']:.1f}%", "✓"],
-                    ["Avg Detection Time", f"{leading['detection_time']['average_detection_hours']:.1f}h", "✓"],
-                    ["Developer Adoption", f"{leading['developer_adoption_rate']['adoption_rate']:.1f}%", "✓"],
-                    ["Compliance Score", f"{leading['compliance_scores']['overall_score']:.1f}%", "✓"],
+                    [
+                        "Automation Coverage",
+                        f"{leading['automation_coverage']['automation_percentage']:.1f}%",
+                        "✓",
+                    ],
+                    [
+                        "Avg Detection Time",
+                        f"{leading['detection_time']['average_detection_hours']:.1f}h",
+                        "✓",
+                    ],
+                    [
+                        "Developer Adoption",
+                        f"{leading['developer_adoption_rate']['adoption_rate']:.1f}%",
+                        "✓",
+                    ],
+                    [
+                        "Compliance Score",
+                        f"{leading['compliance_scores']['overall_score']:.1f}%",
+                        "✓",
+                    ],
                 ]
 
                 metrics_table = Table(metrics_table_data)
@@ -909,8 +945,16 @@ class ArchitecturalReportGenerator:
                         f"{lagging['security_incident_reduction']['reduction_percentage']:.1f}%",
                         lagging["security_incident_reduction"]["trend"],
                     ],
-                    ["Maintainability", f"{lagging['maintainability_improvements']['improvement_rate']:.1f}%", "↑"],
-                    ["Success Rate", f"{lagging['development_velocity_impact']['success_rate']:.1f}%", "→"],
+                    [
+                        "Maintainability",
+                        f"{lagging['maintainability_improvements']['improvement_rate']:.1f}%",
+                        "↑",
+                    ],
+                    [
+                        "Success Rate",
+                        f"{lagging['development_velocity_impact']['success_rate']:.1f}%",
+                        "→",
+                    ],
                 ]
 
                 lagging_table = Table(lagging_table_data)
@@ -987,7 +1031,8 @@ class ArchitecturalReportGenerator:
 
             # Load template with autoescape enabled for security
             env = Environment(
-                loader=FileSystemLoader(str(self.template_dir)), autoescape=select_autoescape(["html", "xml"])
+                loader=FileSystemLoader(str(self.template_dir)),
+                autoescape=select_autoescape(["html", "xml"]),
             )
             template = env.get_template("architectural_metrics.html")
 
@@ -1007,7 +1052,11 @@ class ArchitecturalReportGenerator:
             raise
 
     async def _update_report_status(
-        self, report_id: str, status: ReportStatus, file_path: Optional[str] = None, error_message: Optional[str] = None
+        self,
+        report_id: str,
+        status: ReportStatus,
+        file_path: Optional[str] = None,
+        error_message: Optional[str] = None,
     ) -> None:
         """Update report status in database."""
         try:

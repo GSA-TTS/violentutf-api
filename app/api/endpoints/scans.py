@@ -85,7 +85,12 @@ async def list_scans(
         raise HTTPException(status_code=500, detail="Failed to list scans")
 
 
-@router.post("/", response_model=ScanExecutionResponse, summary="Create and execute scan", status_code=202)
+@router.post(
+    "/",
+    response_model=ScanExecutionResponse,
+    summary="Create and execute scan",
+    status_code=202,
+)
 async def create_scan(
     scan_data: ScanCreate,
     execute_immediately: bool = Query(True, description="Execute scan immediately"),
@@ -391,8 +396,15 @@ async def cancel_scan(
             raise HTTPException(status_code=404, detail="Scan not found")
 
         # Check if scan can be cancelled
-        if scan.status not in [ScanStatus.PENDING, ScanStatus.INITIALIZING, ScanStatus.RUNNING]:
-            raise HTTPException(status_code=400, detail="Can only cancel pending, initializing, or running scans")
+        if scan.status not in [
+            ScanStatus.PENDING,
+            ScanStatus.INITIALIZING,
+            ScanStatus.RUNNING,
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Can only cancel pending, initializing, or running scans",
+            )
 
         # Cancel scan
         scan.status = ScanStatus.CANCELLED
@@ -432,7 +444,11 @@ async def cancel_scan(
         raise HTTPException(status_code=500, detail="Failed to cancel scan")
 
 
-@router.get("/{scan_id}/findings", response_model=ScanFindingListResponse, summary="Get scan findings")
+@router.get(
+    "/{scan_id}/findings",
+    response_model=ScanFindingListResponse,
+    summary="Get scan findings",
+)
 async def get_scan_findings(
     scan_id: str,
     skip: int = Query(0, ge=0, description="Number of findings to skip"),
@@ -496,7 +512,11 @@ async def get_scan_findings(
         raise HTTPException(status_code=500, detail="Failed to get scan findings")
 
 
-@router.get("/{scan_id}/reports", response_model=List[ScanReportResponse], summary="Get scan reports")
+@router.get(
+    "/{scan_id}/reports",
+    response_model=List[ScanReportResponse],
+    summary="Get scan reports",
+)
 async def get_scan_reports(
     scan_id: str,
     scan_service: ScanService = Depends(get_scan_service),

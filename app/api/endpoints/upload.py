@@ -51,7 +51,7 @@ async def upload_file(
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type {file_ext} not allowed. Allowed types: {', '.join(allowed_extensions)}",
+            detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}",
         )
 
     # Read file with size tracking (middleware already enforces limits)

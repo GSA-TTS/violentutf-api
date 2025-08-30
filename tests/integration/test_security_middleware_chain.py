@@ -16,7 +16,11 @@ import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRFProtectionMiddleware
+from app.middleware.csrf import (
+    CSRF_COOKIE_NAME,
+    CSRF_HEADER_NAME,
+    CSRFProtectionMiddleware,
+)
 from app.middleware.input_sanitization import InputSanitizationMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.metrics import MetricsMiddleware
@@ -121,7 +125,10 @@ class TestMiddlewareChainIntegration:
         csrf_token = csrf_middleware._generate_csrf_token()
 
         # Send request with XSS attempt and CSRF token
-        malicious_data = {"comment": "<script>alert('xss')</script>", "sql": "'; DROP TABLE users; --"}
+        malicious_data = {
+            "comment": "<script>alert('xss')</script>",
+            "sql": "'; DROP TABLE users; --",
+        }
 
         response = client.post(
             "/secure",
@@ -164,7 +171,9 @@ class TestMiddlewareChainIntegration:
         signature = hmac.new(settings.REQUEST_SIGNING_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
 
         response = client.post(
-            "/secure", content=body, headers={"X-Signature": signature, "Content-Type": "application/json"}
+            "/secure",
+            content=body,
+            headers={"X-Signature": signature, "Content-Type": "application/json"},
         )
 
         # Should accept signed request and sanitize content
@@ -234,7 +243,10 @@ class TestSecurityScenarios:
     def test_middleware_error_recovery(self, client, enable_all_security):
         """Test middleware chain recovers from errors."""
         # Force an error in one middleware
-        with patch("app.middleware.metrics.MetricsMiddleware.dispatch", side_effect=Exception("Metrics error")):
+        with patch(
+            "app.middleware.metrics.MetricsMiddleware.dispatch",
+            side_effect=Exception("Metrics error"),
+        ):
             # Should still handle request (other middleware should work)
             response = client.get("/test")
             # May fail or succeed depending on error handling
@@ -296,7 +308,10 @@ class TestPerformanceUnderLoad:
 
         # Make many requests
         for i in range(100):
-            response = client.post("/secure", json={"data": f"request_{i}", "xss": "<script>alert(1)</script>"})
+            response = client.post(
+                "/secure",
+                json={"data": f"request_{i}", "xss": "<script>alert(1)</script>"},
+            )
             assert response.status_code in [200, 403]
 
             # Occasionally collect garbage
@@ -330,7 +345,10 @@ class TestEdgeCasesAndCompatibility:
             ("application/xml", b"<root><data>test</data></root>"),
             ("text/xml", b"<root><script>alert(1)</script></root>"),
             ("application/octet-stream", b"\x00\x01\x02\x03"),
-            ("multipart/form-data", b"--boundary\r\nContent-Disposition: form-data\r\n\r\ndata"),
+            (
+                "multipart/form-data",
+                b"--boundary\r\nContent-Disposition: form-data\r\n\r\ndata",
+            ),
         ]
 
         for content_type, body in content_types:
@@ -389,7 +407,10 @@ class TestSecurityMiddlewareInteractions:
 
         if session_cookie:
             # Make attack attempt with session
-            response2 = client.get("/attack?xss=<script>alert(1)</script>", cookies={"session_id": session_cookie})
+            response2 = client.get(
+                "/attack?xss=<script>alert(1)</script>",
+                cookies={"session_id": session_cookie},
+            )
 
             assert response2.status_code == 200
 
@@ -401,7 +422,9 @@ class TestSecurityMiddlewareInteractions:
     def test_request_id_tracking_through_chain(self, client, enable_all_security):
         """Test request ID is maintained through entire middleware chain."""
         response = client.post(
-            "/secure", json={"data": "<script>alert(1)</script>"}, headers={"X-Request-ID": "test-request-123"}
+            "/secure",
+            json={"data": "<script>alert(1)</script>"},
+            headers={"X-Request-ID": "test-request-123"},
         )
 
         assert response.status_code in [200, 403]

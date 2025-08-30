@@ -58,7 +58,10 @@ class TestRequestIDMiddleware:
         request_id = response.headers["X-Request-ID"]
 
         # Should be a valid UUID
-        uuid_pattern = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+        uuid_pattern = re.compile(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            re.IGNORECASE,
+        )
         assert uuid_pattern.match(request_id) is not None
 
     def test_custom_request_id_preserved(self, client: TestClient) -> None:
@@ -169,7 +172,10 @@ class TestRequestIDMiddleware:
         @app.get("/context-test")
         async def context_test(request: Request) -> Dict[str, Any]:
             context = get_request_context()
-            return {"request_id": getattr(request.state, "request_id", None), "context": context}
+            return {
+                "request_id": getattr(request.state, "request_id", None),
+                "context": context,
+            }
 
         from tests.utils.testclient import SafeTestClient
 

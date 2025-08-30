@@ -337,7 +337,10 @@ class SecurityScan(Base, AuditMixin, SoftDeleteMixin):
         since = datetime.now(timezone.utc) - timedelta(hours=hours)
         return (
             session.query(cls)
-            .filter(cls.status.in_([ScanStatus.FAILED, ScanStatus.TIMEOUT]), cls.completed_at >= since)
+            .filter(
+                cls.status.in_([ScanStatus.FAILED, ScanStatus.TIMEOUT]),
+                cls.completed_at >= since,
+            )
             .order_by(cls.completed_at.desc())
             .all()
         )

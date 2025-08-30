@@ -39,7 +39,10 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
         """
         try:
             query = select(self.model).where(
-                and_(self.model.session_token == session_token, self.model.is_deleted == False)  # noqa: E712
+                and_(
+                    self.model.session_token == session_token,
+                    self.model.is_deleted == False,
+                )  # noqa: E712
             )
 
             result = await self.session.execute(query)
@@ -64,7 +67,11 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             return session_obj
 
         except Exception as e:
-            self.logger.error("Failed to get session by token", token_prefix=session_token[:8] + "...", error=str(e))
+            self.logger.error(
+                "Failed to get session by token",
+                token_prefix=session_token[:8] + "...",
+                error=str(e),
+            )
             raise
 
     async def get_user_sessions(self, user_id: uuid.UUID, include_inactive: bool = False) -> List[Session]:
@@ -99,7 +106,10 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             sessions = list(result.scalars().all())
 
             self.logger.debug(
-                "Retrieved user sessions", user_id=str(user_id), count=len(sessions), include_inactive=include_inactive
+                "Retrieved user sessions",
+                user_id=str(user_id),
+                count=len(sessions),
+                include_inactive=include_inactive,
             )
 
             return sessions
@@ -317,7 +327,11 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             return True
 
         except Exception as e:
-            self.logger.error("Failed to update session activity", token_prefix=session_token[:8] + "...", error=str(e))
+            self.logger.error(
+                "Failed to update session activity",
+                token_prefix=session_token[:8] + "...",
+                error=str(e),
+            )
             await self.session.rollback()
             raise
 
@@ -343,12 +357,20 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             session_obj.extend_session(new_expires_at)
             await self.session.commit()
 
-            self.logger.info("Session extended", session_id=str(session_obj.id), new_expires_at=new_expires_at)
+            self.logger.info(
+                "Session extended",
+                session_id=str(session_obj.id),
+                new_expires_at=new_expires_at,
+            )
 
             return True
 
         except Exception as e:
-            self.logger.error("Failed to extend session", token_prefix=session_token[:8] + "...", error=str(e))
+            self.logger.error(
+                "Failed to extend session",
+                token_prefix=session_token[:8] + "...",
+                error=str(e),
+            )
             await self.session.rollback()
             raise
 
@@ -459,7 +481,10 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             query = (
                 select(self.model)
                 .where(
-                    and_(self.model.is_active == True, self.model.expires_at > datetime.now(timezone.utc))  # noqa: E712
+                    and_(
+                        self.model.is_active == True,
+                        self.model.expires_at > datetime.now(timezone.utc),
+                    )  # noqa: E712
                 )
                 .order_by(self.model.last_activity_at.desc())
             )
@@ -534,7 +559,10 @@ class SessionRepository(BaseRepository[Session], ISessionRepository):
             return await self.revoke_user_sessions(user_uuid, "system", "All sessions invalidated")
 
     async def extend_session(
-        self, session_id: str, extension: Optional[timedelta] = None, extension_minutes: Optional[int] = None
+        self,
+        session_id: str,
+        extension: Optional[timedelta] = None,
+        extension_minutes: Optional[int] = None,
     ) -> Optional[Session]:
         """Extend session expiration time (interface method)."""
         try:

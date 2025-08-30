@@ -33,7 +33,12 @@ def pytest_configure(config):
     for module_name in list(sys.modules.keys()):
         if any(
             pattern in module_name
-            for pattern in ["app.core.config", "app.core.security", "app.middleware.authentication", "app.core.auth"]
+            for pattern in [
+                "app.core.config",
+                "app.core.security",
+                "app.middleware.authentication",
+                "app.core.auth",
+            ]
         ):
             modules_to_remove.append(module_name)
 

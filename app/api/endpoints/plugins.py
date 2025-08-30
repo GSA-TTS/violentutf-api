@@ -8,7 +8,13 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import get_plugin_service
 from app.core.auth import get_current_user
-from app.models.plugin import Plugin, PluginConfiguration, PluginExecution, PluginStatus, PluginType
+from app.models.plugin import (
+    Plugin,
+    PluginConfiguration,
+    PluginExecution,
+    PluginStatus,
+    PluginType,
+)
 from app.models.user import User
 from app.services.plugin_service import PluginService
 
@@ -93,21 +99,25 @@ async def list_plugins(
                 version=plugin.plugin_version,
                 description=plugin.description,
                 author=plugin.author,
-                status="enabled" if plugin.status == PluginStatus.ACTIVE else "disabled",
+                status=("enabled" if plugin.status == PluginStatus.ACTIVE else "disabled"),
                 plugin_type=plugin.plugin_type.value,
                 category=plugin.category,
                 dependencies=plugin.python_dependencies,
                 config=plugin.default_config,
                 tags=plugin.tags,
-                installed_at=plugin.installed_at.isoformat() if plugin.installed_at else None,
-                last_used_at=plugin.last_loaded_at.isoformat() if plugin.last_loaded_at else None,
+                installed_at=(plugin.installed_at.isoformat() if plugin.installed_at else None),
+                last_used_at=(plugin.last_loaded_at.isoformat() if plugin.last_loaded_at else None),
                 usage_count=plugin.load_count,
             )
             plugin_responses.append(plugin_info)
 
         from app.core.safe_logging import sanitize_log_value
 
-        logger.info("User listed plugins", user=sanitize_log_value(current_user.username), count=len(plugin_responses))
+        logger.info(
+            "User listed plugins",
+            user=sanitize_log_value(current_user.username),
+            count=len(plugin_responses),
+        )
 
         return PluginListResponse(plugins=plugin_responses, total=len(plugin_responses))
 
@@ -146,8 +156,8 @@ async def get_plugin(
             dependencies=plugin.python_dependencies,
             config=plugin.default_config,
             tags=plugin.tags,
-            installed_at=plugin.installed_at.isoformat() if plugin.installed_at else None,
-            last_used_at=plugin.last_loaded_at.isoformat() if plugin.last_loaded_at else None,
+            installed_at=(plugin.installed_at.isoformat() if plugin.installed_at else None),
+            last_used_at=(plugin.last_loaded_at.isoformat() if plugin.last_loaded_at else None),
             usage_count=plugin.load_count,
         )
 
@@ -175,7 +185,10 @@ async def plugin_action(
 
         valid_actions = ["enable", "disable", "reload", "configure"]
         if action_request.action not in valid_actions:
-            raise HTTPException(status_code=400, detail=f"Invalid action. Valid actions: {valid_actions}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid action. Valid actions: {valid_actions}",
+            )
 
         # Get plugin through service layer
         plugin = await plugin_service.get_plugin(plugin_id)
@@ -191,17 +204,17 @@ async def plugin_action(
 
         if action_request.action == "enable":
             update_data["status"] = PluginStatus.ACTIVE
-            action_result["message"] = f"Plugin {plugin.name} enabled successfully"
+            action_result["message"] = "Plugin enabled successfully"
 
         elif action_request.action == "disable":
             update_data["status"] = PluginStatus.DISABLED
-            action_result["message"] = f"Plugin {plugin.name} disabled successfully"
+            action_result["message"] = "Plugin disabled successfully"
 
         elif action_request.action == "reload":
             # Update last loaded timestamp and increment count
             update_data["last_loaded_at"] = datetime.now(timezone.utc)
             update_data["load_count"] = plugin.load_count + 1
-            action_result["message"] = f"Plugin {plugin.name} reloaded successfully"
+            action_result["message"] = "Plugin reloaded successfully"
 
         elif action_request.action == "configure":
             # Update configuration if provided
@@ -209,7 +222,7 @@ async def plugin_action(
                 new_config = plugin.default_config.copy()
                 new_config.update(action_request.config)
                 update_data["default_config"] = new_config
-            action_result["message"] = f"Plugin {plugin.name} configured successfully"
+            action_result["message"] = "Plugin configured successfully"
 
         # Update plugin through service layer
         if update_data:

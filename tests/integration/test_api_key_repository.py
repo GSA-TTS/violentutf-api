@@ -41,7 +41,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_create_api_key_success(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test creating API key."""
         key = "test_api_key_12345"
@@ -72,12 +75,18 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_create_api_key_duplicate_name(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test creating API key with duplicate name for same user."""
         # Create first key
         await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Duplicate Name", key_hash=self.generate_key_hash("key1"), key_prefix="key1_pre"
+            user_id=test_user.id,
+            name="Duplicate Name",
+            key_hash=self.generate_key_hash("key1"),
+            key_prefix="key1_pre",
         )
         await async_db_session.commit()
 
@@ -95,7 +104,10 @@ class TestAPIKeyRepository:
         """Test creating API key with invalid hash."""
         with pytest.raises(ValueError, match="key_hash must be a valid SHA256 hash"):
             await api_key_repo.create_api_key(
-                user_id=test_user.id, name="Invalid Hash", key_hash="invalid", key_prefix="invalid_"  # Too short
+                user_id=test_user.id,
+                name="Invalid Hash",
+                key_hash="invalid",
+                key_prefix="invalid_",  # Too short
             )
 
     @pytest.mark.asyncio
@@ -111,7 +123,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_hash_existing(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting API key by hash."""
         key = "test_key_hash"
@@ -119,7 +134,10 @@ class TestAPIKeyRepository:
 
         # Create key
         created = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Hash Test", key_hash=key_hash, key_prefix=key[:8]
+            user_id=test_user.id,
+            name="Hash Test",
+            key_hash=key_hash,
+            key_prefix=key[:8],
         )
         await async_db_session.commit()
 
@@ -137,7 +155,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_hash_expired(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting expired API key by hash returns None."""
         key = "expired_key"
@@ -159,7 +180,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_hash_soft_deleted(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting soft-deleted API key by hash returns None."""
         key = "deleted_key"
@@ -167,7 +191,10 @@ class TestAPIKeyRepository:
 
         # Create and delete key
         created = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Deleted Key", key_hash=key_hash, key_prefix=key[:8]
+            user_id=test_user.id,
+            name="Deleted Key",
+            key_hash=key_hash,
+            key_prefix=key[:8],
         )
         await async_db_session.commit()
 
@@ -179,7 +206,12 @@ class TestAPIKeyRepository:
         assert found is None
 
     @pytest.mark.asyncio
-    async def test_get_by_prefix(self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession):
+    async def test_get_by_prefix(
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
+    ):
         """Test getting API keys by prefix."""
         prefix = "prefix_"
 
@@ -202,17 +234,26 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_prefix_excludes_deleted(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting by prefix excludes soft-deleted keys."""
         prefix = "delprefix_"
 
         # Create two keys
         key1 = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Active Prefix", key_hash=self.generate_key_hash("active"), key_prefix=prefix
+            user_id=test_user.id,
+            name="Active Prefix",
+            key_hash=self.generate_key_hash("active"),
+            key_prefix=prefix,
         )
         key2 = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Deleted Prefix", key_hash=self.generate_key_hash("deleted"), key_prefix=prefix
+            user_id=test_user.id,
+            name="Deleted Prefix",
+            key_hash=self.generate_key_hash("deleted"),
+            key_prefix=prefix,
         )
         await async_db_session.commit()
 
@@ -227,7 +268,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_user_id(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting API keys by user ID."""
         # Create keys for user
@@ -247,7 +291,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_user_id_excludes_expired(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting by user ID excludes expired keys by default."""
         # Create active and expired keys
@@ -274,7 +321,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_user_id_include_expired(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting by user ID including expired keys."""
         # Create expired key
@@ -294,12 +344,18 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_user(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting API key by name and user."""
         # Create key
         created = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Named Key", key_hash=self.generate_key_hash("named"), key_prefix="named__"
+            user_id=test_user.id,
+            name="Named Key",
+            key_hash=self.generate_key_hash("named"),
+            key_prefix="named__",
         )
         await async_db_session.commit()
 
@@ -315,11 +371,19 @@ class TestAPIKeyRepository:
         assert found is None
 
     @pytest.mark.asyncio
-    async def test_record_usage(self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession):
+    async def test_record_usage(
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
+    ):
         """Test recording API key usage."""
         # Create key
         key = await api_key_repo.create_api_key(
-            user_id=test_user.id, name="Usage Key", key_hash=self.generate_key_hash("usage"), key_prefix="usage__"
+            user_id=test_user.id,
+            name="Usage Key",
+            key_hash=self.generate_key_hash("usage"),
+            key_prefix="usage__",
         )
         await async_db_session.commit()
 
@@ -349,7 +413,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_check_permission_allowed(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test checking permission when allowed."""
         # Create key with permissions
@@ -370,7 +437,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_check_permission_expired(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test checking permission on expired key."""
         # Create expired key
@@ -395,7 +465,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_update_permissions(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test updating API key permissions."""
         # Create key
@@ -428,7 +501,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_extend_expiration(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test extending API key expiration."""
         # Create key with expiration
@@ -456,7 +532,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_extend_expiration_remove(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test removing expiration from API key."""
         # Create key with expiration
@@ -487,7 +566,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_expired_keys(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting expired keys for cleanup."""
         # Create mix of expired and active keys
@@ -520,7 +602,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_expired_keys_limit(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting expired keys respects limit."""
         # Create many expired keys
@@ -540,7 +625,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_expired_keys_excludes_deleted(
-        self, api_key_repo: APIKeyRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        api_key_repo: APIKeyRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting expired keys excludes soft-deleted."""
         # Create expired key and delete it

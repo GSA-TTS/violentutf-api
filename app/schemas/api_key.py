@@ -6,13 +6,23 @@ from typing import Any, Dict, Optional, Type
 
 from pydantic import Field, field_validator
 
-from app.schemas.base import AdvancedFilter, BaseCreateSchema, BaseModelSchema, BaseUpdateSchema
+from app.schemas.base import (
+    AdvancedFilter,
+    BaseCreateSchema,
+    BaseModelSchema,
+    BaseUpdateSchema,
+)
 
 
 class APIKeyBase(BaseCreateSchema):
     """Base API key schema with common fields."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Descriptive name for the API key")
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Descriptive name for the API key",
+    )
     description: Optional[str] = Field(None, max_length=1000, description="Detailed description of key purpose")
     permissions: Dict[str, Any] = Field(default_factory=dict, description="Permission scopes as JSON")
     expires_at: Optional[datetime] = Field(None, description="Optional expiration timestamp")
@@ -216,7 +226,9 @@ class APIKeyPermissionTemplate(BaseCreateSchema):
     permissions: Dict[str, Any] = Field(..., description="Permission set")
 
     @classmethod
-    def get_templates(cls: Type["APIKeyPermissionTemplate"]) -> Dict[str, "APIKeyPermissionTemplate"]:
+    def get_templates(
+        cls: Type["APIKeyPermissionTemplate"],
+    ) -> Dict[str, "APIKeyPermissionTemplate"]:
         """Get predefined permission templates."""
         return {
             "read_only": APIKeyPermissionTemplate(

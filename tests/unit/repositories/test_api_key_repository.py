@@ -125,7 +125,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_hash_not_found(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test API key not found by hash."""
         # Arrange
@@ -155,7 +158,8 @@ class TestAPIKeyRepository:
 
         # Act
         api_key = await api_key_repository.get_by_hash(
-            "a1b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef", organization_id="test-org-id"
+            "a1b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef",
+            organization_id="test-org-id",
         )
 
         # Assert
@@ -224,7 +228,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_api_keys_empty_result(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieving API keys for user with no keys."""
         # Arrange
@@ -242,7 +249,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_create_api_key_success(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, api_key_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        api_key_factory,
     ):
         """Test successful API key creation."""
         # Arrange
@@ -277,7 +287,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_create_api_key_with_expiration(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, api_key_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        api_key_factory,
     ):
         """Test API key creation with expiration date."""
         # Arrange
@@ -356,7 +369,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_revoke_api_key_not_found(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test revoking non-existent API key."""
         # Arrange
@@ -392,7 +408,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_revoke_user_api_keys_success(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, api_key_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        api_key_factory,
     ):
         """Test successful revocation of all user API keys."""
         # Arrange - create 3 test keys
@@ -417,7 +436,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_revoke_user_api_keys_no_keys(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test revoking keys for user with no active keys."""
         # Arrange
@@ -455,7 +477,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_update_last_used_key_not_found(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test updating last used for non-existent key."""
         # Arrange
@@ -496,7 +521,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_expired_api_keys_none_expired(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieving expired keys when none are expired."""
         # Arrange
@@ -533,7 +561,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_expired_api_keys_none_to_cleanup(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup when no expired keys exist."""
         # Arrange
@@ -552,7 +583,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_rotate_api_key_success(
-        self, api_key_repository: APIKeyRepository, sample_api_key: APIKey, api_key_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        sample_api_key: APIKey,
+        api_key_factory,
     ):
         """Test successful API key rotation."""
         # Arrange
@@ -577,7 +611,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_rotate_api_key_not_found(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test rotating non-existent API key."""
         # Arrange
@@ -617,9 +654,27 @@ class TestAPIKeyRepository:
         """Test getting API key usage statistics for specific user."""
         # Arrange - create test keys with usage data
         test_keys = [
-            api_key_factory.create(id="key1", user_id="test-user-id", usage_count=50, revoked_at=None, expires_at=None),
-            api_key_factory.create(id="key2", user_id="test-user-id", usage_count=30, revoked_at=None, expires_at=None),
-            api_key_factory.create(id="key3", user_id="test-user-id", usage_count=20, revoked_at=None, expires_at=None),
+            api_key_factory.create(
+                id="key1",
+                user_id="test-user-id",
+                usage_count=50,
+                revoked_at=None,
+                expires_at=None,
+            ),
+            api_key_factory.create(
+                id="key2",
+                user_id="test-user-id",
+                usage_count=30,
+                revoked_at=None,
+                expires_at=None,
+            ),
+            api_key_factory.create(
+                id="key3",
+                user_id="test-user-id",
+                usage_count=20,
+                revoked_at=None,
+                expires_at=None,
+            ),
         ]
 
         # Mock get_user_api_keys to return our test keys
@@ -658,7 +713,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_get_api_key_usage_stats_no_data(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test getting usage statistics when no data available."""
         # Arrange
@@ -713,7 +771,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_large_key_hash_handling(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of very large key hashes."""
         # Arrange
@@ -730,7 +791,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_special_characters_in_key_hash(
-        self, api_key_repository: APIKeyRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of special characters in key hashes."""
         # Arrange
@@ -747,7 +811,10 @@ class TestAPIKeyRepository:
 
     @pytest.mark.asyncio
     async def test_concurrent_key_operations(
-        self, api_key_repository: APIKeyRepository, sample_api_key: APIKey, api_key_factory
+        self,
+        api_key_repository: APIKeyRepository,
+        sample_api_key: APIKey,
+        api_key_factory,
     ):
         """Test concurrent API key operations."""
         # This test simulates concurrent access patterns

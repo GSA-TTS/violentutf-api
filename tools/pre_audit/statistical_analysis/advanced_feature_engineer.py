@@ -389,7 +389,17 @@ class AdvancedFeatureEngineer:
                 domain_features[f"{feature_name}_risk_weight"] = 1.0
 
         # File type features
-        common_extensions = [".py", ".js", ".java", ".cpp", ".c", ".go", ".rs", ".rb", ".php"]
+        common_extensions = [
+            ".py",
+            ".js",
+            ".java",
+            ".cpp",
+            ".c",
+            ".go",
+            ".rs",
+            ".rb",
+            ".php",
+        ]
         for ext in common_extensions:
             domain_features[f"is_filetype_{ext.replace('.', '')}"] = float(file_extension == ext)
 
@@ -575,14 +585,26 @@ class AdvancedFeatureEngineer:
             business_features["is_poorly_tested"] = float(coverage < 50)
 
         # Component criticality
-        criticality_map = {"critical": 1.0, "high": 0.8, "medium": 0.6, "low": 0.4, "none": 0.0}
+        criticality_map = {
+            "critical": 1.0,
+            "high": 0.8,
+            "medium": 0.6,
+            "low": 0.4,
+            "none": 0.0,
+        }
         if "component_criticality" in business_context:
             criticality = business_context["component_criticality"].lower()
             business_features["criticality_score"] = criticality_map.get(criticality, 0.6)
             business_features["is_critical_component"] = float(criticality == "critical")
 
         # Usage frequency
-        usage_map = {"very_high": 1.0, "high": 0.8, "medium": 0.6, "low": 0.4, "very_low": 0.2}
+        usage_map = {
+            "very_high": 1.0,
+            "high": 0.8,
+            "medium": 0.6,
+            "low": 0.4,
+            "very_low": 0.2,
+        }
         if "usage_frequency" in business_context:
             usage = business_context["usage_frequency"].lower()
             business_features["usage_score"] = usage_map.get(usage, 0.6)

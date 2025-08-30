@@ -35,10 +35,23 @@ class OutputEncoder:
     """
 
     # HTML entities that must always be encoded
-    HTML_ENTITIES = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;", "/": "&#x2F;"}
+    HTML_ENTITIES = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "/": "&#x2F;",
+    }
 
     # Additional characters to encode in attributes
-    ATTR_ENTITIES = {"\n": "&#10;", "\r": "&#13;", "\t": "&#9;", "=": "&#x3D;", "\x00": ""}  # Remove null bytes
+    ATTR_ENTITIES = {
+        "\n": "&#10;",
+        "\r": "&#13;",
+        "\t": "&#9;",
+        "=": "&#x3D;",
+        "\x00": "",
+    }  # Remove null bytes
 
     # CSS dangerous patterns
     CSS_DANGEROUS = [
@@ -50,7 +63,12 @@ class OutputEncoder:
 
     def __init__(self) -> None:
         """Initialize the encoder."""
-        self._encoding_stats = {"html_encoded": 0, "json_encoded": 0, "css_encoded": 0, "dangerous_blocked": 0}
+        self._encoding_stats = {
+            "html_encoded": 0,
+            "json_encoded": 0,
+            "css_encoded": 0,
+            "dangerous_blocked": 0,
+        }
 
     def encode_for_html(self, value: Any) -> str:
         """

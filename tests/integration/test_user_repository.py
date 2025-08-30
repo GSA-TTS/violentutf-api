@@ -31,7 +31,9 @@ class TestUserRepository:
         """Test getting user by username."""
         # Create user
         user = await user_repo.create(
-            username="test_username", email="username@example.com", password_hash=get_test_password_hash()
+            username="test_username",
+            email="username@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -51,7 +53,11 @@ class TestUserRepository:
     async def test_get_by_username_case_insensitive(self, user_repo: UserRepository, async_db_session: AsyncSession):
         """Test username lookup is case insensitive (usernames are normalized to lowercase)."""
         # Create user - username will be normalized to lowercase
-        await user_repo.create(username="TestUser", email="case@example.com", password_hash=get_test_password_hash())
+        await user_repo.create(
+            username="TestUser",
+            email="case@example.com",
+            password_hash=get_test_password_hash(),
+        )
         await async_db_session.commit()
 
         # All case variations should find the user
@@ -72,7 +78,9 @@ class TestUserRepository:
         """Test getting user by email."""
         # Create user
         user = await user_repo.create(
-            username="email_test", email="test@example.com", password_hash=get_test_password_hash()
+            username="email_test",
+            email="test@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -92,7 +100,11 @@ class TestUserRepository:
     async def test_get_by_email_case_insensitive(self, user_repo: UserRepository, async_db_session: AsyncSession):
         """Test email lookup is case insensitive."""
         # Create user
-        await user_repo.create(username="email_case", email="Test@Example.com", password_hash=get_test_password_hash())
+        await user_repo.create(
+            username="email_case",
+            email="Test@Example.com",
+            password_hash=get_test_password_hash(),
+        )
         await async_db_session.commit()
 
         # Try different cases
@@ -196,7 +208,11 @@ class TestUserRepository:
     async def test_authenticate_wrong_password(self, user_repo: UserRepository, async_db_session: AsyncSession):
         """Test authentication with wrong password."""
         # Create user
-        await user_repo.create_user(username="wrong_pass", email="wrong@example.com", password="correct_password")
+        await user_repo.create_user(
+            username="wrong_pass",
+            email="wrong@example.com",
+            password="correct_password",
+        )
         await async_db_session.commit()
 
         # Try wrong password
@@ -231,7 +247,9 @@ class TestUserRepository:
         # Create user
         old_password = "old_password123"
         user = await user_repo.create_user(
-            username="update_pass", email="updatepass@example.com", password=old_password
+            username="update_pass",
+            email="updatepass@example.com",
+            password=old_password,
         )
         await async_db_session.commit()
 
@@ -305,7 +323,9 @@ class TestUserRepository:
         """Test verifying already verified user."""
         # Create and verify user
         user = await user_repo.create_user(
-            username="already_verified", email="already@example.com", password="password"
+            username="already_verified",
+            email="already@example.com",
+            password="password",
         )
         await async_db_session.commit()
 
@@ -360,7 +380,9 @@ class TestUserRepository:
         """Test deactivating user."""
         # Create active user
         user = await user_repo.create_user(
-            username="to_deactivate", email="deactivate@example.com", password="password"
+            username="to_deactivate",
+            email="deactivate@example.com",
+            password="password",
         )
         await async_db_session.commit()
 
@@ -380,7 +402,9 @@ class TestUserRepository:
         """Test deactivating already inactive user."""
         # Create and deactivate user
         user = await user_repo.create_user(
-            username="already_inactive", email="inactive@example.com", password="password"
+            username="already_inactive",
+            email="inactive@example.com",
+            password="password",
         )
         await async_db_session.commit()
 
@@ -420,7 +444,9 @@ class TestUserRepository:
         # Create multiple active users
         for i in range(5):
             await user_repo.create_user(
-                username=f"page_active{i}", email=f"pageactive{i}@example.com", password="password"
+                username=f"page_active{i}",
+                email=f"pageactive{i}@example.com",
+                password="password",
             )
         await async_db_session.commit()
 
@@ -466,7 +492,9 @@ class TestUserRepository:
         """Test getting unverified users excludes inactive by default."""
         # Create unverified inactive user
         inactive_unverified = await user_repo.create_user(
-            username="inactive_unverified", email="inactiveunv@example.com", password="password"
+            username="inactive_unverified",
+            email="inactiveunv@example.com",
+            password="password",
         )
         await async_db_session.commit()
 
@@ -488,7 +516,9 @@ class TestUserRepository:
         """Test getting unverified users including inactive."""
         # Create unverified inactive user
         inactive_unverified = await user_repo.create_user(
-            username="inactive_unv2", email="inactiveunv2@example.com", password="password"
+            username="inactive_unv2",
+            email="inactiveunv2@example.com",
+            password="password",
         )
         await async_db_session.commit()
 

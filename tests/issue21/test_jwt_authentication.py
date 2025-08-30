@@ -40,7 +40,11 @@ class TestIssue21JWTAuthentication:
     def test_jwt_token_generation(self):
         """Test JWT token generation as required by Issue #21 Task 3."""
         # Test data
-        user_data = {"sub": "test-user-123", "roles": ["viewer"], "organization_id": "org-456"}
+        user_data = {
+            "sub": "test-user-123",
+            "roles": ["viewer"],
+            "organization_id": "org-456",
+        }
 
         # Generate access token
         access_token = create_access_token(data=user_data)
@@ -58,7 +62,11 @@ class TestIssue21JWTAuthentication:
     def test_jwt_token_validation(self):
         """Test JWT token validation as required by Issue #21 Task 3."""
         # Create test token
-        user_data = {"sub": "test-user-456", "roles": ["admin"], "organization_id": "org-789"}
+        user_data = {
+            "sub": "test-user-456",
+            "roles": ["admin"],
+            "organization_id": "org-789",
+        }
         token = create_access_token(data=user_data)
 
         # Validate token
@@ -138,7 +146,11 @@ class TestIssue21JWTAuthentication:
         # Test register endpoint exists
         response = client.post(
             "/api/v1/auth/register",
-            json={"username": "testuser", "email": "test@example.com", "password": "weak"},  # Will fail validation
+            json={
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "weak",
+            },  # Will fail validation
         )
         # Should get 400 (endpoint exists but validation fails)
         assert response.status_code == 400
@@ -214,7 +226,11 @@ class TestIssue21JWTAuthentication:
 
     def test_jwt_token_claims_structure(self):
         """Test JWT token claims structure is correct."""
-        user_data = {"sub": "claims-test-user", "roles": ["admin", "editor"], "organization_id": "org-claims-test"}
+        user_data = {
+            "sub": "claims-test-user",
+            "roles": ["admin", "editor"],
+            "organization_id": "org-claims-test",
+        }
 
         # Test access token claims
         access_token = create_access_token(data=user_data)
@@ -299,7 +315,11 @@ class TestIssue21IntegrationScenarios:
         assert verify_password(password, hashed_password) is True
 
         # Step 2: Simulate user authentication (Task 6)
-        user_data = {"sub": "integration-user-123", "roles": ["viewer"], "organization_id": "test-org"}
+        user_data = {
+            "sub": "integration-user-123",
+            "roles": ["viewer"],
+            "organization_id": "test-org",
+        }
 
         # Step 3: Generate JWT tokens (Task 3)
         access_token = create_access_token(data=user_data)

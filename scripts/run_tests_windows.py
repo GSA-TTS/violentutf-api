@@ -50,8 +50,16 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
 def main() -> None:
     """Run the main entry point."""
     parser = argparse.ArgumentParser(description="Run ViolentUTF API tests")
-    parser.add_argument("--test-dir", default="tests/unit", help="Test directory to run (default: tests/unit)")
-    parser.add_argument("--install-deps", action="store_true", help="Install dependencies before running tests")
+    parser.add_argument(
+        "--test-dir",
+        default="tests/unit",
+        help="Test directory to run (default: tests/unit)",
+    )
+    parser.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Install dependencies before running tests",
+    )
 
     args = parser.parse_args()
     sys.exit(run_tests(args.test_dir, args.install_deps))

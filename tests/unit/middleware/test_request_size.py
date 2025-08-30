@@ -70,7 +70,11 @@ async def test_upload_within_limit(test_app):
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send upload within limit (1500 bytes, under 2KB upload limit)
         data = "x" * 1500
-        response = await client.post("/upload/file", content=data, headers={"Content-Type": "application/octet-stream"})
+        response = await client.post(
+            "/upload/file",
+            content=data,
+            headers={"Content-Type": "application/octet-stream"},
+        )
 
         assert response.status_code == 200
         assert response.json() == {"size": 1500, "uploaded": True}
@@ -83,7 +87,11 @@ async def test_upload_exceeds_limit(test_app):
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send large upload (3000 bytes, exceeds 2KB upload limit)
         data = "x" * 3000
-        response = await client.post("/upload/file", content=data, headers={"Content-Type": "application/octet-stream"})
+        response = await client.post(
+            "/upload/file",
+            content=data,
+            headers={"Content-Type": "application/octet-stream"},
+        )
 
         assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
         assert "exceeds maximum allowed size" in response.json()["detail"]
@@ -134,7 +142,9 @@ async def test_invalid_content_length_header(test_app):
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
-            "/test", content="test", headers={"Content-Type": "text/plain", "Content-Length": "invalid"}
+            "/test",
+            content="test",
+            headers={"Content-Type": "text/plain", "Content-Length": "invalid"},
         )
 
         # Should still process the request (fallback to streaming)

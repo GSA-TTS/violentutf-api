@@ -67,9 +67,9 @@ class TestBasicIntegration:
         result = await api_key_service._verify_key_hash(test_key, argon2_hash)
         assert result is True
 
-        # Test SHA256 (legacy)
+        # Test SHA256 (legacy) - should be rejected for security
         import hashlib
 
         sha256_hash = hashlib.sha256(test_key.encode()).hexdigest()
         result = await api_key_service._verify_key_hash(test_key, sha256_hash)
-        assert result is True
+        assert result is False  # SHA256 hashes are rejected for security

@@ -112,12 +112,12 @@ class PerformanceMonitor:
                 "max_time": max(response_times),
                 "p95_time": self._percentile(response_times, 95),
                 "p99_time": self._percentile(response_times, 99),
-                "std_dev": statistics.stdev(response_times) if len(response_times) > 1 else 0,
+                "std_dev": (statistics.stdev(response_times) if len(response_times) > 1 else 0),
                 "success_rate": sum(1 for code in status_codes if code < 400) / len(status_codes),
                 "error_rate": error_count / iterations,
                 "total_requests": iterations,
                 "error_count": error_count,
-                "throughput_rps": iterations / sum(response_times) if sum(response_times) > 0 else 0,
+                "throughput_rps": (iterations / sum(response_times) if sum(response_times) > 0 else 0),
                 "method": method,
                 "endpoint": endpoint,
                 "system_metrics": {
@@ -213,7 +213,9 @@ class PerformanceMonitor:
         print()
 
     def compare_with_baseline(
-        self, current_measurements: Dict[str, Any], baseline_file: str = "performance_baseline.json"
+        self,
+        current_measurements: Dict[str, Any],
+        baseline_file: str = "performance_baseline.json",
     ) -> Dict[str, Any]:
         """Compare current measurements with baseline performance."""
         if not os.path.exists(baseline_file):
@@ -308,7 +310,10 @@ class PerformanceMonitor:
                 pass
 
         # Add current measurements to history
-        historical_entry = {"timestamp": datetime.now().isoformat(), "measurements": measurements}
+        historical_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "measurements": measurements,
+        }
         historical_data.append(historical_entry)
 
         # Keep only last 100 entries

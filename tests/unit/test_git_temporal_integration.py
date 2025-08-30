@@ -18,7 +18,9 @@ try:
         GitTemporalAnalysisResult,
         GitTemporalIntegrator,
     )
-    from tools.pre_audit.statistical_analysis.temporal_weighting_engine import TemporalViolation
+    from tools.pre_audit.statistical_analysis.temporal_weighting_engine import (
+        TemporalViolation,
+    )
 
     HAS_STATISTICAL_COMPONENTS = True
 except ImportError:

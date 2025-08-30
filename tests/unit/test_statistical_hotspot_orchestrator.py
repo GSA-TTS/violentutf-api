@@ -20,7 +20,9 @@ try:
         EnhancedArchitecturalHotspot,
         StatisticalHotspotOrchestrator,
     )
-    from tools.pre_audit.statistical_analysis.temporal_weighting_engine import TemporalViolation
+    from tools.pre_audit.statistical_analysis.temporal_weighting_engine import (
+        TemporalViolation,
+    )
 
     STATISTICAL_COMPONENTS_AVAILABLE = True
 except ImportError:
@@ -264,7 +266,13 @@ class TestStatisticalHotspotOrchestrator:
             mock_statistical_result, mock_bayesian_result
         )
 
-        assert evidence_strength in ["insufficient", "weak", "moderate", "strong", "very_strong"]
+        assert evidence_strength in [
+            "insufficient",
+            "weak",
+            "moderate",
+            "strong",
+            "very_strong",
+        ]
         # Expected: average of strong(3) and moderate(2) = 2.5 -> moderate
         assert evidence_strength == "moderate"
 

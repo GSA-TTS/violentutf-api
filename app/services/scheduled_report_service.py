@@ -13,7 +13,13 @@ from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.report import Report, ReportFormat, ReportSchedule, ReportStatus, ReportTemplate
+from app.models.report import (
+    Report,
+    ReportFormat,
+    ReportSchedule,
+    ReportStatus,
+    ReportTemplate,
+)
 from app.models.task import Task, TaskStatus
 from app.models.user import User
 from app.services.architectural_report_generator import ArchitecturalReportGenerator
@@ -110,7 +116,10 @@ class ScheduledReportService:
             now = datetime.now(timezone.utc)
 
             schedules_query = select(ReportSchedule).where(
-                and_(ReportSchedule.is_active.is_(True), ReportSchedule.next_run_at <= now)
+                and_(
+                    ReportSchedule.is_active.is_(True),
+                    ReportSchedule.next_run_at <= now,
+                )
             )
 
             result = await self.db.execute(schedules_query)
@@ -203,7 +212,14 @@ class ScheduledReportService:
                         start_date=start_date,
                         end_date=end_date,
                         include_sections=config.get(
-                            "include_sections", ["leading", "lagging", "roi", "executive_summary", "recommendations"]
+                            "include_sections",
+                            [
+                                "leading",
+                                "lagging",
+                                "roi",
+                                "executive_summary",
+                                "recommendations",
+                            ],
                         ),
                     )
 
@@ -238,7 +254,7 @@ class ScheduledReportService:
             return {
                 "schedule_id": schedule.id,
                 "schedule_name": schedule.name,
-                "status": "success" if all(r["status"] == "success" for r in report_results) else "partial",
+                "status": ("success" if all(r["status"] == "success" for r in report_results) else "partial"),
                 "reports": report_results,
             }
 
@@ -260,6 +276,17 @@ class ScheduledReportService:
         Returns:
             ReportTemplate instance
         """
+        # Validate report_type to prevent SQL injection
+        allowed_report_types = [
+            "security",
+            "compliance",
+            "metrics",
+            "dependencies",
+            "vulnerabilities",
+        ]
+        if report_type not in allowed_report_types:
+            raise ValueError(f"Invalid report type. Must be one of: {', '.join(allowed_report_types)}")
+
         # Check if template exists
         template_query = select(ReportTemplate).where(ReportTemplate.name == f"architectural_{report_type}")
         result = await self.db.execute(template_query)
@@ -275,14 +302,38 @@ class ScheduledReportService:
                 supported_formats=["pdf", "html"],
                 template_content={
                     "sections": [
-                        {"id": "executive_summary", "title": "Executive Summary", "required": False},
-                        {"id": "leading_indicators", "title": "Leading Indicators", "required": True},
-                        {"id": "lagging_indicators", "title": "Lagging Indicators", "required": True},
-                        {"id": "roi_analysis", "title": "ROI Analysis", "required": False},
-                        {"id": "recommendations", "title": "Recommendations", "required": False},
+                        {
+                            "id": "executive_summary",
+                            "title": "Executive Summary",
+                            "required": False,
+                        },
+                        {
+                            "id": "leading_indicators",
+                            "title": "Leading Indicators",
+                            "required": True,
+                        },
+                        {
+                            "id": "lagging_indicators",
+                            "title": "Lagging Indicators",
+                            "required": True,
+                        },
+                        {
+                            "id": "roi_analysis",
+                            "title": "ROI Analysis",
+                            "required": False,
+                        },
+                        {
+                            "id": "recommendations",
+                            "title": "Recommendations",
+                            "required": False,
+                        },
                     ]
                 },
-                default_config={"period_days": 30, "include_charts": True, "include_tables": True},
+                default_config={
+                    "period_days": 30,
+                    "include_charts": True,
+                    "include_tables": True,
+                },
                 category="architectural",
                 tags=["metrics", "roi", "audit", "compliance"],
                 is_active=True,

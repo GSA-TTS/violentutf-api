@@ -134,7 +134,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scans_by_target_not_found(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieval when no scans exist for target."""
         # Arrange
@@ -152,7 +155,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_statistics_success(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful scan statistics retrieval."""
         # Arrange
@@ -183,11 +189,21 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_statistics_empty_period(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test scan statistics for period with no scans."""
         # Arrange
-        stats_data = [{"total_scans": 0, "completed_scans": 0, "running_scans": 0, "failed_scans": 0}]
+        stats_data = [
+            {
+                "total_scans": 0,
+                "completed_scans": 0,
+                "running_scans": 0,
+                "failed_scans": 0,
+            }
+        ]
         result_mock = query_result_factory(data=stats_data)
         mock_session.execute.return_value = result_mock
         time_period = timedelta(hours=1)  # Very short period
@@ -204,7 +220,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_create_scan_success(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, security_scan_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        security_scan_factory,
     ):
         """Test successful security scan creation."""
         # Arrange
@@ -237,7 +256,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_create_scan_with_minimal_parameters(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, security_scan_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        security_scan_factory,
     ):
         """Test scan creation with minimal required parameters."""
         # Arrange
@@ -346,7 +368,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_update_scan_status_not_found(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test updating status for non-existent scan."""
         # Arrange
@@ -416,7 +441,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_active_scans_none_active(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieval when no active scans exist."""
         # Arrange
@@ -523,7 +551,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_results_not_found(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test scan results for non-existent scan."""
         # Arrange
@@ -586,7 +617,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_cancel_scan_not_found(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cancelling non-existent scan."""
         # Arrange
@@ -624,7 +658,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_scans_success(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful cleanup of old scans."""
         # Arrange
@@ -641,7 +678,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_scans_custom_retention(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup with custom retention period."""
         # Arrange
@@ -658,7 +698,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_scans_nothing_to_clean(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup when no old scans exist."""
         # Arrange
@@ -677,7 +720,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_analytics_success(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful scan analytics retrieval."""
         # Arrange
@@ -714,7 +760,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_analytics_with_date_range(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test scan analytics with date range filtering."""
         # Arrange
@@ -735,7 +784,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_get_scan_analytics_no_data(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test scan analytics when no data available."""
         # Arrange
@@ -781,7 +833,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_null_input_validation(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test repository methods handle null/None inputs appropriately."""
         # Arrange
@@ -805,7 +860,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_large_scan_results_handling(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, security_scan_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        security_scan_factory,
     ):
         """Test handling of scans with very large results."""
         # Arrange
@@ -836,7 +894,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_unicode_and_special_characters_in_target(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of Unicode and special characters in target URLs."""
         # Arrange
@@ -881,7 +942,10 @@ class TestSecurityScanRepository:
 
     @pytest.mark.asyncio
     async def test_scan_type_validation_patterns(
-        self, security_scan_repository: SecurityScanRepository, mock_session: AsyncMock, security_scan_factory
+        self,
+        security_scan_repository: SecurityScanRepository,
+        mock_session: AsyncMock,
+        security_scan_factory,
     ):
         """Test various scan type patterns and validation."""
         # Test different scan types

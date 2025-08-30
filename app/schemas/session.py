@@ -6,7 +6,12 @@ from typing import Any, Dict, Optional, Type
 
 from pydantic import Field, field_validator
 
-from app.schemas.base import AdvancedFilter, BaseCreateSchema, BaseModelSchema, BaseUpdateSchema
+from app.schemas.base import (
+    AdvancedFilter,
+    BaseCreateSchema,
+    BaseModelSchema,
+    BaseUpdateSchema,
+)
 
 
 class SessionBase(BaseCreateSchema):
@@ -82,7 +87,10 @@ class SessionCreate(SessionBase):
     user_id: uuid.UUID = Field(..., description="User ID who owns this session")
     session_token: str = Field(..., min_length=32, max_length=255, description="Session token (will be hashed)")
     refresh_token: Optional[str] = Field(
-        None, min_length=32, max_length=255, description="Refresh token (will be hashed)"
+        None,
+        min_length=32,
+        max_length=255,
+        description="Refresh token (will be hashed)",
     )
     ip_address: Optional[str] = Field(None, description="IP address where session was created")
 

@@ -41,7 +41,12 @@ def _setup_basic_error_endpoints(app: FastAPI) -> None:
 
     @app.get("/test/api-error")
     async def raise_api_error() -> None:
-        raise APIError(status_code=418, error_code="TEAPOT", title="Teapot Error", detail="I'm a teapot")
+        raise APIError(
+            status_code=418,
+            error_code="TEAPOT",
+            title="Teapot Error",
+            detail="I'm a teapot",
+        )
 
     @app.get("/test/bad-request")
     async def raise_bad_request() -> None:

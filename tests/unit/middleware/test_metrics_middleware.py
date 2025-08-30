@@ -13,7 +13,12 @@ from fastapi import FastAPI, HTTPException
 from prometheus_client import REGISTRY
 
 from app.core.config import settings
-from app.middleware.metrics import ACTIVE_REQUESTS, REQUEST_COUNT, REQUEST_DURATION, MetricsMiddleware
+from app.middleware.metrics import (
+    ACTIVE_REQUESTS,
+    REQUEST_COUNT,
+    REQUEST_DURATION,
+    MetricsMiddleware,
+)
 from tests.utils.testclient import SafeTestClient
 
 if TYPE_CHECKING:

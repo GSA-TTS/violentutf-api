@@ -257,8 +257,14 @@ class TestFastAPIRepositoryDependencies:
             (get_api_key_repository_dep, mock_repositories[IApiKeyRepository]),
             (get_session_repository_dep, mock_repositories[ISessionRepository]),
             (get_audit_repository_dep, mock_repositories[IAuditRepository]),
-            (get_security_scan_repository_dep, mock_repositories[ISecurityScanRepository]),
-            (get_vulnerability_repository_dep, mock_repositories[IVulnerabilityRepository]),
+            (
+                get_security_scan_repository_dep,
+                mock_repositories[ISecurityScanRepository],
+            ),
+            (
+                get_vulnerability_repository_dep,
+                mock_repositories[IVulnerabilityRepository],
+            ),
             (get_role_repository_dep, mock_repositories[IRoleRepository]),
             (get_health_repository_dep, mock_repositories[IHealthRepository]),
         ]
@@ -351,17 +357,29 @@ class TestHealthEndpointIntegration:
                 "repositories": {
                     "user_repository": {"status": "healthy", "response_time_ms": 10},
                     "api_key_repository": {"status": "healthy", "response_time_ms": 15},
-                    "session_repository": {"status": "unhealthy", "error": "Connection failed"},
+                    "session_repository": {
+                        "status": "unhealthy",
+                        "error": "Connection failed",
+                    },
                     "audit_repository": {"status": "healthy", "response_time_ms": 8},
-                    "security_scan_repository": {"status": "healthy", "response_time_ms": 12},
-                    "vulnerability_repository": {"status": "healthy", "response_time_ms": 9},
+                    "security_scan_repository": {
+                        "status": "healthy",
+                        "response_time_ms": 12,
+                    },
+                    "vulnerability_repository": {
+                        "status": "healthy",
+                        "response_time_ms": 9,
+                    },
                     "role_repository": {"status": "healthy", "response_time_ms": 11},
                     "health_repository": {"status": "unhealthy", "error": "Timeout"},
                 },
                 "summary": {
                     "health_percentage": 75.0,
                     "average_response_time_ms": 10.8,
-                    "unhealthy_repositories": ["session_repository", "health_repository"],
+                    "unhealthy_repositories": [
+                        "session_repository",
+                        "health_repository",
+                    ],
                 },
                 "cache_hit": False,
                 "timeout_occurred": False,
@@ -391,7 +409,11 @@ class TestHealthEndpointIntegration:
                 "unhealthy_count": 0,
                 "total_count": 8,
                 "repositories": {f"repo_{i}": {"status": "healthy", "response_time_ms": 10} for i in range(8)},
-                "summary": {"health_percentage": 100.0, "average_response_time_ms": 10.0, "unhealthy_repositories": []},
+                "summary": {
+                    "health_percentage": 100.0,
+                    "average_response_time_ms": 10.0,
+                    "unhealthy_repositories": [],
+                },
                 "cache_hit": False,
                 "timeout_occurred": False,
             }
@@ -410,7 +432,8 @@ class TestHealthEndpointIntegration:
         from app.api.endpoints.health import check_repository_health
 
         with patch(
-            "app.core.container.get_repository_health_with_timeout", side_effect=Exception("Health check failed")
+            "app.core.container.get_repository_health_with_timeout",
+            side_effect=Exception("Health check failed"),
         ):
             result = await check_repository_health()
 
@@ -469,7 +492,10 @@ class TestRepositoryHealthWithTimeout:
             await asyncio.sleep(2)  # Simulate slow operation
             return {"user_repository": "healthy"}
 
-        with patch("app.core.container.get_repository_health_status", side_effect=slow_health_check):
+        with patch(
+            "app.core.container.get_repository_health_status",
+            side_effect=slow_health_check,
+        ):
             # Test with very short timeout
             result = await get_repository_health_with_timeout(timeout_seconds=0.1, use_cache=False)
 
@@ -509,22 +535,48 @@ class TestRepositoryHealthWithTimeout:
                 "total_check_time_ms": 15.2,
                 "repositories": {
                     "user_repository": {"status": "healthy", "response_time_ms": 10},
-                    "api_key_repository": {"status": "unhealthy", "error_message": "Connection failed"},
-                    "session_repository": {"status": "degraded", "response_time_ms": 25},
+                    "api_key_repository": {
+                        "status": "unhealthy",
+                        "error_message": "Connection failed",
+                    },
+                    "session_repository": {
+                        "status": "degraded",
+                        "response_time_ms": 25,
+                    },
                     "audit_repository": {"status": "healthy", "response_time_ms": 8},
-                    "security_scan_repository": {"status": "healthy", "response_time_ms": 12},
-                    "vulnerability_repository": {"status": "healthy", "response_time_ms": 9},
-                    "role_repository": {"status": "not_registered", "error_message": "Not available"},
-                    "health_repository": {"status": "error", "error_message": "Timeout"},
+                    "security_scan_repository": {
+                        "status": "healthy",
+                        "response_time_ms": 12,
+                    },
+                    "vulnerability_repository": {
+                        "status": "healthy",
+                        "response_time_ms": 9,
+                    },
+                    "role_repository": {
+                        "status": "not_registered",
+                        "error_message": "Not available",
+                    },
+                    "health_repository": {
+                        "status": "error",
+                        "error_message": "Timeout",
+                    },
                 },
                 "cache_hit": False,
                 "cache_age_seconds": 0,
-                "connection_pool": {"pool_size": 5, "checked_out_connections": 0, "utilization_percentage": 0.0},
+                "connection_pool": {
+                    "pool_size": 5,
+                    "checked_out_connections": 0,
+                    "utilization_percentage": 0.0,
+                },
                 "operation_metrics": {},
                 "summary": {
                     "health_percentage": 50.0,
                     "average_response_time_ms": 12.8,
-                    "unhealthy_repositories": ["api_key_repository", "role_repository", "health_repository"],
+                    "unhealthy_repositories": [
+                        "api_key_repository",
+                        "role_repository",
+                        "health_repository",
+                    ],
                     "connection_pool_health": "healthy",
                 },
             }
@@ -611,7 +663,10 @@ class TestApplicationStartupWithRealDependencies:
             mock_get_session_maker.return_value = mock_session_maker
 
             # Mock register_repositories to raise exception
-            with patch("app.core.container.register_repositories", side_effect=Exception("Registration failed")):
+            with patch(
+                "app.core.container.register_repositories",
+                side_effect=Exception("Registration failed"),
+            ):
                 from app.main import _initialize_repositories
 
                 # Should not raise exception (graceful degradation)

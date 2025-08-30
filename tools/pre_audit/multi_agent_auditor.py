@@ -175,13 +175,22 @@ class SemanticAnalyzerAgent(AnalysisAgent):
             task.context.update_from_agent(self.agent_type, results)
 
             execution_time = (datetime.now() - start_time).total_seconds()
-            return AgentResult(agent_type=self.agent_type, success=True, results=results, execution_time=execution_time)
+            return AgentResult(
+                agent_type=self.agent_type,
+                success=True,
+                results=results,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             self.logger.error(f"Semantic analysis failed: {e}")
             execution_time = (datetime.now() - start_time).total_seconds()
             return AgentResult(
-                agent_type=self.agent_type, success=False, results={}, execution_time=execution_time, error=str(e)
+                agent_type=self.agent_type,
+                success=False,
+                results={},
+                execution_time=execution_time,
+                error=str(e),
             )
 
     async def _extract_adr_requirements(self, context: SharedContext) -> Dict[str, Any]:
@@ -262,13 +271,22 @@ class ViolationDetectorAgent(AnalysisAgent):
             task.context.update_from_agent(self.agent_type, results)
 
             execution_time = (datetime.now() - start_time).total_seconds()
-            return AgentResult(agent_type=self.agent_type, success=True, results=results, execution_time=execution_time)
+            return AgentResult(
+                agent_type=self.agent_type,
+                success=True,
+                results=results,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             self.logger.error(f"Violation detection failed: {e}")
             execution_time = (datetime.now() - start_time).total_seconds()
             return AgentResult(
-                agent_type=self.agent_type, success=False, results={}, execution_time=execution_time, error=str(e)
+                agent_type=self.agent_type,
+                success=False,
+                results={},
+                execution_time=execution_time,
+                error=str(e),
             )
 
     async def _detect_violations(self, files: List[str], requirements: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -381,13 +399,22 @@ class RemediationAssistantAgent(AnalysisAgent):
             task.context.update_from_agent(self.agent_type, results)
 
             execution_time = (datetime.now() - start_time).total_seconds()
-            return AgentResult(agent_type=self.agent_type, success=True, results=results, execution_time=execution_time)
+            return AgentResult(
+                agent_type=self.agent_type,
+                success=True,
+                results=results,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             self.logger.error(f"Remediation generation failed: {e}")
             execution_time = (datetime.now() - start_time).total_seconds()
             return AgentResult(
-                agent_type=self.agent_type, success=False, results={}, execution_time=execution_time, error=str(e)
+                agent_type=self.agent_type,
+                success=False,
+                results={},
+                execution_time=execution_time,
+                error=str(e),
             )
 
     async def _generate_fixes(self, violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -487,13 +514,22 @@ class HistoryForensicsAgent(AnalysisAgent):
             task.context.update_from_agent(self.agent_type, results)
 
             execution_time = (datetime.now() - start_time).total_seconds()
-            return AgentResult(agent_type=self.agent_type, success=True, results=results, execution_time=execution_time)
+            return AgentResult(
+                agent_type=self.agent_type,
+                success=True,
+                results=results,
+                execution_time=execution_time,
+            )
 
         except Exception as e:
             self.logger.error(f"History forensics failed: {e}")
             execution_time = (datetime.now() - start_time).total_seconds()
             return AgentResult(
-                agent_type=self.agent_type, success=False, results={}, execution_time=execution_time, error=str(e)
+                agent_type=self.agent_type,
+                success=False,
+                results={},
+                execution_time=execution_time,
+                error=str(e),
             )
 
     async def _analyze_file_churn(self, context: SharedContext) -> Dict[str, Any]:
@@ -531,7 +567,11 @@ class HistoryForensicsAgent(AnalysisAgent):
         """Analyze patterns in historical violations"""
         return {
             "recurring_violations": [
-                {"pattern": "Direct database access in API layer", "frequency": 12, "last_occurrence": "2 weeks ago"}
+                {
+                    "pattern": "Direct database access in API layer",
+                    "frequency": 12,
+                    "last_occurrence": "2 weeks ago",
+                }
             ],
             "violation_trends": {
                 "increasing": ["architectural_boundary"],
@@ -735,7 +775,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     # Run async main
     asyncio.run(main())

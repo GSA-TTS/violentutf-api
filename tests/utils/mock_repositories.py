@@ -136,7 +136,11 @@ class MockSessionRepository(AsyncMock):
         self.call_log: List[tuple] = []
 
     async def create_session(
-        self, user_id: str, token: str, expires_at: datetime, ip_address: Optional[str] = None
+        self,
+        user_id: str,
+        token: str,
+        expires_at: datetime,
+        ip_address: Optional[str] = None,
     ) -> Session:
         """Mock session creation."""
         self.call_log.append(("create_session", user_id, token[:10] + "...", expires_at))
@@ -288,7 +292,14 @@ class MockAuditRepository(AsyncMock):
         end_idx = start_idx + size
         page_logs = filtered_logs[start_idx:end_idx]
 
-        return Page(items=page_logs, total=total, page=page, size=size, has_next=end_idx < total, has_prev=page > 1)
+        return Page(
+            items=page_logs,
+            total=total,
+            page=page,
+            size=size,
+            has_next=end_idx < total,
+            has_prev=page > 1,
+        )
 
 
 class MockSecurityScanRepository(AsyncMock):
@@ -300,7 +311,11 @@ class MockSecurityScanRepository(AsyncMock):
         self.call_log: List[tuple] = []
 
     async def create_scan(
-        self, scan_type: str, target: str, user_id: str, organization_id: Optional[str] = None
+        self,
+        scan_type: str,
+        target: str,
+        user_id: str,
+        organization_id: Optional[str] = None,
     ) -> SecurityScan:
         """Mock security scan creation."""
         self.call_log.append(("create_scan", scan_type, target, user_id))
@@ -344,7 +359,12 @@ class MockVulnerabilityRepository(AsyncMock):
         self.call_log: List[tuple] = []
 
     async def create_finding(
-        self, scan_id: str, vulnerability_id: str, severity: str, title: str, description: str
+        self,
+        scan_id: str,
+        vulnerability_id: str,
+        severity: str,
+        title: str,
+        description: str,
     ) -> VulnerabilityFinding:
         """Mock vulnerability finding creation."""
         self.call_log.append(("create_finding", scan_id, vulnerability_id, severity))
@@ -379,7 +399,11 @@ class MockRoleRepository(AsyncMock):
 
         role_id = str(uuid.uuid4())
         role = Role(
-            id=role_id, name=name, description=description, permissions=permissions, created_at=datetime.utcnow()
+            id=role_id,
+            name=name,
+            description=description,
+            permissions=permissions,
+            created_at=datetime.utcnow(),
         )
 
         self.roles[role_id] = role

@@ -13,7 +13,10 @@ from pathlib import Path
 
 # Import existing auditor
 try:
-    from tools.pre_audit.claude_code_auditor import EnterpriseClaudeCodeAuditor, EnterpriseClaudeCodeConfig
+    from tools.pre_audit.claude_code_auditor import (
+        EnterpriseClaudeCodeAuditor,
+        EnterpriseClaudeCodeConfig,
+    )
 except ImportError:
     # Mock classes for environments where claude_code_auditor is not available
     print("Warning: claude_code_auditor not available. Using mock classes.")
@@ -140,7 +143,9 @@ async def generate_security_focused_report(repo_path: str):
     """
     # Configure for security team
     config = EnterpriseClaudeCodeConfig(
-        repo_path=repo_path, enable_security_testing=True, enable_adversarial_testing=True
+        repo_path=repo_path,
+        enable_security_testing=True,
+        enable_adversarial_testing=True,
     )
 
     # Run audit
@@ -214,7 +219,11 @@ async def generate_executive_summary(repo_path: str):
 
 def demonstrate_security_features():
     """Demonstrate security features of the reporting module."""
-    from tools.pre_audit.reporting.security import InputValidator, OutputEncoder, ValidationError
+    from tools.pre_audit.reporting.security import (
+        InputValidator,
+        OutputEncoder,
+        ValidationError,
+    )
 
     print("\n🔒 Security Features Demonstration")
 
@@ -241,7 +250,11 @@ def demonstrate_security_features():
     encoder = OutputEncoder()
 
     print("\n2. Output Encoding:")
-    test_data = {"file_path": "../../etc/passwd", "message": "<script>alert('XSS')</script>", "risk_score": 0.95}
+    test_data = {
+        "file_path": "../../etc/passwd",
+        "message": "<script>alert('XSS')</script>",
+        "risk_score": 0.95,
+    }
 
     encoded_html = encoder.encode_dict_values(test_data)
     print(f"  Original: {test_data['message']}")

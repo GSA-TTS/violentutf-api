@@ -113,7 +113,11 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
 
         # Check nonce replay
         if await self._is_nonce_replayed(nonce, api_key):
-            logger.warning("nonce_replay_detected", nonce=nonce[:16] + "...", api_key=api_key[:8] + "...")
+            logger.warning(
+                "nonce_replay_detected",
+                nonce=nonce[:16] + "...",
+                api_key=api_key[:8] + "...",
+            )
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Nonce replay detected"},

@@ -128,7 +128,13 @@ class TestADR012Compliance:
             "benchmark_",
             "requirements",
         ]
-        excluded_dirs = ["fixtures", "utils", "helpers", "pytest_plugins", "performance"]
+        excluded_dirs = [
+            "fixtures",
+            "utils",
+            "helpers",
+            "pytest_plugins",
+            "performance",
+        ]
 
         for py_file in tests_dir.rglob("*.py"):
             # Skip if in excluded directory

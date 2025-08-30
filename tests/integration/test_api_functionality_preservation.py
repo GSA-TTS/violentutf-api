@@ -46,7 +46,10 @@ class TestAPIFunctionalityPreservation:
         """Test that authentication flow works with new architecture."""
         # Test invalid authentication
         response = client.get("/api/v1/users/me", headers={"Authorization": "Bearer invalid_token"})
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     def test_cors_middleware_preserved(self, client: TestClient) -> None:
         """Test that CORS middleware still works."""
@@ -63,8 +66,15 @@ class TestAPIFunctionalityPreservation:
     def test_request_validation_preserved(self, client: TestClient) -> None:
         """Test that request validation still works."""
         # Test invalid JSON
-        response = client.post("/api/v1/users/", data="invalid json", headers={"Content-Type": "application/json"})
-        assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        response = client.post(
+            "/api/v1/users/",
+            data="invalid json",
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     def test_content_type_handling_preserved(self, client: TestClient) -> None:
         """Test that content type handling works."""

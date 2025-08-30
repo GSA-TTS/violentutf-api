@@ -122,7 +122,11 @@ class InputValidator:
 
             # For any other fields, use generic validation
             for key, value in audit_data.items():
-                if key not in ["all_violations", "architectural_hotspots", "audit_metadata"]:
+                if key not in [
+                    "all_violations",
+                    "architectural_hotspots",
+                    "audit_metadata",
+                ]:
                     try:
                         validated[key] = self._validate_dict({key: value}, depth=0)[key]
                     except ValidationError as e:
@@ -131,7 +135,14 @@ class InputValidator:
                         self._validation_stats["fields_removed"] += 1
 
             # Check if we have any recognizable audit data at all
-            if not any(key in validated for key in ["all_violations", "architectural_hotspots", "audit_metadata"]):
+            if not any(
+                key in validated
+                for key in [
+                    "all_violations",
+                    "architectural_hotspots",
+                    "audit_metadata",
+                ]
+            ):
                 raise ValidationError(
                     "Audit data must contain at least one of: all_violations, architectural_hotspots, audit_metadata"
                 )
@@ -350,7 +361,12 @@ class InputValidator:
                         validated_violation["file_path"] = "unknown"
 
                 # Validate additional string fields
-                string_fields = ["message", "adr_title", "evidence", "remediation_guidance"]
+                string_fields = [
+                    "message",
+                    "adr_title",
+                    "evidence",
+                    "remediation_guidance",
+                ]
                 for field in string_fields:
                     if field in violation and violation[field]:
                         try:

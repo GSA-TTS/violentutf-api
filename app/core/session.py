@@ -111,7 +111,10 @@ class SessionManager:
         return None
 
     async def rotate_session(
-        self, old_session_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None
+        self,
+        old_session_id: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Optional[str]:
         """Rotate session ID for security (prevent session fixation).
 
@@ -126,7 +129,10 @@ class SessionManager:
         # Get existing session
         session_data = await self.get_session(old_session_id)
         if not session_data:
-            logger.warning("session_rotation_failed_not_found", session_id=old_session_id[:8] + "...")
+            logger.warning(
+                "session_rotation_failed_not_found",
+                session_id=old_session_id[:8] + "...",
+            )
             return None
 
         # Generate new session ID
@@ -253,7 +259,10 @@ class SessionManager:
         return False
 
     async def validate_session(
-        self, session_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None
+        self,
+        session_id: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> bool:
         """Validate session with optional IP/UA checking.
 
@@ -297,7 +306,11 @@ class SessionManager:
                         ex=self.session_ttl,
                     )
                 except Exception as e:
-                    logger.error("session_rotation_flag_save_failed", session_id=session_id[:8] + "...", error=str(e))
+                    logger.error(
+                        "session_rotation_flag_save_failed",
+                        session_id=session_id[:8] + "...",
+                        error=str(e),
+                    )
 
         return True
 

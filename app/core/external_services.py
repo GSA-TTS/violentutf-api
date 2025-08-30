@@ -13,7 +13,12 @@ import httpx
 from pydantic import BaseModel, Field, field_validator
 from structlog.stdlib import get_logger
 
-from ..utils.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerException, get_circuit_breaker
+from ..utils.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerException,
+    get_circuit_breaker,
+)
 from ..utils.retry import RetryConfig, with_retry
 from .config import settings
 
@@ -147,7 +152,11 @@ class ExternalServiceClient:
                 recovery_timeout=config.recovery_timeout,
                 success_threshold=config.success_threshold,
                 timeout=config.timeout,
-                expected_exception=(httpx.HTTPError, ServiceError, asyncio.TimeoutError),
+                expected_exception=(
+                    httpx.HTTPError,
+                    ServiceError,
+                    asyncio.TimeoutError,
+                ),
             ),
         )
 

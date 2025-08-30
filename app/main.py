@@ -48,7 +48,10 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 
     return JSONResponse(
         status_code=429,
-        content={"detail": f"Rate limit exceeded: {exc.detail}", "type": "rate_limit_exceeded"},
+        content={
+            "detail": f"Rate limit exceeded: {exc.detail}",
+            "type": "rate_limit_exceeded",
+        },
         headers={"Retry-After": "60"},  # Default retry after 60 seconds
     )
 
@@ -182,9 +185,9 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
         title=app_settings.PROJECT_NAME,
         description=app_settings.DESCRIPTION,
         version=app_settings.VERSION,
-        openapi_url=f"{app_settings.API_V1_STR}/openapi.json" if not app_settings.is_production else None,
-        docs_url=f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
-        redoc_url=f"{app_settings.API_V1_STR}/redoc" if not app_settings.is_production else None,
+        openapi_url=(f"{app_settings.API_V1_STR}/openapi.json" if not app_settings.is_production else None),
+        docs_url=(f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None),
+        redoc_url=(f"{app_settings.API_V1_STR}/redoc" if not app_settings.is_production else None),
         lifespan=lifespan,
     )
 
@@ -268,7 +271,7 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
             "service": app_settings.PROJECT_NAME,
             "version": app_settings.VERSION,
             "status": "operational",
-            "docs": f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
+            "docs": (f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None),
         }
 
     return app

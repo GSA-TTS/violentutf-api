@@ -42,7 +42,14 @@ class ReportService:
         """
         try:
             # Add audit fields
-            report_data.update({"id": str(uuid4()), "created_by": user_id, "updated_by": user_id, "status": "pending"})
+            report_data.update(
+                {
+                    "id": str(uuid4()),
+                    "created_by": user_id,
+                    "updated_by": user_id,
+                    "status": "pending",
+                }
+            )
 
             # Simulate report creation
             # Note: Repository handles session management
@@ -81,7 +88,11 @@ class ReportService:
         return report
 
     async def list_reports(
-        self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """List reports with pagination and filtering.
 
@@ -237,6 +248,11 @@ class ReportService:
 
         scheduled_report = await self.create_report(report_data, user_id)
 
-        logger.info("report_scheduled", report_id=scheduled_report["id"], schedule=schedule, user_id=user_id)
+        logger.info(
+            "report_scheduled",
+            report_id=scheduled_report["id"],
+            schedule=schedule,
+            user_id=user_id,
+        )
 
         return scheduled_report

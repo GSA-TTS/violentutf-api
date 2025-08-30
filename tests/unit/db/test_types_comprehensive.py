@@ -277,7 +277,11 @@ class TestJSONType:
         """Test JSON handles special characters."""
         json_type = JSONType()
         dialect = sqlite.dialect()
-        test_special = {"quotes": 'He said "Hello"', "newline": "Line1\nLine2", "tab": "Tab\there"}
+        test_special = {
+            "quotes": 'He said "Hello"',
+            "newline": "Line1\nLine2",
+            "tab": "Tab\there",
+        }
 
         result = json_type.process_bind_param(test_special, dialect)
 
@@ -431,7 +435,12 @@ class TestTypesIntegration:
         metadata = MetaData()
 
         # Create table with GUID column
-        test_table = Table("test_guid", metadata, Column("id", GUID, primary_key=True), Column("name", String(50)))
+        test_table = Table(
+            "test_guid",
+            metadata,
+            Column("id", GUID, primary_key=True),
+            Column("name", String(50)),
+        )
 
         metadata.create_all(engine)
 
@@ -456,7 +465,12 @@ class TestTypesIntegration:
         metadata = MetaData()
 
         # Create table with JSON column
-        test_table = Table("test_json", metadata, Column("id", String(36), primary_key=True), Column("data", JSONType))
+        test_table = Table(
+            "test_json",
+            metadata,
+            Column("id", String(36), primary_key=True),
+            Column("data", JSONType),
+        )
 
         metadata.create_all(engine)
 

@@ -74,7 +74,9 @@ class Plugin(BaseModelMixin, Base):
 
     # Loading configuration
     loading_strategy: Mapped[PluginLoadingStrategy] = mapped_column(
-        SQLEnum(PluginLoadingStrategy), nullable=False, default=PluginLoadingStrategy.LAZY
+        SQLEnum(PluginLoadingStrategy),
+        nullable=False,
+        default=PluginLoadingStrategy.LAZY,
     )
 
     # Implementation details
@@ -131,7 +133,10 @@ class PluginConfiguration(BaseModelMixin, Base):
 
     # Relationship to plugin
     plugin_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("plugin.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("plugin.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     plugin: Mapped[Plugin] = relationship("Plugin", back_populates="configurations")
 
@@ -172,20 +177,29 @@ class PluginExecution(BaseModelMixin, Base):
 
     # Relationship to plugin
     plugin_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("plugin.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("plugin.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     plugin: Mapped[Plugin] = relationship("Plugin", back_populates="executions")
 
     # Configuration used
     configuration_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("plugin_configuration.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("plugin_configuration.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     configuration: Mapped[Optional[PluginConfiguration]] = relationship("PluginConfiguration")
 
     # Execution context
     execution_context: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     task_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("task.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("task.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     task: Mapped[Optional[Task]] = relationship("Task")
 

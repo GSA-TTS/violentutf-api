@@ -66,7 +66,10 @@ class RoleRepository(BaseRepository[Role]):
             List of system roles
         """
         try:
-            conditions = [self.model.is_system_role == True, self.model.is_deleted == False]  # noqa: E712  # noqa: E712
+            conditions = [
+                self.model.is_system_role == True,
+                self.model.is_deleted == False,
+            ]  # noqa: E712  # noqa: E712
 
             if not include_inactive:
                 conditions.append(self.model.is_active == True)  # noqa: E712
@@ -80,7 +83,11 @@ class RoleRepository(BaseRepository[Role]):
             result = await self.session.execute(query)
             roles = list(result.scalars().all())
 
-            logger.debug("System roles retrieved", count=len(roles), include_inactive=include_inactive)
+            logger.debug(
+                "System roles retrieved",
+                count=len(roles),
+                include_inactive=include_inactive,
+            )
             return roles
 
         except Exception as e:
@@ -110,7 +117,11 @@ class RoleRepository(BaseRepository[Role]):
             result = await self.session.execute(query)
             roles = list(result.scalars().all())
 
-            logger.debug("Custom roles retrieved", count=len(roles), include_inactive=include_inactive)
+            logger.debug(
+                "Custom roles retrieved",
+                count=len(roles),
+                include_inactive=include_inactive,
+            )
             return roles
 
         except Exception as e:
@@ -163,7 +174,12 @@ class RoleRepository(BaseRepository[Role]):
             ]
 
             if not include_expired:
-                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)))
+                conditions.append(
+                    or_(
+                        UserRole.expires_at.is_(None),
+                        UserRole.expires_at > datetime.now(timezone.utc),
+                    )
+                )
 
             query = (
                 select(Role).join(UserRole, Role.id == UserRole.role_id).where(and_(*conditions)).order_by(Role.name)
@@ -346,7 +362,12 @@ class RoleRepository(BaseRepository[Role]):
             return assignment
 
         except Exception as e:
-            logger.error("Failed to assign role to user", user_id=user_id, role_id=role_id, error=str(e))
+            logger.error(
+                "Failed to assign role to user",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
             raise
 
     async def remove_role_from_user(
@@ -446,7 +467,12 @@ class RoleRepository(BaseRepository[Role]):
             return True
 
         except Exception as e:
-            logger.error("Failed to remove role from user", user_id=user_id, role_id=role_id, error=str(e))
+            logger.error(
+                "Failed to remove role from user",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
             raise
 
     async def get_role_users(self, role_id: Optional[str], include_inactive: bool = False) -> List[Dict[str, Any]]:
@@ -507,7 +533,12 @@ class RoleRepository(BaseRepository[Role]):
             # Try to use the mocked data directly
             users = list(result.scalars().all()) if hasattr(result, "scalars") else getattr(result, "data", [])
 
-            logger.debug("Retrieved role users", role_id=role_id, count=len(users), include_inactive=include_inactive)
+            logger.debug(
+                "Retrieved role users",
+                role_id=role_id,
+                count=len(users),
+                include_inactive=include_inactive,
+            )
             return users
 
         except Exception as e:
@@ -617,7 +648,9 @@ class RoleRepository(BaseRepository[Role]):
 
             if not assignment:
                 logger.warning(
-                    "No active role assignment found to revoke", user_id=str(user_uuid), role_id=str(role_uuid)
+                    "No active role assignment found to revoke",
+                    user_id=str(user_uuid),
+                    role_id=str(role_uuid),
                 )
                 return False
 
@@ -636,11 +669,19 @@ class RoleRepository(BaseRepository[Role]):
             return True
 
         except Exception as e:
-            logger.error("Failed to revoke role from user", user_id=user_id, role_id=role_id, error=str(e))
+            logger.error(
+                "Failed to revoke role from user",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
             raise
 
     async def get_role_assignments(
-        self, role_id: str, include_inactive: bool = False, include_expired: bool = False
+        self,
+        role_id: str,
+        include_inactive: bool = False,
+        include_expired: bool = False,
     ) -> List[UserRole]:
         """Get all assignments for a specific role.
 
@@ -661,7 +702,12 @@ class RoleRepository(BaseRepository[Role]):
                 conditions.append(UserRole.is_active == True)  # noqa: E712
 
             if not include_expired:
-                conditions.append(or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)))
+                conditions.append(
+                    or_(
+                        UserRole.expires_at.is_(None),
+                        UserRole.expires_at > datetime.now(timezone.utc),
+                    )
+                )
 
             query = select(UserRole).where(and_(*conditions)).order_by(UserRole.assigned_at.desc())
 
@@ -698,14 +744,21 @@ class RoleRepository(BaseRepository[Role]):
                     role.validate_role_data()
                     self.session.add(role)
                     created_roles.append(role)
-                    logger.info("System role created", name=role.name, display_name=role.display_name)
+                    logger.info(
+                        "System role created",
+                        name=role.name,
+                        display_name=role.display_name,
+                    )
                 else:
                     logger.debug("System role already exists", name=role.name)
 
             if created_roles:
                 await self.session.flush()
 
-            logger.info("System roles initialization completed", created_count=len(created_roles))
+            logger.info(
+                "System roles initialization completed",
+                created_count=len(created_roles),
+            )
             return created_roles
 
         except Exception as e:
@@ -768,11 +821,19 @@ class RoleRepository(BaseRepository[Role]):
                 if role.has_permission(permission):
                     matching_roles.append(role)
 
-            logger.debug("Roles with permission found", permission=permission, count=len(matching_roles))
+            logger.debug(
+                "Roles with permission found",
+                permission=permission,
+                count=len(matching_roles),
+            )
             return matching_roles
 
         except Exception as e:
-            logger.error("Failed to get roles with permission", permission=permission, error=str(e))
+            logger.error(
+                "Failed to get roles with permission",
+                permission=permission,
+                error=str(e),
+            )
             raise
 
     async def get_statistics(self) -> Dict[str, Any]:
@@ -810,7 +871,10 @@ class RoleRepository(BaseRepository[Role]):
             active_assignments_query = select(func.count(UserRole.id)).where(
                 and_(
                     UserRole.is_active == True,  # noqa: E712
-                    or_(UserRole.expires_at.is_(None), UserRole.expires_at > datetime.now(timezone.utc)),
+                    or_(
+                        UserRole.expires_at.is_(None),
+                        UserRole.expires_at > datetime.now(timezone.utc),
+                    ),
                 )
             )
             active_assignments_result = await self.session.execute(active_assignments_query)
@@ -854,7 +918,11 @@ class RoleRepository(BaseRepository[Role]):
             result = await self.session.execute(query)
             assignments = list(result.scalars().all())
 
-            logger.debug("User role assignments retrieved", user_id=user_id, assignment_count=len(assignments))
+            logger.debug(
+                "User role assignments retrieved",
+                user_id=user_id,
+                assignment_count=len(assignments),
+            )
 
             return assignments
 
@@ -875,9 +943,16 @@ class RoleRepository(BaseRepository[Role]):
             update_query = (
                 update(UserRole)
                 .where(
-                    and_(UserRole.expires_at <= datetime.now(timezone.utc), UserRole.is_active == True)
+                    and_(
+                        UserRole.expires_at <= datetime.now(timezone.utc),
+                        UserRole.is_active == True,
+                    )
                 )  # noqa: E712
-                .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
+                .values(
+                    is_active=False,
+                    updated_at=datetime.now(timezone.utc),
+                    updated_by="system_cleanup",
+                )
             )
 
             result = await self.session.execute(update_query)

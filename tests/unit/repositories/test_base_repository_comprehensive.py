@@ -6,7 +6,17 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, call, patch
 
 import pytest
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, and_, func, or_, select
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    String,
+    and_,
+    func,
+    or_,
+    select,
+)
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeMeta
@@ -358,7 +368,10 @@ class TestBaseRepositoryCRUD:
         test_session.execute = AsyncMock(side_effect=[test_result_get, test_result_update, test_result_get])
 
         # Set updated entity for second get_by_id
-        test_result_get.scalar_one_or_none.side_effect = [original_entity, updated_entity]
+        test_result_get.scalar_one_or_none.side_effect = [
+            original_entity,
+            updated_entity,
+        ]
 
         result = await repository.update(test_id, name="Updated", description="New description")
 
@@ -390,7 +403,13 @@ class TestBaseRepositoryCRUD:
         test_id = str(uuid.uuid4())
         org_id = str(uuid.uuid4())
 
-        entity = RepositoryTestModel(id=test_id, name="Original", organization_id=org_id, version=1, is_deleted=False)
+        entity = RepositoryTestModel(
+            id=test_id,
+            name="Original",
+            organization_id=org_id,
+            version=1,
+            is_deleted=False,
+        )
 
         test_result_get = MagicMock()
         test_result_get.scalar_one_or_none.return_value = entity
@@ -872,7 +891,9 @@ class TestBaseRepositoryPagination:
         test_session.execute = AsyncMock(side_effect=[test_count_result, test_data_result])
 
         result = await repository.list_with_pagination(
-            page=1, size=10, filters={"is_active": True, "status": ["pending", "active"]}
+            page=1,
+            size=10,
+            filters={"is_active": True, "status": ["pending", "active"]},
         )
 
         assert len(result.items) == 10
@@ -1155,7 +1176,9 @@ class TestBaseRepositoryFiltering:
         ]
 
         items, total = await repository.list_paginated(
-            page=1, per_page=10, filters={"advanced_filters": advanced_filters, "filter_logic": "and"}
+            page=1,
+            per_page=10,
+            filters={"advanced_filters": advanced_filters, "filter_logic": "and"},
         )
 
         assert total == 3
@@ -1180,7 +1203,9 @@ class TestBaseRepositoryFiltering:
         ]
 
         items, total = await repository.list_paginated(
-            page=1, per_page=10, filters={"advanced_filters": advanced_filters, "filter_logic": "or"}
+            page=1,
+            per_page=10,
+            filters={"advanced_filters": advanced_filters, "filter_logic": "or"},
         )
 
         assert total == 8
@@ -1435,7 +1460,11 @@ class TestBaseRepositoryEdgeCases:
         # Use complex objects that aren't supported
         advanced_filters = [
             {"field": "name", "operator": "eq", "value": {"nested": "object"}},
-            {"field": "name", "operator": "eq", "value": datetime.now()},  # datetime not in simple types
+            {
+                "field": "name",
+                "operator": "eq",
+                "value": datetime.now(),
+            },  # datetime not in simple types
         ]
 
         items, total = await repository.list_paginated(
@@ -1521,7 +1550,12 @@ class TestBaseRepositoryEdgeCases:
         items, total = await repository.list_paginated(
             page=1,
             per_page=10,
-            filters={"created_after": now, "created_before": now, "updated_after": now, "updated_before": now},
+            filters={
+                "created_after": now,
+                "created_before": now,
+                "updated_after": now,
+                "updated_before": now,
+            },
         )
 
         assert total == 0

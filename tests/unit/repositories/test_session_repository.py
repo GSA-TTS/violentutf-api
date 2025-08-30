@@ -121,7 +121,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_token_not_found(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test get_by_token when session not found."""
         # Arrange
@@ -137,7 +140,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_token_database_error(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, database_error_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        database_error_factory,
     ):
         """Test get_by_token with database error."""
         # Arrange
@@ -151,7 +157,11 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_sessions_active_only(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
+        query_result_factory,
     ):
         """Test getting active user sessions only."""
         # Arrange
@@ -175,7 +185,11 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_sessions_include_inactive(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
+        query_result_factory,
     ):
         """Test getting user sessions including inactive ones."""
         # Arrange
@@ -202,7 +216,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_sessions_empty_result(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test getting user sessions when no sessions exist."""
         # Arrange
@@ -225,7 +242,11 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_active_sessions_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
+        query_result_factory,
     ):
         """Test getting all active sessions."""
         # Arrange
@@ -247,7 +268,11 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_active_sessions_with_limit(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory, query_result_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
+        query_result_factory,
     ):
         """Test getting active sessions with limit."""
         # Arrange
@@ -270,7 +295,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_revoke_session_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, sample_session: Session
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        sample_session: Session,
     ):
         """Test successful session revocation."""
         # Arrange
@@ -305,7 +333,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_revoke_session_already_revoked(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, revoked_session: Session
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        revoked_session: Session,
     ):
         """Test revoking already revoked session."""
         # Arrange
@@ -425,7 +456,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_update_session_activity_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, sample_session: Session
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        sample_session: Session,
     ):
         """Test successful session activity update."""
         # Arrange
@@ -459,7 +493,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_extend_session_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, sample_session: Session
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        sample_session: Session,
     ):
         """Test successful session extension."""
         # Arrange
@@ -492,7 +529,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_sessions_by_ip_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test getting sessions by IP address."""
         # Arrange
@@ -536,7 +576,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_statistics_success(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test getting session statistics."""
         # Arrange
@@ -549,7 +592,13 @@ class TestSessionRepository:
 
         # Create mock results for each query
         scalars_mocks = []
-        for sessions_list in [all_sessions, active_sessions, expired_sessions, revoked_sessions, today_sessions]:
+        for sessions_list in [
+            all_sessions,
+            active_sessions,
+            expired_sessions,
+            revoked_sessions,
+            today_sessions,
+        ]:
             scalars_mock = MagicMock()
             scalars_mock.all.return_value = sessions_list
             scalars_mocks.append(scalars_mock)
@@ -577,7 +626,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_create_session_interface_method(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test create_session interface method."""
         # Arrange
@@ -599,7 +651,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_active_sessions_interface_method(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test get_active_sessions interface method."""
         # Arrange
@@ -616,7 +671,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_sessions_interface_method(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test get_user_sessions_interface interface method."""
         # Arrange
@@ -649,7 +707,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_invalidate_user_sessions_exclude_session(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test invalidate_user_sessions with excluded session."""
         # Arrange
@@ -669,7 +730,11 @@ class TestSessionRepository:
 
         with (
             patch.object(session_repository, "get_user_sessions", return_value=sessions),
-            patch.object(session_repository, "revoke_session", side_effect=mock_revoke_side_effect) as mock_revoke,
+            patch.object(
+                session_repository,
+                "revoke_session",
+                side_effect=mock_revoke_side_effect,
+            ) as mock_revoke,
         ):
             # Act
             count = await session_repository.invalidate_user_sessions(user_id, exclude_session_id=exclude_session_id)
@@ -694,7 +759,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_extend_session_interface_method(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, sample_session: Session
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        sample_session: Session,
     ):
         """Test extend_session interface method."""
         # Arrange
@@ -806,7 +874,10 @@ class TestSessionRepository:
 
     @pytest.mark.asyncio
     async def test_datetime_iso_conversion(
-        self, session_repository: SessionRepository, mock_session: AsyncMock, session_factory
+        self,
+        session_repository: SessionRepository,
+        mock_session: AsyncMock,
+        session_factory,
     ):
         """Test datetime ISO string conversion in create_session."""
         # Arrange
@@ -823,5 +894,7 @@ class TestSessionRepository:
 
             # Test without expires_at
             await session_repository.create_session(
-                user_id=str(uuid.uuid4()), token="test_token_32_characters_minimum_len", ip_address="127.0.0.1"
+                user_id=str(uuid.uuid4()),
+                token="test_token_32_characters_minimum_len",
+                ip_address="127.0.0.1",
             )

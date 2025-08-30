@@ -209,15 +209,33 @@ class DataAccessPatternValidator:
 
                         # Check for proper transaction handling
                         if has_transaction_start and not has_rollback:
-                            violations.append((file_path, node.name, "Transaction without rollback handling"))
+                            violations.append(
+                                (
+                                    file_path,
+                                    node.name,
+                                    "Transaction without rollback handling",
+                                )
+                            )
 
                         if has_commit and not has_rollback:
-                            violations.append((file_path, node.name, "Commit without rollback in error path"))
+                            violations.append(
+                                (
+                                    file_path,
+                                    node.name,
+                                    "Commit without rollback in error path",
+                                )
+                            )
 
                         # Check for nested transactions without savepoints
                         if func_source.count("begin(") > 1:
                             if "begin_nested(" not in func_source:
-                                violations.append((file_path, node.name, "Nested transactions without savepoints"))
+                                violations.append(
+                                    (
+                                        file_path,
+                                        node.name,
+                                        "Nested transactions without savepoints",
+                                    )
+                                )
 
             except Exception:
                 continue
@@ -350,7 +368,13 @@ class DataAccessPatternValidator:
                                 )
 
                                 if not has_standard_prefix:
-                                    violations.append((file_path, item.name, f"Non-standard repository method name"))
+                                    violations.append(
+                                        (
+                                            file_path,
+                                            item.name,
+                                            f"Non-standard repository method name",
+                                        )
+                                    )
 
             except Exception:
                 continue
@@ -366,7 +390,10 @@ class DataAccessPatternValidator:
 
         # Patterns that indicate ORM misuse
         orm_issues = [
-            (r"from\s+sqlalchemy\s+import.*Table(?:\s|,|$)", "Direct Table usage instead of ORM models"),
+            (
+                r"from\s+sqlalchemy\s+import.*Table(?:\s|,|$)",
+                "Direct Table usage instead of ORM models",
+            ),
             (r"metadata\.create_all", "Direct metadata manipulation"),
             (r"Base\.metadata", "Direct metadata access"),
             (r"connection\.execute", "Using connection instead of session"),

@@ -158,7 +158,9 @@ class TestGetSessionMaker:
 
                         assert result == mock_session_maker
                         mock_maker.assert_called_once_with(
-                            bind=mock_engine, class_=AsyncSession, expire_on_commit=False
+                            bind=mock_engine,
+                            class_=AsyncSession,
+                            expire_on_commit=False,
                         )
 
     def test_get_session_maker_existing(self, mock_settings):
@@ -188,7 +190,10 @@ class TestGetDB:
         mock_session_maker.return_value = mock_session
 
         with patch("app.db.session.get_session_maker", return_value=mock_session_maker):
-            with patch("app.db.session.db_circuit_breaker.call", new=AsyncMock(return_value=mock_session)):
+            with patch(
+                "app.db.session.db_circuit_breaker.call",
+                new=AsyncMock(return_value=mock_session),
+            ):
                 async with get_db() as db:
                     assert db == mock_session
 
@@ -202,7 +207,10 @@ class TestGetDB:
         mock_session_maker.return_value = mock_session
 
         with patch("app.db.session.get_session_maker", return_value=mock_session_maker):
-            with patch("app.db.session.db_circuit_breaker.call", new=AsyncMock(return_value=mock_session)):
+            with patch(
+                "app.db.session.db_circuit_breaker.call",
+                new=AsyncMock(return_value=mock_session),
+            ):
                 with pytest.raises(SQLAlchemyError):
                     async with get_db() as db:
                         await db.execute(text("SELECT 1"))
@@ -218,7 +226,10 @@ class TestGetDB:
         mock_session_maker.return_value = mock_session
 
         with patch("app.db.session.get_session_maker", return_value=mock_session_maker):
-            with patch("app.db.session.db_circuit_breaker.call", new=AsyncMock(return_value=mock_session)):
+            with patch(
+                "app.db.session.db_circuit_breaker.call",
+                new=AsyncMock(return_value=mock_session),
+            ):
                 with pytest.raises(RuntimeError):
                     async with get_db() as db:
                         await db.execute(text("SELECT 1"))
@@ -294,7 +305,10 @@ class TestCheckDatabaseHealth:
         """Test health check when circuit breaker is open."""
         from app.utils.circuit_breaker import CircuitBreakerException
 
-        with patch("app.db.session.get_db", side_effect=CircuitBreakerException("Circuit open", "test-circuit")):
+        with patch(
+            "app.db.session.get_db",
+            side_effect=CircuitBreakerException("Circuit open", "test-circuit"),
+        ):
             with patch("app.db.session.logger") as mock_logger:
                 result = await check_database_health()
 
@@ -392,7 +406,10 @@ class TestCloseConnections:
         """Test successful connection closing."""
         with patch("app.db.session._engine", mock_engine):
             with patch("app.db.session._async_session_maker", MagicMock()):
-                with patch("app.db.session.get_connection_pool_stats", return_value={"total": 5}):
+                with patch(
+                    "app.db.session.get_connection_pool_stats",
+                    return_value={"total": 5},
+                ):
                     with patch("app.db.session.logger") as mock_logger:
                         await close_database_connections()
 
@@ -435,7 +452,10 @@ class TestValidateConnection:
     @pytest.mark.asyncio
     async def test_validate_connection_recovery_success(self, mock_engine):
         """Test successful connection recovery."""
-        with patch("app.db.session.check_database_health", new=AsyncMock(side_effect=[False, True])):
+        with patch(
+            "app.db.session.check_database_health",
+            new=AsyncMock(side_effect=[False, True]),
+        ):
             with patch("app.db.session._engine", mock_engine):
                 with patch("app.db.session.create_database_engine", return_value=mock_engine):
                     with patch("app.db.session.logger") as mock_logger:
@@ -460,7 +480,10 @@ class TestValidateConnection:
     @pytest.mark.asyncio
     async def test_validate_connection_exception(self):
         """Test validation with exception."""
-        with patch("app.db.session.check_database_health", side_effect=Exception("Check failed")):
+        with patch(
+            "app.db.session.check_database_health",
+            side_effect=Exception("Check failed"),
+        ):
             with patch("app.db.session.logger") as mock_logger:
                 result = await validate_database_connection()
 
@@ -505,7 +528,10 @@ class TestCircuitBreakerIntegration:
     async def test_reset_circuit_breaker_still_unhealthy(self):
         """Test circuit breaker reset with unhealthy database."""
         with patch.object(db_circuit_breaker, "reset", new=AsyncMock()):
-            with patch("app.db.session.check_database_health", new=AsyncMock(return_value=False)):
+            with patch(
+                "app.db.session.check_database_health",
+                new=AsyncMock(return_value=False),
+            ):
                 with patch("app.db.session.logger") as mock_logger:
                     result = await reset_circuit_breaker()
 
@@ -560,7 +586,10 @@ class TestInitDatabase:
         mock_session_maker = MagicMock()
 
         with patch("app.db.session.get_session_maker", return_value=mock_session_maker):
-            with patch("app.db.session.check_database_health", new=AsyncMock(return_value=False)):
+            with patch(
+                "app.db.session.check_database_health",
+                new=AsyncMock(return_value=False),
+            ):
                 with pytest.raises(RuntimeError, match="Database health check failed"):
                     await init_database()
 
@@ -573,7 +602,10 @@ class TestRecoverConnection:
         """Test successful recovery on first attempt."""
         with patch.object(db_circuit_breaker, "state", CircuitState.CLOSED):
             with patch.object(db_circuit_breaker, "reset", new=AsyncMock()):
-                with patch("app.db.session.validate_database_connection", new=AsyncMock(return_value=True)):
+                with patch(
+                    "app.db.session.validate_database_connection",
+                    new=AsyncMock(return_value=True),
+                ):
                     with patch("app.db.session.logger") as mock_logger:
                         result = await recover_database_connection(max_attempts=3)
 
@@ -585,7 +617,10 @@ class TestRecoverConnection:
         """Test recovery with circuit breaker reset."""
         with patch.object(db_circuit_breaker, "state", CircuitState.OPEN):
             with patch.object(db_circuit_breaker, "reset", new=AsyncMock()):
-                with patch("app.db.session.validate_database_connection", new=AsyncMock(return_value=True)):
+                with patch(
+                    "app.db.session.validate_database_connection",
+                    new=AsyncMock(return_value=True),
+                ):
                     result = await recover_database_connection(max_attempts=1)
 
                     assert result is True
@@ -595,7 +630,10 @@ class TestRecoverConnection:
     async def test_recover_connection_multiple_attempts(self):
         """Test recovery requiring multiple attempts."""
         with patch.object(db_circuit_breaker, "state", CircuitState.CLOSED):
-            with patch("app.db.session.validate_database_connection", new=AsyncMock(side_effect=[False, False, True])):
+            with patch(
+                "app.db.session.validate_database_connection",
+                new=AsyncMock(side_effect=[False, False, True]),
+            ):
                 with patch("app.db.session.asyncio.sleep", new=AsyncMock()):
                     result = await recover_database_connection(max_attempts=3, retry_delay=0.1)
 
@@ -605,7 +643,10 @@ class TestRecoverConnection:
     async def test_recover_connection_all_attempts_failed(self):
         """Test recovery when all attempts fail."""
         with patch.object(db_circuit_breaker, "state", CircuitState.CLOSED):
-            with patch("app.db.session.validate_database_connection", new=AsyncMock(return_value=False)):
+            with patch(
+                "app.db.session.validate_database_connection",
+                new=AsyncMock(return_value=False),
+            ):
                 with patch("app.db.session.asyncio.sleep", new=AsyncMock()):
                     with patch("app.db.session.logger") as mock_logger:
                         result = await recover_database_connection(max_attempts=2, retry_delay=0.1)

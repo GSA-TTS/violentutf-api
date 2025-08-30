@@ -109,7 +109,10 @@ class CacheManager:
                             return json.loads(value.decode("utf-8"))
                         except (json.JSONDecodeError, UnicodeDecodeError):
                             # For security, don't use pickle - return raw bytes
-                            logger.warning("Cache value cannot be deserialized safely, returning raw bytes", key=key)
+                            logger.warning(
+                                "Cache value cannot be deserialized safely, returning raw bytes",
+                                key=key,
+                            )
                             return value
                     return value
             except RedisConnectionError:
@@ -427,7 +430,10 @@ class CacheManager:
         self._connection_failures += 1
         if self._connection_failures >= self._max_connection_failures:
             self._is_connected = False
-            logger.error("Redis connection lost, falling back to in-memory cache", failures=self._connection_failures)
+            logger.error(
+                "Redis connection lost, falling back to in-memory cache",
+                failures=self._connection_failures,
+            )
 
     def _update_fallback_cache(self, key: str, value: Any, ttl: int) -> None:
         """Update fallback cache with TTL."""
@@ -442,7 +448,8 @@ class CacheManager:
         if len(self._fallback_cache) > max_size:
             # Remove oldest entries
             sorted_keys = sorted(
-                self._fallback_cache.keys(), key=lambda k: self._fallback_cache[k].get("expires_at", datetime.max)
+                self._fallback_cache.keys(),
+                key=lambda k: self._fallback_cache[k].get("expires_at", datetime.max),
             )
             for key in sorted_keys[: len(sorted_keys) // 10]:  # Remove 10%
                 del self._fallback_cache[key]

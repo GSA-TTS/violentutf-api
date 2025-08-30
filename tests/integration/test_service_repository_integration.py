@@ -866,7 +866,9 @@ class TestServiceRepositoryIntegrationCoverage:
             session_test_user = await user_service.create_user(user_data)
 
             session = await session_service.create_session(
-                user=session_test_user, ip_address="127.0.0.1", user_agent="Coverage Test"
+                user=session_test_user,
+                ip_address="127.0.0.1",
+                user_agent="Coverage Test",
             )
 
             # Validate the session was created

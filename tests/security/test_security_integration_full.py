@@ -79,7 +79,10 @@ class TestRateLimitingWithValidation:
     async def test_validation_failures_count_against_rate_limit(self, client: TestClient):
         """Test that validation failures still count against rate limits."""
         # Make requests with invalid data
-        invalid_login_data = {"username": "admin' OR '1'='1", "password": "password"}  # SQL injection attempt
+        invalid_login_data = {
+            "username": "admin' OR '1'='1",
+            "password": "password",
+        }  # SQL injection attempt
 
         # Note: Rate limiting is disabled in test configuration by default
         # So we're testing that requests with SQL injection attempts are handled correctly
@@ -112,7 +115,10 @@ class TestInputSanitizationWithSigning:
         signer = RequestSigner("test_admin_key", "admin_secret")
 
         # Create request with malicious content
-        malicious_body = {"name": "Test<script>alert('xss')</script>", "query": "'; DROP TABLE users--"}
+        malicious_body = {
+            "name": "Test<script>alert('xss')</script>",
+            "query": "'; DROP TABLE users--",
+        }
 
         body_bytes = json.dumps(malicious_body).encode()
 
@@ -192,7 +198,11 @@ class TestAuthenticationWithAllSecurity:
     async def test_registration_security_flow(self, client: TestClient):
         """Test secure registration with all validations."""
         # Registration data
-        register_data = {"username": "newuser123", "email": "newuser@example.com", "password": "SecurePass123!"}
+        register_data = {
+            "username": "newuser123",
+            "email": "newuser@example.com",
+            "password": "SecurePass123!",
+        }
 
         # Should pass all security checks
         response = client.post("/api/v1/auth/register", json=register_data)
@@ -226,7 +236,11 @@ class TestEndToEndSecurityScenarios:
         # 2. XSS attempt in registration
         response = client.post(
             "/api/v1/auth/register",
-            json={"username": "<script>alert('xss')</script>", "email": "hacker@evil.com", "password": "Pass123!"},
+            json={
+                "username": "<script>alert('xss')</script>",
+                "email": "hacker@evil.com",
+                "password": "Pass123!",
+            },
         )
         # XSS generates warnings but proceeds, may fail with various errors
         assert response.status_code in [201, 400, 422, 500]
@@ -255,13 +269,20 @@ class TestEndToEndSecurityScenarios:
 
         response = client.post("/api/v1/auth/register", json=register_data)
         # Should succeed or fail with legitimate error (e.g., user exists)
-        assert response.status_code in [201, 409, 429]  # Created, Conflict, or Rate Limited
+        assert response.status_code in [
+            201,
+            409,
+            429,
+        ]  # Created, Conflict, or Rate Limited
 
         # 2. Normal login (if user exists)
         if response.status_code == 201:
             login_response = client.post(
                 "/api/v1/auth/login",
-                json={"username": register_data["username"], "password": register_data["password"]},
+                json={
+                    "username": register_data["username"],
+                    "password": register_data["password"],
+                },
             )
             # Might fail if email verification required
             assert login_response.status_code in [200, 403]
@@ -291,7 +312,10 @@ class TestSecurityMonitoring:
         """Test that security events are properly logged."""
         with patch("app.core.validation.logger") as mock_logger:
             # Attempt SQL injection
-            client.post("/api/v1/auth/login", json={"username": "'; DROP TABLE users--", "password": "test"})
+            client.post(
+                "/api/v1/auth/login",
+                json={"username": "'; DROP TABLE users--", "password": "test"},
+            )
 
             # Should log security event
             mock_logger.warning.assert_called()

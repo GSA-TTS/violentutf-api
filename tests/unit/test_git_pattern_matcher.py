@@ -4,7 +4,12 @@ from typing import List
 
 import pytest
 
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixMatch, FixType, PatternConfig
+from tools.pre_audit.git_pattern_matcher import (
+    ArchitecturalFixPatternMatcher,
+    FixMatch,
+    FixType,
+    PatternConfig,
+)
 
 
 class TestArchitecturalFixPatternMatcher:
@@ -122,7 +127,10 @@ class TestArchitecturalFixPatternMatcher:
     def test_adr_reference_extraction(self, matcher):
         """Test extraction of ADR references in various formats."""
         test_cases = [
-            ("Working on ADR-001, ADR-002, and ADR-003", ["ADR-001", "ADR-002", "ADR-003"]),
+            (
+                "Working on ADR-001, ADR-002, and ADR-003",
+                ["ADR-001", "ADR-002", "ADR-003"],
+            ),
             ("Implements #ADR001 and adr-2", ["ADR-001", "ADR-002"]),
             ("Related to adr_15 and ADR 7", ["ADR-015", "ADR-007"]),
             ("Architecture decision record 42", ["ADR-042"]),

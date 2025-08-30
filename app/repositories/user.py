@@ -45,7 +45,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
         """
         try:
             # Build filters for username and soft delete
-            filters = [self.model.username == username, self.model.is_deleted == False]  # noqa: E712
+            filters = [
+                self.model.username == username,
+                self.model.is_deleted == False,
+            ]  # noqa: E712
 
             # Add organization filtering if provided
             if organization_id:
@@ -84,7 +87,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
 
             # Case-insensitive email lookup
             query = select(self.model).where(
-                and_(self.model.email.ilike(email.lower()), self.model.is_deleted == False)  # noqa: E712
+                and_(
+                    self.model.email.ilike(email.lower()),
+                    self.model.is_deleted == False,
+                )  # noqa: E712
             )
 
             result = await self.session.execute(query)
@@ -145,7 +151,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
                 await self.session.commit()
 
                 self.logger.info(
-                    "User authenticated successfully", username=username, user_id=user.id, ip_address=ip_address
+                    "User authenticated successfully",
+                    username=username,
+                    user_id=user.id,
+                    ip_address=ip_address,
                 )
                 return user
             else:
@@ -228,7 +237,11 @@ class UserRepository(BaseRepository[User], IUserRepository):
             raise
 
     async def update_password(
-        self, user_id: str, old_password: str, new_password: str, updated_by: str = "system"
+        self,
+        user_id: str,
+        old_password: str,
+        new_password: str,
+        updated_by: str = "system",
     ) -> bool:
         """
         Update user password.
@@ -361,7 +374,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
         """
         try:
             query = select(self.model).where(
-                and_(self.model.username.ilike(username.lower()), self.model.is_deleted == False)  # noqa: E712
+                and_(
+                    self.model.username.ilike(username.lower()),
+                    self.model.is_deleted == False,
+                )  # noqa: E712
             )
 
             # Exclude specific user ID if provided (useful for updates)
@@ -392,7 +408,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
         """
         try:
             query = select(self.model).where(
-                and_(self.model.email.ilike(email.lower()), self.model.is_deleted == False)  # noqa: E712
+                and_(
+                    self.model.email.ilike(email.lower()),
+                    self.model.is_deleted == False,
+                )  # noqa: E712
             )
 
             # Exclude specific user ID if provided (useful for updates)
@@ -437,7 +456,10 @@ class UserRepository(BaseRepository[User], IUserRepository):
             from datetime import datetime, timezone
 
             updated_user = await self.update(
-                user_id, is_verified=True, verified_at=datetime.now(timezone.utc), updated_by=verified_by
+                user_id,
+                is_verified=True,
+                verified_at=datetime.now(timezone.utc),
+                updated_by=verified_by,
             )
 
             success = updated_user is not None
@@ -454,7 +476,11 @@ class UserRepository(BaseRepository[User], IUserRepository):
             raise
 
     async def get_active_users(
-        self, page: int = 1, size: int = 50, order_by: str = "created_at", order_desc: bool = True
+        self,
+        page: int = 1,
+        size: int = 50,
+        order_by: str = "created_at",
+        order_desc: bool = True,
     ) -> Page[User]:
         """
         Get active users with pagination.
@@ -471,7 +497,11 @@ class UserRepository(BaseRepository[User], IUserRepository):
         try:
             # Use list_with_pagination with active filter
             return await self.list_with_pagination(
-                page=page, size=size, order_by=order_by, order_desc=order_desc, filters={"is_active": True}
+                page=page,
+                size=size,
+                order_by=order_by,
+                order_desc=order_desc,
+                filters={"is_active": True},
             )
 
         except Exception as e:
@@ -505,7 +535,11 @@ class UserRepository(BaseRepository[User], IUserRepository):
             result = await self.session.execute(query)
             users = list(result.scalars().all())
 
-            self.logger.debug("Retrieved unverified users", count=len(users), include_inactive=include_inactive)
+            self.logger.debug(
+                "Retrieved unverified users",
+                count=len(users),
+                include_inactive=include_inactive,
+            )
 
             return users
 

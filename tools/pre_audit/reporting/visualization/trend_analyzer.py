@@ -65,7 +65,14 @@ class TrendAnalyzer:
 
         data = {
             "labels": months,
-            "datasets": [{"label": "Compliance Score", "data": scores, "color": "#1976d2", "fill": True}],
+            "datasets": [
+                {
+                    "label": "Compliance Score",
+                    "data": scores,
+                    "color": "#1976d2",
+                    "fill": True,
+                }
+            ],
             "yLabel": "Compliance %",
         }
 
@@ -91,7 +98,11 @@ class TrendAnalyzer:
             if current > 0:  # Only include if there are violations
                 historical = self._simulate_historical_counts(current, 6)
                 datasets.append(
-                    {"label": risk_level.title(), "data": historical, "color": ChartGenerator.RISK_COLORS[risk_level]}
+                    {
+                        "label": risk_level.title(),
+                        "data": historical,
+                        "color": ChartGenerator.RISK_COLORS[risk_level],
+                    }
                 )
 
         data = {"labels": months, "datasets": datasets, "yLabel": "Violation Count"}
@@ -119,7 +130,10 @@ class TrendAnalyzer:
         trend_counts = temporal_trends.get("counts", {})
 
         # Create trend flow visualization
-        data = {"labels": ["3 Months Ago", "2 Months Ago", "1 Month Ago", "Current"], "datasets": []}
+        data = {
+            "labels": ["3 Months Ago", "2 Months Ago", "1 Month Ago", "Current"],
+            "datasets": [],
+        }
 
         # Simulate evolution for each trend type
         for trend_type, current_count in trend_counts.items():
@@ -156,7 +170,11 @@ class TrendAnalyzer:
         data = {
             "labels": [cat[0] for cat in top_categories],
             "datasets": [
-                {"label": "Current", "data": [cat[1] for cat in top_categories], "color": "#1976d2"},
+                {
+                    "label": "Current",
+                    "data": [cat[1] for cat in top_categories],
+                    "color": "#1976d2",
+                },
                 {
                     "label": "Target",
                     "data": [cat[1] * 0.3 for cat in top_categories],  # 70% reduction target
@@ -186,11 +204,21 @@ class TrendAnalyzer:
                 "min": -100,
                 "max": 100,
                 "zones": [
-                    {"from": -100, "to": -50, "color": "#f44336", "label": "Rapid Degradation"},
+                    {
+                        "from": -100,
+                        "to": -50,
+                        "color": "#f44336",
+                        "label": "Rapid Degradation",
+                    },
                     {"from": -50, "to": -20, "color": "#ff9800", "label": "Degrading"},
                     {"from": -20, "to": 20, "color": "#ffc107", "label": "Stable"},
                     {"from": 20, "to": 50, "color": "#8bc34a", "label": "Improving"},
-                    {"from": 50, "to": 100, "color": "#4caf50", "label": "Rapid Improvement"},
+                    {
+                        "from": 50,
+                        "to": 100,
+                        "color": "#4caf50",
+                        "label": "Rapid Improvement",
+                    },
                 ],
             },
             "options": {
@@ -246,8 +274,18 @@ class TrendAnalyzer:
         data = {
             "labels": dates,
             "datasets": [
-                {"label": "Ideal Progress", "data": ideal_line, "color": "#4caf50", "fill": False},
-                {"label": "Projected Progress", "data": projected_line, "color": "#ff9800", "fill": False},
+                {
+                    "label": "Ideal Progress",
+                    "data": ideal_line,
+                    "color": "#4caf50",
+                    "fill": False,
+                },
+                {
+                    "label": "Projected Progress",
+                    "data": projected_line,
+                    "color": "#ff9800",
+                    "fill": False,
+                },
             ],
             "xLabel": "Date",
             "yLabel": "Remaining Violations",
@@ -324,7 +362,7 @@ class TrendAnalyzer:
             "improving_percentage": percentages.get("improving", 0),
             "degrading_percentage": percentages.get("degrading", 0),
             "stable_percentage": percentages.get("stable", 0),
-            "estimated_months_to_target": round(months_to_target, 1) if months_to_target < 100 else "N/A",
+            "estimated_months_to_target": (round(months_to_target, 1) if months_to_target < 100 else "N/A"),
             "trend_confidence": self._calculate_trend_confidence(temporal_trends),
         }
 

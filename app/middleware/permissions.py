@@ -163,7 +163,8 @@ class PermissionChecker:
                 return await call_next(request)
             elif not has_permission:
                 return self._create_forbidden_response(
-                    request, f"Permission '{required_permission}' required for {request.method} {request.url.path}"
+                    request,
+                    f"Permission '{required_permission}' required for {request.method} {request.url.path}",
                 )
 
             # Permission check passed, proceed to next middleware/endpoint

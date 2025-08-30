@@ -25,11 +25,17 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
 
     # Action details
     action: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True, comment="Action performed (e.g., 'user.create', 'api_key.delete')"
+        String(100),
+        nullable=False,
+        index=True,
+        comment="Action performed (e.g., 'user.create', 'api_key.delete')",
     )
 
     resource_type: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True, comment="Type of resource affected (e.g., 'user', 'api_key')"
+        String(100),
+        nullable=False,
+        index=True,
+        comment="Type of resource affected (e.g., 'user', 'api_key')",
     )
 
     resource_id: Mapped[Optional[str]] = mapped_column(
@@ -46,7 +52,9 @@ class AuditLog(Base, AuditMixin, SecurityValidationMixin):
     )
 
     user_email: Mapped[Optional[str]] = mapped_column(
-        String(254), nullable=True, comment="Email of user at time of action (denormalized for history)"
+        String(254),
+        nullable=True,
+        comment="Email of user at time of action (denormalized for history)",
     )
 
     ip_address: Mapped[Optional[str]] = mapped_column(

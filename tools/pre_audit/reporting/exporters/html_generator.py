@@ -212,7 +212,11 @@ class HTMLReportGenerator(ReportGenerator):
 
             charts["top_files_bar"] = {
                 "type": "bar",
-                "data": {"labels": [self._truncate_path(f) for f in files], "values": counts, "color": "#1976d2"},
+                "data": {
+                    "labels": [self._truncate_path(f) for f in files],
+                    "values": counts,
+                    "color": "#1976d2",
+                },
             }
 
         # Hotspot risk heatmap
@@ -234,7 +238,11 @@ class HTMLReportGenerator(ReportGenerator):
                 "type": "doughnut",
                 "data": {
                     "labels": ["Improving", "Stable", "Degrading"],
-                    "values": [trends.get("improving", 0), trends.get("stable", 0), trends.get("degrading", 0)],
+                    "values": [
+                        trends.get("improving", 0),
+                        trends.get("stable", 0),
+                        trends.get("degrading", 0),
+                    ],
                     "colors": ["#4caf50", "#ff9800", "#f44336"],
                 },
             }

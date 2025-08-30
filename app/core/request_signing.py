@@ -384,7 +384,7 @@ def parse_authorization_header(auth_header: str) -> Optional[RequestSignature]:
             key_id=params.get("keyId"),
             algorithm=SignatureAlgorithm(params.get("algorithm", "HMAC-SHA256")),
             headers=params.get("headers", "").split() if params.get("headers") else [],
-            timestamp=int(params.get("timestamp", 0)) if params.get("timestamp") else int(time.time()),
+            timestamp=(int(params.get("timestamp", 0)) if params.get("timestamp") else int(time.time())),
             nonce=params.get("nonce"),
         )
 

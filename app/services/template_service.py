@@ -52,7 +52,11 @@ class TemplateService:
             # Since no actual template model exists yet, simulate database operation
             # Note: Repository handles session management
 
-            logger.info("template_created", template_id=template_data["id"], name=template_data.get("name"))
+            logger.info(
+                "template_created",
+                template_id=template_data["id"],
+                name=template_data.get("name"),
+            )
             return template_data
 
         except Exception as e:
@@ -102,7 +106,12 @@ class TemplateService:
         templates = []
         for i in range(skip, min(skip + limit, skip + 10)):  # Mock data
             templates.append(
-                {"id": str(uuid4()), "name": f"Template {i}", "type": "standard", "created_at": "2024-01-01T00:00:00Z"}
+                {
+                    "id": str(uuid4()),
+                    "name": f"Template {i}",
+                    "type": "standard",
+                    "created_at": "2024-01-01T00:00:00Z",
+                }
             )
         return templates
 

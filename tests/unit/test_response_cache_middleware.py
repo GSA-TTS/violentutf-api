@@ -155,7 +155,10 @@ class TestResponseCacheMiddleware:
         request.method = "GET"
         request.url.path = "/api/v1/users"
         request.url.query = "page=1&per_page=20"
-        request.headers = {"Accept": "application/json", "Authorization": "Bearer token123"}
+        request.headers = {
+            "Accept": "application/json",
+            "Authorization": "Bearer token123",
+        }
 
         cache_key = cache_middleware._generate_cache_key(request)
 
@@ -244,7 +247,10 @@ class TestResponseCacheMiddleware:
             "headers": {"Content-Type": "application/json"},
         }
 
-        with patch("app.middleware.response_cache.get_cached_value", return_value=json.dumps(cached_data)):
+        with patch(
+            "app.middleware.response_cache.get_cached_value",
+            return_value=json.dumps(cached_data),
+        ):
             result = await cache_middleware._get_cached_response("test_key", request)
 
             assert result is not None
@@ -257,9 +263,17 @@ class TestResponseCacheMiddleware:
         request = MagicMock()
         request.headers = {"If-None-Match": '"etag123"'}
 
-        cached_data = {"content": {"users": []}, "status_code": 200, "headers": {}, "etag": '"etag123"'}
+        cached_data = {
+            "content": {"users": []},
+            "status_code": 200,
+            "headers": {},
+            "etag": '"etag123"',
+        }
 
-        with patch("app.middleware.response_cache.get_cached_value", return_value=json.dumps(cached_data)):
+        with patch(
+            "app.middleware.response_cache.get_cached_value",
+            return_value=json.dumps(cached_data),
+        ):
             result = await cache_middleware._get_cached_response("test_key", request)
 
             assert result is not None
@@ -377,7 +391,11 @@ class TestResponseCacheIntegration:
         """Test full middleware flow with cache miss."""
         # Note: Due to how TestClient works with middleware, the patching of settings
         # doesn't affect the middleware instance. We'll test the basic flow instead.
-        app.add_middleware(ResponseCacheMiddleware, default_ttl=300, cache_patterns={"/api/v1/users": 600})
+        app.add_middleware(
+            ResponseCacheMiddleware,
+            default_ttl=300,
+            cache_patterns={"/api/v1/users": 600},
+        )
 
         # Import TestClient locally to ensure correct resolution
         from tests.utils.testclient import SafeTestClient
@@ -398,11 +416,18 @@ class TestResponseCacheIntegration:
             "headers": {"Content-Type": "application/json"},
         }
 
-        app.add_middleware(ResponseCacheMiddleware, default_ttl=300, cache_patterns={"/api/v1/users": 600})
+        app.add_middleware(
+            ResponseCacheMiddleware,
+            default_ttl=300,
+            cache_patterns={"/api/v1/users": 600},
+        )
 
         with (
             patch("app.middleware.response_cache.settings") as mock_settings,
-            patch("app.middleware.response_cache.get_cached_value", return_value=json.dumps(cached_data)),
+            patch(
+                "app.middleware.response_cache.get_cached_value",
+                return_value=json.dumps(cached_data),
+            ),
         ):
             # Enable response caching
             mock_settings.ENABLE_RESPONSE_CACHE = True
@@ -421,7 +446,9 @@ class TestResponseCacheIntegration:
     async def test_cache_invalidation_integration(self, app, cache_middleware):
         """Test cache invalidation with real requests."""
         app.add_middleware(
-            ResponseCacheMiddleware, default_ttl=300, invalidation_patterns={"POST /api/v1/users": ["/api/v1/users*"]}
+            ResponseCacheMiddleware,
+            default_ttl=300,
+            invalidation_patterns={"POST /api/v1/users": ["/api/v1/users*"]},
         )
 
         with patch.object(cache_middleware, "_invalidate_cache_pattern") as mock_invalidate:

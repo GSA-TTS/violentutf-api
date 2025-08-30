@@ -74,14 +74,22 @@ class TestAPILatencyBenchmarks:
                 continue
 
         if not latencies:
-            return {"count": 0, "mean": 0.0, "median": 0.0, "p95": 0.0, "p99": 0.0, "min": 0.0, "max": 0.0}
+            return {
+                "count": 0,
+                "mean": 0.0,
+                "median": 0.0,
+                "p95": 0.0,
+                "p99": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+            }
 
         return {
             "count": len(latencies),
             "mean": statistics.mean(latencies),
             "median": statistics.median(latencies),
-            "p95": sorted(latencies)[int(0.95 * len(latencies))] if len(latencies) >= 20 else max(latencies),
-            "p99": sorted(latencies)[int(0.99 * len(latencies))] if len(latencies) >= 100 else max(latencies),
+            "p95": (sorted(latencies)[int(0.95 * len(latencies))] if len(latencies) >= 20 else max(latencies)),
+            "p99": (sorted(latencies)[int(0.99 * len(latencies))] if len(latencies) >= 100 else max(latencies)),
             "min": min(latencies),
             "max": max(latencies),
         }
@@ -268,7 +276,7 @@ class TestArchitecturalOverheadValidation:
         return {
             "count": len(latencies),
             "mean": statistics.mean(latencies),
-            "p95": sorted(latencies)[int(0.95 * len(latencies))] if len(latencies) >= 20 else max(latencies),
+            "p95": (sorted(latencies)[int(0.95 * len(latencies))] if len(latencies) >= 20 else max(latencies)),
         }
 
     def test_service_layer_performance(self, client: TestClient) -> None:

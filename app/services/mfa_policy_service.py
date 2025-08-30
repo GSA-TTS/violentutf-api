@@ -79,7 +79,7 @@ class MFAPolicyService:
             "min_methods": min_methods,
             "grace_period_days": grace_period_days,
             "enforcement_level": enforcement_level,
-            "bypass_permissions": json.dumps(bypass_permissions) if bypass_permissions else None,
+            "bypass_permissions": (json.dumps(bypass_permissions) if bypass_permissions else None),
             "priority": priority,
             "created_by": created_by,
         }
@@ -181,7 +181,11 @@ class MFAPolicyService:
             return (
                 False,
                 None,
-                {"required": False, "enforcement_level": "optional", "reason": "No MFA policies apply to this user"},
+                {
+                    "required": False,
+                    "enforcement_level": "optional",
+                    "reason": "No MFA policies apply to this user",
+                },
             )
 
         # Use highest priority policy (first in list)
@@ -323,8 +327,8 @@ class MFAPolicyService:
                 "enforcement_level": policy.enforcement_level,
                 "grace_period_days": policy.grace_period_days,
                 "min_methods": policy.min_methods,
-                "created_at": policy.created_at.isoformat() if policy.created_at else None,
-                "updated_at": policy.updated_at.isoformat() if policy.updated_at else None,
+                "created_at": (policy.created_at.isoformat() if policy.created_at else None),
+                "updated_at": (policy.updated_at.isoformat() if policy.updated_at else None),
             }
 
             # Parse JSON fields

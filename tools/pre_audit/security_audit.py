@@ -68,7 +68,10 @@ class SecurityAuditor:
         """Check for command injection vulnerabilities."""
         # Look for dangerous subprocess usage
         dangerous_calls = [
-            (r"subprocess\.(call|run|Popen)\([^,)]*shell\s*=\s*True", "Shell=True usage"),
+            (
+                r"subprocess\.(call|run|Popen)\([^,)]*shell\s*=\s*True",
+                "Shell=True usage",
+            ),
             (r"os\.system\(", "os.system usage"),
             (r"os\.popen\(", "os.popen usage"),
             (r"eval\(", "eval usage"),
@@ -188,7 +191,12 @@ class SecurityAuditor:
         report = ["# Security Audit Report\n"]
 
         # Group by severity
-        by_severity: Dict[str, List[Dict[str, Any]]] = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": []}
+        by_severity: Dict[str, List[Dict[str, Any]]] = {
+            "CRITICAL": [],
+            "HIGH": [],
+            "MEDIUM": [],
+            "LOW": [],
+        }
         for issue in self.issues:
             by_severity[issue["severity"]].append(issue)
 
@@ -276,7 +284,10 @@ def check_dependencies() -> Dict[str, Any]:
                 version = package["version"]
 
                 if name in vulnerable_packages:
-                    vulnerabilities[name] = {"installed": version, "vulnerability": vulnerable_packages[name]}
+                    vulnerabilities[name] = {
+                        "installed": version,
+                        "vulnerability": vulnerable_packages[name],
+                    }
 
     except Exception as e:
         logger.error(f"Error checking dependencies: {e}")

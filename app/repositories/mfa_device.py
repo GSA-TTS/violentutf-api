@@ -20,7 +20,11 @@ class MFADeviceRepository(BaseRepository[MFADevice]):
     async def get_by_user_id(self, user_id: Union[str, uuid.UUID]) -> List[MFADevice]:
         """Get all active MFA devices for a user."""
         query = select(self.model).where(
-            and_(self.model.user_id == str(user_id), self.model.is_active == True, self.model.is_deleted == False)
+            and_(
+                self.model.user_id == str(user_id),
+                self.model.is_active == True,
+                self.model.is_deleted == False,
+            )
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())

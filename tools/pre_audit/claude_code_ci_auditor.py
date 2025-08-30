@@ -22,7 +22,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from claude_code_auditor import ClaudeCodeArchitecturalAuditor, EnterpriseClaudeCodeConfig
+from claude_code_auditor import (
+    ClaudeCodeArchitecturalAuditor,
+    EnterpriseClaudeCodeConfig,
+)
 from dotenv import load_dotenv
 
 try:
@@ -133,7 +136,10 @@ Available tools: Read, Grep, Glob, Bash for fast codebase analysis."""
             else:
                 # Get changed files in last commit
                 result = subprocess.run(
-                    ["git", "diff", "--name-only", "HEAD~1", "HEAD"], capture_output=True, text=True, cwd=self.repo_path
+                    ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    cwd=self.repo_path,
                 )
 
             if result.returncode == 0:
@@ -142,7 +148,19 @@ Available tools: Read, Grep, Glob, Bash for fast codebase analysis."""
                 relevant_files = [
                     f
                     for f in changed_files
-                    if f.endswith((".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".cpp", ".c", ".cs"))
+                    if f.endswith(
+                        (
+                            ".py",
+                            ".js",
+                            ".ts",
+                            ".jsx",
+                            ".tsx",
+                            ".java",
+                            ".cpp",
+                            ".c",
+                            ".cs",
+                        )
+                    )
                 ]
                 return relevant_files
             else:
@@ -506,7 +524,12 @@ Available tools: Read, Grep, Glob, Bash for fast codebase analysis."""
 
     def _sarif_level_from_risk(self, risk_level: str) -> str:
         """Convert risk level to SARIF level."""
-        mapping = {"critical": "error", "high": "error", "medium": "warning", "low": "note"}
+        mapping = {
+            "critical": "error",
+            "high": "error",
+            "medium": "warning",
+            "low": "note",
+        }
         return mapping.get(risk_level.lower(), "warning")
 
     async def should_block_merge(self, audit_results: Dict[str, Any]) -> bool:
@@ -523,12 +546,22 @@ async def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Claude Code CI/CD Architectural Auditor")
-    parser.add_argument("--mode", choices=["full", "pull-request", "incremental"], default="full", help="Analysis mode")
     parser.add_argument(
-        "--output-format", choices=["json", "github-actions", "sarif"], default="json", help="Output format"
+        "--mode",
+        choices=["full", "pull-request", "incremental"],
+        default="full",
+        help="Analysis mode",
     )
     parser.add_argument(
-        "--fail-on-critical-violations", action="store_true", help="Exit with error code if critical violations found"
+        "--output-format",
+        choices=["json", "github-actions", "sarif"],
+        default="json",
+        help="Output format",
+    )
+    parser.add_argument(
+        "--fail-on-critical-violations",
+        action="store_true",
+        help="Exit with error code if critical violations found",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 

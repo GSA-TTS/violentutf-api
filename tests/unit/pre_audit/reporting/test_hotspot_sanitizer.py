@@ -47,7 +47,10 @@ class TestHotspotSanitizer:
                 {"message": "Missing auth check", "timestamp": "2024-01-01"},
                 {"message": "<script>alert('XSS')</script>", "timestamp": "2024-01-02"},
             ],
-            "recommendations": ["Add authentication middleware", "Review security policies"],
+            "recommendations": [
+                "Add authentication middleware",
+                "Review security policies",
+            ],
             "risk_confidence_interval": [0.75, 0.89],
             "business_impact": "Critical - Authentication bypass possible",
         }
@@ -65,7 +68,10 @@ class TestHotspotSanitizer:
         hotspot.temporal_assessment = MagicMock(temporal_weight=0.95, decay_rate=0.02, average_violation_age_days=45)
         hotspot.temporal_patterns = {"trend": "degrading"}
         hotspot.statistical_significance = MagicMock(
-            p_value=0.001, effect_size=0.85, test_statistic=3.24, best_fit_distribution="lognormal"
+            p_value=0.001,
+            effect_size=0.85,
+            test_statistic=3.24,
+            best_fit_distribution="lognormal",
         )
         hotspot.feature_contributions = {"business_impact": 0.8, "security_impact": 0.9}
         hotspot.violation_history = ["ADR-001", "ADR-002", "ADR-003"]

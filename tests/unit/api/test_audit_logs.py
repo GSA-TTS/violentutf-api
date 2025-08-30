@@ -75,7 +75,10 @@ class TestAuditLogEndpoints:
         audit_log.user_email = "admin@example.com"
         audit_log.ip_address = "192.168.1.50"
         audit_log.user_agent = "Mozilla/5.0 Chrome/91.0"
-        audit_log.changes = {"before": {"status": "inactive"}, "after": {"status": "active"}}
+        audit_log.changes = {
+            "before": {"status": "inactive"},
+            "after": {"status": "active"},
+        }
         audit_log.action_metadata = {"reason": "User registration"}
         audit_log.status = "success"
         audit_log.error_message = None
@@ -100,7 +103,11 @@ class TestAuditLogEndpoints:
             "failure_rate": 3.5,
             "error_rate": 1.0,
             "avg_duration_ms": 150.5,
-            "top_actions": {"user.create": 100, "user.update": 80, "api_key.create": 60},
+            "top_actions": {
+                "user.create": 100,
+                "user.update": 80,
+                "api_key.create": 60,
+            },
             "top_users": {str(uuid.uuid4()): 50, str(uuid.uuid4()): 40},
             "top_resource_types": {"user": 300, "api_key": 200, "session": 150},
         }
@@ -137,7 +144,10 @@ class TestAuditLogEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test listing audit logs with pagination (admin only)."""
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 "/api/v1/audit-logs/",
                 headers=admin_headers,
@@ -161,7 +171,10 @@ class TestAuditLogEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test listing audit logs with filters."""
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 "/api/v1/audit-logs/",
                 headers=admin_headers,
@@ -189,7 +202,10 @@ class TestAuditLogEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting a specific audit log by ID."""
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 f"/api/v1/audit-logs/{mock_audit_log.id}",
                 headers=admin_headers,
@@ -213,7 +229,10 @@ class TestAuditLogEndpoints:
         """Test getting audit logs for a specific user."""
         user_id = mock_audit_log.user_id
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 f"/api/v1/audit-logs/user/{user_id}",
                 headers=admin_headers,
@@ -235,7 +254,10 @@ class TestAuditLogEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting audit logs for a specific resource."""
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 f"/api/v1/audit-logs/resource/{mock_audit_log.resource_type}/{mock_audit_log.resource_id}",
                 headers=admin_headers,
@@ -257,7 +279,10 @@ class TestAuditLogEndpoints:
         admin_headers: Dict[str, str],
     ) -> None:
         """Test getting audit log statistics."""
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 "/api/v1/audit-logs/statistics",
                 headers=admin_headers,
@@ -288,7 +313,10 @@ class TestAuditLogEndpoints:
         resource_type = "user"
         resource_id = str(uuid.uuid4())
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 f"/api/v1/audit-logs/summary/{resource_type}/{resource_id}",
                 headers=admin_headers,
@@ -319,7 +347,10 @@ class TestAuditLogEndpoints:
             "include_metadata": False,
         }
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.post(
                 "/api/v1/audit-logs/export",
                 json=export_data,
@@ -347,7 +378,10 @@ class TestAuditLogEndpoints:
             "include_metadata": True,
         }
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.post(
                 "/api/v1/audit-logs/export",
                 json=export_data,
@@ -401,7 +435,10 @@ class TestAuditLogEndpoints:
         # Simulate current user viewing their own logs
         user_id = mock_audit_log.user_id
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             # Mock the permission check to allow access to own logs
             from app.api.endpoints.audit_logs import audit_log_router
 
@@ -446,7 +483,10 @@ class TestAuditLogEndpoints:
         mock_audit_log_repo.get.return_value = None
         log_id = uuid.uuid4()
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 f"/api/v1/audit-logs/{log_id}",
                 headers=admin_headers,
@@ -465,7 +505,10 @@ class TestAuditLogEndpoints:
         """Test getting summary for non-existent resource."""
         mock_audit_log_repo.get_resource_summary.return_value = None
 
-        with patch("app.api.endpoints.audit_logs.AuditLogRepository", return_value=mock_audit_log_repo):
+        with patch(
+            "app.api.endpoints.audit_logs.AuditLogRepository",
+            return_value=mock_audit_log_repo,
+        ):
             response = await async_client.get(
                 "/api/v1/audit-logs/summary/user/nonexistent",
                 headers=admin_headers,

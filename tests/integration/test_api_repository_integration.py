@@ -65,7 +65,10 @@ class TestUserAPIRepositoryIntegration:
         }
 
     async def test_create_user_api_integration(
-        self, client: SafeTestClient, admin_token: str, regular_user_data: Dict[str, Any]
+        self,
+        client: SafeTestClient,
+        admin_token: str,
+        regular_user_data: Dict[str, Any],
     ):
         """Test user creation through API with repository integration."""
         # Arrange
@@ -123,7 +126,10 @@ class TestUserAPIRepositoryIntegration:
         assert response_data["username"] == test_user.username  # Unchanged
 
     async def test_delete_user_api_integration(
-        self, client: SafeTestClient, admin_token: str, regular_user_data: Dict[str, Any]
+        self,
+        client: SafeTestClient,
+        admin_token: str,
+        regular_user_data: Dict[str, Any],
     ):
         """Test user deletion through API with repository integration."""
         # Arrange
@@ -178,7 +184,10 @@ class TestUserAPIRepositoryIntegration:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     async def test_user_api_duplicate_username_error(
-        self, client: SafeTestClient, admin_token: str, regular_user_data: Dict[str, Any]
+        self,
+        client: SafeTestClient,
+        admin_token: str,
+        regular_user_data: Dict[str, Any],
     ):
         """Test proper error handling for duplicate username."""
         # Arrange
@@ -191,7 +200,10 @@ class TestUserAPIRepositoryIntegration:
         response = client.post("/api/v1/users/", json=regular_user_data, headers=headers)
 
         # Assert
-        assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT]
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_409_CONFLICT,
+        ]
 
         response_data = response.json()
         assert "detail" in response_data
@@ -309,7 +321,10 @@ class TestAPIKeyAPIRepositoryIntegration:
         # Assert
         # Note: This test depends on the API key authentication middleware being properly configured
         # The exact status code may vary based on implementation
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_401_UNAUTHORIZED,
+        ]
 
 
 @pytest.mark.integration
@@ -436,7 +451,10 @@ class TestHealthAPIRepositoryIntegration:
         response = client.get("/api/v1/health/detailed")
 
         # Assert
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_503_SERVICE_UNAVAILABLE]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        ]
 
         response_data = response.json()
         assert "status" in response_data
@@ -455,7 +473,10 @@ class TestHealthAPIRepositoryIntegration:
         response = client.get("/api/v1/health/ready")
 
         # Assert
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_503_SERVICE_UNAVAILABLE]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        ]
 
         if response.status_code == status.HTTP_200_OK:
             response_data = response.json()
@@ -600,7 +621,10 @@ class TestAPIErrorHandlingIntegration:
 
         # Assert
         # Note: This may return 403 Forbidden or 401 Unauthorized depending on implementation
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     async def test_api_not_found_errors(self, client: SafeTestClient, auth_token: str):
         """Test API not found error handling."""
@@ -627,7 +651,9 @@ class TestAPIErrorHandlingIntegration:
 
         # Act - send malformed JSON
         response = client.post(
-            "/api/v1/users/", data="invalid json", headers={**headers, "Content-Type": "application/json"}
+            "/api/v1/users/",
+            data="invalid json",
+            headers={**headers, "Content-Type": "application/json"},
         )
 
         # Assert
@@ -672,7 +698,10 @@ class TestAPIRepositoryIntegrationCoverage:
         try:
             headers = {"Authorization": f"Bearer {admin_token}"}
             users_response = client.get("/api/v1/users/", headers=headers)
-            assert users_response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
+            assert users_response.status_code in [
+                status.HTTP_200_OK,
+                status.HTTP_403_FORBIDDEN,
+            ]
             integration_results["user_endpoints"] = True
         except Exception as e:
             print(f"User endpoints failed: {e}")

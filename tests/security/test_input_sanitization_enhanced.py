@@ -18,7 +18,12 @@ from fastapi.responses import JSONResponse
 from starlette.datastructures import FormData, UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.middleware.input_sanitization import MAX_BODY_SIZE, InputSanitizationMiddleware, sanitize_dict, sanitize_string
+from app.middleware.input_sanitization import (
+    MAX_BODY_SIZE,
+    InputSanitizationMiddleware,
+    sanitize_dict,
+    sanitize_string,
+)
 from tests.utils.testclient import SafeTestClient as FastAPITestClient
 
 
@@ -83,7 +88,13 @@ class TestSanitizationFunctions:
     def test_sanitize_dict_nested(self):
         """Test nested dictionary sanitization."""
         data = {
-            "user": {"name": "Test<script>", "profile": {"bio": "Hello <b>World</b>", "website": "javascript:alert(1)"}}
+            "user": {
+                "name": "Test<script>",
+                "profile": {
+                    "bio": "Hello <b>World</b>",
+                    "website": "javascript:alert(1)",
+                },
+            }
         }
 
         sanitized = sanitize_dict(data)
@@ -336,7 +347,9 @@ class TestInputSanitizationMiddleware:
         with FastAPITestClient(test_app) as client:
             # JSON content type
             response = client.post(
-                "/echo", json={"data": "<script>test</script>"}, headers={"Content-Type": "application/json"}
+                "/echo",
+                json={"data": "<script>test</script>"},
+                headers={"Content-Type": "application/json"},
             )
             assert response.status_code == 200
             assert "&lt;script&gt;" in response.json()["data"]
@@ -367,7 +380,11 @@ class TestInputSanitizationMiddleware:
     async def test_error_handling_invalid_json(self, test_app):
         """Test error handling for invalid JSON."""
         with FastAPITestClient(test_app) as client:
-            response = client.post("/echo", content=b"{'invalid': json}", headers={"Content-Type": "application/json"})
+            response = client.post(
+                "/echo",
+                content=b"{'invalid': json}",
+                headers={"Content-Type": "application/json"},
+            )
 
             # Should handle gracefully
             assert response.status_code in [400, 422]

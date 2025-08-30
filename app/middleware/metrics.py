@@ -35,7 +35,9 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     """Collect metrics for all requests."""
 
     async def dispatch(
-        self: "MetricsMiddleware", request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        self: "MetricsMiddleware",
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         """Collect request metrics."""
         if not settings.ENABLE_METRICS:
@@ -104,7 +106,11 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
             # Check if segment looks like an ID
             # UUID pattern
-            if re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", segment, re.IGNORECASE):
+            if re.match(
+                r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                segment,
+                re.IGNORECASE,
+            ):
                 segments[i] = "{id}"
             # Numeric ID
             elif re.match(r"^\d+$", segment):

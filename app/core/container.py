@@ -249,7 +249,11 @@ def _add_session_cleanup(repository, session, repo_type: str):
                     await session.close()
                     logger.debug(f"{repo_type}_session_closed", session_id=id(session))
             except Exception as e:
-                logger.warning(f"{repo_type}_session_cleanup_failed", session_id=id(session), error=str(e))
+                logger.warning(
+                    f"{repo_type}_session_cleanup_failed",
+                    session_id=id(session),
+                    error=str(e),
+                )
 
         repository._cleanup_session = cleanup_session
         repository._session_id = id(session)
@@ -285,7 +289,11 @@ def _create_user_repository_factory(session_factory) -> Any:
 
             # Create and validate session
             session = session_factory()
-            logger.debug("user_repository_session_created", session_id=id(session), session_type=type(session).__name__)
+            logger.debug(
+                "user_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
+            )
 
             # Create repository instance
             repository = UserRepository(session)
@@ -345,7 +353,9 @@ def _create_api_key_repository_factory(session_factory) -> Any:
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "api_key_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "api_key_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -402,7 +412,9 @@ def _create_session_repository_factory(session_factory) -> Any:
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "session_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "session_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -459,7 +471,9 @@ def _create_audit_repository_factory(session_factory) -> Any:
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "audit_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "audit_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -509,14 +523,19 @@ def _create_security_scan_repository_factory(session_factory) -> Any:
         start_time = time.time()
         session = None
         try:
-            logger.debug("security_scan_repository_factory_starting", factory_type="SecurityScanRepository")
+            logger.debug(
+                "security_scan_repository_factory_starting",
+                factory_type="SecurityScanRepository",
+            )
 
             from ..repositories.security_scan import SecurityScanRepository
 
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "security_scan_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "security_scan_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -566,14 +585,21 @@ def _create_vulnerability_repository_factory(session_factory) -> Any:
         start_time = time.time()
         session = None
         try:
-            logger.debug("vulnerability_repository_factory_starting", factory_type="VulnerabilityTaxonomyRepository")
+            logger.debug(
+                "vulnerability_repository_factory_starting",
+                factory_type="VulnerabilityTaxonomyRepository",
+            )
 
-            from ..repositories.vulnerability_taxonomy import VulnerabilityTaxonomyRepository
+            from ..repositories.vulnerability_taxonomy import (
+                VulnerabilityTaxonomyRepository,
+            )
 
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "vulnerability_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "vulnerability_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -629,7 +655,11 @@ def _create_role_repository_factory(session_factory) -> Any:
 
             # Create and validate session
             session = session_factory()
-            logger.debug("role_repository_session_created", session_id=id(session), session_type=type(session).__name__)
+            logger.debug(
+                "role_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
+            )
 
             # Create repository instance
             repository = RoleRepository(session)
@@ -685,7 +715,9 @@ def _create_health_repository_factory(session_factory) -> Any:
             # Create and validate session
             session = session_factory()
             logger.debug(
-                "health_repository_session_created", session_id=id(session), session_type=type(session).__name__
+                "health_repository_session_created",
+                session_id=id(session),
+                session_type=type(session).__name__,
             )
 
             # Create repository instance
@@ -743,8 +775,14 @@ async def register_repositories(session_factory) -> None:
             (IApiKeyRepository, _create_api_key_repository_factory(session_factory)),
             (ISessionRepository, _create_session_repository_factory(session_factory)),
             (IAuditRepository, _create_audit_repository_factory(session_factory)),
-            (ISecurityScanRepository, _create_security_scan_repository_factory(session_factory)),
-            (IVulnerabilityRepository, _create_vulnerability_repository_factory(session_factory)),
+            (
+                ISecurityScanRepository,
+                _create_security_scan_repository_factory(session_factory),
+            ),
+            (
+                IVulnerabilityRepository,
+                _create_vulnerability_repository_factory(session_factory),
+            ),
             (IRoleRepository, _create_role_repository_factory(session_factory)),
             (IHealthRepository, _create_health_repository_factory(session_factory)),
         ]
@@ -754,7 +792,10 @@ async def register_repositories(session_factory) -> None:
                 container.register_factory(interface, factory)
                 logger.debug("repository_factory_registered", interface=interface.__name__)
 
-        logger.info("repository_registration_complete", registered_count=len(repository_registrations))
+        logger.info(
+            "repository_registration_complete",
+            registered_count=len(repository_registrations),
+        )
 
         # Validate repository registration by attempting to create one instance of each
         await _validate_repository_registration()
@@ -798,9 +839,16 @@ async def _validate_repository_registration() -> None:
         # Log validation results
         failed_validations = [name for name, result in validation_results.items() if result != "registered"]
         if failed_validations:
-            logger.warning("repository_validation_issues", failed=failed_validations, results=validation_results)
+            logger.warning(
+                "repository_validation_issues",
+                failed=failed_validations,
+                results=validation_results,
+            )
         else:
-            logger.info("repository_validation_successful", validated_count=len(validation_results))
+            logger.info(
+                "repository_validation_successful",
+                validated_count=len(validation_results),
+            )
 
     except Exception as e:
         logger.error("repository_validation_failed", error=str(e))
@@ -862,7 +910,8 @@ def update_connection_pool_metrics() -> Dict[str, Any]:
                     "invalid_connections": pool_stats.get("invalid", 0),
                     "total_connections": pool_stats.get("checked_out", 0) + pool_stats.get("checked_in", 0),
                     "pool_utilization_percentage": round(
-                        (pool_stats.get("checked_out", 0) / max(pool_stats.get("pool_size", 1), 1)) * 100, 2
+                        (pool_stats.get("checked_out", 0) / max(pool_stats.get("pool_size", 1), 1)) * 100,
+                        2,
                     ),
                     "last_updated": time.time(),
                     **pool_stats,  # Include all raw stats
@@ -1099,7 +1148,10 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
     current_time = time.time()
 
     if use_cache and _health_check_cache is not None and (current_time - _health_check_cache_time) < cache_ttl:
-        logger.debug("repository_health_cache_hit", cache_age_seconds=round(current_time - _health_check_cache_time, 2))
+        logger.debug(
+            "repository_health_cache_hit",
+            cache_age_seconds=round(current_time - _health_check_cache_time, 2),
+        )
         # Update timestamp to current time but keep cached data
         cached_result = _health_check_cache.copy()
         cached_result["cache_hit"] = True
@@ -1110,7 +1162,7 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
         "repository_health_cache_miss",
         use_cache=use_cache,
         cache_exists=_health_check_cache is not None,
-        cache_age_seconds=round(current_time - _health_check_cache_time, 2) if _health_check_cache else 0,
+        cache_age_seconds=(round(current_time - _health_check_cache_time, 2) if _health_check_cache else 0),
     )
 
     health_status = {}
@@ -1142,7 +1194,10 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
             repository = getter()
             if repository is None:
                 repo_health.update(
-                    {"status": "not_registered", "error_message": "Repository not available from container"}
+                    {
+                        "status": "not_registered",
+                        "error_message": "Repository not available from container",
+                    }
                 )
             else:
                 # Check session availability
@@ -1164,7 +1219,11 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
                         repo_health["status"] = "unhealthy"
                         repo_health["connectivity_test"] = False
                         repo_health["error_message"] = "Database connectivity test failed"
-                        logger.warning("repository_connectivity_failed", repository=name, error=str(conn_e))
+                        logger.warning(
+                            "repository_connectivity_failed",
+                            repository=name,
+                            error=str(conn_e),
+                        )
                 else:
                     repo_health["status"] = "degraded"
                     repo_health["error_message"] = "No database session available"
@@ -1222,9 +1281,12 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
         },
         "operation_metrics": operation_metrics,
         "summary": {
-            "health_percentage": round((healthy_count / total_count) * 100, 1) if total_count > 0 else 0,
+            "health_percentage": (round((healthy_count / total_count) * 100, 1) if total_count > 0 else 0),
             "average_response_time_ms": (
-                round(sum(repo["response_time_ms"] for repo in health_status.values()) / total_count, 2)
+                round(
+                    sum(repo["response_time_ms"] for repo in health_status.values()) / total_count,
+                    2,
+                )
                 if total_count > 0
                 else 0
             ),
@@ -1236,7 +1298,7 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
             "connection_pool_health": (
                 "healthy"
                 if pool_metrics.get("pool_utilization_percentage", 0) < 80
-                else "degraded" if pool_metrics.get("pool_utilization_percentage", 0) < 95 else "critical"
+                else ("degraded" if pool_metrics.get("pool_utilization_percentage", 0) < 95 else "critical")
             ),
         },
     }
@@ -1245,7 +1307,11 @@ async def get_repository_health_status(use_cache: bool = True) -> Dict[str, Any]
     _health_check_cache = result.copy()
     _health_check_cache_time = current_time
 
-    logger.debug("repository_health_cache_updated", total_check_time_ms=total_check_time, cache_ttl_seconds=cache_ttl)
+    logger.debug(
+        "repository_health_cache_updated",
+        total_check_time_ms=total_check_time,
+        cache_ttl_seconds=cache_ttl,
+    )
 
     return result
 
@@ -1279,7 +1345,11 @@ async def get_repository_health_with_timeout(
         timeout_seconds = settings.REPOSITORY_HEALTH_CHECK_TIMEOUT
 
     try:
-        logger.debug("repository_health_check_starting", timeout_seconds=timeout_seconds, use_cache=use_cache)
+        logger.debug(
+            "repository_health_check_starting",
+            timeout_seconds=timeout_seconds,
+            use_cache=use_cache,
+        )
 
         # Run health check with timeout
         result = await asyncio.wait_for(get_repository_health_status(use_cache=use_cache), timeout=timeout_seconds)
@@ -1312,7 +1382,11 @@ async def get_repository_health_with_timeout(
             "error": f"Health check timed out after {timeout_seconds} seconds",
         }
     except Exception as e:
-        logger.error("repository_health_check_error", error=str(e), timeout_seconds=timeout_seconds)
+        logger.error(
+            "repository_health_check_error",
+            error=str(e),
+            timeout_seconds=timeout_seconds,
+        )
 
         return {
             "overall_status": "error",

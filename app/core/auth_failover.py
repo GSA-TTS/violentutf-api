@@ -58,7 +58,7 @@ class FallbackAuthProvider:
             "is_active": user.is_active,
             "is_superuser": user.is_superuser,
             "roles": user.roles or [],
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
             "password_hash": password_hash,
             "cached_at": datetime.now(timezone.utc).isoformat(),
         }

@@ -92,7 +92,11 @@ def prevent_sql_injection(
         if unsafe_params:
             error_msg = custom_error_message or f"SQL injection attempt detected in: {', '.join(unsafe_params)}"
             if log_attempts:
-                logger.warning("sql_injection_blocked", endpoint=func_name, unsafe_params=unsafe_params)
+                logger.warning(
+                    "sql_injection_blocked",
+                    endpoint=func_name,
+                    unsafe_params=unsafe_params,
+                )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -180,7 +184,11 @@ def validate_sql_params(
                         )
 
                 # Validate against allowed tables
-                if allowed_tables and param_name in ["table", "table_name", "from_table"]:
+                if allowed_tables and param_name in [
+                    "table",
+                    "table_name",
+                    "from_table",
+                ]:
                     if param_value not in allowed_tables:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
@@ -188,7 +196,12 @@ def validate_sql_params(
                         )
 
                 # Validate against allowed columns
-                if allowed_columns and param_name in ["column", "columns", "select", "order_by"]:
+                if allowed_columns and param_name in [
+                    "column",
+                    "columns",
+                    "select",
+                    "order_by",
+                ]:
                     columns = param_value if isinstance(param_value, list) else [param_value]
                     for col in columns:
                         if col not in allowed_columns:
@@ -225,14 +238,23 @@ def validate_sql_params(
                             detail=f"Invalid value for parameter '{param_name}'",
                         )
 
-                if allowed_tables and param_name in ["table", "table_name", "from_table"]:
+                if allowed_tables and param_name in [
+                    "table",
+                    "table_name",
+                    "from_table",
+                ]:
                     if param_value not in allowed_tables:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Table '{param_value}' is not allowed",
                         )
 
-                if allowed_columns and param_name in ["column", "columns", "select", "order_by"]:
+                if allowed_columns and param_name in [
+                    "column",
+                    "columns",
+                    "select",
+                    "order_by",
+                ]:
                     columns = param_value if isinstance(param_value, list) else [param_value]
                     for col in columns:
                         if col not in allowed_columns:

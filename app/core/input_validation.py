@@ -1098,7 +1098,13 @@ def validate_ai_request(func: Callable[..., Any]) -> Callable[..., Any]:
 
         # Check for prompt injection in string kwargs
         for key, value in kwargs.items():
-            if isinstance(value, str) and key in ["prompt", "message", "query", "text", "input"]:
+            if isinstance(value, str) and key in [
+                "prompt",
+                "message",
+                "query",
+                "text",
+                "input",
+            ]:
                 # Check prompt injection
                 if config.check_prompt_injection:
                     result = check_prompt_injection(value)

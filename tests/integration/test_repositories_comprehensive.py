@@ -37,7 +37,11 @@ from app.repositories.vulnerability_taxonomy import VulnerabilityTaxonomyReposit
 async def test_engine():
     """Create a test database engine."""
     # Use in-memory SQLite for tests
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False, connect_args={"check_same_thread": False})
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False,
+        connect_args={"check_same_thread": False},
+    )
 
     # Create all tables
     async with engine.begin() as conn:
@@ -191,7 +195,9 @@ class TestUserRepositoryIntegration:
         """Test getting user by email."""
         # Create user
         user = await user_repository.create_user(
-            username="testuser", email="Test@Example.Com", password="Pass123!"  # Mixed case
+            username="testuser",
+            email="Test@Example.Com",
+            password="Pass123!",  # Mixed case
         )
         await test_session.commit()
 
@@ -679,7 +685,9 @@ class TestRepositoryTransactions:
         try:
             # Try to create duplicate user (should fail)
             await user_repository.create_user(
-                username="testuser", email="new@example.com", password="Pass456!"  # Duplicate
+                username="testuser",
+                email="new@example.com",
+                password="Pass456!",  # Duplicate
             )
             await test_session.commit()
         except ValueError:
@@ -700,7 +708,9 @@ class TestRepositoryTransactions:
             async with async_session_maker() as session:
                 repo = UserRepository(session)
                 user = await repo.create_user(
-                    username=f"user{index}", email=f"user{index}@example.com", password="Pass123!"
+                    username=f"user{index}",
+                    email=f"user{index}@example.com",
+                    password="Pass123!",
                 )
                 await session.commit()
                 return user
@@ -770,7 +780,9 @@ class TestRepositoryComplexQueries:
         ]
 
         items, total = await user_repository.list_paginated(
-            page=1, per_page=20, filters={"advanced_filters": advanced_filters, "filter_logic": "and"}
+            page=1,
+            per_page=20,
+            filters={"advanced_filters": advanced_filters, "filter_logic": "and"},
         )
         assert total == 10  # All users match both conditions
 

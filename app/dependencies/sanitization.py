@@ -38,7 +38,8 @@ class SanitizedBody:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON body")
         except Exception as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error processing request: {str(e)}"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error processing request: {str(e)}",
             )
 
     def _sanitize_value(self, value: Any) -> Any:
@@ -72,7 +73,7 @@ class SanitizedModel(BaseModel):
         """Sanitize all string fields."""
         if isinstance(values, dict):
             return {
-                k: sanitize_string(v, strip_js=True, max_length=10000) if isinstance(v, str) else v
+                k: (sanitize_string(v, strip_js=True, max_length=10000) if isinstance(v, str) else v)
                 for k, v in values.items()
             }
         elif isinstance(values, str):

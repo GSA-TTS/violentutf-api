@@ -391,12 +391,12 @@ class TestSecurityEnhancements:
         assert await service._verify_key_hash(test_key, argon2_hash) is True
         assert await service._verify_key_hash("wrong_key", argon2_hash) is False
 
-        # Test SHA256 verification (legacy)
+        # Test SHA256 verification (legacy) - should be rejected for security
         import hashlib
 
         sha256_hash = hashlib.sha256(test_key.encode()).hexdigest()
-        assert await service._verify_key_hash(test_key, sha256_hash) is True
-        assert await service._verify_key_hash("wrong_key", sha256_hash) is False
+        assert await service._verify_key_hash(test_key, sha256_hash) is False  # SHA256 rejected
+        assert await service._verify_key_hash("wrong_key", sha256_hash) is False  # Still rejected
 
         # Test invalid hash format
         assert await service._verify_key_hash(test_key, "invalid_hash") is False

@@ -117,7 +117,13 @@ class Role(Base, BaseModelMixin):
                 description="Manage users and their basic permissions",
                 is_system_role=True,
                 role_metadata={
-                    "permissions": ["users:read", "users:write", "users:delete", "sessions:read", "audit_logs:read"],
+                    "permissions": [
+                        "users:read",
+                        "users:write",
+                        "users:delete",
+                        "sessions:read",
+                        "audit_logs:read",
+                    ],
                     "level": 2,
                     "immutable": False,
                 },
@@ -157,7 +163,11 @@ class Role(Base, BaseModelMixin):
                 description="Basic user access to own resources",
                 is_system_role=True,
                 role_metadata={
-                    "permissions": ["users:read:own", "api_keys:*:own", "sessions:read:own"],
+                    "permissions": [
+                        "users:read:own",
+                        "api_keys:*:own",
+                        "sessions:read:own",
+                    ],
                     "level": 4,
                     "immutable": False,
                 },

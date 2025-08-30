@@ -8,7 +8,12 @@ from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
 from app.api.deps import get_session_service
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models.session import Session
 
 # Removed SessionRepository import to comply with Clean Architecture
@@ -313,7 +318,9 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
                 return self._build_operation_result(
-                    request, f"Revoked {revoked_count} sessions successfully", revoked_count
+                    request,
+                    f"Revoked {revoked_count} sessions successfully",
+                    revoked_count,
                 )
 
             except Exception as e:
@@ -371,7 +378,8 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
                 return self._build_operation_result(
-                    request, f"Session extended by {extend_data.extension_minutes} minutes"
+                    request,
+                    f"Session extended by {extend_data.extension_minutes} minutes",
                 )
 
             except Exception as e:
@@ -496,7 +504,9 @@ class SessionCRUDRouter(BaseCRUDRouter[Session, SessionCreate, SessionUpdate, Se
                 )
 
                 return self._build_operation_result(
-                    request, f"Cleaned up {cleaned_count} expired sessions", cleaned_count
+                    request,
+                    f"Cleaned up {cleaned_count} expired sessions",
+                    cleaned_count,
                 )
 
             except Exception as e:

@@ -277,7 +277,11 @@ class TestJSONType:
         json_type = JSONType()
 
         # UUID in dict
-        test_data = {"id": uuid.uuid4(), "created": datetime.now(), "amount": Decimal("123.45")}
+        test_data = {
+            "id": uuid.uuid4(),
+            "created": datetime.now(),
+            "amount": Decimal("123.45"),
+        }
 
         sqlite_dialect = sqlite.dialect()
         result = json_type.process_bind_param(test_data, sqlite_dialect)
@@ -423,7 +427,13 @@ class TestJSONType:
     @pytest.mark.asyncio
     async def test_json_with_unicode(self, async_session: AsyncSession):
         """Test JSON with Unicode characters."""
-        test_data = {"english": "Hello", "chinese": "你好", "emoji": "😀🎉", "special": "café", "symbols": "♠♣♥♦"}
+        test_data = {
+            "english": "Hello",
+            "chinese": "你好",
+            "emoji": "😀🎉",
+            "special": "café",
+            "symbols": "♠♣♥♦",
+        }
 
         # Insert
         model = TypeTestModel(json_field=test_data)
@@ -445,7 +455,10 @@ class TestJSONType:
         """Test JSON with large data structure."""
         # Create large nested structure
         test_data = {
-            f"key_{i}": {"data": list(range(100)), "nested": {f"inner_{j}": f"value_{j}" for j in range(10)}}
+            f"key_{i}": {
+                "data": list(range(100)),
+                "nested": {f"inner_{j}": f"value_{j}" for j in range(10)},
+            }
             for i in range(10)
         }
 

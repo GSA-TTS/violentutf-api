@@ -94,7 +94,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_name_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test successful role retrieval by name."""
         # Arrange
@@ -112,7 +116,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_name_without_organization(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, system_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        system_role: Role,
+        query_result_factory,
     ):
         """Test role retrieval by name without organization filtering."""
         # Arrange
@@ -130,7 +138,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_name_not_found(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test role retrieval when role doesn't exist."""
         # Arrange
@@ -146,7 +157,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_name_case_sensitivity(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test role name case sensitivity handling."""
         # Arrange
@@ -282,7 +296,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_update_role_permissions_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test successful role permissions update."""
         # Arrange
@@ -308,7 +326,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_update_role_permissions_not_found(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test updating permissions for non-existent role."""
         # Arrange
@@ -327,7 +348,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_update_role_permissions_system_role_protection(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, system_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        system_role: Role,
+        query_result_factory,
     ):
         """Test that system roles are protected from permission updates."""
         # Arrange
@@ -350,7 +375,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_roles_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test successful retrieval of user roles."""
         # Arrange
@@ -392,7 +421,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_roles_no_roles(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieval when user has no roles."""
         # Arrange
@@ -408,7 +440,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_roles_only_active_roles(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test that only active roles are returned for user."""
         # Arrange
@@ -427,7 +463,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_assign_role_to_user_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test successful role assignment to user."""
         # Arrange
@@ -452,7 +492,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_assign_role_to_user_role_not_found(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test role assignment when role doesn't exist."""
         # Arrange
@@ -523,7 +566,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_remove_role_from_user_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, user_role_assignment, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        user_role_assignment,
+        query_result_factory,
     ):
         """Test successful role removal from user."""
         # Arrange
@@ -544,7 +591,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_remove_role_from_user_assignment_not_found(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test role removal when assignment doesn't exist."""
         # Arrange
@@ -562,7 +612,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_remove_role_from_user_already_inactive(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, user_role_assignment, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        user_role_assignment,
+        query_result_factory,
     ):
         """Test removing role that is already inactive."""
         # Arrange
@@ -583,7 +637,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_role_users_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful retrieval of users assigned to a role."""
         # Arrange
@@ -620,7 +677,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_role_users_no_users(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieval when no users are assigned to role."""
         # Arrange
@@ -636,7 +696,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_role_users_only_active_assignments(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test that only active user assignments are returned."""
         # Arrange
@@ -661,7 +724,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_default_roles_success(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, system_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        system_role: Role,
+        query_result_factory,
     ):
         """Test successful retrieval of default system roles."""
         # Arrange
@@ -680,7 +747,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_default_roles_multiple_system_roles(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory, role_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
+        role_factory,
     ):
         """Test retrieval of multiple default roles."""
         # Arrange
@@ -702,7 +773,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_get_default_roles_none_exist(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test retrieval when no default roles exist."""
         # Arrange
@@ -720,7 +794,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_is_role_name_available_true(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test role name availability when name is available."""
         # Arrange
@@ -736,7 +813,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_is_role_name_available_false(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test role name availability when name is taken."""
         # Arrange
@@ -752,7 +833,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_is_role_name_available_exclude_current_role(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test role name availability excluding current role (for updates)."""
         # Arrange
@@ -768,7 +853,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_is_role_name_available_case_insensitive(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test role name availability is case sensitive."""
         # Arrange
@@ -808,7 +897,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_null_input_validation(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test repository methods handle null/None inputs appropriately."""
         # Arrange
@@ -833,7 +925,10 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_empty_string_input_validation(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test repository methods handle empty string inputs appropriately."""
         # Arrange
@@ -894,7 +989,8 @@ class TestRoleRepository:
         with patch.object(role_repository, "get_by_name", return_value=None):
             # Act & Assert - Should raise ValueError for invalid role name
             with pytest.raises(
-                ValueError, match="Role name can only contain letters, numbers, underscores, and hyphens"
+                ValueError,
+                match="Role name can only contain letters, numbers, underscores, and hyphens",
             ):
                 await role_repository.create_role(
                     name=unicode_name,
@@ -904,7 +1000,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_concurrent_role_operations(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test concurrent role operations."""
         # Arrange - Mock for concurrent operations testing
@@ -929,7 +1029,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_role_hierarchy_and_inheritance_patterns(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, role_factory, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        role_factory,
+        query_result_factory,
     ):
         """Test role hierarchy and inheritance patterns."""
         # Create roles with hierarchical relationships
@@ -962,7 +1066,11 @@ class TestRoleRepository:
 
     @pytest.mark.asyncio
     async def test_bulk_role_assignment_patterns(
-        self, role_repository: RoleRepository, mock_session: AsyncMock, sample_role: Role, query_result_factory
+        self,
+        role_repository: RoleRepository,
+        mock_session: AsyncMock,
+        sample_role: Role,
+        query_result_factory,
     ):
         """Test patterns for bulk role assignments."""
         # This simulates bulk assignment operations
@@ -970,7 +1078,10 @@ class TestRoleRepository:
         # Arrange
         role_result = query_result_factory(scalar_result=sample_role)
         assignment_result = query_result_factory(scalar_result=None)
-        mock_session.execute.side_effect = [role_result, assignment_result] * 5  # 5 users
+        mock_session.execute.side_effect = [
+            role_result,
+            assignment_result,
+        ] * 5  # 5 users
         mock_session.flush.return_value = None
 
         user_ids = [f"user-{i}" for i in range(5)]

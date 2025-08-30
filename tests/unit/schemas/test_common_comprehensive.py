@@ -107,7 +107,10 @@ class TestValidationErrorResponse:
         timestamp = datetime.now(timezone.utc)
 
         error = ValidationErrorResponse(
-            error="Custom Validation Error", detail=detail, request_id="val-123", timestamp=timestamp
+            error="Custom Validation Error",
+            detail=detail,
+            request_id="val-123",
+            timestamp=timestamp,
         )
 
         assert error.error == "Custom Validation Error"
@@ -152,7 +155,12 @@ class TestHealthResponse:
         """Test creating health response."""
         timestamp = datetime.now(timezone.utc)
 
-        health = HealthResponse(status="healthy", timestamp=timestamp, service="violentutf-api", version="1.0.0")
+        health = HealthResponse(
+            status="healthy",
+            timestamp=timestamp,
+            service="violentutf-api",
+            version="1.0.0",
+        )
 
         assert health.status == "healthy"
         assert health.timestamp == timestamp
@@ -162,7 +170,10 @@ class TestHealthResponse:
     def test_health_response_unhealthy(self):
         """Test health response with unhealthy status."""
         health = HealthResponse(
-            status="unhealthy", timestamp=datetime.now(timezone.utc), service="test-service", version="0.1.0"
+            status="unhealthy",
+            timestamp=datetime.now(timezone.utc),
+            service="test-service",
+            version="0.1.0",
         )
 
         assert health.status == "unhealthy"
@@ -187,10 +198,22 @@ class TestHealthResponse:
 
     def test_health_response_various_statuses(self):
         """Test health response with various status values."""
-        statuses = ["healthy", "unhealthy", "degraded", "maintenance", "starting", "stopping"]
+        statuses = [
+            "healthy",
+            "unhealthy",
+            "degraded",
+            "maintenance",
+            "starting",
+            "stopping",
+        ]
 
         for status in statuses:
-            health = HealthResponse(status=status, timestamp=datetime.now(timezone.utc), service="test", version="1.0")
+            health = HealthResponse(
+                status=status,
+                timestamp=datetime.now(timezone.utc),
+                service="test",
+                version="1.0",
+            )
             assert health.status == status
 
 
@@ -291,7 +314,11 @@ class TestPaginatedResponse:
         """Test automatic total_pages calculation."""
         # When total_pages is not provided, it should be calculated
         response = PaginatedResponse[int](
-            items=[1, 2, 3, 4, 5], total=47, page=2, page_size=10, total_pages=None  # Should be calculated
+            items=[1, 2, 3, 4, 5],
+            total=47,
+            page=2,
+            page_size=10,
+            total_pages=None,  # Should be calculated
         )
 
         # 47 items / 10 per page = 5 pages (rounded up)
@@ -344,7 +371,11 @@ class TestPaginatedResponse:
         """Test the field validator for total_pages."""
         # When total_pages is provided, it should be used
         response = PaginatedResponse[int](
-            items=[1, 2, 3], total=100, page=1, page_size=10, total_pages=15  # Explicitly set, even if wrong
+            items=[1, 2, 3],
+            total=100,
+            page=1,
+            page_size=10,
+            total_pages=15,  # Explicitly set, even if wrong
         )
         assert response.total_pages == 15  # Uses provided value
 
@@ -352,7 +383,11 @@ class TestPaginatedResponse:
         """Test edge case when page_size is at validation boundary."""
         # This tests the validator's division by zero protection
         response = PaginatedResponse[str](
-            items=[], total=10, page=1, page_size=1, total_pages=None  # Minimum valid page_size
+            items=[],
+            total=10,
+            page=1,
+            page_size=1,
+            total_pages=None,  # Minimum valid page_size
         )
         assert response.total_pages == 10  # 10 items / 1 per page
 
@@ -462,7 +497,11 @@ class TestSchemaIntegration:
             # Some operation that fails
             raise ValueError("Database connection failed")
         except ValueError as e:
-            error = ErrorResponse(error=str(e), detail="Could not connect to PostgreSQL", request_id="api-req-123")
+            error = ErrorResponse(
+                error=str(e),
+                detail="Could not connect to PostgreSQL",
+                request_id="api-req-123",
+            )
 
             # This is what would be returned to client
             response_data = error.model_dump()
@@ -509,7 +548,11 @@ class TestSchemaIntegration:
             detail = []
             for error in e.errors():
                 detail.append(
-                    {"field": ".".join(str(loc) for loc in error["loc"]), "error": error["msg"], "type": error["type"]}
+                    {
+                        "field": ".".join(str(loc) for loc in error["loc"]),
+                        "error": error["msg"],
+                        "type": error["type"],
+                    }
                 )
 
             error_response = ValidationErrorResponse(detail=detail, request_id="validation-123")

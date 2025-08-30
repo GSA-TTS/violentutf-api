@@ -143,22 +143,38 @@ class TestUserBase:
         assert user.full_name == "John Doe"
 
         # Names with HTML tags should be cleaned
-        user = UserBase(username="testuser", email="test@example.com", full_name="<b>John</b> <i>Doe</i>")
+        user = UserBase(
+            username="testuser",
+            email="test@example.com",
+            full_name="<b>John</b> <i>Doe</i>",
+        )
         assert user.full_name == "John Doe"
 
         # Names with script tags should fail
         with pytest.raises(ValidationError) as exc_info:
-            UserBase(username="testuser", email="test@example.com", full_name="<script>alert('xss')</script>John")
+            UserBase(
+                username="testuser",
+                email="test@example.com",
+                full_name="<script>alert('xss')</script>John",
+            )
         assert "Full name contains invalid content" in str(exc_info.value)
 
         # Names with javascript: should fail
         with pytest.raises(ValidationError) as exc_info:
-            UserBase(username="testuser", email="test@example.com", full_name="javascript:alert('xss')")
+            UserBase(
+                username="testuser",
+                email="test@example.com",
+                full_name="javascript:alert('xss')",
+            )
         assert "Full name contains invalid content" in str(exc_info.value)
 
         # Names with onerror should fail
         with pytest.raises(ValidationError) as exc_info:
-            UserBase(username="testuser", email="test@example.com", full_name='<img onerror="alert(1)" src=x>')
+            UserBase(
+                username="testuser",
+                email="test@example.com",
+                full_name='<img onerror="alert(1)" src=x>',
+            )
         assert "Full name contains invalid content" in str(exc_info.value)
 
         # Empty string after cleaning
@@ -347,7 +363,10 @@ class TestUserCreate:
     def test_user_create_full_name_sanitization(self):
         """Test full name sanitization in UserCreate."""
         user = UserCreate(
-            username="testuser", email="test@example.com", password="ValidP@ss1", full_name="<p>Clean Name</p>"
+            username="testuser",
+            email="test@example.com",
+            password="ValidP@ss1",
+            full_name="<p>Clean Name</p>",
         )
         assert user.full_name == "Clean Name"
 
@@ -494,7 +513,10 @@ class TestUserUpdatePassword:
 
         # Invalid new passwords
         invalid_passwords = [
-            ("weak", ["at least 8 characters", "string_too_short"]),  # Pydantic v2 returns different error
+            (
+                "weak",
+                ["at least 8 characters", "string_too_short"],
+            ),  # Pydantic v2 returns different error
             ("weakpass", ["uppercase letter"]),
             ("WEAKPASS", ["lowercase letter"]),
             ("Weakpass", ["digit"]),
@@ -640,7 +662,11 @@ class TestUserResponse:
         # Timezone aware datetimes
         tz_aware = datetime.now(timezone.utc)
         user = UserResponse(
-            id="test-id", username="testuser", email="test@example.com", created_at=tz_aware, updated_at=tz_aware
+            id="test-id",
+            username="testuser",
+            email="test@example.com",
+            created_at=tz_aware,
+            updated_at=tz_aware,
         )
 
         assert user.created_at == tz_aware
@@ -653,12 +679,22 @@ class TestUserResponse:
         # Invalid username
         with pytest.raises(ValidationError):
             UserResponse(
-                id="test-id", username="a", email="test@example.com", created_at=now, updated_at=now  # Too short
+                id="test-id",
+                username="a",
+                email="test@example.com",
+                created_at=now,
+                updated_at=now,  # Too short
             )
 
         # Invalid email
         with pytest.raises(ValidationError):
-            UserResponse(id="test-id", username="testuser", email="invalid", created_at=now, updated_at=now)
+            UserResponse(
+                id="test-id",
+                username="testuser",
+                email="invalid",
+                created_at=now,
+                updated_at=now,
+            )
 
     def test_user_response_counter_fields(self):
         """Test counter field validation."""
@@ -700,7 +736,11 @@ class TestUserCreateResponse:
         """Test user create response with default message."""
         now = datetime.now(timezone.utc)
         response = UserCreateResponse(
-            id="new-user-id", username="newuser", email="new@example.com", created_at=now, updated_at=now
+            id="new-user-id",
+            username="newuser",
+            email="new@example.com",
+            created_at=now,
+            updated_at=now,
         )
 
         assert response.message == "User created successfully"
@@ -769,7 +809,11 @@ class TestUserListResponse:
         now = datetime.now(timezone.utc)
         users = [
             UserResponse(
-                id=f"user-{i}", username=f"user{i}", email=f"user{i}@example.com", created_at=now, updated_at=now
+                id=f"user-{i}",
+                username=f"user{i}",
+                email=f"user{i}@example.com",
+                created_at=now,
+                updated_at=now,
             )
             for i in range(3)
         ]
@@ -787,11 +831,21 @@ class TestUserListResponse:
     def test_user_list_response_pagination_inheritance(self):
         """Test that UserListResponse properly inherits PaginatedResponse."""
         now = datetime.now(timezone.utc)
-        user = UserResponse(id="test-id", username="testuser", email="test@example.com", created_at=now, updated_at=now)
+        user = UserResponse(
+            id="test-id",
+            username="testuser",
+            email="test@example.com",
+            created_at=now,
+            updated_at=now,
+        )
 
         # Test automatic total_pages calculation
         response = UserListResponse(
-            items=[user], total=100, page=3, page_size=10, total_pages=None  # Should calculate to 10
+            items=[user],
+            total=100,
+            page=3,
+            page_size=10,
+            total_pages=None,  # Should calculate to 10
         )
 
         assert response.total_pages == 10
@@ -800,7 +854,13 @@ class TestUserListResponse:
         """Test that items must be UserResponse objects."""
         # Valid with UserResponse objects
         now = datetime.now(timezone.utc)
-        user = UserResponse(id="test-id", username="testuser", email="test@example.com", created_at=now, updated_at=now)
+        user = UserResponse(
+            id="test-id",
+            username="testuser",
+            email="test@example.com",
+            created_at=now,
+            updated_at=now,
+        )
 
         response = UserListResponse(items=[user], total=1, page=1, page_size=10, total_pages=1)
 
@@ -816,7 +876,11 @@ class TestUserSchemaEdgeCases:
 
     def test_unicode_handling(self):
         """Test Unicode character handling in fields."""
-        user = UserBase(username="testuser", email="test@example.com", full_name="José García 北京 🚀")
+        user = UserBase(
+            username="testuser",
+            email="test@example.com",
+            full_name="José García 北京 🚀",
+        )
         assert user.full_name == "José García 北京 🚀"
 
     def test_email_normalization(self):
@@ -844,7 +908,13 @@ class TestUserSchemaEdgeCases:
     def test_json_serialization(self):
         """Test JSON serialization of schemas."""
         now = datetime.now(timezone.utc)
-        user = UserResponse(id="test-id", username="testuser", email="test@example.com", created_at=now, updated_at=now)
+        user = UserResponse(
+            id="test-id",
+            username="testuser",
+            email="test@example.com",
+            created_at=now,
+            updated_at=now,
+        )
 
         json_str = user.model_dump_json()
         assert "test-id" in json_str
@@ -855,7 +925,9 @@ class TestUserSchemaEdgeCases:
         """Test detailed validation error information."""
         try:
             UserCreate(
-                username="a", email="invalid", password="weak"  # Too short  # Invalid format  # Multiple violations
+                username="a",
+                email="invalid",
+                password="weak",  # Too short  # Invalid format  # Multiple violations
             )
         except ValidationError as e:
             errors = e.errors()

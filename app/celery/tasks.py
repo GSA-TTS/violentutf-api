@@ -134,7 +134,10 @@ async def execute_task(
                 task.error_message = "Task execution failed"
                 # Log detailed error information securely without exposing to external users
                 logger.error(
-                    "Task execution failed", error=str(e), error_type=type(e).__name__, worker_id=self.request.id
+                    "Task execution failed",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    worker_id=self.request.id,
                 )
                 task.error_details = {
                     "worker_id": self.request.id,
@@ -147,7 +150,10 @@ async def execute_task(
 
 @celery_app.task(bind=True, base=AsyncTask)
 async def execute_scan_task(
-    self: AsyncTask, scan_id: str, task_id: str, config_override: Optional[Dict[str, Any]] = None
+    self: AsyncTask,
+    scan_id: str,
+    task_id: str,
+    config_override: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Execute a security scan asynchronously.
@@ -505,11 +511,32 @@ async def _execute_scan_by_type(scan: Scan, config: Dict[str, Any], db: AsyncSes
 
     # Initialize scan phases
     scan_phases = {
-        "automated": ["Initialization", "Target Discovery", "Vulnerability Scanning", "Analysis", "Reporting"],
+        "automated": [
+            "Initialization",
+            "Target Discovery",
+            "Vulnerability Scanning",
+            "Analysis",
+            "Reporting",
+        ],
         "manual": ["Setup", "Manual Review", "Testing", "Documentation"],
-        "scheduled": ["Schedule Check", "Environment Setup", "Automated Scanning", "Results Processing"],
-        "continuous": ["Monitoring Setup", "Real-time Analysis", "Alert Generation", "Trend Analysis"],
-        "compliance": ["Framework Selection", "Control Assessment", "Gap Analysis", "Compliance Scoring"],
+        "scheduled": [
+            "Schedule Check",
+            "Environment Setup",
+            "Automated Scanning",
+            "Results Processing",
+        ],
+        "continuous": [
+            "Monitoring Setup",
+            "Real-time Analysis",
+            "Alert Generation",
+            "Trend Analysis",
+        ],
+        "compliance": [
+            "Framework Selection",
+            "Control Assessment",
+            "Gap Analysis",
+            "Compliance Scoring",
+        ],
     }
 
     phases = scan_phases.get(scan.scan_type, ["Initialization", "Processing", "Analysis", "Completion"])
@@ -663,7 +690,9 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
     """Generate report content based on report type."""
     # Check if this is an architectural metrics report
     if report.report_type in ["architectural_metrics", "comprehensive", "roi_analysis"]:
-        from app.services.architectural_report_generator import ArchitecturalReportGenerator
+        from app.services.architectural_report_generator import (
+            ArchitecturalReportGenerator,
+        )
 
         generator = ArchitecturalReportGenerator(db)
 
@@ -684,7 +713,8 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
             start_date=start_date,
             end_date=end_date,
             include_sections=config.get(
-                "include_sections", ["leading", "lagging", "roi", "executive_summary", "recommendations"]
+                "include_sections",
+                ["leading", "lagging", "roi", "executive_summary", "recommendations"],
             ),
         )
 
@@ -703,7 +733,10 @@ async def _generate_report_content(report: Report, db: AsyncSession) -> Dict[str
         "report_type": report.report_type,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {"total_items": 10, "processed": 10, "success_rate": 1.0},
-        "details": {"sections": ["Executive Summary", "Technical Details", "Recommendations"], "format": report.format},
+        "details": {
+            "sections": ["Executive Summary", "Technical Details", "Recommendations"],
+            "format": report.format,
+        },
     }
 
 
@@ -764,7 +797,7 @@ async def _send_webhook(task: TaskModel) -> None:
         "event": "task.completed",
         "task_id": task.id,
         "task_type": task.task_type,
-        "status": task.status.value if hasattr(task.status, "value") else str(task.status),
+        "status": (task.status.value if hasattr(task.status, "value") else str(task.status)),
         "completed_at": task.completed_at.isoformat() if task.completed_at else None,
         "started_at": task.started_at.isoformat() if task.started_at else None,
         "progress": task.progress,

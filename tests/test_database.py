@@ -6,7 +6,12 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.sql import text
 
 from app.core.config import settings
@@ -102,7 +107,11 @@ class DatabaseTestManager:
                 print(f"Warning: Error disposing engine: {e}")
 
         # Windows-compatible file removal
-        from tests.helpers.windows_compat import cleanup_test_db_file, force_close_sqlite_connections, safe_file_remove
+        from tests.helpers.windows_compat import (
+            cleanup_test_db_file,
+            force_close_sqlite_connections,
+            safe_file_remove,
+        )
 
         force_close_sqlite_connections()
 
@@ -176,7 +185,9 @@ async def test_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
 
 
 @pytest_asyncio.fixture
-async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    test_db_manager: DatabaseTestManager,
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide database session with transaction rollback for test isolation.
 
@@ -208,7 +219,9 @@ async def db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[Asy
 
 
 @pytest_asyncio.fixture
-async def clean_db_session(test_db_manager: DatabaseTestManager) -> AsyncGenerator[AsyncSession, None]:
+async def clean_db_session(
+    test_db_manager: DatabaseTestManager,
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide database session that commits changes (for setup fixtures).
 

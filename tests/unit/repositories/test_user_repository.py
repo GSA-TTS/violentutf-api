@@ -41,7 +41,10 @@ class TestUserRepository:
     def inactive_user(self, user_factory) -> User:
         """Create an inactive user for testing."""
         return user_factory.create(
-            id="inactive-user-id", username="inactive", email="inactive@example.com", is_active=False
+            id="inactive-user-id",
+            username="inactive",
+            email="inactive@example.com",
+            is_active=False,
         )
 
     # CRUD Operations Tests
@@ -60,7 +63,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_username_found(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test successful user retrieval by username."""
         # Arrange
@@ -78,7 +85,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_username_not_found(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test user not found by username."""
         # Arrange
@@ -94,7 +104,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_username_with_organization_filter(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test user retrieval by username with organization filtering."""
         # Arrange
@@ -113,7 +127,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_username_database_error(
-        self, user_repository: UserRepository, mock_session: AsyncMock, database_error_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        database_error_factory,
     ):
         """Test get_by_username with database error."""
         # Arrange
@@ -127,7 +144,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_email_found(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test successful user retrieval by email."""
         # Arrange
@@ -144,7 +165,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_email_case_insensitive(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test case-insensitive email lookup."""
         # Arrange
@@ -161,7 +186,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_email_not_found(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test email not found."""
         # Arrange
@@ -179,7 +207,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_authenticate_success_by_username(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test successful authentication by username."""
         with patch("app.repositories.user.verify_password", return_value=True):
@@ -199,7 +231,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_authenticate_success_by_email(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test successful authentication by email."""
         with patch("app.repositories.user.verify_password", return_value=True):
@@ -220,7 +256,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_authenticate_user_not_found(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test authentication with non-existent user."""
         with patch("app.repositories.user.verify_password") as mock_verify:
@@ -237,7 +276,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_authenticate_inactive_user(
-        self, user_repository: UserRepository, mock_session: AsyncMock, inactive_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        inactive_user: User,
+        query_result_factory,
     ):
         """Test authentication with inactive user."""
         with patch("app.repositories.user.verify_password", return_value=True):
@@ -255,7 +298,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_authenticate_wrong_password(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test authentication with wrong password."""
         with patch("app.repositories.user.verify_password", return_value=False):
@@ -274,7 +321,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_create_user_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful user creation."""
         with patch(
@@ -296,7 +346,10 @@ class TestUserRepository:
             with patch.object(user_repository, "create", return_value=created_user) as mock_create:
                 # Act
                 user = await user_repository.create_user(
-                    username="newuser", email="new@example.com", password="password123", full_name="New User"
+                    username="newuser",
+                    email="new@example.com",
+                    password="password123",
+                    full_name="New User",
                 )
 
                 # Assert
@@ -314,7 +367,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_create_user_duplicate_username(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test user creation with duplicate username."""
         # Arrange
@@ -326,7 +383,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_create_user_duplicate_email(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test user creation with duplicate email."""
         # Arrange
@@ -344,7 +405,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_update_password_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test successful password update."""
         with (
@@ -378,7 +442,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_update_password_wrong_old_password(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test password update with wrong old password."""
         with patch("app.repositories.user.verify_password", return_value=False):
@@ -400,7 +467,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_activate_user_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, inactive_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        inactive_user: User,
     ):
         """Test successful user activation."""
         with (
@@ -426,7 +496,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_activate_user_already_active(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test activation of already active user."""
         with patch.object(user_repository, "get_by_id", return_value=sample_user):
@@ -440,7 +513,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_deactivate_user_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test successful user deactivation."""
         with (
@@ -466,7 +542,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_deactivate_user_already_inactive(
-        self, user_repository: UserRepository, mock_session: AsyncMock, inactive_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        inactive_user: User,
     ):
         """Test deactivation of already inactive user."""
         with patch.object(user_repository, "get_by_id", return_value=inactive_user):
@@ -480,7 +559,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_is_username_available_true(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test username availability check - available."""
         # Arrange
@@ -495,7 +577,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_is_username_available_false(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test username availability check - not available."""
         # Arrange
@@ -510,7 +596,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_is_username_available_exclude_user(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test username availability check with user exclusion."""
         # Arrange
@@ -527,7 +616,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_is_email_available_true(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test email availability check - available."""
         # Arrange
@@ -542,7 +634,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_is_email_available_false(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+        query_result_factory,
     ):
         """Test email availability check - not available."""
         # Arrange
@@ -586,7 +682,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_verify_user_already_verified(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test verification of already verified user."""
         with patch.object(user_repository, "get_by_id", return_value=sample_user):
@@ -615,14 +714,22 @@ class TestUserRepository:
             assert isinstance(result, Page)
             assert len(result.items) == 5
             mock_list.assert_called_once_with(
-                page=1, size=10, order_by="created_at", order_desc=True, filters={"is_active": True}
+                page=1,
+                size=10,
+                order_by="created_at",
+                order_desc=True,
+                filters={"is_active": True},
             )
 
     # get_unverified_users Tests
 
     @pytest.mark.asyncio
     async def test_get_unverified_users_active_only(
-        self, user_repository: UserRepository, mock_session: AsyncMock, user_factory, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        user_factory,
+        query_result_factory,
     ):
         """Test getting unverified active users."""
         # Arrange
@@ -644,7 +751,11 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_get_unverified_users_include_inactive(
-        self, user_repository: UserRepository, mock_session: AsyncMock, user_factory, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        user_factory,
+        query_result_factory,
     ):
         """Test getting unverified users including inactive."""
         # Arrange
@@ -699,7 +810,12 @@ class TestUserRepository:
     # revoke Tests
 
     @pytest.mark.asyncio
-    async def test_revoke_success(self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User):
+    async def test_revoke_success(
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
+    ):
         """Test successful user revocation."""
         with patch.object(user_repository, "get_by_id", return_value=sample_user):
             # Act
@@ -725,7 +841,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_update_last_login_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test successful last login update."""
         with patch.object(user_repository, "get_by_id", return_value=sample_user):
@@ -753,7 +872,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_change_password_success(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test successful password change."""
         with patch.object(user_repository, "get_by_id", return_value=sample_user):
@@ -783,7 +905,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_database_rollback_on_error(
-        self, user_repository: UserRepository, mock_session: AsyncMock, sample_user: User
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        sample_user: User,
     ):
         """Test database rollback on error in email verification."""
         # Arrange
@@ -798,7 +923,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_integrity_error_handling(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of database integrity errors."""
         with patch(
@@ -812,20 +940,27 @@ class TestUserRepository:
                 user_repository,
                 "create",
                 side_effect=IntegrityError(
-                    statement="INSERT INTO users...", params={}, orig=Exception("Duplicate key")
+                    statement="INSERT INTO users...",
+                    params={},
+                    orig=Exception("Duplicate key"),
                 ),
             ):
                 # Act & Assert
                 with pytest.raises(IntegrityError):
                     await user_repository.create_user(
-                        username="newuser", email="new@example.com", password="password123"
+                        username="newuser",
+                        email="new@example.com",
+                        password="password123",
                     )
 
     # Edge Cases and Boundary Conditions
 
     @pytest.mark.asyncio
     async def test_empty_result_handling(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of empty query results."""
         # Arrange
@@ -844,7 +979,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_large_limit_handling(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of large limit values."""
         # Arrange
@@ -863,7 +1001,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_null_input_validation(
-        self, user_repository: UserRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        user_repository: UserRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test handling of null/None inputs."""
         # Arrange

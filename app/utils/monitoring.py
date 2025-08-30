@@ -13,13 +13,19 @@ from ..core.config import settings
 logger = get_logger(__name__)
 
 # Prometheus metrics for health checks
-health_check_total = Counter("health_check_total", "Total number of health checks performed", ["endpoint", "status"])
+health_check_total = Counter(
+    "health_check_total",
+    "Total number of health checks performed",
+    ["endpoint", "status"],
+)
 
 health_check_duration = Histogram("health_check_duration_seconds", "Time spent on health checks", ["endpoint"])
 
 # Application performance metrics
 request_duration = Histogram(
-    "request_duration_seconds", "Time spent processing requests", ["method", "endpoint", "status"]
+    "request_duration_seconds",
+    "Time spent processing requests",
+    ["method", "endpoint", "status"],
 )
 
 # Resource usage tracking
@@ -64,14 +70,22 @@ def track_health_check(func: Callable[..., object]) -> Callable[..., object]:
                     status = "failure"
 
             logger.info(
-                "health_check_completed", endpoint=endpoint_name, status=status, duration=time.time() - start_time
+                "health_check_completed",
+                endpoint=endpoint_name,
+                status=status,
+                duration=time.time() - start_time,
             )
 
             return result
 
         except Exception as e:
             status = "error"
-            logger.error("health_check_failed", endpoint=endpoint_name, error=str(e), duration=time.time() - start_time)
+            logger.error(
+                "health_check_failed",
+                endpoint=endpoint_name,
+                error=str(e),
+                duration=time.time() - start_time,
+            )
             raise
         finally:
             # Record metrics
@@ -109,7 +123,12 @@ def track_request_performance(func: Callable[..., object]) -> Callable[..., obje
             return result
         except Exception as e:
             status = "error"
-            logger.error("request_performance_error", method=method, endpoint=endpoint, error=str(e))
+            logger.error(
+                "request_performance_error",
+                method=method,
+                endpoint=endpoint,
+                error=str(e),
+            )
             raise
         finally:
             # Record request duration
@@ -119,7 +138,13 @@ def track_request_performance(func: Callable[..., object]) -> Callable[..., obje
             # Update active requests
             resource_usage["active_requests"] -= 1
 
-            logger.debug("request_performance", method=method, endpoint=endpoint, status=status, duration=duration)
+            logger.debug(
+                "request_performance",
+                method=method,
+                endpoint=endpoint,
+                status=status,
+                duration=duration,
+            )
 
     return wrapper
 
@@ -177,7 +202,11 @@ def increment_connection_count(connection_type: str) -> None:
     key = f"{connection_type}_connections"
     if key in resource_usage:
         resource_usage[key] += 1
-        logger.debug("Connection count incremented", type=connection_type, count=resource_usage[key])
+        logger.debug(
+            "Connection count incremented",
+            type=connection_type,
+            count=resource_usage[key],
+        )
 
 
 def decrement_connection_count(connection_type: str) -> None:
@@ -190,7 +219,11 @@ def decrement_connection_count(connection_type: str) -> None:
     key = f"{connection_type}_connections"
     if key in resource_usage and resource_usage[key] > 0:
         resource_usage[key] -= 1
-        logger.debug("Connection count decremented", type=connection_type, count=resource_usage[key])
+        logger.debug(
+            "Connection count decremented",
+            type=connection_type,
+            count=resource_usage[key],
+        )
 
 
 async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
@@ -218,7 +251,10 @@ async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
     # Run all health checks in parallel
     try:
         db_healthy, cache_healthy, metrics = await asyncio.gather(
-            check_database_health(), check_cache_health(), get_system_metrics(), return_exceptions=True
+            check_database_health(),
+            check_cache_health(),
+            get_system_metrics(),
+            return_exceptions=True,
         )
 
         # Handle exceptions
@@ -247,7 +283,9 @@ async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
         }
 
         logger.info(
-            "dependency_health_check_complete", overall_healthy=result["overall_healthy"], duration=total_duration
+            "dependency_health_check_complete",
+            overall_healthy=result["overall_healthy"],
+            duration=total_duration,
         )
 
         # Cache the result

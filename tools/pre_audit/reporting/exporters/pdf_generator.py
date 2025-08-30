@@ -209,7 +209,11 @@ class PDFReportGenerator(ReportGenerator):
                 story.extend(self._create_recommendations_section(report_data))
 
             # Build PDF
-            doc.build(story, onFirstPage=self._add_header_footer, onLaterPages=self._add_header_footer)
+            doc.build(
+                story,
+                onFirstPage=self._add_header_footer,
+                onLaterPages=self._add_header_footer,
+            )
 
             logger.info(f"PDF report generated: {output_path}")
             return output_path
@@ -274,7 +278,10 @@ class PDFReportGenerator(ReportGenerator):
                         ]
                     )
 
-                hotspot_table = Table(hotspot_table_data, colWidths=[3 * inch, 1.5 * inch, 1.5 * inch, 1 * inch])
+                hotspot_table = Table(
+                    hotspot_table_data,
+                    colWidths=[3 * inch, 1.5 * inch, 1.5 * inch, 1 * inch],
+                )
                 hotspot_table.setStyle(self._get_table_style(highlight_header=True))
                 story.append(hotspot_table)
 
@@ -301,7 +308,11 @@ class PDFReportGenerator(ReportGenerator):
         if "BodyText" not in styles:
             styles.add(
                 ParagraphStyle(
-                    name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6
+                    name="BodyText",
+                    parent=styles["Normal"],
+                    fontSize=10,
+                    alignment=TA_JUSTIFY,
+                    spaceAfter=6,
                 )
             )
 
@@ -360,7 +371,10 @@ class PDFReportGenerator(ReportGenerator):
             ["Repository:", metadata.get("repository_path", "Unknown")],
             ["Generated:", self._format_timestamp(metadata.get("timestamp", ""))],
             ["Files Analyzed:", str(metadata.get("total_files_analyzed", 0))],
-            ["Analysis Duration:", f"{metadata.get('analysis_duration', 0):.1f} seconds"],
+            [
+                "Analysis Duration:",
+                f"{metadata.get('analysis_duration', 0):.1f} seconds",
+            ],
         ]
 
         info_table = Table(info_data, colWidths=[2 * inch, 4 * inch])
@@ -437,33 +451,41 @@ class PDFReportGenerator(ReportGenerator):
         # Summary table
         summary_data = [
             ["Metric", "Count", "Percentage"],
-            ["Total Violations", str(report_data["summary"]["total_violations"]), "100%"],
+            [
+                "Total Violations",
+                str(report_data["summary"]["total_violations"]),
+                "100%",
+            ],
             [
                 "Critical",
                 str(report_data["summary"]["critical_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["critical_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["critical_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "High",
                 str(report_data["summary"]["high_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["high_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["high_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "Medium",
                 str(report_data["summary"]["medium_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["medium_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["medium_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "Low",
                 str(report_data["summary"]["low_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["low_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["low_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
         ]
@@ -478,7 +500,10 @@ class PDFReportGenerator(ReportGenerator):
         story.append(Paragraph("Technical Debt", self.styles["Heading2"]))
         debt_days = report_data["summary"]["technical_debt_days"]
         story.append(
-            Paragraph(f"Estimated effort to resolve all violations: {debt_days:.1f} days", self.styles["BodyText"])
+            Paragraph(
+                f"Estimated effort to resolve all violations: {debt_days:.1f} days",
+                self.styles["BodyText"],
+            )
         )
 
         return story
@@ -573,7 +598,10 @@ class PDFReportGenerator(ReportGenerator):
             risk_violations = by_risk[risk_level]
 
             story.append(
-                Paragraph(f"{risk_level.title()} Risk Violations ({len(risk_violations)})", self.styles["Heading2"])
+                Paragraph(
+                    f"{risk_level.title()} Risk Violations ({len(risk_violations)})",
+                    self.styles["Heading2"],
+                )
             )
             story.append(Spacer(1, 0.1 * inch))
 
@@ -622,12 +650,20 @@ class PDFReportGenerator(ReportGenerator):
 
             priority_recs = by_priority[priority]
 
-            story.append(Paragraph(f"{priority.title()} Priority ({len(priority_recs)})", self.styles["Heading2"]))
+            story.append(
+                Paragraph(
+                    f"{priority.title()} Priority ({len(priority_recs)})",
+                    self.styles["Heading2"],
+                )
+            )
             story.append(Spacer(1, 0.1 * inch))
 
             for rec in priority_recs[:5]:  # Limit to 5 per priority
                 story.append(
-                    Paragraph(f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}", self.styles["BodyText"])
+                    Paragraph(
+                        f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}",
+                        self.styles["BodyText"],
+                    )
                 )
                 story.append(
                     Paragraph(
@@ -676,7 +712,9 @@ class PDFReportGenerator(ReportGenerator):
         canvas.setFillColor(self.colors["medium_gray"])
         canvas.drawString(inch, self.page_size[1] - 0.5 * inch, "Architectural Audit Report")
         canvas.drawRightString(
-            self.page_size[0] - inch, self.page_size[1] - 0.5 * inch, datetime.now().strftime("%Y-%m-%d")
+            self.page_size[0] - inch,
+            self.page_size[1] - 0.5 * inch,
+            datetime.now().strftime("%Y-%m-%d"),
         )
 
         # Footer
@@ -685,7 +723,12 @@ class PDFReportGenerator(ReportGenerator):
 
         # Line separators
         canvas.setStrokeColor(self.colors["light_gray"])
-        canvas.line(inch, self.page_size[1] - 0.6 * inch, self.page_size[0] - inch, self.page_size[1] - 0.6 * inch)
+        canvas.line(
+            inch,
+            self.page_size[1] - 0.6 * inch,
+            self.page_size[0] - inch,
+            self.page_size[1] - 0.6 * inch,
+        )
         canvas.line(inch, 0.7 * inch, self.page_size[0] - inch, 0.7 * inch)
 
         canvas.restoreState()

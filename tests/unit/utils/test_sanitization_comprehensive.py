@@ -851,7 +851,14 @@ class TestSanitizeDictComprehensive:
     def test_recursive_dict_sanitization(self):
         """Test recursive dictionary sanitization."""
         nested_dict = {
-            "level1": {"level2": {"level3": {"xss": "<script>alert(1)</script>", "sql": "'; DROP TABLE users; --"}}}
+            "level1": {
+                "level2": {
+                    "level3": {
+                        "xss": "<script>alert(1)</script>",
+                        "sql": "'; DROP TABLE users; --",
+                    }
+                }
+            }
         }
 
         result = sanitize_dict(nested_dict)

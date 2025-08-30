@@ -101,7 +101,11 @@ class UserFactory:
     @staticmethod
     def create_inactive_user(**kwargs) -> User:
         """Create an inactive user for testing."""
-        defaults = {"is_active": False, "username": "inactive_user", "email": "inactive@test.com"}
+        defaults = {
+            "is_active": False,
+            "username": "inactive_user",
+            "email": "inactive@test.com",
+        }
         defaults.update(kwargs)
         return UserFactory.create(**defaults)
 
@@ -150,7 +154,10 @@ class SessionFactory:
     @staticmethod
     def create_expired(**kwargs) -> Session:
         """Create an expired session for testing."""
-        defaults = {"expires_at": datetime.utcnow() - timedelta(hours=1), "is_active": False}
+        defaults = {
+            "expires_at": datetime.utcnow() - timedelta(hours=1),
+            "is_active": False,
+        }
         defaults.update(kwargs)
         return SessionFactory.create(**defaults)
 
@@ -201,7 +208,10 @@ class ApiKeyFactory:
     @staticmethod
     def create_expired(**kwargs) -> ApiKey:
         """Create an expired API key for testing."""
-        defaults = {"expires_at": datetime.utcnow() - timedelta(days=30), "is_active": False}
+        defaults = {
+            "expires_at": datetime.utcnow() - timedelta(days=30),
+            "is_active": False,
+        }
         defaults.update(kwargs)
         return ApiKeyFactory.create(**defaults)
 
@@ -242,7 +252,11 @@ class AuditLogFactory:
     @staticmethod
     def create_for_user_action(user: User, action: str, resource_type: str, **kwargs) -> AuditLog:
         """Create an audit log for a specific user action."""
-        defaults = {"user_id": user.id, "action": action, "resource_type": resource_type}
+        defaults = {
+            "user_id": user.id,
+            "action": action,
+            "resource_type": resource_type,
+        }
         defaults.update(kwargs)
         return AuditLogFactory.create(**defaults)
 

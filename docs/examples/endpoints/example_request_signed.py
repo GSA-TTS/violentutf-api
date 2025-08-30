@@ -110,7 +110,10 @@ async def test_signature_info() -> Dict[str, Any]:
     return {
         "info": "Request signing protects sensitive operations",
         "available_keys": [
-            {"key_id": key_id, "type": "admin" if key_id.startswith("admin_") else "standard"}
+            {
+                "key_id": key_id,
+                "type": "admin" if key_id.startswith("admin_") else "standard",
+            }
             for key_id in signature_key_store.list_keys()
         ],
         "example_request": {
@@ -190,7 +193,7 @@ async def delete_user(
         "reason": delete_request.reason,
         "deleted_at": time.time(),
         "deleted_by_key": key_id,
-        "signature_algorithm": signature_info.algorithm.value if signature_info else None,
+        "signature_algorithm": (signature_info.algorithm.value if signature_info else None),
     }
 
 
@@ -401,7 +404,7 @@ async def test_signed_endpoint(
             "key_id": key_id,
             "algorithm": signature.algorithm.value if signature else None,
             "timestamp": signature.timestamp if signature else None,
-            "age_seconds": int(time.time()) - signature.timestamp if signature else None,
+            "age_seconds": (int(time.time()) - signature.timestamp if signature else None),
         },
     }
 

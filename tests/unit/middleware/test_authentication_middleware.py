@@ -155,7 +155,10 @@ class TestJWTAuthenticationMiddleware:
             # Skip paths that might not have endpoints in test app
             if exempt_path in ["/api/v1/health", "/docs"]:
                 response = client.get(exempt_path)
-                assert response.status_code in [200, 404], f"Exempt path {exempt_path} failed"
+                assert response.status_code in [
+                    200,
+                    404,
+                ], f"Exempt path {exempt_path} failed"
                 # Should not have authentication headers in response
                 assert "WWW-Authenticate" not in response.headers
 
@@ -286,7 +289,10 @@ class TestJWTAuthenticationMiddleware:
         """Test that enhanced JWT claims structure is properly validated."""
         # Test with all enhanced claims
         token = self.create_test_jwt_token(
-            user_id="user-123", roles=["viewer", "tester"], organization_id="org-456", token_type="access"
+            user_id="user-123",
+            roles=["viewer", "tester"],
+            organization_id="org-456",
+            token_type="access",
         )
         headers = {"Authorization": f"Bearer {token}"}
 
@@ -375,7 +381,10 @@ class TestJWTAuthenticationMiddleware:
         scenarios = [
             (None, "Missing authentication token or API key"),
             ({"Authorization": "Bearer invalid"}, "Invalid authentication token"),
-            ({"Authorization": "Invalid scheme"}, "Missing authentication token or API key"),
+            (
+                {"Authorization": "Invalid scheme"},
+                "Missing authentication token or API key",
+            ),
         ]
 
         for headers, expected_detail in scenarios:
@@ -399,7 +408,10 @@ class TestJWTAuthenticationMiddleware:
 
             assert response.status_code == 401
             # Error message should be generic
-            assert response.json()["detail"] in ["Invalid authentication token", "Authentication error"]
+            assert response.json()["detail"] in [
+                "Invalid authentication token",
+                "Authentication error",
+            ]
             # Should not contain token details or stack traces
             response_text = json.dumps(response.json()).lower()
             assert "jwt" not in response_text

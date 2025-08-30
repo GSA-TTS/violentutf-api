@@ -14,7 +14,13 @@ from .base import ReportConfig, ReportDataProcessor, ReportGenerator, SecurityLe
 from .export_manager import ExportManager
 from .exporters import HTMLReportGenerator, JSONReportGenerator, PDFReportGenerator
 from .hotspot_integration import HotspotAnalysisResult, HotspotDataTransformer
-from .security import EncodingType, HotspotSanitizer, InputValidator, OutputEncoder, ValidationError
+from .security import (
+    EncodingType,
+    HotspotSanitizer,
+    InputValidator,
+    OutputEncoder,
+    ValidationError,
+)
 
 __version__ = "2.0.0"
 

@@ -161,7 +161,10 @@ class TestRateLimitingMiddleware:
 
         # Should log debug information
         mock_logger.debug.assert_called_once_with(
-            "rate_limit_check", rate_limit_str="5/minute", rate_limit_key="user:123", path="/api/v1/auth/login"
+            "rate_limit_check",
+            rate_limit_str="5/minute",
+            rate_limit_key="user:123",
+            path="/api/v1/auth/login",
         )
 
     @pytest.mark.asyncio

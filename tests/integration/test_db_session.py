@@ -331,7 +331,10 @@ class TestDatabaseSession:
     @pytest.mark.asyncio
     async def test_reset_circuit_breaker_with_exception(self):
         """Test resetting circuit breaker with exception."""
-        with patch("app.db.session.check_database_health", side_effect=Exception("Check failed")):
+        with patch(
+            "app.db.session.check_database_health",
+            side_effect=Exception("Check failed"),
+        ):
             result = await reset_circuit_breaker()
 
         assert result is False

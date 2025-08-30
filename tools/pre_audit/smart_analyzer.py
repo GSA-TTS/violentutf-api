@@ -117,10 +117,16 @@ class SmartArchitecturalAnalyzer:
                     "critical_paths": ["app/core/**", "app/middleware/**"],
                     "size_thresholds": {"default": 100},
                     "keywords": ["refactor", "architecture", "security"],
-                    "commit_flags": {"force": ["[arch]"], "skip": ["[skip-arch]", "[wip]"]},
+                    "commit_flags": {
+                        "force": ["[arch]"],
+                        "skip": ["[skip-arch]", "[wip]"],
+                    },
                     "risk_scoring": {"threshold": 0.5},
                 },
-                "rate_limits": {"max_analyses_per_day": 10, "max_analyses_per_developer_per_day": 3},
+                "rate_limits": {
+                    "max_analyses_per_day": 10,
+                    "max_analyses_per_developer_per_day": 3,
+                },
             }
 
     def _load_rate_limits(self) -> AnalysisRateLimit:
@@ -157,7 +163,12 @@ class SmartArchitecturalAnalyzer:
     def _get_current_developer(self) -> str:
         """Get current developer from git config"""
         try:
-            result = subprocess.run(["git", "config", "user.email"], capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                ["git", "config", "user.email"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             return result.stdout.strip()
         except Exception:
             return "unknown"
@@ -195,7 +206,10 @@ class SmartArchitecturalAnalyzer:
             try:
                 # Get staged files
                 result = subprocess.run(
-                    ["git", "diff", "--cached", "--numstat"], capture_output=True, text=True, check=True
+                    ["git", "diff", "--cached", "--numstat"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
 
                 changed_files = []
@@ -258,7 +272,11 @@ class SmartArchitecturalAnalyzer:
 
         try:
             # Get diff stats for the file
-            result = subprocess.run(["git", "diff", "--cached", "--numstat", file_path], capture_output=True, text=True)
+            result = subprocess.run(
+                ["git", "diff", "--cached", "--numstat", file_path],
+                capture_output=True,
+                text=True,
+            )
 
             if result.stdout:
                 parts = result.stdout.strip().split("\t")
@@ -266,7 +284,10 @@ class SmartArchitecturalAnalyzer:
                 deleted = int(parts[1]) if parts[1] != "-" else 0
 
                 return FileChangeInfo(
-                    path=file_path, lines_added=added, lines_deleted=deleted, lines_changed=added + deleted
+                    path=file_path,
+                    lines_added=added,
+                    lines_deleted=deleted,
+                    lines_changed=added + deleted,
                 )
             else:
                 # File not in staged changes, might be provided by pre-commit
@@ -341,13 +362,26 @@ class SmartArchitecturalAnalyzer:
         """Calculate risk score for a file change"""
         risk_config = self.config.get("triggers", {}).get("risk_scoring", {})
         weights = risk_config.get(
-            "weights", {"critical_file": 0.4, "size_factor": 0.2, "complexity_increase": 0.2, "violation_history": 0.2}
+            "weights",
+            {
+                "critical_file": 0.4,
+                "size_factor": 0.2,
+                "complexity_increase": 0.2,
+                "violation_history": 0.2,
+            },
         )
 
         score = 0.0
 
         # Critical file factor
-        critical_patterns = ["auth", "security", "payment", "user_data", "session", "token"]
+        critical_patterns = [
+            "auth",
+            "security",
+            "payment",
+            "user_data",
+            "session",
+            "token",
+        ]
         if any(pattern in file_info.path.lower() for pattern in critical_patterns):
             score += weights.get("critical_file", 0.4)
 
@@ -379,7 +413,10 @@ class SmartArchitecturalAnalyzer:
         try:
             # Try to get from COMMIT_EDITMSG (during commit)
             git_dir = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=True
+                ["git", "rev-parse", "--git-dir"],
+                capture_output=True,
+                text=True,
+                check=True,
             ).stdout.strip()
 
             commit_msg_file = Path(git_dir) / "COMMIT_EDITMSG"
@@ -405,7 +442,9 @@ class SmartArchitecturalAnalyzer:
         for skip_flag in flags.get("skip", []):
             if skip_flag in commit_msg:
                 return TriggerResult(
-                    should_analyze=False, reason=f"Skipped due to {skip_flag} flag", triggered_by=[f"flag: {skip_flag}"]
+                    should_analyze=False,
+                    reason=f"Skipped due to {skip_flag} flag",
+                    triggered_by=[f"flag: {skip_flag}"],
                 )
 
         # Force flags
@@ -422,7 +461,9 @@ class SmartArchitecturalAnalyzer:
         can_analyze, limit_reason = self._check_rate_limits()
         if not can_analyze:
             return TriggerResult(
-                should_analyze=False, reason=f"Rate limit: {limit_reason}", triggered_by=["rate_limit"]
+                should_analyze=False,
+                reason=f"Rate limit: {limit_reason}",
+                triggered_by=["rate_limit"],
             )
 
         # Get changed files
@@ -477,7 +518,10 @@ class SmartArchitecturalAnalyzer:
             )
 
         return TriggerResult(
-            should_analyze=False, reason="No triggers activated", risk_score=max_risk_score, triggered_by=[]
+            should_analyze=False,
+            reason="No triggers activated",
+            risk_score=max_risk_score,
+            triggered_by=[],
         )
 
     async def analyze_if_triggered(
@@ -592,7 +636,11 @@ def main() -> None:
     """Main entry point for pre-commit hook"""
     parser = argparse.ArgumentParser(description="Smart Architectural Analyzer")
     parser.add_argument("files", nargs="*", help="Files to analyze")
-    parser.add_argument("--config", default=".architectural-triggers.yml", help="Trigger configuration file")
+    parser.add_argument(
+        "--config",
+        default=".architectural-triggers.yml",
+        help="Trigger configuration file",
+    )
     parser.add_argument("--force", action="store_true", help="Force analysis regardless of triggers")
     parser.add_argument("--dry-run", action="store_true", help="Check triggers without running analysis")
     parser.add_argument("--quiet", action="store_true", help="Suppress verbose output")

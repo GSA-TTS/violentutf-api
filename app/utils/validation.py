@@ -101,7 +101,8 @@ def validate_url(url: str, allowed_schemes: Optional[List[str]] = None) -> Valid
 
         if parsed.scheme.lower() not in allowed_schemes:
             return ValidationResult(
-                is_valid=False, errors=[f"URL scheme '{parsed.scheme}' not allowed. Allowed: {allowed_schemes}"]
+                is_valid=False,
+                errors=[f"URL scheme '{parsed.scheme}' not allowed. Allowed: {allowed_schemes}"],
             )
 
         if not parsed.netloc:
@@ -137,12 +138,16 @@ def validate_ip_address(ip: str) -> ValidationResult:
         # Check for leading zeros (except "0" itself)
         if len(octet) > 1 and octet[0] == "0":
             return ValidationResult(
-                is_valid=False, errors=[f"Invalid octet format: {octet} (leading zeros not allowed)"]
+                is_valid=False,
+                errors=[f"Invalid octet format: {octet} (leading zeros not allowed)"],
             )
         try:
             num = int(octet)
             if num < 0 or num > 255:
-                return ValidationResult(is_valid=False, errors=[f"Invalid octet value: {num} (must be 0-255)"])
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[f"Invalid octet value: {num} (must be 0-255)"],
+                )
         except ValueError:
             return ValidationResult(is_valid=False, errors=[f"Invalid octet format: {octet}"])
 
@@ -168,7 +173,11 @@ def check_sql_injection(input_text: str) -> ValidationResult:
     for pattern in SQL_INJECTION_PATTERNS:
         if re.search(pattern, text_lower, re.IGNORECASE):
             warnings.append(f"Potential SQL injection pattern detected")
-            logger.warning("SQL injection pattern detected", pattern=pattern, input_sample=input_text[:100])
+            logger.warning(
+                "SQL injection pattern detected",
+                pattern=pattern,
+                input_sample=input_text[:100],
+            )
 
     return ValidationResult(is_valid=len(warnings) == 0, warnings=warnings)
 
@@ -215,7 +224,11 @@ def check_prompt_injection(prompt_text: str) -> ValidationResult:
     for pattern in PROMPT_INJECTION_PATTERNS:
         if re.search(pattern, text_lower, re.IGNORECASE):
             warnings.append(f"Potential prompt injection pattern detected")
-            logger.warning("Prompt injection pattern detected", pattern=pattern, input_sample=prompt_text[:100])
+            logger.warning(
+                "Prompt injection pattern detected",
+                pattern=pattern,
+                input_sample=prompt_text[:100],
+            )
 
     return ValidationResult(is_valid=len(warnings) == 0, warnings=warnings)
 
@@ -299,7 +312,10 @@ def validate_json_payload(payload: object, max_depth: int = 10, max_keys: int = 
 
 
 def validate_input_length(
-    input_text: Optional[str], min_length: int = 0, max_length: int = 10000, field_name: str = "input"
+    input_text: Optional[str],
+    min_length: int = 0,
+    max_length: int = 10000,
+    field_name: str = "input",
 ) -> ValidationResult:
     """
     Validate input text length constraints.

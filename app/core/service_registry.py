@@ -68,7 +68,9 @@ async def register_services(container: Optional[DependencyContainer] = None) -> 
 
         except Exception as e:
             logger.warning(
-                "Failed to register database-dependent services", error=str(e), fallback="Services will return None"
+                "Failed to register database-dependent services",
+                error=str(e),
+                fallback="Services will return None",
             )
             # Register None for these services so they don't crash when requested
             # This allows the app to start even if database is not available
@@ -77,7 +79,12 @@ async def register_services(container: Optional[DependencyContainer] = None) -> 
 
         logger.info(
             "Service registration completed",
-            registered=["ICacheService", "IAuthenticationService", "IUserService", "IABACService"],
+            registered=[
+                "ICacheService",
+                "IAuthenticationService",
+                "IUserService",
+                "IABACService",
+            ],
         )
 
     except Exception as e:

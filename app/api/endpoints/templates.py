@@ -64,7 +64,9 @@ async def list_templates(
         # Apply pagination and ordering (featured first, then by usage)
         query = (
             query.order_by(
-                desc(ReportTemplate.is_featured), desc(ReportTemplate.usage_count), desc(ReportTemplate.created_at)
+                desc(ReportTemplate.is_featured),
+                desc(ReportTemplate.usage_count),
+                desc(ReportTemplate.created_at),
             )
             .offset(skip)
             .limit(limit)
@@ -90,7 +92,12 @@ async def list_templates(
         raise HTTPException(status_code=500, detail="Failed to list templates")
 
 
-@router.post("/", response_model=ReportTemplateResponse, summary="Create template", status_code=201)
+@router.post(
+    "/",
+    response_model=ReportTemplateResponse,
+    summary="Create template",
+    status_code=201,
+)
 async def create_template(
     template_data: ReportTemplateCreate,
     template_service: TemplateService = Depends(get_template_service),
@@ -101,7 +108,10 @@ async def create_template(
     try:
         # Check if template name already exists
         existing_query = select(ReportTemplate).where(
-            and_(ReportTemplate.name == template_data.name, ReportTemplate.is_deleted.is_(False))
+            and_(
+                ReportTemplate.name == template_data.name,
+                ReportTemplate.is_deleted.is_(False),
+            )
         )
         existing_result = await db.execute(existing_query)
         existing_template = existing_result.scalar_one_or_none()
@@ -246,7 +256,8 @@ async def delete_template(
 
         if usage_count > 0:
             raise HTTPException(
-                status_code=400, detail=f"Cannot delete template that is used by {usage_count} report(s)"
+                status_code=400,
+                detail=f"Cannot delete template that is used by {usage_count} report(s)",
             )
 
         # Soft delete
@@ -266,7 +277,12 @@ async def delete_template(
         raise HTTPException(status_code=500, detail="Failed to delete template")
 
 
-@router.post("/{template_id}/clone", response_model=ReportTemplateResponse, summary="Clone template", status_code=201)
+@router.post(
+    "/{template_id}/clone",
+    response_model=ReportTemplateResponse,
+    summary="Clone template",
+    status_code=201,
+)
 async def clone_template(
     template_id: str,
     new_name: str = Query(..., min_length=1, max_length=255, description="New template name"),

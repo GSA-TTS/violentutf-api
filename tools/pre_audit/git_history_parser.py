@@ -24,7 +24,11 @@ try:
 except ImportError:
     HAS_GIT = False
 
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixMatch, FixType
+from tools.pre_audit.git_pattern_matcher import (
+    ArchitecturalFixPatternMatcher,
+    FixMatch,
+    FixType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -289,7 +293,9 @@ class GitHistoryParser:
                         patterns[file_set].commits.append(commit.hexsha[:8])
                     else:
                         patterns[file_set] = FileChangePattern(
-                            files=changed_files, frequency=1, commits=[commit.hexsha[:8]]
+                            files=changed_files,
+                            frequency=1,
+                            commits=[commit.hexsha[:8]],
                         )
 
             except Exception as e:
@@ -397,7 +403,10 @@ class GitHistoryParser:
 
         # Date range
         dates = [fix.date for fix in fixes]
-        date_range = {"earliest": min(dates).isoformat(), "latest": max(dates).isoformat()}
+        date_range = {
+            "earliest": min(dates).isoformat(),
+            "latest": max(dates).isoformat(),
+        }
 
         return {
             "total_fixes": len(fixes),

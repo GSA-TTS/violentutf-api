@@ -24,10 +24,16 @@ class TestOutputEncoder:
     def test_encode_for_html_basic(self, encoder):
         """Test basic HTML encoding."""
         test_cases = [
-            ("<script>alert('XSS')</script>", "&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;&#x2F;script&gt;"),
+            (
+                "<script>alert('XSS')</script>",
+                "&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;&#x2F;script&gt;",
+            ),
             ("Hello & World", "Hello &amp; World"),
             ("<div>Test</div>", "&lt;div&gt;Test&lt;&#x2F;div&gt;"),
-            ("'Single' and \"Double\" quotes", "&#x27;Single&#x27; and &quot;Double&quot; quotes"),
+            (
+                "'Single' and \"Double\" quotes",
+                "&#x27;Single&#x27; and &quot;Double&quot; quotes",
+            ),
             ("Forward / slash", "Forward &#x2F; slash"),
         ]
 
@@ -205,7 +211,12 @@ class TestOutputEncoder:
     # Test List Encoding
     def test_encode_list_values(self, encoder):
         """Test recursive list encoding."""
-        input_list = ["<script>alert(1)</script>", {"key": "<value>"}, ["<nested>", "safe"], 42]
+        input_list = [
+            "<script>alert(1)</script>",
+            {"key": "<value>"},
+            ["<nested>", "safe"],
+            42,
+        ]
 
         result = encoder.encode_list_values(input_list, EncodingType.HTML)
 
@@ -224,7 +235,10 @@ class TestOutputEncoder:
             ("../../../etc/passwd", "_.._.._.._etc_passwd"),
             ("file<script>.pdf", "file_script_.pdf"),
             (".hidden", "hidden"),  # Remove leading dots
-            ("very" + "long" * 100 + ".pdf", "very" + "long" * 62 + ".pdf"),  # Length limit
+            (
+                "very" + "long" * 100 + ".pdf",
+                "very" + "long" * 62 + ".pdf",
+            ),  # Length limit
         ]
 
         for input_name, expected in test_cases:
@@ -249,7 +263,10 @@ class TestOutputEncoder:
             ("123-start", "id-123-start"),  # Ensure starts with letter
             ("Special!@#$%Chars", "special-chars"),
             ("  Trim  Spaces  ", "trim-spaces"),
-            ("very-" + "long-" * 20 + "id", "very-" + "long-" * 9 + "long"),  # Length limit
+            (
+                "very-" + "long-" * 20 + "id",
+                "very-" + "long-" * 9 + "long",
+            ),  # Length limit
         ]
 
         for input_text, expected in test_cases:

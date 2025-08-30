@@ -444,8 +444,14 @@ class TestSecurityPatternConfiguration:
             try:
                 content = config_file.read_text()
                 # Check for any JWT algorithm configuration
-                hs256_match = re.search(r"ALGORITHM.*[\"']HS256[\"']|JWT_ALGORITHM.*[\"']HS256[\"']", content)
-                rs256_match = re.search(r"ALGORITHM.*[\"']RS256[\"']|JWT_ALGORITHM.*[\"']RS256[\"']", content)
+                hs256_match = re.search(
+                    r"ALGORITHM.*[\"']HS256[\"']|JWT_ALGORITHM.*[\"']HS256[\"']",
+                    content,
+                )
+                rs256_match = re.search(
+                    r"ALGORITHM.*[\"']RS256[\"']|JWT_ALGORITHM.*[\"']RS256[\"']",
+                    content,
+                )
 
                 if hs256_match:
                     algorithm_found = True

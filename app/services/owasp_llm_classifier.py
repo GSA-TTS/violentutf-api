@@ -6,7 +6,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from structlog.stdlib import get_logger
 
-from app.core.enums import AttackVector, OWASPLLMCategory, Severity, VulnerabilityCategory
+from app.core.enums import (
+    AttackVector,
+    OWASPLLMCategory,
+    Severity,
+    VulnerabilityCategory,
+)
 
 logger = get_logger(__name__)
 
@@ -514,7 +519,10 @@ class OWASPLLMClassifier:
             OWASPLLMCategory.LLM09_OVERRELIANCE: "Implement human validation processes, confidence scoring, and verification mechanisms. Provide appropriate uncertainty indicators.",
             OWASPLLMCategory.LLM10_MODEL_THEFT: "Implement access controls, query monitoring, and intellectual property protection. Use rate limiting and anomaly detection.",
         }
-        return remediation_mapping.get(category, "Follow general security best practices and vendor recommendations.")
+        return remediation_mapping.get(
+            category,
+            "Follow general security best practices and vendor recommendations.",
+        )
 
     def _get_prevention_measures(self, category: OWASPLLMCategory) -> str:
         """Get prevention measures for specific OWASP LLM category."""
@@ -531,7 +539,8 @@ class OWASPLLMClassifier:
             OWASPLLMCategory.LLM10_MODEL_THEFT: "Implement access controls from design phase, use monitoring and detection systems, and establish legal protections.",
         }
         return prevention_mapping.get(
-            category, "Apply security-by-design principles and follow industry best practices."
+            category,
+            "Apply security-by-design principles and follow industry best practices.",
         )
 
     def get_all_categories_info(self) -> List[Dict[str, Any]]:

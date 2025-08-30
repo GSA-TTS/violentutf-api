@@ -429,7 +429,11 @@ class AuditService:
             List of audit logs
         """
         page_result = await self.repository.get_by_user(
-            user_id=user_id, start_date=start_date, end_date=end_date, page=1, size=limit
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            page=1,
+            size=limit,
         )
         return page_result.items
 
@@ -493,7 +497,10 @@ class AuditService:
             List of security audit logs
         """
         return await self.repository.get_security_events(
-            risk_levels=risk_levels, start_date=start_date, end_date=end_date, limit=limit
+            risk_levels=risk_levels,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
         )
 
     async def get_audit_statistics(

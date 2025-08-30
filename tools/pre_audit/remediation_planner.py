@@ -493,10 +493,16 @@ async def main() -> None:
 
     parser = argparse.ArgumentParser(description="Claude Code Intelligent Remediation Planner")
     parser.add_argument("--repo-path", default=".", help="Path to repository root")
-    parser.add_argument("--violations-file", required=True, help="JSON file containing violations to remediate")
+    parser.add_argument(
+        "--violations-file",
+        required=True,
+        help="JSON file containing violations to remediate",
+    )
     parser.add_argument("--output-file", help="Output file for remediation plans")
     parser.add_argument(
-        "--generate-implementation", action="store_true", help="Generate implementation code for each violation"
+        "--generate-implementation",
+        action="store_true",
+        help="Generate implementation code for each violation",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 

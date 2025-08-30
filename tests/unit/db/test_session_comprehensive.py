@@ -94,7 +94,7 @@ class TestDatabaseEngineCreation:
         """Test engine creation with no URL in test mode."""
         test_settings.DATABASE_URL = None
         # Return "true" for TESTING, and default (None) for PYTEST_CURRENT_TEST
-        test_getenv.side_effect = lambda key, default=None: "true" if key == "TESTING" else default
+        test_getenv.side_effect = lambda key, default=None: ("true" if key == "TESTING" else default)
 
         with patch("app.db.session.create_async_engine") as test_create_engine:
             test_engine = MagicMock(spec=AsyncEngine)

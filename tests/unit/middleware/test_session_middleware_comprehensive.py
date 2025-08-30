@@ -75,7 +75,10 @@ class TestSessionMiddlewareInit:
         """Test middleware initialization."""
         app = MagicMock(spec=BaseHTTPMiddleware)
 
-        with patch("app.middleware.session.get_session_manager", return_value=mock_session_manager):
+        with patch(
+            "app.middleware.session.get_session_manager",
+            return_value=mock_session_manager,
+        ):
             middleware = SessionMiddleware(app)
 
             assert middleware.session_manager == mock_session_manager
@@ -114,7 +117,12 @@ class TestSessionMiddlewareDispatch:
         mock_request.headers = Headers({"User-Agent": "TestBrowser/1.0"})
 
         # Mock session data
-        session_data = {"session_id": session_id, "user_id": "user_456", "role": "user", "permissions": ["read"]}
+        session_data = {
+            "session_id": session_id,
+            "user_id": "user_456",
+            "role": "user",
+            "permissions": ["read"],
+        }
         mock_session_manager.validate_session.return_value = True
         mock_session_manager.get_session.return_value = session_data
 
@@ -170,7 +178,11 @@ class TestSessionMiddlewareDispatch:
         mock_request.cookies = {SESSION_COOKIE_NAME: session_id}
 
         # Mock session with rotation recommendation
-        session_data = {"session_id": session_id, "user_id": "user_123", "rotation_recommended": True}
+        session_data = {
+            "session_id": session_id,
+            "user_id": "user_123",
+            "rotation_recommended": True,
+        }
         mock_session_manager.validate_session.return_value = True
         mock_session_manager.get_session.return_value = session_data
 
@@ -246,12 +258,21 @@ class TestSessionMiddlewareDispatch:
 
         # Verify cookie was deleted
         mock_response.delete_cookie.assert_called_once_with(
-            key=SESSION_COOKIE_NAME, path="/", httponly=True, secure=True, samesite="strict"
+            key=SESSION_COOKIE_NAME,
+            path="/",
+            httponly=True,
+            secure=True,
+            samesite="strict",
         )
 
     @pytest.mark.asyncio
     async def test_dispatch_session_rotation(
-        self, session_middleware, mock_request, mock_response, mock_session_manager, mock_settings
+        self,
+        session_middleware,
+        mock_request,
+        mock_response,
+        mock_session_manager,
+        mock_settings,
     ):
         """Test session rotation."""
         old_session_id = "old_session"
@@ -377,7 +398,11 @@ class TestSessionMiddlewareCookieHandling:
             session_middleware._clear_session_cookie(mock_response)
 
             mock_response.delete_cookie.assert_called_once_with(
-                key=SESSION_COOKIE_NAME, path="/", httponly=True, secure=True, samesite="strict"
+                key=SESSION_COOKIE_NAME,
+                path="/",
+                httponly=True,
+                secure=True,
+                samesite="strict",
             )
 
             mock_logger.debug.assert_called_once()
@@ -425,7 +450,12 @@ class TestSessionMiddlewareIntegration:
 
     @pytest.mark.asyncio
     async def test_full_session_lifecycle(
-        self, session_middleware, mock_request, mock_response, mock_session_manager, mock_settings
+        self,
+        session_middleware,
+        mock_request,
+        mock_response,
+        mock_session_manager,
+        mock_settings,
     ):
         """Test complete session lifecycle."""
         # 1. Initial request without session
@@ -442,7 +472,10 @@ class TestSessionMiddlewareIntegration:
         # 2. Subsequent request with session
         mock_request.cookies = {SESSION_COOKIE_NAME: "session_123"}
         mock_session_manager.validate_session.return_value = True
-        mock_session_manager.get_session.return_value = {"session_id": "session_123", "user_id": "user_123"}
+        mock_session_manager.get_session.return_value = {
+            "session_id": "session_123",
+            "user_id": "user_123",
+        }
 
         async def use_session_handler(request):
             assert request.state.session is not None

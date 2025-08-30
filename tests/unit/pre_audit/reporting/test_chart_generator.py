@@ -38,7 +38,10 @@ class TestChartGenerator:
 
     def test_generate_pie_chart_label_encoding(self, generator):
         """Test that labels are properly encoded."""
-        data = {"labels": ["<script>alert('XSS')</script>", "Normal Label"], "values": [50, 50]}
+        data = {
+            "labels": ["<script>alert('XSS')</script>", "Normal Label"],
+            "values": [50, 50],
+        }
 
         config = generator.generate_pie_chart(data)
 
@@ -88,7 +91,13 @@ class TestChartGenerator:
         """Test line chart with single dataset."""
         data = {
             "labels": ["Week 1", "Week 2", "Week 3", "Week 4"],
-            "datasets": [{"label": "Compliance Score", "data": [70, 75, 80, 85], "color": "#4caf50"}],
+            "datasets": [
+                {
+                    "label": "Compliance Score",
+                    "data": [70, 75, 80, 85],
+                    "color": "#4caf50",
+                }
+            ],
         }
 
         config = generator.generate_line_chart(data, title="Compliance Trend")
@@ -102,7 +111,10 @@ class TestChartGenerator:
         """Test line chart with multiple datasets."""
         data = {
             "labels": ["Q1", "Q2", "Q3", "Q4"],
-            "datasets": [{"label": "Critical", "data": [5, 3, 2, 1]}, {"label": "High", "data": [10, 8, 6, 4]}],
+            "datasets": [
+                {"label": "Critical", "data": [5, 3, 2, 1]},
+                {"label": "High", "data": [10, 8, 6, 4]},
+            ],
             "xLabel": "Quarter",
             "yLabel": "Count",
         }
@@ -117,7 +129,10 @@ class TestChartGenerator:
     def test_generate_gauge_chart(self, generator):
         """Test gauge chart generation."""
         config = generator.generate_gauge_chart(
-            value=75, min_value=0, max_value=100, thresholds={"critical": 50, "warning": 70, "good": 85}
+            value=75,
+            min_value=0,
+            max_value=100,
+            thresholds={"critical": 50, "warning": 70, "good": 85},
         )
 
         assert config["type"] == "custom-gauge"
@@ -160,7 +175,13 @@ class TestChartGenerator:
     # Test Risk Distribution Chart
     def test_generate_risk_distribution_chart(self, generator):
         """Test specialized risk distribution chart."""
-        risk_data = {"critical": 5, "high": 10, "medium": 20, "low": 15, "minimal": 0}  # Should be excluded
+        risk_data = {
+            "critical": 5,
+            "high": 10,
+            "medium": 20,
+            "low": 15,
+            "minimal": 0,
+        }  # Should be excluded
 
         config = generator.generate_risk_distribution_chart(risk_data)
 
@@ -184,7 +205,10 @@ class TestChartGenerator:
     # Test Chart Container Creation
     def test_create_chart_container(self, generator):
         """Test chart container creation with HTML and JavaScript."""
-        chart_config = {"type": "pie", "data": {"labels": ["A", "B"], "values": [50, 50]}}
+        chart_config = {
+            "type": "pie",
+            "data": {"labels": ["A", "B"], "values": [50, 50]},
+        }
 
         container = generator.create_chart_container(chart_config)
 

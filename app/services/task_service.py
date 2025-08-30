@@ -42,7 +42,14 @@ class TaskService:
         """
         try:
             # Add audit fields
-            task_data.update({"id": str(uuid4()), "created_by": user_id, "updated_by": user_id, "status": "pending"})
+            task_data.update(
+                {
+                    "id": str(uuid4()),
+                    "created_by": user_id,
+                    "updated_by": user_id,
+                    "status": "pending",
+                }
+            )
 
             # Simulate task creation (would use actual Task model in real implementation)
             # Note: Repository handles session management
@@ -80,7 +87,11 @@ class TaskService:
         return task
 
     async def list_tasks(
-        self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """List tasks with pagination and filtering.
 
@@ -177,7 +188,11 @@ class TaskService:
         Returns:
             Dict: Updated task data
         """
-        return await self.update_task(task_id, {"status": "running", "started_at": "now()", "progress": 0}, user_id)
+        return await self.update_task(
+            task_id,
+            {"status": "running", "started_at": "now()", "progress": 0},
+            user_id,
+        )
 
     async def complete_task(self, task_id: str, result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Mark task as completed.
@@ -207,7 +222,9 @@ class TaskService:
             Dict: Updated task data
         """
         return await self.update_task(
-            task_id, {"status": "failed", "failed_at": "now()", "error_message": error_message}, "system"
+            task_id,
+            {"status": "failed", "failed_at": "now()", "error_message": error_message},
+            "system",
         )
 
     async def cancel_task(self, task_id: str, user_id: str) -> Dict[str, Any]:

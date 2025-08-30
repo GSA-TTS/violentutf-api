@@ -263,7 +263,10 @@ class TestSecurityMiddlewareOrder:
         # Request ID should be a valid UUID format
         import re
 
-        uuid_pattern = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+        uuid_pattern = re.compile(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            re.IGNORECASE,
+        )
 
         # If no custom ID was provided, it should be a UUID
         if "-" in request_id:

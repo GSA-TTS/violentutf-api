@@ -65,7 +65,10 @@ class TestAPIPerformanceRegression:
             historical = self.load_historical_metrics()
 
             # Add current metrics to history
-            current_entry = {"timestamp": datetime.now(timezone.utc).isoformat(), "metrics": metrics}
+            current_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "metrics": metrics,
+            }
             historical["history"].append(current_entry)
 
             # Update baselines if not set
@@ -541,7 +544,10 @@ class TestIssue89PerformanceRegressionCompliance:
     """Final performance regression validation for Issue #89 requirements."""
 
     async def test_issue_89_performance_regression_requirements_met(
-        self, client: SafeTestClient, auth_token: str, benchmark_user_service: UserServiceImpl
+        self,
+        client: SafeTestClient,
+        auth_token: str,
+        benchmark_user_service: UserServiceImpl,
     ):
         """Master performance regression test for Issue #89 compliance.
 

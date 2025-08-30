@@ -59,7 +59,12 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
 
             return audit_log
         except Exception as e:
-            self.logger.error("Failed to log audit action", action=action, user_id=user_id, error=str(e))
+            self.logger.error(
+                "Failed to log audit action",
+                action=action,
+                user_id=user_id,
+                error=str(e),
+            )
             raise
 
     async def get_user_audit_trail(self, user_id: str, limit: int = 100) -> List[AuditLog]:
@@ -351,5 +356,9 @@ class AuditLogRepository(BaseRepository[AuditLog], IAuditRepository):
                 return 0
 
         except Exception as e:
-            self.logger.error("Failed to cleanup old audit logs", retention_days=retention_days, error=str(e))
+            self.logger.error(
+                "Failed to cleanup old audit logs",
+                retention_days=retention_days,
+                error=str(e),
+            )
             raise

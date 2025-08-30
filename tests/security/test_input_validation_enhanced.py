@@ -578,7 +578,11 @@ class TestValidationUtilities:
         """Test comprehensive validation combining all checks."""
         # Normal input should pass all checks
         result = comprehensive_input_validation(
-            "Normal user input", check_sql=True, check_xss=True, check_prompt_injection_flag=True, max_length=100
+            "Normal user input",
+            check_sql=True,
+            check_xss=True,
+            check_prompt_injection_flag=True,
+            max_length=100,
         )
         assert result.is_valid
         assert len(result.errors) == 0
@@ -586,7 +590,10 @@ class TestValidationUtilities:
 
         # Input with multiple issues
         result = comprehensive_input_validation(
-            "<script>alert('XSS')</script>' OR '1'='1", check_sql=True, check_xss=True, max_length=50
+            "<script>alert('XSS')</script>' OR '1'='1",
+            check_sql=True,
+            check_xss=True,
+            max_length=50,
         )
         assert not result.is_valid
         assert len(result.errors) >= 2  # Both SQL and XSS
@@ -755,7 +762,12 @@ class TestValidationIntegration:
 
         # Valid request
         response = client.post(
-            "/users", json={"username": "john_doe", "email": "john@example.com", "website": "https://johndoe.com"}
+            "/users",
+            json={
+                "username": "john_doe",
+                "email": "john@example.com",
+                "website": "https://johndoe.com",
+            },
         )
         assert response.status_code == 200
 

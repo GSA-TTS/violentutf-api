@@ -1,6 +1,7 @@
 """Report generation and management API endpoints."""
 
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
@@ -13,7 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_report_service
 from app.core.auth import get_current_user
-from app.models.report import Report, ReportFormat, ReportStatus, ReportTemplate, TemplateType
+from app.models.report import (
+    Report,
+    ReportFormat,
+    ReportStatus,
+    ReportTemplate,
+    TemplateType,
+)
 from app.models.task import Task, TaskStatus
 from app.models.user import User
 from app.schemas.report import (
@@ -85,7 +92,12 @@ async def list_reports(
         raise HTTPException(status_code=500, detail="Failed to list reports")
 
 
-@router.post("/", response_model=ReportGenerationResponse, summary="Create report", status_code=202)
+@router.post(
+    "/",
+    response_model=ReportGenerationResponse,
+    summary="Create report",
+    status_code=202,
+)
 async def create_report(
     report_data: ReportCreate,
     generate_immediately: bool = Query(True, description="Generate report immediately"),
@@ -110,7 +122,7 @@ async def create_report(
             parameters=report_data.parameters or {},
             is_public=report_data.is_public or False,
             expires_at=report_data.expires_at,
-            status=ReportStatus.PENDING if generate_immediately else ReportStatus.PENDING,
+            status=(ReportStatus.PENDING if generate_immediately else ReportStatus.PENDING),
             created_by=current_user.username,
         )
 
@@ -166,7 +178,7 @@ async def create_report(
             status=report.status,
             started_at=report.created_at,
             status_url=f"/api/v1/reports/{report.id}",
-            download_url=f"/api/v1/reports/{report.id}/download" if report.status == ReportStatus.COMPLETED else None,
+            download_url=(f"/api/v1/reports/{report.id}/download" if report.status == ReportStatus.COMPLETED else None),
         )
 
     except Exception as e:
@@ -221,7 +233,10 @@ async def update_report(
 
         # Check if report can be updated
         if report.status in [ReportStatus.GENERATING]:
-            raise HTTPException(status_code=400, detail="Cannot update report that is currently generating")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update report that is currently generating",
+            )
 
         # Update fields
         update_data = report_data.model_dump(exclude_unset=True)
@@ -264,7 +279,10 @@ async def delete_report(
 
         # Check if report can be deleted
         if report.status == ReportStatus.GENERATING:
-            raise HTTPException(status_code=400, detail="Cannot delete report that is currently generating")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete report that is currently generating",
+            )
 
         # Soft delete
         report.soft_delete(deleted_by=current_user.username)
@@ -283,7 +301,11 @@ async def delete_report(
         raise HTTPException(status_code=500, detail="Failed to delete report")
 
 
-@router.post("/{report_id}/generate", response_model=ReportGenerationResponse, summary="Generate report")
+@router.post(
+    "/{report_id}/generate",
+    response_model=ReportGenerationResponse,
+    summary="Generate report",
+)
 async def generate_report(
     report_id: str,
     generation_request: Optional[ReportGenerationRequest] = None,
@@ -404,40 +426,78 @@ async def download_report(
         if report.content:
             # For JSON/data formats, return content directly
             if report.format == ReportFormat.JSON:
+                import re
+
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=str(report.content),
                     media_type="application/json",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.json"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.json"'},
                 )
             elif report.format == ReportFormat.CSV:
                 # Convert content to CSV (simplified)
                 csv_content = "data\n" + str(report.content)
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=csv_content,
                     media_type="text/csv",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.csv"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.csv"'},
                 )
 
         # For file-based formats, serve the file
         if report.file_path:
             import os
+            from pathlib import Path
+
+            # Validate path to prevent directory traversal attacks
+            try:
+                # Convert to absolute path and resolve any .. sequences
+                file_path = Path(report.file_path).resolve()
+
+                # Define allowed base directories using configuration
+                # Use environment variable or safe default
+                reports_base_dir = os.environ.get("REPORTS_BASE_DIR", "./reports")
+                allowed_dirs = [
+                    Path(reports_base_dir).resolve(),
+                    Path("./reports").resolve(),  # Always allow local reports dir
+                ]
+
+                # Add additional allowed directories from environment if specified
+                if additional_dirs := os.environ.get("ADDITIONAL_REPORTS_DIRS"):
+                    for dir_path in additional_dirs.split(":"):
+                        if dir_path.strip():  # Skip empty paths
+                            allowed_dirs.append(Path(dir_path.strip()).resolve())
+
+                # Check if the resolved path is within allowed directories
+                path_is_safe = any(str(file_path).startswith(str(allowed_dir)) for allowed_dir in allowed_dirs)
+
+                if not path_is_safe:
+                    raise HTTPException(status_code=403, detail="Access to file path not allowed")
+
+            except (OSError, ValueError):
+                logger.warning(f"Invalid file path in report {report.id}: {report.file_path}")
+                raise HTTPException(status_code=400, detail="Invalid file path")
 
             # Check if file exists
-            if not os.path.exists(report.file_path):
+            if not file_path.exists():
                 raise HTTPException(status_code=404, detail="Report file not found on disk")
 
             # Read and serve the actual file
             try:
-                with open(report.file_path, "rb") as f:
+                with open(file_path, "rb") as f:
                     file_content = f.read()
 
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=file_content,
                     media_type=report.mime_type or "application/octet-stream",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.{report.format.value}"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.{report.format.value}"'},
                 )
             except Exception as file_error:
-                logger.error(f"Error reading report file {report.file_path}: {file_error}")
+                logger.error(f"Error reading report file {file_path}: {file_error}")
                 raise HTTPException(status_code=500, detail="Failed to read report file")
 
         raise HTTPException(status_code=404, detail="Report content not available")

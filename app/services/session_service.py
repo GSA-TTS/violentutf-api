@@ -330,7 +330,9 @@ class SessionService:
         # Extend expiration using repository
         new_expires_at = datetime.now(timezone.utc) + duration
         await self.session_repo.update(
-            session.id, expires_at=new_expires_at, last_activity_at=datetime.now(timezone.utc)
+            session.id,
+            expires_at=new_expires_at,
+            last_activity_at=datetime.now(timezone.utc),
         )
 
         # Update cache
@@ -378,10 +380,10 @@ class SessionService:
             "email": user.email,
             "roles": user.roles or [],
             "is_superuser": user.is_superuser,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
             "expires_at": session.expires_at.isoformat(),
             "created_at": session.created_at.isoformat(),
-            "last_activity_at": session.last_activity_at.isoformat() if session.last_activity_at else None,
+            "last_activity_at": (session.last_activity_at.isoformat() if session.last_activity_at else None),
             "ip_address": session.ip_address,
             "user_agent": session.device_info,
         }

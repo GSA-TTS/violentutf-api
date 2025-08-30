@@ -100,7 +100,10 @@ class StatisticalNormalizer:
         logger.info(f"Initialized StatisticalNormalizer with method={default_method}")
 
     def fit_normalization_parameters(
-        self, data: pd.DataFrame, method: Optional[str] = None, features: Optional[List[str]] = None
+        self,
+        data: pd.DataFrame,
+        method: Optional[str] = None,
+        features: Optional[List[str]] = None,
     ) -> Dict[str, NormalizationParams]:
         """
         Fit normalization parameters using robust statistical methods.
@@ -233,7 +236,12 @@ class StatisticalNormalizer:
         normalized_data = (data - median) / scale
         validation_metrics = self._calculate_normalization_metrics(data, normalized_data)
 
-        parameters = {"median": median, "mad": mad, "scale": scale, "method": "robust_z_score"}
+        parameters = {
+            "median": median,
+            "mad": mad,
+            "scale": scale,
+            "method": "robust_z_score",
+        }
 
         return NormalizationParams(
             method="robust_z_score",
@@ -305,7 +313,11 @@ class StatisticalNormalizer:
         transformed_data = transformer.transform(data_reshaped).flatten()
         validation_metrics = self._calculate_normalization_metrics(data, transformed_data)
 
-        parameters = {"lambda": transformer.lambdas_[0], "method": "box_cox", "standardize": True}
+        parameters = {
+            "lambda": transformer.lambdas_[0],
+            "method": "box_cox",
+            "standardize": True,
+        }
 
         return NormalizationParams(
             method="box_cox",

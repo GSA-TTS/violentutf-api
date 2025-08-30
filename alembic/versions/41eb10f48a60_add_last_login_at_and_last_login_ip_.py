@@ -35,7 +35,10 @@ def upgrade() -> None:
     op.add_column(
         "user",
         sa.Column(
-            "verified_at", sa.DateTime(timezone=True), nullable=True, comment="Timestamp when the user was verified"
+            "verified_at",
+            sa.DateTime(timezone=True),
+            nullable=True,
+            comment="Timestamp when the user was verified",
         ),
     )
     op.add_column(

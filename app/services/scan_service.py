@@ -44,7 +44,14 @@ class ScanService:
         """
         try:
             # Add audit fields
-            scan_data.update({"id": str(uuid4()), "created_by": user_id, "updated_by": user_id, "status": "pending"})
+            scan_data.update(
+                {
+                    "id": str(uuid4()),
+                    "created_by": user_id,
+                    "updated_by": user_id,
+                    "status": "pending",
+                }
+            )
 
             scan = await self.repository.create(scan_data)
             logger.info("scan_created", scan_id=scan.id, user_id=user_id)
@@ -72,7 +79,11 @@ class ScanService:
         return scan
 
     async def list_scans(
-        self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
     ) -> List[Scan]:
         """List scans with pagination and filtering.
 
@@ -181,5 +192,7 @@ class ScanService:
             Scan: Updated scan instance
         """
         return await self.update_scan(
-            scan_id, {"status": "completed", "completed_at": "now()", "results": results}, "system"
+            scan_id,
+            {"status": "completed", "completed_at": "now()", "results": results},
+            "system",
         )

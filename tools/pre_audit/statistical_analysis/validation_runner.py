@@ -198,7 +198,11 @@ class ValidationRunner:
                 "error": "Unit tests timed out after 5 minutes",
             }
         except Exception as e:
-            return {"success": False, "execution_time": time.time() - start_time, "error": str(e)}
+            return {
+                "success": False,
+                "execution_time": time.time() - start_time,
+                "error": str(e),
+            }
 
     def run_complete_validation(self) -> Dict[str, Any]:
         """Run complete validation suite including all test types."""
@@ -241,7 +245,11 @@ class ValidationRunner:
             results["unit_tests"] = unit_test_results
         except Exception as e:
             logger.error(f"Unit tests failed: {e}")
-            results["unit_tests"] = {"success": False, "error": str(e), "execution_time": 0}
+            results["unit_tests"] = {
+                "success": False,
+                "error": str(e),
+                "execution_time": 0,
+            }
 
         # Calculate overall results
         total_time = time.time() - start_time
@@ -470,7 +478,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run comprehensive validation for GitHub Issue #43")
     parser.add_argument("--output-dir", type=Path, help="Output directory for reports")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    parser.add_argument("--quick", action="store_true", help="Run quick validation (skip property tests)")
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Run quick validation (skip property tests)",
+    )
 
     args = parser.parse_args()
 

@@ -47,7 +47,12 @@ class ChartGenerator:
         "minimal": "#81c784",
     }
 
-    TREND_COLORS = {"improving": "#4caf50", "stable": "#ff9800", "degrading": "#f44336", "unknown": "#9e9e9e"}
+    TREND_COLORS = {
+        "improving": "#4caf50",
+        "stable": "#ff9800",
+        "degrading": "#f44336",
+        "unknown": "#9e9e9e",
+    }
 
     DEFAULT_COLORS = [
         "#1976d2",
@@ -98,7 +103,10 @@ class ChartGenerator:
                 "responsive": True,
                 "maintainAspectRatio": False,
                 "plugins": {
-                    "legend": {"position": "bottom", "labels": {"padding": 15, "font": {"size": 12}}},
+                    "legend": {
+                        "position": "bottom",
+                        "labels": {"padding": 15, "font": {"size": 12}},
+                    },
                     "tooltip": {"callbacks": {"label": self._get_percentage_tooltip()}},
                 },
             },
@@ -114,7 +122,10 @@ class ChartGenerator:
         return config
 
     def generate_bar_chart(
-        self, data: Dict[str, Any], title: Optional[str] = None, horizontal: bool = False
+        self,
+        data: Dict[str, Any],
+        title: Optional[str] = None,
+        horizontal: bool = False,
     ) -> Dict[str, Any]:
         """
         Generate bar chart configuration.
@@ -148,7 +159,14 @@ class ChartGenerator:
                 "maintainAspectRatio": False,
                 "plugins": {"legend": {"display": False}},
                 "scales": {
-                    "x": {"beginAtZero": True, "ticks": {"autoSkip": True, "maxRotation": 45, "minRotation": 0}},
+                    "x": {
+                        "beginAtZero": True,
+                        "ticks": {
+                            "autoSkip": True,
+                            "maxRotation": 45,
+                            "minRotation": 0,
+                        },
+                    },
                     "y": {"beginAtZero": True},
                 },
             },
@@ -195,7 +213,10 @@ class ChartGenerator:
 
         config = {
             "type": ChartType.LINE.value,
-            "data": {"labels": self._encode_labels(data.get("labels", [])), "datasets": datasets},
+            "data": {
+                "labels": self._encode_labels(data.get("labels", [])),
+                "datasets": datasets,
+            },
             "options": {
                 "responsive": True,
                 "maintainAspectRatio": False,
@@ -230,7 +251,11 @@ class ChartGenerator:
         return config
 
     def generate_gauge_chart(
-        self, value: float, min_value: float = 0, max_value: float = 100, thresholds: Optional[Dict[str, float]] = None
+        self,
+        value: float,
+        min_value: float = 0,
+        max_value: float = 100,
+        thresholds: Optional[Dict[str, float]] = None,
     ) -> Dict[str, Any]:
         """
         Generate gauge chart configuration.
@@ -253,7 +278,12 @@ class ChartGenerator:
         # Create gauge-specific configuration
         config = {
             "type": "custom-gauge",
-            "data": {"value": value, "min": min_value, "max": max_value, "label": f"{value:.1f}%"},
+            "data": {
+                "value": value,
+                "min": min_value,
+                "max": max_value,
+                "label": f"{value:.1f}%",
+            },
             "options": {
                 "color": color,
                 "thresholds": thresholds,
@@ -295,7 +325,10 @@ class ChartGenerator:
 
         config = {
             "type": ChartType.RADAR.value,
-            "data": {"labels": self._encode_labels(data.get("labels", [])), "datasets": datasets},
+            "data": {
+                "labels": self._encode_labels(data.get("labels", [])),
+                "datasets": datasets,
+            },
             "options": {
                 "responsive": True,
                 "maintainAspectRatio": False,
@@ -342,7 +375,8 @@ class ChartGenerator:
                 colors.append(self.RISK_COLORS.get(risk, "#666"))
 
         return self.generate_doughnut_chart(
-            {"labels": labels, "values": values, "colors": colors}, title="Risk Distribution"
+            {"labels": labels, "values": values, "colors": colors},
+            title="Risk Distribution",
         )
 
     def generate_doughnut_chart(self, data: Dict[str, Any], title: Optional[str] = None) -> Dict[str, Any]:

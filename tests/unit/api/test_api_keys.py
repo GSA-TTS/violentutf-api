@@ -16,7 +16,12 @@ from app.api.endpoints.api_keys import api_key_crud_router
 from app.core.config import settings
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
-from app.schemas.api_key import APIKeyCreate, APIKeyPermissionTemplate, APIKeyResponse, APIKeyUpdate
+from app.schemas.api_key import (
+    APIKeyCreate,
+    APIKeyPermissionTemplate,
+    APIKeyResponse,
+    APIKeyUpdate,
+)
 
 # Import test fixtures
 from tests.test_fixtures import admin_token, auth_token  # noqa: F401

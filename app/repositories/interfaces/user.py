@@ -40,7 +40,11 @@ class IUserRepository(ABC):
 
     @abstractmethod
     async def update_password(
-        self, user_id: str, old_password: str, new_password: str, updated_by: str = "system"
+        self,
+        user_id: str,
+        old_password: str,
+        new_password: str,
+        updated_by: str = "system",
     ) -> bool:
         """Update user password."""
         pass
@@ -72,7 +76,11 @@ class IUserRepository(ABC):
 
     @abstractmethod
     async def get_active_users(
-        self, page: int = 1, size: int = 50, order_by: str = "created_at", order_desc: bool = True
+        self,
+        page: int = 1,
+        size: int = 50,
+        order_by: str = "created_at",
+        order_desc: bool = True,
     ) -> Page[User]:
         """Get active users with pagination."""
         pass

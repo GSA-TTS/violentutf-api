@@ -51,7 +51,12 @@ class ArchitecturalViolation:
     """Represents a single architectural violation instance."""
 
     def __init__(
-        self, commit_hash: str, adr_id: str, timestamp: datetime, message: str, modified_files: List[str]
+        self,
+        commit_hash: str,
+        adr_id: str,
+        timestamp: datetime,
+        message: str,
+        modified_files: List[str],
     ) -> None:
         """Initialize violation instance."""
         self.commit_hash = commit_hash
@@ -498,20 +503,60 @@ class ADRPatternMatcher:
         # Enhanced mapping based on comprehensive ADR analysis
         adr_mappings = {
             "ADR-002": {
-                "keywords": ["jwt", "token", "auth", "login", "rs256", "algorithm", "secret", "bearer"],
-                "functions": ["encode_jwt", "decode_jwt", "verify_token", "authenticate", "login"],
+                "keywords": [
+                    "jwt",
+                    "token",
+                    "auth",
+                    "login",
+                    "rs256",
+                    "algorithm",
+                    "secret",
+                    "bearer",
+                ],
+                "functions": [
+                    "encode_jwt",
+                    "decode_jwt",
+                    "verify_token",
+                    "authenticate",
+                    "login",
+                ],
                 "imports": ["jwt", "jose", "pyjwt", "authentication"],
                 "file_indicators": ["/auth", "/middleware/auth", "/jwt", "/token"],
             },
             "ADR-005": {
-                "keywords": ["rate", "limit", "throttle", "bucket", "redis", "429", "x-ratelimit"],
+                "keywords": [
+                    "rate",
+                    "limit",
+                    "throttle",
+                    "bucket",
+                    "redis",
+                    "429",
+                    "x-ratelimit",
+                ],
                 "functions": ["rate_limit", "throttle", "check_rate", "limit_requests"],
                 "imports": ["redis", "rate_limit", "throttle"],
-                "file_indicators": ["/rate", "/throttle", "/middleware/rate", "/limiting"],
+                "file_indicators": [
+                    "/rate",
+                    "/throttle",
+                    "/middleware/rate",
+                    "/limiting",
+                ],
             },
             "ADR-008": {
-                "keywords": ["structlog", "correlation_id", "organization_id", "audit", "redact"],
-                "functions": ["log_", "audit_", "redact_", "get_logger", "setup_logging"],
+                "keywords": [
+                    "structlog",
+                    "correlation_id",
+                    "organization_id",
+                    "audit",
+                    "redact",
+                ],
+                "functions": [
+                    "log_",
+                    "audit_",
+                    "redact_",
+                    "get_logger",
+                    "setup_logging",
+                ],
                 "imports": ["structlog", "logging", "audit"],
                 "file_indicators": ["/logging", "/audit", "/middleware/log"],
             },
@@ -550,7 +595,17 @@ class ComplexityAnalyzer:
     """Analyzes code complexity using Lizard with caching."""
 
     # File extensions to analyze
-    SUPPORTED_EXTENSIONS = {".py", ".js", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go"}
+    SUPPORTED_EXTENSIONS = {
+        ".py",
+        ".js",
+        ".java",
+        ".cpp",
+        ".c",
+        ".cs",
+        ".php",
+        ".rb",
+        ".go",
+    }
 
     # Cache for complexity results to avoid duplicate analysis
     _complexity_cache: Dict[str, Optional[float]] = {}
@@ -657,7 +712,13 @@ class HistoricalAnalyzer:
         self.repo_path = repo_path
         self.analysis_window_days = analysis_window_days
         self.analysis_start_date = datetime.now(timezone.utc) - timedelta(days=analysis_window_days)
-        self.exclude_patterns = exclude_patterns or ["test*", "*_test.py", "tests/*", "*.md", "docs/*"]
+        self.exclude_patterns = exclude_patterns or [
+            "test*",
+            "*_test.py",
+            "tests/*",
+            "*.md",
+            "docs/*",
+        ]
 
         # Load configuration
         config_path = config_path or os.path.join(repo_path, "config", "violation_patterns.yml")
@@ -914,8 +975,8 @@ class HistoricalAnalyzer:
                     "total_violations": stats.total_violations,
                     "complexity_score": round(stats.complexity_score or 0, 2),
                     "violations_by_adr": dict(stats.violations_by_adr),
-                    "first_violation": stats.first_violation.isoformat() if stats.first_violation else None,
-                    "last_violation": stats.last_violation.isoformat() if stats.last_violation else None,
+                    "first_violation": (stats.first_violation.isoformat() if stats.first_violation else None),
+                    "last_violation": (stats.last_violation.isoformat() if stats.last_violation else None),
                 }
                 for stats in sorted_files[:20]  # Top 20 high-risk files
             ],
@@ -1002,7 +1063,11 @@ The following files represent the highest architectural risk based on a multi-fa
 
 **ADR Violations:**
 """
-                for adr_id, count in sorted(file_info["violations_by_adr"].items(), key=lambda x: x[1], reverse=True):
+                for adr_id, count in sorted(
+                    file_info["violations_by_adr"].items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                ):
                     adr_name = self.adr_metadata.get(adr_id, {}).get("name", "Unknown")
                     severity = self.adr_metadata.get(adr_id, {}).get("severity_weight", 1.0)
                     report += f"- **{adr_id}** ({adr_name}): {count} violations (severity: {severity})\n"
@@ -1229,7 +1294,13 @@ Examples:
 
     parser.add_argument("--config", "-c", help="Path to violation patterns YAML configuration file")
 
-    parser.add_argument("--days", "-d", type=int, default=180, help="Number of days to analyze (default: 180)")
+    parser.add_argument(
+        "--days",
+        "-d",
+        type=int,
+        default=180,
+        help="Number of days to analyze (default: 180)",
+    )
 
     parser.add_argument(
         "--output",
@@ -1243,11 +1314,18 @@ Examples:
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
     parser.add_argument(
-        "--exclude", "-e", action="append", help="File patterns to exclude from analysis (can be used multiple times)"
+        "--exclude",
+        "-e",
+        action="append",
+        help="File patterns to exclude from analysis (can be used multiple times)",
     )
 
     parser.add_argument(
-        "--min-risk", "-r", type=float, default=0.0, help="Minimum risk score threshold for reporting (default: 0.0)"
+        "--min-risk",
+        "-r",
+        type=float,
+        default=0.0,
+        help="Minimum risk score threshold for reporting (default: 0.0)",
     )
 
     args = parser.parse_args()

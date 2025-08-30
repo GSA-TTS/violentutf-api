@@ -315,7 +315,11 @@ class TestAPIKeyService:
         """Test checking API key permissions."""
         # Arrange
         api_key = MagicMock(spec=APIKey)
-        api_key.permissions = {"users:read": True, "users:write": True, "admin:system": True}
+        api_key.permissions = {
+            "users:read": True,
+            "users:write": True,
+            "admin:system": True,
+        }
 
         # Act & Assert
         # Single permission check
@@ -358,7 +362,11 @@ class TestAPIKeyService:
                         break
             return None
 
-        with patch.object(api_key_service.repository, "get_expired_keys", return_value=mock_expired_keys):
+        with patch.object(
+            api_key_service.repository,
+            "get_expired_keys",
+            return_value=mock_expired_keys,
+        ):
             with patch.object(api_key_service.repository, "update", side_effect=mock_update):
                 with patch.object(api_key_service.session, "flush"):
                     # Act

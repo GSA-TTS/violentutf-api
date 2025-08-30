@@ -79,7 +79,12 @@ class MFAService:
         secret = pyotp.random_base32()
 
         # Create TOTP instance
-        totp = pyotp.TOTP(secret, issuer=self.TOTP_ISSUER, interval=self.TOTP_PERIOD, digits=self.TOTP_DIGITS)
+        totp = pyotp.TOTP(
+            secret,
+            issuer=self.TOTP_ISSUER,
+            interval=self.TOTP_PERIOD,
+            digits=self.TOTP_DIGITS,
+        )
 
         # Generate provisioning URI
         provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name=self.TOTP_ISSUER)
@@ -252,7 +257,9 @@ class MFAService:
             # Update device usage
             current_use_count = getattr(device, "use_count", 0)
             await self.mfa_device_repo.update(
-                device.id, last_used_at=datetime.now(timezone.utc), use_count=current_use_count + 1
+                device.id,
+                last_used_at=datetime.now(timezone.utc),
+                use_count=current_use_count + 1,
             )
 
             # Log success
@@ -343,8 +350,8 @@ class MFAService:
                 "method": device.method.value,
                 "is_active": device.is_active,
                 "is_primary": device.is_primary,
-                "verified_at": device.verified_at.isoformat() if device.verified_at else None,
-                "last_used_at": device.last_used_at.isoformat() if device.last_used_at else None,
+                "verified_at": (device.verified_at.isoformat() if device.verified_at else None),
+                "last_used_at": (device.last_used_at.isoformat() if device.last_used_at else None),
                 "created_at": device.created_at.isoformat(),
             }
             for device in devices
@@ -373,7 +380,10 @@ class MFAService:
 
         # Log event
         await self._log_mfa_event(
-            user_id=user.id, event_type="backup_codes_regenerated", event_status="success", method=MFAMethod.BACKUP_CODE
+            user_id=user.id,
+            event_type="backup_codes_regenerated",
+            event_status="success",
+            method=MFAMethod.BACKUP_CODE,
         )
 
         return new_codes

@@ -260,7 +260,10 @@ class TestSecurityHeaders:
         response = client.options("/")
 
         # Should not expose sensitive information
-        assert response.status_code in [200, 405]  # Either allowed or method not allowed
+        assert response.status_code in [
+            200,
+            405,
+        ]  # Either allowed or method not allowed
 
 
 class TestTimingAttacks:
@@ -344,7 +347,8 @@ class TestCryptographicSecurity:
             with patch.object(manager, "cache") as mock_cache:
                 mock_cache.set.return_value = None
                 session_id = manager._SessionManager__dict__.get(
-                    "_generate_session_id", lambda: __import__("secrets").token_urlsafe(32)
+                    "_generate_session_id",
+                    lambda: __import__("secrets").token_urlsafe(32),
                 )()
                 session_ids.append(session_id)
 

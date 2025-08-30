@@ -174,7 +174,10 @@ async def update_task(
 
         # Check if task can be updated
         if task.status in [TaskStatus.RUNNING, TaskStatus.COMPLETED]:
-            raise HTTPException(status_code=400, detail="Cannot update task that is running or completed")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update task that is running or completed",
+            )
 
         # Update fields
         update_data = task_data.model_dump(exclude_unset=True)
@@ -361,8 +364,15 @@ async def retry_task(
             raise HTTPException(status_code=404, detail="Task not found")
 
         # Check if task can be retried
-        if task.status not in [TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.TIMEOUT]:
-            raise HTTPException(status_code=400, detail="Can only retry failed, cancelled, or timed out tasks")
+        if task.status not in [
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
+            TaskStatus.TIMEOUT,
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Can only retry failed, cancelled, or timed out tasks",
+            )
 
         # Check retry limit
         if not retry_request.reset_retry_count and task.retry_count >= task.max_retries:
@@ -454,7 +464,11 @@ async def update_task_status(  # noqa: C901
             task.error_details = status_update.error_details
 
         # Set completion time for final states
-        if status_update.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
+        if status_update.status in [
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
+        ]:
             task.completed_at = datetime.now(timezone.utc)
 
         task.updated_by = current_user.username
@@ -471,7 +485,11 @@ async def update_task_status(  # noqa: C901
         raise HTTPException(status_code=500, detail="Failed to update task status")
 
 
-@router.get("/{task_id}/results", response_model=TaskResultListResponse, summary="Get task results")
+@router.get(
+    "/{task_id}/results",
+    response_model=TaskResultListResponse,
+    summary="Get task results",
+)
 async def get_task_results(
     task_id: str,
     result_type: Optional[str] = Query(None, description="Filter by result type"),
@@ -585,7 +603,12 @@ async def bulk_task_action(
                         results.append({"task_id": task.id, "status": "cancelled"})
                     else:
                         failed += 1
-                        errors.append({"task_id": task.id, "error": "Task cannot be cancelled in current state"})
+                        errors.append(
+                            {
+                                "task_id": task.id,
+                                "error": "Task cannot be cancelled in current state",
+                            }
+                        )
 
                 elif action_request.action == "delete":
                     if task.status != TaskStatus.RUNNING:
@@ -598,7 +621,7 @@ async def bulk_task_action(
 
                 else:
                     failed += 1
-                    errors.append({"task_id": task.id, "error": f"Unknown action: {action_request.action}"})
+                    errors.append({"task_id": task.id, "error": "Invalid action specified"})
 
             except Exception as e:
                 failed += 1

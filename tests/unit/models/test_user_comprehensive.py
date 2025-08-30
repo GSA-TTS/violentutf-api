@@ -15,7 +15,11 @@ class TestUserModelCreation:
 
     def test_user_creation_minimal(self):
         """Test creating user with minimal required fields."""
-        user = User(username="testuser", email="test@example.com", password_hash="$argon2id$v=19$m=102400,t=2,p=8$test")
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            password_hash="$argon2id$v=19$m=102400,t=2,p=8$test",
+        )
 
         assert user.username == "testuser"
         assert user.email == "test@example.com"
@@ -56,7 +60,11 @@ class TestUserModelCreation:
 
     def test_user_inherits_from_base_model_mixin(self):
         """Test that User inherits from BaseModelMixin."""
-        user = User(username="testuser", email="test@example.com", password_hash="$argon2id$v=19$m=102400,t=2,p=8$test")
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            password_hash="$argon2id$v=19$m=102400,t=2,p=8$test",
+        )
 
         assert isinstance(user, BaseModelMixin)
         # Check inherited fields exist
@@ -75,7 +83,14 @@ class TestUserValidations:
         user = User()
 
         # Test valid usernames
-        valid_usernames = ["user123", "test_user", "user-name", "ABC123", "a1b2c3", "user_123-test"]
+        valid_usernames = [
+            "user123",
+            "test_user",
+            "user-name",
+            "ABC123",
+            "a1b2c3",
+            "user_123-test",
+        ]
 
         for username in valid_usernames:
             with patch.object(user, "validate_string_security", return_value=None):
@@ -125,7 +140,8 @@ class TestUserValidations:
 
         for username in invalid_usernames:
             with pytest.raises(
-                ValueError, match="Username can only contain letters, numbers, underscores, and hyphens"
+                ValueError,
+                match="Username can only contain letters, numbers, underscores, and hyphens",
             ):
                 user.validate_username("username", username)
 
@@ -141,7 +157,12 @@ class TestUserValidations:
         """Test successful email validation."""
         user = User()
 
-        valid_emails = ["test@example.com", "user.name@domain.org", "user+tag@example.co.uk", "123@numbers.com"]
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.org",
+            "user+tag@example.co.uk",
+            "123@numbers.com",
+        ]
 
         for email in valid_emails:
             with patch.object(user, "validate_email_format", return_value=email):
@@ -299,7 +320,11 @@ class TestUserRepresentation:
 
     def test_to_dict_minimal(self):
         """Test to_dict method with minimal user data."""
-        user = User(username="testuser", email="test@example.com", password_hash="$argon2id$v=19$m=102400,t=2,p=8$test")
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            password_hash="$argon2id$v=19$m=102400,t=2,p=8$test",
+        )
 
         # Mock the id property since it's from the mixin
         with patch.object(user, "id", "123e4567-e89b-12d3-a456-426614174000"):
@@ -498,7 +523,11 @@ class TestUserValidationEdgeCases:
         """Test validation when security validation fails."""
         user = User()
 
-        with patch.object(user, "validate_string_security", side_effect=ValueError("Security validation failed")):
+        with patch.object(
+            user,
+            "validate_string_security",
+            side_effect=ValueError("Security validation failed"),
+        ):
             with pytest.raises(ValueError, match="Security validation failed"):
                 user.validate_username("username", "validuser")
 
@@ -545,7 +574,9 @@ class TestUserIntegrationScenarios:
     def test_user_modification_triggers_validation(self):
         """Test that modifying user fields triggers validation."""
         user = User(
-            username="original", email="original@example.com", password_hash="$argon2id$v=19$m=102400,t=2,p=8$test"
+            username="original",
+            email="original@example.com",
+            password_hash="$argon2id$v=19$m=102400,t=2,p=8$test",
         )
 
         with patch.object(user, "validate_string_security", return_value=None):

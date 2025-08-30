@@ -215,7 +215,8 @@ class TestEnhancedFilter:
     def test_enhanced_filter_with_field_selection(self):
         """Test enhanced filter with field selection."""
         filter_obj = EnhancedFilter(
-            fields=["id", "username", "email"], exclude_fields=["password_hash", "internal_notes"]
+            fields=["id", "username", "email"],
+            exclude_fields=["password_hash", "internal_notes"],
         )
         assert filter_obj.fields == ["id", "username", "email"]
         assert filter_obj.exclude_fields == ["password_hash", "internal_notes"]
@@ -280,7 +281,10 @@ class TestEnhancedFilter:
             EnhancedFilter(sort=too_many_sort)
 
         # Duplicate sort fields
-        duplicate_sort = [SortField(field="username"), SortField(field="username", direction="desc")]
+        duplicate_sort = [
+            SortField(field="username"),
+            SortField(field="username", direction="desc"),
+        ]
         with pytest.raises(ValueError, match="Duplicate sort field"):
             EnhancedFilter(sort=duplicate_sort)
 
@@ -347,7 +351,10 @@ class TestEnhancedFilter:
 
     def test_cursor_pagination(self):
         """Test cursor pagination parameters."""
-        filter_obj = EnhancedFilter(cursor="eyJmaWVsZCI6ICJpZCIsICJ2YWx1ZSI6ICIxMjMifQ==", cursor_direction="prev")
+        filter_obj = EnhancedFilter(
+            cursor="eyJmaWVsZCI6ICJpZCIsICJ2YWx1ZSI6ICIxMjMifQ==",
+            cursor_direction="prev",
+        )
         assert filter_obj.cursor is not None
         assert filter_obj.cursor_direction == "prev"
 

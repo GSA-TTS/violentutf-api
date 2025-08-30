@@ -29,7 +29,10 @@ class TestAPIKeyService:
         return await create_test_user(clean_db_session)
 
     async def test_create_api_key_with_enhanced_security(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test creating API key with enhanced security features."""
         from app.schemas.api_key import APIKeyCreate
@@ -60,7 +63,10 @@ class TestAPIKeyService:
         assert verify_api_key(full_key, api_key.key_hash)
 
     async def test_rotate_api_key(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test API key rotation functionality."""
         # Create initial API key
@@ -83,7 +89,10 @@ class TestAPIKeyService:
         assert verify_api_key(new_full_key, rotated_key.key_hash)
 
     async def test_validate_api_key(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test API key validation."""
         # Create API key
@@ -105,7 +114,10 @@ class TestAPIKeyService:
         assert invalid_key is None
 
     async def test_get_key_analytics(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test API key analytics functionality."""
         # Create multiple API keys with different states
@@ -137,7 +149,10 @@ class TestAPIKeyService:
         assert "recent_usage" in analytics
 
     async def test_record_key_usage(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test recording API key usage."""
         # Create API key
@@ -170,7 +185,9 @@ class TestAPIKeyEndpoints:
         return client, user
 
     async def test_create_api_key_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test API key creation endpoint."""
         client, user = authenticated_client
@@ -192,7 +209,9 @@ class TestAPIKeyEndpoints:
         assert "warning" in data["data"]
 
     async def test_rotate_api_key_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test API key rotation endpoint."""
         client, user = authenticated_client
@@ -215,7 +234,9 @@ class TestAPIKeyEndpoints:
         assert api_key.key_hash != original_key
 
     async def test_get_analytics_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test API key analytics endpoint."""
         client, user = authenticated_client
@@ -236,7 +257,9 @@ class TestAPIKeyEndpoints:
         assert "recent_usage" in data["data"]
 
     async def test_validate_api_key_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test API key validation endpoint."""
         client, user = authenticated_client
@@ -253,7 +276,9 @@ class TestAPIKeyEndpoints:
         assert "valid" in data["data"]["message"]
 
     async def test_revoke_api_key_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test API key revocation endpoint."""
         client, user = authenticated_client
@@ -274,7 +299,9 @@ class TestAPIKeyEndpoints:
         assert api_key.revoked_at is not None
 
     async def test_get_my_keys_endpoint(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test get my API keys endpoint."""
         client, user = authenticated_client
@@ -347,14 +374,18 @@ class TestAPIKeySecurityValidation:
         from app.schemas.api_key import APIKeyCreate
 
         key_data = APIKeyCreate(
-            name="Invalid Permission Value Key", permissions={"users:read": "true"}  # Should be boolean, not string
+            name="Invalid Permission Value Key",
+            permissions={"users:read": "true"},  # Should be boolean, not string
         )
 
         with pytest.raises(ValidationError, match="must be boolean"):
             await api_key_service.create_api_key(str(test_user["id"]), key_data)
 
     async def test_duplicate_key_name_validation(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test validation of duplicate key names."""
         from app.core.errors import ConflictError
@@ -370,7 +401,10 @@ class TestAPIKeySecurityValidation:
             await api_key_service.create_api_key(str(test_user["id"]), key_data)
 
     async def test_key_entropy_generation(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test that keys generated with different entropy are actually different."""
         from app.schemas.api_key import APIKeyCreate
@@ -393,7 +427,10 @@ class TestAPIKeySecurityValidation:
             assert len(key) > 20  # Should have sufficient length
 
     async def test_inactive_key_validation(
-        self, api_key_service: APIKeyService, test_user: Dict[str, Any], clean_db_session: AsyncSession
+        self,
+        api_key_service: APIKeyService,
+        test_user: Dict[str, Any],
+        clean_db_session: AsyncSession,
     ):
         """Test that inactive keys cannot be validated."""
         # Create expired key
@@ -439,7 +476,9 @@ class TestAPIKeyErrorHandling:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_rotate_other_users_key(
-        self, authenticated_client: tuple[TestClient, Dict[str, Any]], clean_db_session: AsyncSession
+        self,
+        authenticated_client: tuple[TestClient, Dict[str, Any]],
+        clean_db_session: AsyncSession,
     ):
         """Test rotating another user's API key."""
         client, user = authenticated_client
@@ -455,7 +494,10 @@ class TestAPIKeyErrorHandling:
         """Test creating API key with invalid permissions."""
         client, user = authenticated_client
 
-        key_data = {"name": "Invalid Permissions Key", "permissions": {"invalid:scope": True}}
+        key_data = {
+            "name": "Invalid Permissions Key",
+            "permissions": {"invalid:scope": True},
+        }
 
         response = await client.post("/api/v1/api-keys/", json=key_data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

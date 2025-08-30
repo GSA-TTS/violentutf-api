@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from structlog.stdlib import get_logger
 
 from app.api.deps import get_rbac_service
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.permissions import RequireAdmin, RequireRoleRead, RequireRoleWrite
 from app.schemas.base import BaseResponse, OperationResult, PaginatedResponse
 from app.services.rbac_service import RBACService
@@ -71,7 +76,9 @@ def check_admin_permission(request: Request) -> None:
 
 @router.post("/initialize", response_model=BaseResponse[List[Dict[str, Any]]])
 async def initialize_system_roles(
-    request: Request, rbac_service: RBACService = Depends(get_rbac_service), _: None = Depends(RequireAdmin)
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    _: None = Depends(RequireAdmin),
 ) -> BaseResponse[List[Dict[str, Any]]]:
     """Initialize system roles and permissions."""
 
@@ -130,7 +137,9 @@ async def list_roles(
 
 @router.get("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def get_role(
-    role_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    role_id: str,
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[Dict[str, Any]]:
     """Get a specific role by ID."""
     try:
@@ -152,7 +161,11 @@ async def get_role(
         raise
 
 
-@router.post("/", response_model=BaseResponse[Dict[str, Any]], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=BaseResponse[Dict[str, Any]],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_role(
     role_data: Dict[str, Any],
     request: Request,
@@ -176,7 +189,9 @@ async def create_role(
         )
 
         return BaseResponse(
-            data=role.to_dict(), message="Role created successfully", trace_id=getattr(request.state, "trace_id", None)
+            data=role.to_dict(),
+            message="Role created successfully",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:
@@ -187,7 +202,10 @@ async def create_role(
 
 @router.put("/{role_id}", response_model=BaseResponse[Dict[str, Any]])
 async def update_role(
-    role_id: str, role_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    role_id: str,
+    role_data: Dict[str, Any],
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[Dict[str, Any]]:
     """Update an existing role."""
     check_admin_permission(request)
@@ -207,7 +225,9 @@ async def update_role(
         )
 
         return BaseResponse(
-            data=role.to_dict(), message="Role updated successfully", trace_id=getattr(request.state, "trace_id", None)
+            data=role.to_dict(),
+            message="Role updated successfully",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:
@@ -218,7 +238,9 @@ async def update_role(
 
 @router.delete("/{role_id}", response_model=BaseResponse[OperationResult])
 async def delete_role(
-    role_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    role_id: str,
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[OperationResult]:
     """Delete a role."""
     check_admin_permission(request)
@@ -238,7 +260,9 @@ async def delete_role(
         )
 
         return BaseResponse(
-            data=result, message="Operation completed", trace_id=getattr(request.state, "trace_id", None)
+            data=result,
+            message="Operation completed",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:
@@ -249,7 +273,9 @@ async def delete_role(
 
 @router.post("/assign", response_model=BaseResponse[Dict[str, Any]])
 async def assign_role_to_user(
-    assignment_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    assignment_data: Dict[str, Any],
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[Dict[str, Any]]:
     """Assign a role to a user."""
     check_admin_permission(request)
@@ -287,7 +313,9 @@ async def assign_role_to_user(
 
 @router.post("/revoke", response_model=BaseResponse[OperationResult])
 async def revoke_role_from_user(
-    revocation_data: Dict[str, Any], request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    revocation_data: Dict[str, Any],
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[OperationResult]:
     """Revoke a role from a user."""
     check_admin_permission(request)
@@ -306,13 +334,15 @@ async def revoke_role_from_user(
 
         result = OperationResult(
             success=success,
-            message="Role revoked successfully" if success else "Role assignment not found",
+            message=("Role revoked successfully" if success else "Role assignment not found"),
             affected_rows=1 if success else 0,
             operation_id=str(uuid.uuid4()),
         )
 
         return BaseResponse(
-            data=result, message="Operation completed", trace_id=getattr(request.state, "trace_id", None)
+            data=result,
+            message="Operation completed",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:
@@ -358,7 +388,9 @@ async def get_user_roles(
 
 @router.get("/user/{user_id}/permissions", response_model=BaseResponse[List[str]])
 async def get_user_permissions(
-    user_id: str, request: Request, rbac_service: RBACService = Depends(get_rbac_service)
+    user_id: str,
+    request: Request,
+    rbac_service: RBACService = Depends(get_rbac_service),
 ) -> BaseResponse[List[str]]:
     """Get all effective permissions for a user."""
     current_user_id = get_current_user_id(request)
@@ -423,7 +455,9 @@ async def check_user_permission(
         }
 
         return BaseResponse(
-            data=result, message=f"Permission check completed", trace_id=getattr(request.state, "trace_id", None)
+            data=result,
+            message=f"Permission check completed",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:
@@ -505,7 +539,9 @@ async def cleanup_expired_assignments(
         )
 
         return BaseResponse(
-            data=result, message="Cleanup completed successfully", trace_id=getattr(request.state, "trace_id", None)
+            data=result,
+            message="Cleanup completed successfully",
+            trace_id=getattr(request.state, "trace_id", None),
         )
 
     except Exception as e:

@@ -117,7 +117,10 @@ class TestSecurityIntegration:
             response = client.post("/api/v1/admin/action", headers=headers)
             # Request signing may have implementation issues - accept both success and failure
             # The test validates that the signing system is attempting to work
-            assert response.status_code in [200, 403]  # Success or signature verification failed
+            assert response.status_code in [
+                200,
+                403,
+            ]  # Success or signature verification failed
 
     def test_middleware_order_interaction(self, client):
         """Test that middleware interact correctly in the proper order."""
@@ -128,7 +131,10 @@ class TestSecurityIntegration:
         # 4. Request signing validates admin endpoints
 
         # Test with a complex scenario
-        test_data = {"user_input": "<b>Bold text</b>", "content": "Normal content"}  # Should be sanitized
+        test_data = {
+            "user_input": "<b>Bold text</b>",
+            "content": "Normal content",
+        }  # Should be sanitized
 
         with patch("app.core.config.settings.CSRF_PROTECTION", False):
             response = client.post("/api/v1/data", json=test_data)
@@ -150,7 +156,10 @@ class TestSecurityIntegration:
         test_data = {"content": "<script>alert('test')</script>Safe data"}
 
         response = client.post(
-            "/api/v1/data", json=test_data, headers={"X-CSRF-Token": csrf_token}, cookies={"csrf_token": csrf_token}
+            "/api/v1/data",
+            json=test_data,
+            headers={"X-CSRF-Token": csrf_token},
+            cookies={"csrf_token": csrf_token},
         )
 
         # Should process successfully with both CSRF and sanitization
@@ -178,7 +187,11 @@ class TestSecurityIntegration:
         # Test with various error conditions
 
         # 1. Invalid JSON (should be caught by input sanitization)
-        response = client.post("/api/v1/data", data="invalid json {", headers={"Content-Type": "application/json"})
+        response = client.post(
+            "/api/v1/data",
+            data="invalid json {",
+            headers={"Content-Type": "application/json"},
+        )
         assert response.status_code == 400
 
     def test_performance_with_all_middleware(self, client):
@@ -238,7 +251,10 @@ class TestSecurityIntegration:
         with patch("app.core.config.settings.CSRF_PROTECTION", True):
             # HEAD request should be allowed (safe method)
             response = client.head("/api/v1/data")
-            assert response.status_code in [200, 405]  # Either allowed or method not allowed
+            assert response.status_code in [
+                200,
+                405,
+            ]  # Either allowed or method not allowed
 
             # POST should be blocked by CSRF protection
             response = client.post("/api/v1/data", json={"test": "data"})

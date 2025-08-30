@@ -33,7 +33,14 @@ class TestBaseRepositoryCoverage:
     @pytest.mark.asyncio
     async def test_page_getitem(self):
         """Test Page.__getitem__ (line 50)."""
-        page = Page(items=["a", "b", "c"], total=3, page=1, size=10, has_next=False, has_prev=False)
+        page = Page(
+            items=["a", "b", "c"],
+            total=3,
+            page=1,
+            size=10,
+            has_next=False,
+            has_prev=False,
+        )
         assert page[0] == "a"
         assert page[-1] == "c"
 
@@ -43,7 +50,9 @@ class TestBaseRepositoryCoverage:
         with patch.object(user_repo.session, "add", side_effect=SQLAlchemyError("Error")):
             with pytest.raises(SQLAlchemyError):
                 await user_repo.create(
-                    username="test", email="test@example.com", password_hash=get_test_password_hash()
+                    username="test",
+                    email="test@example.com",
+                    password_hash=get_test_password_hash(),
                 )
 
     @pytest.mark.asyncio
@@ -116,7 +125,9 @@ class TestBaseRepositoryCoverage:
         """Test hard delete path (lines 216-221)."""
         # Create user
         user = await user_repo.create(
-            username="harddelete", email="hard@example.com", password_hash=get_test_password_hash()
+            username="harddelete",
+            email="hard@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -161,7 +172,9 @@ class TestBaseRepositoryCoverage:
         users = []
         for i in range(3):
             user = await user_repo.create(
-                username=f"listuser{i}", email=f"list{i}@example.com", password_hash=get_test_password_hash()
+                username=f"listuser{i}",
+                email=f"list{i}@example.com",
+                password_hash=get_test_password_hash(),
             )
             users.append(user)
         await async_db_session.commit()
@@ -210,7 +223,9 @@ class TestBaseRepositoryCoverage:
         """Test count with filters (lines 364-391)."""
         # Create test data
         user = await user_repo.create(
-            username="countuser", email="count@example.com", password_hash=get_test_password_hash()
+            username="countuser",
+            email="count@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -238,7 +253,9 @@ class TestBaseRepositoryCoverage:
         """Test exists method (lines 403-423)."""
         # Create user
         user = await user_repo.create(
-            username="existsuser", email="exists@example.com", password_hash=get_test_password_hash()
+            username="existsuser",
+            email="exists@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -273,7 +290,9 @@ class TestBaseRepositoryCoverage:
         """Test restore method (lines 436-469)."""
         # Create and soft delete user
         user = await user_repo.create(
-            username="restoreuser", email="restore@example.com", password_hash=get_test_password_hash()
+            username="restoreuser",
+            email="restore@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 

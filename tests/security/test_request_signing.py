@@ -453,7 +453,10 @@ class TestRequestSigningEdgeCases:
         request.method = "POST"
 
         with patch("app.middleware.request_signing.has_cached_body", return_value=True):
-            with patch("app.middleware.request_signing.get_cached_body", return_value=cached_body):
+            with patch(
+                "app.middleware.request_signing.get_cached_body",
+                return_value=cached_body,
+            ):
                 # Should use cached body instead of reading again
                 # (Test would continue with full signature verification)
                 pass

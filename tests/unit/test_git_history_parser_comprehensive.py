@@ -14,7 +14,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, FixType, GitHistoryParser
+from tools.pre_audit.git_history_parser import (
+    ArchitecturalFix,
+    FileChangePattern,
+    FixType,
+    GitHistoryParser,
+)
 
 
 @pytest.fixture
@@ -30,18 +35,30 @@ def real_repo(tmp_path):
 
     # Create test files and commits
     test_commits = [
-        {"files": {"app/auth.py": "# Auth module", "app/models.py": "# Models"}, "message": "Initial commit"},
-        {"files": {"app/auth.py": "# Auth module\n# Fixed"}, "message": "Fix ADR-001 compliance issue in auth module"},
+        {
+            "files": {"app/auth.py": "# Auth module", "app/models.py": "# Models"},
+            "message": "Initial commit",
+        },
+        {
+            "files": {"app/auth.py": "# Auth module\n# Fixed"},
+            "message": "Fix ADR-001 compliance issue in auth module",
+        },
         {
             "files": {"app/boundaries/service.py": "# Service boundary"},
             "message": "Resolve layer violation between service and repository",
         },
         {
-            "files": {"app/core/base.py": "# Base module", "app/core/interfaces.py": "# Interfaces"},
+            "files": {
+                "app/core/base.py": "# Base module",
+                "app/core/interfaces.py": "# Interfaces",
+            },
             "message": "Refactor to improve architectural integrity",
         },
         {
-            "files": {"app/auth.py": "# Auth fixed again", "app/models.py": "# Models fixed"},
+            "files": {
+                "app/auth.py": "# Auth fixed again",
+                "app/models.py": "# Models fixed",
+            },
             "message": "Fix circular dependency between auth and models",
         },
         {
@@ -73,7 +90,11 @@ def real_repo(tmp_path):
         env["GIT_COMMITTER_EMAIL"] = "test@example.com"
 
         subprocess.run(
-            ["git", "commit", "-m", commit_data["message"]], cwd=repo_path, check=True, env=env, capture_output=True
+            ["git", "commit", "-m", commit_data["message"]],
+            cwd=repo_path,
+            check=True,
+            env=env,
+            capture_output=True,
         )
 
     yield repo_path

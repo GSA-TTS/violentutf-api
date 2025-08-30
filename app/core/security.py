@@ -212,7 +212,9 @@ def hash_cache_key(key: str) -> str:
     )
     # BLAKE2b with key is cryptographically secure for cache key hashing
     return hashlib.blake2b(
-        key.encode(), key=secret_key.encode()[:64], digest_size=32  # BLAKE2b key max 64 bytes
+        key.encode(),
+        key=secret_key.encode()[:64],
+        digest_size=32,  # BLAKE2b key max 64 bytes
     ).hexdigest()
 
 

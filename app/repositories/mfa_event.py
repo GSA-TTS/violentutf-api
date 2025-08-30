@@ -33,7 +33,12 @@ class MFAEventRepository(BaseRepository[MFAEvent]):
         """Get events by user and type."""
         query = (
             select(self.model)
-            .where(and_(self.model.user_id == str(user_id), self.model.event_type == event_type))
+            .where(
+                and_(
+                    self.model.user_id == str(user_id),
+                    self.model.event_type == event_type,
+                )
+            )
             .order_by(self.model.created_at.desc())
         )
         result = await self.session.execute(query)

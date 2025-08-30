@@ -119,7 +119,10 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
         return self._unauthorized_response("Missing authentication token or API key")
 
     async def _authenticate_jwt(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]], token: str
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+        token: str,
     ) -> Response:
         """Authenticate using JWT token."""
         try:
@@ -233,7 +236,10 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     async def _authenticate_api_key(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]], api_key: str
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+        api_key: str,
     ) -> Response:
         """Authenticate using API key."""
         try:

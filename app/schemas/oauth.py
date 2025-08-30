@@ -141,8 +141,8 @@ class OAuthApplicationResponse(BaseModel):
             owner_id=str(obj.owner_id),
             logo_url=str(obj.logo_url) if obj.logo_url else None,
             homepage_url=str(obj.homepage_url) if obj.homepage_url else None,
-            privacy_policy_url=str(obj.privacy_policy_url) if obj.privacy_policy_url else None,
-            terms_of_service_url=str(obj.terms_of_service_url) if obj.terms_of_service_url else None,
+            privacy_policy_url=(str(obj.privacy_policy_url) if obj.privacy_policy_url else None),
+            terms_of_service_url=(str(obj.terms_of_service_url) if obj.terms_of_service_url else None),
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )

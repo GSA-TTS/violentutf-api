@@ -79,7 +79,13 @@ class LoadTestMetrics:
         self.retry_counts: List[int] = []
         self.circuit_breaker_trips = 0
 
-    def record_operation(self, duration: float, success: bool, retries: int = 0, error: Optional[Exception] = None):
+    def record_operation(
+        self,
+        duration: float,
+        success: bool,
+        retries: int = 0,
+        error: Optional[Exception] = None,
+    ):
         """Record an operation's metrics."""
         self.operations.append(
             {
@@ -113,7 +119,7 @@ class LoadTestMetrics:
             "success_rate": successful_ops / total_ops if total_ops > 0 else 0,
             "avg_duration": avg_duration,
             "total_retries": sum(self.retry_counts),
-            "avg_retries_per_failure": sum(self.retry_counts) / len(self.retry_counts) if self.retry_counts else 0,
+            "avg_retries_per_failure": (sum(self.retry_counts) / len(self.retry_counts) if self.retry_counts else 0),
             "circuit_breaker_trips": self.circuit_breaker_trips,
             "total_duration": time.time() - self.start_time,
         }
@@ -131,7 +137,10 @@ class TestRetryLogicLoad:
         await manager.shutdown()
 
     async def execute_with_retry_tracking(
-        self, db_func, metrics: LoadTestMetrics, failure_simulator: Optional[FailureSimulator] = None
+        self,
+        db_func,
+        metrics: LoadTestMetrics,
+        failure_simulator: Optional[FailureSimulator] = None,
     ):
         """Execute a database operation with retry tracking."""
         start_time = time.time()
@@ -193,7 +202,11 @@ class TestRetryLogicLoad:
                             _ = result.scalar_one_or_none()
 
                     # Success
-                    metrics.record_operation(duration=time.time() - time.time(), success=True, retries=retry_count)
+                    metrics.record_operation(
+                        duration=time.time() - time.time(),
+                        success=True,
+                        retries=retry_count,
+                    )
                     return
 
                 except OperationalError as e:
@@ -206,7 +219,10 @@ class TestRetryLogicLoad:
 
             # All retries failed
             metrics.record_operation(
-                duration=time.time() - time.time(), success=False, retries=retry_count, error=last_error
+                duration=time.time() - time.time(),
+                success=False,
+                retries=retry_count,
+                error=last_error,
             )
 
         # Execute operations concurrently

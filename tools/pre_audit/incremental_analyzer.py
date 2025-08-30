@@ -281,7 +281,10 @@ class IncrementalAnalyzer:
             self.logger.warning(f"Multi-agent orchestrator not available: {e}")
 
     async def analyze_changes(
-        self, base_ref: str = "HEAD~1", use_claude: bool = True, force_reanalysis: bool = False
+        self,
+        base_ref: str = "HEAD~1",
+        use_claude: bool = True,
+        force_reanalysis: bool = False,
     ) -> Dict[str, Any]:
         """Analyze only changed files incrementally"""
         start_time = datetime.now()
@@ -350,7 +353,12 @@ class IncrementalAnalyzer:
         # Generate summary
         execution_time = (datetime.now() - start_time).total_seconds()
         summary = self._generate_summary(
-            all_results, changes, len(cached_results), len(files_to_analyze), execution_time, base_ref
+            all_results,
+            changes,
+            len(cached_results),
+            len(files_to_analyze),
+            execution_time,
+            base_ref,
         )
 
         return summary
@@ -512,7 +520,10 @@ async def main() -> None:
     args = parser.parse_args()
 
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     # Initialize analyzer
     analyzer = IncrementalAnalyzer()

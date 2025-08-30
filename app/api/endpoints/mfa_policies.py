@@ -73,10 +73,16 @@ async def create_mfa_policy(
         )
     except ValidationError as e:
         logger.warning("MFA policy validation failed", error_type=type(e).__name__)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid MFA policy parameters")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid MFA policy parameters",
+        )
     except Exception as e:
         logger.error("Failed to create MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create MFA policy",
+        )
 
 
 @router.get("/", response_model=BaseResponse[MFAPolicyList])
@@ -102,7 +108,10 @@ async def list_mfa_policies(
         )
     except Exception as e:
         logger.error("Failed to list MFA policies", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list MFA policies")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list MFA policies",
+        )
 
 
 @router.get("/{policy_id}", response_model=BaseResponse[MFAPolicyResponse])
@@ -123,13 +132,20 @@ async def get_mfa_policy(
         if not policy:
             raise NotFoundError("MFA policy not found")
 
-        return BaseResponse(status="success", message="MFA policy retrieved", data=MFAPolicyResponse(**policy))
+        return BaseResponse(
+            status="success",
+            message="MFA policy retrieved",
+            data=MFAPolicyResponse(**policy),
+        )
     except NotFoundError as e:
         logger.warning("MFA policy not found", error_type=type(e).__name__)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to get MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to get MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get MFA policy",
+        )
 
 
 @router.put("/{policy_id}", response_model=BaseResponse[MFAPolicyResponse])
@@ -176,14 +192,22 @@ async def update_mfa_policy(
         policy_dict = next((p for p in policies if p["id"] == policy_id), None)
 
         return BaseResponse(
-            status="success", message="MFA policy updated successfully", data=MFAPolicyResponse(**policy_dict)
+            status="success",
+            message="MFA policy updated successfully",
+            data=MFAPolicyResponse(**policy_dict),
         )
     except ValidationError as e:
         logger.warning("MFA policy validation failed", error_type=type(e).__name__)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid MFA policy parameters")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid MFA policy parameters",
+        )
     except Exception as e:
         logger.error("Failed to update MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update MFA policy",
+        )
 
 
 @router.delete("/{policy_id}", response_model=BaseResponse[Dict[str, bool]])
@@ -207,7 +231,10 @@ async def delete_mfa_policy(
         )
     except Exception as e:
         logger.error("Failed to delete MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete MFA policy",
+        )
 
 
 @router.get("/check/{user_id}", response_model=BaseResponse[UserMFARequirement])
@@ -233,7 +260,7 @@ async def check_user_mfa_requirement(
         from app.models.user import User as UserModel
 
         user = UserModel(
-            id=uuid.UUID(user_data.id) if isinstance(user_data.id, str) else user_data.id,
+            id=(uuid.UUID(user_data.id) if isinstance(user_data.id, str) else user_data.id),
             username=user_data.username,
             email=user_data.email,
             is_active=user_data.is_active,
@@ -264,4 +291,7 @@ async def check_user_mfa_requirement(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to check MFA requirement", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to check MFA requirement")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check MFA requirement",
+        )

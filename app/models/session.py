@@ -30,11 +30,18 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
 
     # Session identification
     session_token: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True, comment="Unique session token (hashed)"
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="Unique session token (hashed)",
     )
 
     refresh_token: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, index=True, comment="Refresh token for session renewal (hashed)"
+        String(255),
+        nullable=True,
+        index=True,
+        comment="Refresh token for session renewal (hashed)",
     )
 
     # User relationship
@@ -52,7 +59,10 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
     )
 
     ip_address: Mapped[Optional[str]] = mapped_column(
-        String(45), nullable=True, index=True, comment="IP address where session was created"
+        String(45),
+        nullable=True,
+        index=True,
+        comment="IP address where session was created",
     )
 
     location: Mapped[Optional[str]] = mapped_column(
@@ -61,7 +71,11 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
 
     # Session status and timing
     is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False, server_default="true", comment="Whether the session is currently active"
+        Boolean,
+        default=True,
+        nullable=False,
+        server_default="true",
+        comment="Whether the session is currently active",
     )
 
     expires_at: Mapped[datetime] = mapped_column(
@@ -82,7 +96,9 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
     )
 
     revoked_by: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, comment="Who revoked the session (user ID or system)"
+        String(255),
+        nullable=True,
+        comment="Who revoked the session (user ID or system)",
     )
 
     revocation_reason: Mapped[Optional[str]] = mapped_column(
@@ -91,7 +107,10 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
 
     # Security features
     security_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONType, nullable=True, default=None, comment="Additional security metadata (MFA, risk scores, etc.)"
+        JSONType,
+        nullable=True,
+        default=None,
+        comment="Additional security metadata (MFA, risk scores, etc.)",
     )
 
     # Relationships
@@ -254,7 +273,7 @@ class Session(Base, BaseModelMixin, SecurityValidationMixin):
             "is_active": self.is_active,
             "is_valid": self.is_valid(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "last_activity_at": self.last_activity_at.isoformat() if self.last_activity_at else None,
+            "last_activity_at": (self.last_activity_at.isoformat() if self.last_activity_at else None),
             "last_activity_ip": self.last_activity_ip,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
             "revoked_by": self.revoked_by,

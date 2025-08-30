@@ -44,7 +44,9 @@ def query_result_factory() -> callable:
     """Factory for creating mock query results with various data patterns."""
 
     def _create_result(
-        data: Optional[List[Any]] = None, scalar_result: Optional[Any] = None, count_result: Optional[int] = None
+        data: Optional[List[Any]] = None,
+        scalar_result: Optional[Any] = None,
+        count_result: Optional[int] = None,
     ) -> AsyncMock:
         """Create a mock Result object with configured return values."""
         result = AsyncMock(spec=Result)
@@ -140,7 +142,10 @@ def pagination_result_factory() -> callable:
     """Factory for creating paginated query results."""
 
     def _create_pagination_result(
-        total_items: int, page_size: int, current_page: int, items: Optional[List[Any]] = None
+        total_items: int,
+        page_size: int,
+        current_page: int,
+        items: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """Create pagination result data structure."""
         if items is None:

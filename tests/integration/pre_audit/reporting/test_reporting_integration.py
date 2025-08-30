@@ -24,7 +24,10 @@ from tools.pre_audit.reporting import (
 
 # Try to import the auditor for full integration
 try:
-    from tools.pre_audit.claude_code_auditor import EnterpriseClaudeCodeAuditor, EnterpriseClaudeCodeConfig
+    from tools.pre_audit.claude_code_auditor import (
+        EnterpriseClaudeCodeAuditor,
+        EnterpriseClaudeCodeConfig,
+    )
 
     HAS_AUDITOR = True
 except ImportError:
@@ -103,7 +106,10 @@ class TestReportingIntegration:
                         {"adr_id": "ADR-002", "timestamp": "2024-01-01"},
                         {"adr_id": "ADR-003", "timestamp": "2024-01-05"},
                     ],
-                    "recommendations": ["Refactor authentication module", "Add comprehensive test coverage"],
+                    "recommendations": [
+                        "Refactor authentication module",
+                        "Add comprehensive test coverage",
+                    ],
                     "temporal_patterns": {"trend": "degrading"},
                     "risk_confidence_interval": [0.80, 0.90],
                 },
@@ -226,7 +232,10 @@ class TestReportingIntegration:
             "overall_compliance_score": 90.0,
             "all_violations": [],
             "architectural_hotspots": [],
-            "audit_metadata": {"total_files_analyzed": 50, "repository_path": str(temp_dir)},
+            "audit_metadata": {
+                "total_files_analyzed": 50,
+                "repository_path": str(temp_dir),
+            },
         }
 
         # Create auditor config
@@ -247,7 +256,11 @@ class TestReportingIntegration:
     def test_security_level_filtering(self, temp_dir, complete_audit_data):
         """Test that security levels properly filter data."""
         # Test PUBLIC level
-        public_config = ReportConfig(output_dir=temp_dir, security_level=SecurityLevel.PUBLIC, export_formats=["json"])
+        public_config = ReportConfig(
+            output_dir=temp_dir,
+            security_level=SecurityLevel.PUBLIC,
+            export_formats=["json"],
+        )
 
         public_gen = JSONReportGenerator(public_config)
         public_path = public_gen.generate(complete_audit_data)
@@ -262,7 +275,9 @@ class TestReportingIntegration:
 
         # Test RESTRICTED level
         restricted_config = ReportConfig(
-            output_dir=temp_dir, security_level=SecurityLevel.RESTRICTED, export_formats=["json"]
+            output_dir=temp_dir,
+            security_level=SecurityLevel.RESTRICTED,
+            export_formats=["json"],
         )
 
         restricted_gen = JSONReportGenerator(restricted_config)

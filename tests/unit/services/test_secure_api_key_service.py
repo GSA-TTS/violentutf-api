@@ -17,7 +17,12 @@ import pytest
 from passlib.hash import argon2
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.secrets_manager import FileSecretsManager, SecretsManager
 from app.models.api_key import APIKey
 from app.services.api_key_service import APIKeyService
@@ -193,7 +198,13 @@ class TestAPIKeyValidationEnhanced(TestSecureAPIKeyService):
 
     async def test_validate_api_key_invalid_format(self, api_key_service):
         """Test validation with invalid key format."""
-        invalid_keys = ["", None, "invalid_key", "wrong_prefix_key", "api_key_without_prefix"]
+        invalid_keys = [
+            "",
+            None,
+            "invalid_key",
+            "wrong_prefix_key",
+            "api_key_without_prefix",
+        ]
 
         for invalid_key in invalid_keys:
             result = await api_key_service.validate_api_key(invalid_key)

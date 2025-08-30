@@ -14,7 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.abac import check_abac_permission
-from app.core.authority import AuthorityLevel, evaluate_user_authority, is_deprecated_superuser
+from app.core.authority import (
+    AuthorityLevel,
+    evaluate_user_authority,
+    is_deprecated_superuser,
+)
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.db.session import get_db
 from app.repositories.role import RoleRepository
@@ -136,7 +140,12 @@ def require_permissions(
                         )
 
                         if not is_allowed:
-                            logger.info("ABAC permission denied", user_id=user_id, permission=perm, reason=reason)
+                            logger.info(
+                                "ABAC permission denied",
+                                user_id=user_id,
+                                permission=perm,
+                                reason=reason,
+                            )
                             permission_desc = " AND ".join(permission_list)
                             raise ForbiddenError(
                                 message=f"Access denied: {reason}. Required permissions: {permission_desc}"

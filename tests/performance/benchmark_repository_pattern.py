@@ -575,7 +575,10 @@ class TestIssue89PerformanceBenchmarkCompliance:
     """Final performance validation for Issue #89 requirements."""
 
     async def test_issue_89_performance_requirements_met(
-        self, client: SafeTestClient, auth_token: str, benchmark_user_service: UserServiceImpl
+        self,
+        client: SafeTestClient,
+        auth_token: str,
+        benchmark_user_service: UserServiceImpl,
     ):
         """Master test validating all Issue #89 performance requirements.
 

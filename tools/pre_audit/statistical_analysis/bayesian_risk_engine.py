@@ -356,7 +356,11 @@ class BayesianRiskEngine:
             bayesian_model,
             X_normalized,
             y,
-            cv=StratifiedKFold(n_splits=self.cross_validation_folds, shuffle=True, random_state=self.random_state),
+            cv=StratifiedKFold(
+                n_splits=self.cross_validation_folds,
+                shuffle=True,
+                random_state=self.random_state,
+            ),
             scoring="roc_auc",
         )
 

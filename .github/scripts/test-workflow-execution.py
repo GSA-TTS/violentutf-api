@@ -146,7 +146,10 @@ class WorkflowExecutionTester:
 
                 # Test actual execution in safe mode
                 exec_result = subprocess.run(  # nosec B603, B607 - Safe testing with controlled input
-                    ["bash", f.name], capture_output=True, text=True, timeout=30  # Prevent hanging
+                    ["bash", f.name],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,  # Prevent hanging
                 )
 
                 os.unlink(f.name)

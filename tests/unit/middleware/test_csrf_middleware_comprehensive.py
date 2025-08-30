@@ -619,7 +619,14 @@ class TestCSRFConstants:
 
     def test_exempt_paths_cover_essential_endpoints(self):
         """Test that exempt paths cover essential endpoints."""
-        essential_paths = ["/api/v1/health", "/api/v1/ready", "/api/v1/live", "/docs", "/redoc", "/openapi.json"]
+        essential_paths = [
+            "/api/v1/health",
+            "/api/v1/ready",
+            "/api/v1/live",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        ]
 
         for path in essential_paths:
             assert path in CSRF_EXEMPT_PATHS
@@ -656,7 +663,9 @@ class TestCSRFIntegrationScenarios:
 
             # Use the token in both cookie and header
             response = client.post(
-                "/api/v1/protected", cookies={CSRF_COOKIE_NAME: token}, headers={CSRF_HEADER_NAME: token}
+                "/api/v1/protected",
+                cookies={CSRF_COOKIE_NAME: token},
+                headers={CSRF_HEADER_NAME: token},
             )
             assert response.status_code == 200
 

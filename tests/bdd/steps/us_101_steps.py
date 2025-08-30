@@ -52,7 +52,9 @@ def step_cleanup_previous_containers(context):
     """Ensure no test containers are running."""
     # Stop and remove any existing test containers
     result = subprocess.run(
-        ["docker-compose", "-f", str(context.docker_compose_file), "down", "-v"], capture_output=True, text=True
+        ["docker-compose", "-f", str(context.docker_compose_file), "down", "-v"],
+        capture_output=True,
+        text=True,
     )
 
     # Wait for cleanup to complete
@@ -70,7 +72,9 @@ def step_ensure_environment_running(context):
     """Ensure Docker test environment is running."""
     # Start environment if not already running
     result = subprocess.run(
-        ["docker-compose", "-f", str(context.docker_compose_file), "up", "-d"], capture_output=True, text=True
+        ["docker-compose", "-f", str(context.docker_compose_file), "up", "-d"],
+        capture_output=True,
+        text=True,
     )
 
     # Wait for services to start
@@ -86,7 +90,9 @@ def step_start_docker_environment(context):
     context.start_time = time.time()
 
     result = subprocess.run(
-        ["docker-compose", "-f", str(context.docker_compose_file), "up", "-d"], capture_output=True, text=True
+        ["docker-compose", "-f", str(context.docker_compose_file), "up", "-d"],
+        capture_output=True,
+        text=True,
     )
 
     context.startup_result = result
@@ -100,7 +106,14 @@ def step_start_clean_environment(context):
 
     # Start with fresh environment
     result = subprocess.run(
-        ["docker-compose", "-f", str(context.docker_compose_file), "up", "-d", "--force-recreate"],
+        [
+            "docker-compose",
+            "-f",
+            str(context.docker_compose_file),
+            "up",
+            "-d",
+            "--force-recreate",
+        ],
         capture_output=True,
         text=True,
     )

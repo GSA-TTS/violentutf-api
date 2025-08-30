@@ -249,7 +249,10 @@ class TestAuditService:
         mock_audit_log = MagicMock(spec=AuditLog)
         mock_audit_log.action = "permission.permission_granted"
         mock_audit_log.status = "success"
-        mock_audit_log.action_metadata = {"permissions_checked": permissions, "permissions_granted": permissions}
+        mock_audit_log.action_metadata = {
+            "permissions_checked": permissions,
+            "permissions_granted": permissions,
+        }
         mock_repository.log_action.return_value = mock_audit_log
 
         # Act
@@ -343,7 +346,10 @@ class TestAuditService:
         mock_audit_log.action = "security.suspicious_activity"
         mock_audit_log.resource_type = "security"
         mock_audit_log.status = "failure"
-        mock_audit_log.action_metadata = {"risk_level": "high", "pattern": "Multiple failed login attempts"}
+        mock_audit_log.action_metadata = {
+            "risk_level": "high",
+            "pattern": "Multiple failed login attempts",
+        }
         mock_repository.log_action.return_value = mock_audit_log
 
         # Act
@@ -369,8 +375,16 @@ class TestAuditService:
         # Arrange
         user_id = str(uuid.uuid4())
         mock_logs = [
-            MagicMock(spec=AuditLog, action="user.login", created_at=datetime.now(timezone.utc)),
-            MagicMock(spec=AuditLog, action="user.update", created_at=datetime.now(timezone.utc)),
+            MagicMock(
+                spec=AuditLog,
+                action="user.login",
+                created_at=datetime.now(timezone.utc),
+            ),
+            MagicMock(
+                spec=AuditLog,
+                action="user.update",
+                created_at=datetime.now(timezone.utc),
+            ),
         ]
 
         # Mock the Page object that repository returns

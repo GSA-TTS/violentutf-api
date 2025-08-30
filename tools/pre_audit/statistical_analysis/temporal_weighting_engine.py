@@ -286,7 +286,12 @@ class TemporalWeightingEngine:
 
         # Optimize half-life parameter
         try:
-            result = minimize_scalar(objective_function, bounds=(1.0, 365.0), method="bounded", options={"xatol": 0.1})
+            result = minimize_scalar(
+                objective_function,
+                bounds=(1.0, 365.0),
+                method="bounded",
+                options={"xatol": 0.1},
+            )
 
             optimal_half_life = result.x
             optimization_score = 1.0 - result.fun  # Convert error to score
@@ -321,7 +326,11 @@ class TemporalWeightingEngine:
         return self.optimal_parameters
 
     def _calculate_prediction_error(
-        self, violations_df: pd.DataFrame, half_life: float, prediction_window: int, metric: str
+        self,
+        violations_df: pd.DataFrame,
+        half_life: float,
+        prediction_window: int,
+        metric: str,
     ) -> float:
         """
         Calculate prediction error using time series cross-validation.
@@ -472,7 +481,11 @@ class TemporalWeightingEngine:
         for file_path, file_violations_list in file_violations.items():
             try:
                 result = self._calculate_file_temporal_weight(
-                    file_path, file_violations_list, current_time, weighting_method, half_life
+                    file_path,
+                    file_violations_list,
+                    current_time,
+                    weighting_method,
+                    half_life,
                 )
                 results[file_path] = result
 

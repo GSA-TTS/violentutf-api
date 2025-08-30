@@ -81,7 +81,10 @@ class TestEnhancedJWTClaims:
     def test_complete_claims_structure_validation(self, client: "TestClient") -> None:
         """Test that complete enhanced claims structure is properly validated."""
         token = self.create_enhanced_jwt_token(
-            user_id="user-456", roles=["viewer", "tester"], organization_id="org-789", token_type="access"
+            user_id="user-456",
+            roles=["viewer", "tester"],
+            organization_id="org-789",
+            token_type="access",
         )
         headers = {"Authorization": f"Bearer {token}"}
 
@@ -267,9 +270,21 @@ class TestEnhancedJWTClaims:
         """Test that roles claim must be an array."""
         # Test with various invalid role types
         invalid_roles_payloads = [
-            {"sub": "user-123", "roles": "viewer", "type": "access"},  # String instead of array
-            {"sub": "user-123", "roles": 123, "type": "access"},  # Number instead of array
-            {"sub": "user-123", "roles": {"admin": True}, "type": "access"},  # Object instead of array
+            {
+                "sub": "user-123",
+                "roles": "viewer",
+                "type": "access",
+            },  # String instead of array
+            {
+                "sub": "user-123",
+                "roles": 123,
+                "type": "access",
+            },  # Number instead of array
+            {
+                "sub": "user-123",
+                "roles": {"admin": True},
+                "type": "access",
+            },  # Object instead of array
         ]
 
         for payload in invalid_roles_payloads:
@@ -446,7 +461,9 @@ class TestEnhancedJWTClaims:
 
         for context in abac_contexts:
             token = self.create_enhanced_jwt_token(
-                user_id=context["user_id"], roles=context["roles"], organization_id=context["organization_id"]
+                user_id=context["user_id"],
+                roles=context["roles"],
+                organization_id=context["organization_id"],
             )
             headers = {"Authorization": f"Bearer {token}"}
 

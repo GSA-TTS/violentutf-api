@@ -64,7 +64,9 @@ class TestDataGenerator:
 
     @staticmethod
     async def create_test_vulnerabilities(
-        db_session: AsyncSession, count: int = 20, severity_distribution: Dict[str, float] = None
+        db_session: AsyncSession,
+        count: int = 20,
+        severity_distribution: Dict[str, float] = None,
     ) -> List[VulnerabilityFinding]:
         """Create test vulnerability findings.
 
@@ -77,7 +79,12 @@ class TestDataGenerator:
             List of created vulnerability findings
         """
         if severity_distribution is None:
-            severity_distribution = {"CRITICAL": 0.1, "HIGH": 0.2, "MEDIUM": 0.4, "LOW": 0.3}
+            severity_distribution = {
+                "CRITICAL": 0.1,
+                "HIGH": 0.2,
+                "MEDIUM": 0.4,
+                "LOW": 0.3,
+            }
 
         findings = []
         severities = [
@@ -122,7 +129,13 @@ class TestDataGenerator:
         from app.models.audit_log import AuditLog
 
         logs = []
-        actions = ["scan.create", "vulnerability.review", "report.generate", "training.completed", "policy.created"]
+        actions = [
+            "scan.create",
+            "vulnerability.review",
+            "report.generate",
+            "training.completed",
+            "policy.created",
+        ]
 
         for i in range(count):
             log = AuditLog(
@@ -443,7 +456,7 @@ class TestArchitecturalReportGenerator:
             finding = VulnerabilityFinding(
                 title=f"Test Finding {i}",
                 description=f"Test finding description {i}",
-                severity=VulnerabilitySeverity.HIGH if i % 3 == 0 else VulnerabilitySeverity.MEDIUM,
+                severity=(VulnerabilitySeverity.HIGH if i % 3 == 0 else VulnerabilitySeverity.MEDIUM),
                 category="security" if i % 2 == 0 else "quality",
                 status="resolved" if i < 10 else "open",
                 created_at=datetime.now(timezone.utc) - timedelta(days=i),
@@ -605,7 +618,10 @@ class TestArchitecturalReportGenerator:
             },
             "roi_analysis": {
                 "roi_percentage": 50.0,
-                "implementation_costs": {"developer_time": 20000, "tool_licensing": 5000},
+                "implementation_costs": {
+                    "developer_time": 20000,
+                    "tool_licensing": 5000,
+                },
             },
         }
 
@@ -638,7 +654,10 @@ class TestScheduledReportService:
             cron_expression="0 9 * * MON",
             report_type="architectural_metrics",
             output_formats=[ReportFormat.PDF, ReportFormat.HTML],
-            config={"period_days": 7, "include_sections": ["leading", "lagging", "roi"]},
+            config={
+                "period_days": 7,
+                "include_sections": ["leading", "lagging", "roi"],
+            },
             notification_emails=["test@example.com"],
             created_by="test_user",
         )
@@ -660,7 +679,9 @@ class TestScheduledReportService:
         import tempfile
 
         from app.models.scan import Scan
-        from app.services.architectural_report_generator import ArchitecturalReportGenerator
+        from app.services.architectural_report_generator import (
+            ArchitecturalReportGenerator,
+        )
 
         # Create some test data
         for i in range(3):
@@ -701,7 +722,11 @@ class TestScheduledReportService:
                 patched_email.return_value = True
 
                 # Also patch the file generation to use our test file
-                with patch.object(ArchitecturalReportGenerator, "_generate_pdf_file", return_value=test_file_path):
+                with patch.object(
+                    ArchitecturalReportGenerator,
+                    "_generate_pdf_file",
+                    return_value=test_file_path,
+                ):
                     # Execute
                     results = await scheduled_service.execute_scheduled_reports()
 
@@ -738,7 +763,8 @@ class TestScheduledReportService:
 
         # Execute
         updated = await scheduled_service.update_schedule(
-            schedule_id="test-schedule-1", updates={"is_active": False, "cron_expression": "0 10 * * *"}
+            schedule_id="test-schedule-1",
+            updates={"is_active": False, "cron_expression": "0 10 * * *"},
         )
 
         # Assert
@@ -800,7 +826,10 @@ class TestEmailNotifications:
 
             # Verify email content
             call_args = patched_send_email.call_args
-            assert call_args.kwargs["to_email"] == ["user1@example.com", "user2@example.com"]
+            assert call_args.kwargs["to_email"] == [
+                "user1@example.com",
+                "user2@example.com",
+            ]
             assert "Monthly Metrics" in call_args.kwargs["subject"]
             assert "report-123" in call_args.kwargs["body"]
             assert "https://example.com/download/report-123" in call_args.kwargs["body"]
@@ -843,7 +872,7 @@ class TestIntegration:
             finding = VulnerabilityFinding(
                 title=f"Finding {i}",
                 description="Test finding",
-                severity=VulnerabilitySeverity.MEDIUM if i % 2 else VulnerabilitySeverity.HIGH,
+                severity=(VulnerabilitySeverity.MEDIUM if i % 2 else VulnerabilitySeverity.HIGH),
                 category="security",
                 status="resolved" if i < 5 else "open",
                 created_at=datetime.now(timezone.utc) - timedelta(days=i),

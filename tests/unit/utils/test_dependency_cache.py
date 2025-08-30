@@ -14,7 +14,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from app.utils.dependency_cache import CacheStats, DependencyCache, FileCacheManager, PackageInfo, get_dependency_cache
+from app.utils.dependency_cache import (
+    CacheStats,
+    DependencyCache,
+    FileCacheManager,
+    PackageInfo,
+    get_dependency_cache,
+)
 
 
 class TestPackageInfo:
@@ -32,7 +38,12 @@ class TestPackageInfo:
 
     def test_package_info_serialization(self):
         """Test PackageInfo serialization/deserialization."""
-        original = PackageInfo(name="test-pkg", version="1.0.0", license="MIT", requires=["dependency1", "dependency2"])
+        original = PackageInfo(
+            name="test-pkg",
+            version="1.0.0",
+            license="MIT",
+            requires=["dependency1", "dependency2"],
+        )
 
         # To dict
         data = original.to_dict()

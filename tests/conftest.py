@@ -48,7 +48,12 @@ from tests.fixtures.simple_factories import (  # noqa
 )
 
 # Import test fixtures - this makes them available to all tests
-from tests.test_database import DatabaseTestManager, clean_db_session, db_session, test_db_manager  # noqa
+from tests.test_database import (  # noqa
+    DatabaseTestManager,
+    clean_db_session,
+    db_session,
+    test_db_manager,
+)
 from tests.test_fixtures import (  # noqa
     admin_token,
     admin_user,
@@ -69,7 +74,15 @@ def non_mocked_hosts():
     """Configure pytest-httpx to not intercept TestClient requests."""
     # This is critical - it tells pytest-httpx to NOT mock these hosts
     # TestClient uses "testserver" as its default host
-    return ["test", "testserver", "localhost", "127.0.0.1", "app", "http://test", "http://testserver"]
+    return [
+        "test",
+        "testserver",
+        "localhost",
+        "127.0.0.1",
+        "app",
+        "http://test",
+        "http://testserver",
+    ]
 
 
 # Removed custom event_loop fixture - using pytest-asyncio's built-in management

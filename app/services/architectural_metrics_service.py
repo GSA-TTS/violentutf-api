@@ -172,8 +172,8 @@ class ArchitecturalMetricsService:
             "total_benefits": total_benefits,
             "net_benefit": total_benefits - total_costs,
             "roi_percentage": round(roi_percentage, 2),
-            "payback_period_months": round(payback_period_months, 1) if payback_period_months else None,
-            "cost_benefit_ratio": round(total_benefits / total_costs, 2) if total_costs > 0 else None,
+            "payback_period_months": (round(payback_period_months, 1) if payback_period_months else None),
+            "cost_benefit_ratio": (round(total_benefits / total_costs, 2) if total_costs > 0 else None),
             "calculated_at": datetime.now(timezone.utc).isoformat(),
             "period": {
                 "start": start_date.isoformat(),
@@ -195,7 +195,11 @@ class ArchitecturalMetricsService:
         )
 
         manual_scan_query = select(func.count(Scan.id)).where(
-            and_(Scan.created_at.between(start_date, end_date), Scan.is_deleted.is_(False), Scan.scan_type == "manual")
+            and_(
+                Scan.created_at.between(start_date, end_date),
+                Scan.is_deleted.is_(False),
+                Scan.scan_type == "manual",
+            )
         )
 
         auto_result = await self.db.execute(auto_scan_query)
@@ -219,7 +223,9 @@ class ArchitecturalMetricsService:
         """Calculate metrics for violation detection time."""
         # Query vulnerability findings with detection times
         findings_query = select(
-            VulnerabilityFinding.created_at, VulnerabilityFinding.detected_at, VulnerabilityFinding.severity
+            VulnerabilityFinding.created_at,
+            VulnerabilityFinding.detected_at,
+            VulnerabilityFinding.severity,
         ).where(
             and_(
                 VulnerabilityFinding.created_at.between(start_date, end_date),
@@ -264,7 +270,10 @@ class ArchitecturalMetricsService:
         """Calculate developer adoption metrics."""
         # Query unique users who have run scans
         active_users_query = select(func.count(func.distinct(Scan.created_by))).where(
-            and_(Scan.created_at.between(start_date, end_date), Scan.is_deleted.is_(False))
+            and_(
+                Scan.created_at.between(start_date, end_date),
+                Scan.is_deleted.is_(False),
+            )
         )
 
         # Query for audit log entries showing tool usage
@@ -286,7 +295,10 @@ class ArchitecturalMetricsService:
         prev_end = start_date
 
         prev_users_query = select(func.count(func.distinct(Scan.created_by))).where(
-            and_(Scan.created_at.between(prev_start, prev_end), Scan.is_deleted.is_(False))
+            and_(
+                Scan.created_at.between(prev_start, prev_end),
+                Scan.is_deleted.is_(False),
+            )
         )
 
         prev_result = await self.db.execute(prev_users_query)
@@ -299,7 +311,11 @@ class ArchitecturalMetricsService:
             "tool_users": tool_users,
             "adoption_rate": round((tool_users / active_users * 100) if active_users > 0 else 0, 2),
             "growth_rate": round(growth_rate, 2),
-            "period_comparison": {"current": active_users, "previous": prev_users, "change": active_users - prev_users},
+            "period_comparison": {
+                "current": active_users,
+                "previous": prev_users,
+                "change": active_users - prev_users,
+            },
         }
 
     async def _calculate_compliance_scores(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
@@ -337,7 +353,10 @@ class ArchitecturalMetricsService:
 
         # Query resolved findings
         resolved_query = (
-            select(VulnerabilityFinding.category, func.count(VulnerabilityFinding.id).label("count"))
+            select(
+                VulnerabilityFinding.category,
+                func.count(VulnerabilityFinding.id).label("count"),
+            )
             .where(
                 and_(
                     VulnerabilityFinding.created_at.between(start_date, end_date),
@@ -377,7 +396,8 @@ class ArchitecturalMetricsService:
                     "high": scores["high"],
                     "resolution_rate": round(resolution_rate, 2),
                     "compliance_score": round(
-                        100 - (scores["critical"] * 10 + scores["high"] * 5) / max(scores["total"], 1), 2
+                        100 - (scores["critical"] * 10 + scores["high"] * 5) / max(scores["total"], 1),
+                        2,
                     ),
                 }
 
@@ -386,7 +406,10 @@ class ArchitecturalMetricsService:
             "total_findings": total_findings,
             "resolved_findings": total_resolved,
             "critical_findings": total_critical,
-            "resolution_rate": round((total_resolved / total_findings * 100) if total_findings > 0 else 100, 2),
+            "resolution_rate": round(
+                (total_resolved / total_findings * 100) if total_findings > 0 else 100,
+                2,
+            ),
             "by_category": category_compliance,
         }
 
@@ -485,7 +508,13 @@ class ArchitecturalMetricsService:
                 and_(
                     AuditLog.created_at.between(start_date, end_date),
                     AuditLog.action.in_(
-                        ["scan.scheduled", "policy.created", "rule.added", "training.completed", "review.performed"]
+                        [
+                            "scan.scheduled",
+                            "policy.created",
+                            "rule.added",
+                            "training.completed",
+                            "review.performed",
+                        ]
                     ),
                 )
             )
@@ -508,15 +537,24 @@ class ArchitecturalMetricsService:
         """Calculate tool utilization metrics."""
         # Query for tool usage
         scans_query = select(func.count(Scan.id)).where(
-            and_(Scan.created_at.between(start_date, end_date), Scan.is_deleted.is_(False))
+            and_(
+                Scan.created_at.between(start_date, end_date),
+                Scan.is_deleted.is_(False),
+            )
         )
 
         reports_query = select(func.count(Report.id)).where(
-            and_(Report.created_at.between(start_date, end_date), Report.is_deleted.is_(False))
+            and_(
+                Report.created_at.between(start_date, end_date),
+                Report.is_deleted.is_(False),
+            )
         )
 
         tasks_query = select(func.count(Task.id)).where(
-            and_(Task.created_at.between(start_date, end_date), Task.status == TaskStatus.COMPLETED)
+            and_(
+                Task.created_at.between(start_date, end_date),
+                Task.status == TaskStatus.COMPLETED,
+            )
         )
 
         scans_result = await self.db.execute(scans_query)
@@ -545,7 +583,10 @@ class ArchitecturalMetricsService:
         # This would typically integrate with a training system
         # For now, we'll use audit logs as a proxy
         training_query = select(func.count(func.distinct(AuditLog.user_id))).where(
-            and_(AuditLog.created_at.between(start_date, end_date), AuditLog.action == "training.completed")
+            and_(
+                AuditLog.created_at.between(start_date, end_date),
+                AuditLog.action == "training.completed",
+            )
         )
 
         result = await self.db.execute(training_query)
@@ -626,7 +667,7 @@ class ArchitecturalMetricsService:
 
         return {
             "total_incidents": sum(monthly_counts),
-            "monthly_average": round(statistics.mean(monthly_counts), 2) if monthly_counts else 0,
+            "monthly_average": (round(statistics.mean(monthly_counts), 2) if monthly_counts else 0),
             "reduction_percentage": round(reduction_percentage, 2),
             "trend": trend,
             "monthly_data": {incident.month.strftime("%Y-%m"): incident.count for incident in incidents},
@@ -636,7 +677,10 @@ class ArchitecturalMetricsService:
         """Calculate maintainability improvement metrics."""
         # Query for code quality metrics
         quality_findings = (
-            select(VulnerabilityFinding.category, func.count(VulnerabilityFinding.id).label("count"))
+            select(
+                VulnerabilityFinding.category,
+                func.count(VulnerabilityFinding.id).label("count"),
+            )
             .where(
                 and_(
                     VulnerabilityFinding.created_at.between(start_date, end_date),
@@ -678,11 +722,17 @@ class ArchitecturalMetricsService:
         """Calculate development velocity impact."""
         # Query for task completion rates
         completed_tasks = select(func.count(Task.id)).where(
-            and_(Task.completed_at.between(start_date, end_date), Task.status == TaskStatus.COMPLETED)
+            and_(
+                Task.completed_at.between(start_date, end_date),
+                Task.status == TaskStatus.COMPLETED,
+            )
         )
 
         failed_tasks = select(func.count(Task.id)).where(
-            and_(Task.completed_at.between(start_date, end_date), Task.status == TaskStatus.FAILED)
+            and_(
+                Task.completed_at.between(start_date, end_date),
+                Task.status == TaskStatus.FAILED,
+            )
         )
 
         completed_result = await self.db.execute(completed_tasks)
@@ -748,7 +798,10 @@ class ArchitecturalMetricsService:
 
         # Calculate severity distribution
         severity_dist_query = (
-            select(VulnerabilityFinding.severity, func.count(VulnerabilityFinding.id).label("count"))
+            select(
+                VulnerabilityFinding.severity,
+                func.count(VulnerabilityFinding.id).label("count"),
+            )
             .where(
                 and_(
                     VulnerabilityFinding.created_at.between(start_date, end_date),
@@ -773,7 +826,9 @@ class ArchitecturalMetricsService:
         """Calculate remediation effectiveness metrics."""
         # Query for remediation times
         remediated_findings = select(
-            VulnerabilityFinding.severity, VulnerabilityFinding.created_at, VulnerabilityFinding.updated_at
+            VulnerabilityFinding.severity,
+            VulnerabilityFinding.created_at,
+            VulnerabilityFinding.updated_at,
         ).where(
             and_(
                 VulnerabilityFinding.updated_at.between(start_date, end_date),
@@ -904,7 +959,7 @@ class ArchitecturalMetricsService:
         return {
             "prevented_incidents": prevented_incidents * cost_data["incident_cost"],
             "avoided_emergency_fixes": critical_count * cost_data["bug_fix_cost"] * 2,  # Emergency fixes cost 2x
-            "compliance_penalties_avoided": 50000.0 if critical_count > 0 else 0,  # Assume potential penalty
+            "compliance_penalties_avoided": (50000.0 if critical_count > 0 else 0),  # Assume potential penalty
         }
 
     async def _calculate_productivity_gains(

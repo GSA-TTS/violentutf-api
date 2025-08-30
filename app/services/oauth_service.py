@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.config import settings
-from app.core.errors import AuthenticationError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    AuthenticationError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.security import (
     create_token,
     hash_client_secret,
@@ -21,7 +26,13 @@ from app.core.security import (
     verify_password,
     verify_token_hash,
 )
-from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken, OAuthScope
+from app.models.oauth import (
+    OAuthAccessToken,
+    OAuthApplication,
+    OAuthAuthorizationCode,
+    OAuthRefreshToken,
+    OAuthScope,
+)
 from app.models.user import User
 from app.repositories.oauth_access_token import OAuthAccessTokenRepository
 from app.repositories.oauth_application import OAuthApplicationRepository
@@ -436,7 +447,9 @@ class OAuth2Service:
         # Update refresh token usage
         current_use_count = getattr(refresh_token_obj, "use_count", 0)
         await self.refresh_token_repo.update(
-            refresh_token_obj.id, use_count=current_use_count + 1, last_used_at=datetime.now(timezone.utc)
+            refresh_token_obj.id,
+            use_count=current_use_count + 1,
+            last_used_at=datetime.now(timezone.utc),
         )
 
         # Create new tokens
@@ -528,7 +541,9 @@ class OAuth2Service:
                         return False
 
                 await self.access_token_repo.update(
-                    access_token.id, is_revoked=True, revoked_at=datetime.now(timezone.utc)
+                    access_token.id,
+                    is_revoked=True,
+                    revoked_at=datetime.now(timezone.utc),
                 )
                 revoked = True
 
@@ -553,7 +568,9 @@ class OAuth2Service:
                         return False
 
                 await self.refresh_token_repo.update(
-                    refresh_token.id, is_revoked=True, revoked_at=datetime.now(timezone.utc)
+                    refresh_token.id,
+                    is_revoked=True,
+                    revoked_at=datetime.now(timezone.utc),
                 )
                 revoked = True
 
@@ -716,7 +733,9 @@ class OAuth2Service:
                 else str(settings.SECRET_KEY)
             )
             verifier_hash = hmac.new(
-                secret_key.encode(), verifier.encode(), hashlib.sha256  # nosec B303 - HMAC-SHA256 is secure for PKCE
+                secret_key.encode(),
+                verifier.encode(),
+                hashlib.sha256,  # nosec B303 - HMAC-SHA256 is secure for PKCE
             ).digest()
             verifier_challenge = base64.urlsafe_b64encode(verifier_hash).decode().rstrip("=")
             return verifier_challenge == challenge
@@ -816,6 +835,6 @@ class OAuth2Service:
             details={
                 "application_id": str(auth_code.application_id),
                 "code_id": str(auth_code.id),
-                "original_use_time": auth_code.used_at.isoformat() if auth_code.used_at else None,
+                "original_use_time": (auth_code.used_at.isoformat() if auth_code.used_at else None),
             },
         )

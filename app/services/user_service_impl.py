@@ -211,7 +211,10 @@ class UserServiceImpl(IUserService):
             raise
 
     async def change_user_password(
-        self, user_id: str, password_data: UserUpdatePassword, updated_by: Optional[str] = None
+        self,
+        user_id: str,
+        password_data: UserUpdatePassword,
+        updated_by: Optional[str] = None,
     ) -> User:
         """Change user password with transaction management.
 

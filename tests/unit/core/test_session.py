@@ -34,7 +34,10 @@ class TestSessionManager:
         mock_cache.set.return_value = None
 
         session_id = await session_manager.create_session(
-            user_id="user_123", user_data={"role": "admin"}, ip_address="192.168.1.1", user_agent="TestAgent/1.0"
+            user_id="user_123",
+            user_data={"role": "admin"},
+            ip_address="192.168.1.1",
+            user_agent="TestAgent/1.0",
         )
 
         assert session_id is not None
@@ -172,7 +175,11 @@ class TestSessionManager:
     async def test_extend_session_success(self, session_manager, mock_cache):
         """Test successful session extension."""
         # Mock existing session
-        session_data = {"session_id": "test_session_123", "user_id": "user_456", "created_at": "2024-01-01T00:00:00Z"}
+        session_data = {
+            "session_id": "test_session_123",
+            "user_id": "user_456",
+            "created_at": "2024-01-01T00:00:00Z",
+        }
         mock_cache.get.return_value = json.dumps(session_data)
         mock_cache.set.return_value = None
 

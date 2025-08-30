@@ -31,7 +31,11 @@ from app.services.security_scan_service import SecurityScanService
 router = APIRouter(prefix="/security-scans", tags=["Security Scans"])
 
 
-@router.post("/", response_model=BaseResponse[SecurityScanResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=BaseResponse[SecurityScanResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_scan(
     request: Request,
     scan_data: SecurityScanCreate,
@@ -203,7 +207,12 @@ async def list_scans(
         response_scans.append(SecurityScanResponse.model_validate(scan_dict))
 
     list_response = SecurityScanListResponse(
-        scans=response_scans, total=total, page=page, size=size, has_next=has_next, has_prev=has_prev
+        scans=response_scans,
+        total=total,
+        page=page,
+        size=size,
+        has_next=has_next,
+        has_prev=has_prev,
     )
 
     return BaseResponse(
@@ -510,7 +519,11 @@ async def update_scan_progress(
         }
 
     scan = await repo.update_scan_progress(
-        scan_id, progress_update.status, findings_counts, progress_update.error_message, organization_id
+        scan_id,
+        progress_update.status,
+        findings_counts,
+        progress_update.error_message,
+        organization_id,
     )
 
     if not scan:
@@ -590,7 +603,9 @@ async def cleanup_old_scans(
     repo = SecurityScanRepository(db)
 
     cleanup_result = await repo.cleanup_old_scans(
-        cleanup_request.days_to_keep, cleanup_request.organization_id, cleanup_request.dry_run
+        cleanup_request.days_to_keep,
+        cleanup_request.organization_id,
+        cleanup_request.dry_run,
     )
 
     response_data = ScanCleanupResponse(**cleanup_result)

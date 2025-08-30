@@ -56,7 +56,10 @@ class RiskVisualizer:
         score = audit_data.get("summary", {}).get("compliance_score", 0)
 
         return self.chart_gen.generate_gauge_chart(
-            value=score, min_value=0, max_value=100, thresholds={"critical": 50, "warning": 70, "good": 85}
+            value=score,
+            min_value=0,
+            max_value=100,
+            thresholds={"critical": 50, "warning": 70, "good": 85},
         )
 
     def _create_risk_distribution(self, audit_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,10 +124,17 @@ class RiskVisualizer:
                 "responsive": True,
                 "maintainAspectRatio": False,
                 "plugins": {
-                    "title": {"display": True, "text": "Risk Distribution by Category", "font": {"size": 16}},
+                    "title": {
+                        "display": True,
+                        "text": "Risk Distribution by Category",
+                        "font": {"size": 16},
+                    },
                     "legend": {"position": "bottom"},
                 },
-                "scales": {"x": {"stacked": True}, "y": {"stacked": True, "beginAtZero": True}},
+                "scales": {
+                    "x": {"stacked": True},
+                    "y": {"stacked": True, "beginAtZero": True},
+                },
             },
         }
 
@@ -144,7 +154,11 @@ class RiskVisualizer:
 
         data = {
             "labels": ["Improving", "Stable", "Degrading"],
-            "values": [percentages.get("improving", 0), percentages.get("stable", 0), percentages.get("degrading", 0)],
+            "values": [
+                percentages.get("improving", 0),
+                percentages.get("stable", 0),
+                percentages.get("degrading", 0),
+            ],
             "colors": [
                 ChartGenerator.TREND_COLORS["improving"],
                 ChartGenerator.TREND_COLORS["stable"],
@@ -287,7 +301,11 @@ class RiskVisualizer:
                 "responsive": True,
                 "maintainAspectRatio": False,
                 "plugins": {
-                    "title": {"display": True, "text": "Risk Matrix: Likelihood vs Impact", "font": {"size": 16}}
+                    "title": {
+                        "display": True,
+                        "text": "Risk Matrix: Likelihood vs Impact",
+                        "font": {"size": 16},
+                    }
                 },
                 "scales": {
                     "x": {
@@ -350,13 +368,13 @@ class RiskVisualizer:
 
         return {
             "total_violations": total_violations,
-            "average_risk_score": round(total_score / total_violations, 2) if total_violations > 0 else 0,
+            "average_risk_score": (round(total_score / total_violations, 2) if total_violations > 0 else 0),
             "risk_concentration": round(concentration, 3),
             "top_risk_category": top_category,
             "categories": dict(category_counts),
             "file_distribution": {
                 "total_files": len(file_counts),
-                "max_violations_per_file": max(file_counts.values()) if file_counts else 0,
+                "max_violations_per_file": (max(file_counts.values()) if file_counts else 0),
                 "average_violations_per_file": (
                     round(sum(file_counts.values()) / len(file_counts), 2) if file_counts else 0
                 ),

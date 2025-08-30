@@ -42,7 +42,9 @@ class OAuthApplication(Base, AuditMixin, SoftDeleteMixin, VersionedMixin):
     access_tokens = relationship("OAuthAccessToken", back_populates="application", cascade="all, delete-orphan")
     refresh_tokens = relationship("OAuthRefreshToken", back_populates="application", cascade="all, delete-orphan")
     authorization_codes = relationship(
-        "OAuthAuthorizationCode", back_populates="application", cascade="all, delete-orphan"
+        "OAuthAuthorizationCode",
+        back_populates="application",
+        cascade="all, delete-orphan",
     )
 
     # Metadata

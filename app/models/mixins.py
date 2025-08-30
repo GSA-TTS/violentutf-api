@@ -5,7 +5,17 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, UniqueConstraint, event, text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    event,
+    text,
+)
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, validates
 from sqlalchemy.orm.attributes import get_history
 from structlog.stdlib import get_logger

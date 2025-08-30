@@ -44,7 +44,11 @@ class TestAuditLogRepository:
             id="failed-login-audit-id",
             action="user.login_failed",
             user_id="test-user-id",
-            metadata={"login_method": "password", "success": False, "error": "invalid_credentials"},
+            metadata={
+                "login_method": "password",
+                "success": False,
+                "error": "invalid_credentials",
+            },
             ip_address="192.168.1.100",
             user_agent="Mozilla/5.0 Test Browser",
             created_at=datetime.now(timezone.utc) - timedelta(hours=1),
@@ -78,7 +82,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_log_action_success(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, audit_log_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        audit_log_factory,
     ):
         """Test successful audit action logging."""
         # Arrange
@@ -86,7 +93,11 @@ class TestAuditLogRepository:
             id="new-audit-log-id",
             action="user.profile_updated",
             user_id="test-user-id",
-            changes={"field": "email", "old_value": "old@test.com", "new_value": "new@test.com"},
+            changes={
+                "field": "email",
+                "old_value": "old@test.com",
+                "new_value": "new@test.com",
+            },
         )
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
@@ -98,7 +109,11 @@ class TestAuditLogRepository:
                 resource_type="user",
                 resource_id="test-user-id",
                 user_id="test-user-id",
-                changes={"field": "email", "old_value": "old@test.com", "new_value": "new@test.com"},
+                changes={
+                    "field": "email",
+                    "old_value": "old@test.com",
+                    "new_value": "new@test.com",
+                },
                 ip_address="192.168.1.1",
                 user_agent="Mozilla/5.0",
             )
@@ -111,7 +126,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_log_action_system_action(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, audit_log_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        audit_log_factory,
     ):
         """Test logging system actions without user_id."""
         # Arrange
@@ -159,7 +177,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_log_action_with_minimal_data(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, audit_log_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        audit_log_factory,
     ):
         """Test logging action with minimal required data."""
         # Arrange
@@ -234,7 +255,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_user_audit_trail_empty_result(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test user audit trail when no logs exist."""
         # Arrange
@@ -301,7 +325,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_compliance_report_date_range_validation(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test compliance report with various date ranges."""
         # Arrange
@@ -394,7 +421,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_failed_login_attempts_success(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful retrieval of failed login attempts."""
         # Arrange
@@ -422,7 +452,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_failed_login_attempts_with_custom_threshold(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test failed login attempts with custom threshold."""
         # Arrange
@@ -440,7 +473,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_failed_login_attempts_default_params(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test failed login attempts with default parameters."""
         # Arrange
@@ -458,7 +494,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_audit_statistics_success(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful audit statistics generation."""
         # Arrange
@@ -491,7 +530,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_audit_statistics_without_date_range(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test audit statistics without date filtering."""
         # Arrange
@@ -509,7 +551,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_audit_statistics_no_data(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test audit statistics when no data available."""
         # Arrange
@@ -528,7 +573,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_audit_logs_success(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test successful cleanup of old audit logs."""
         # Arrange
@@ -545,7 +593,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_audit_logs_custom_retention(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup with custom retention period."""
         # Arrange
@@ -562,7 +613,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_cleanup_old_audit_logs_nothing_to_clean(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup when no old logs exist."""
         # Arrange
@@ -608,7 +662,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_invalid_input_validation(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test repository methods handle invalid inputs appropriately."""
         # Arrange
@@ -630,7 +687,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_negative_retention_days_handling(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup with negative retention days."""
         # Arrange
@@ -648,7 +708,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_zero_retention_days_handling(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test cleanup with zero retention days."""
         # Arrange
@@ -666,7 +729,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_large_details_object_logging(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, audit_log_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        audit_log_factory,
     ):
         """Test logging with very large details object."""
         # Arrange
@@ -696,7 +762,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_unicode_and_special_characters(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, audit_log_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        audit_log_factory,
     ):
         """Test handling of Unicode and special characters in audit data."""
         # Arrange
@@ -753,7 +822,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_concurrent_audit_operations(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test concurrent audit operations."""
         # This test simulates concurrent access patterns
@@ -779,7 +851,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_date_boundary_conditions(
-        self, audit_repository: AuditLogRepository, mock_session: AsyncMock, query_result_factory
+        self,
+        audit_repository: AuditLogRepository,
+        mock_session: AsyncMock,
+        query_result_factory,
     ):
         """Test date boundary conditions in queries."""
         # Arrange

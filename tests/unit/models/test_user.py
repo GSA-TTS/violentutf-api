@@ -81,7 +81,11 @@ class TestUserModel:
             User(username="a" * 101, email="test@example.com", password_hash="$argon2...")
 
         with pytest.raises(ValueError, match="can only contain"):
-            User(username="user@name", email="test@example.com", password_hash="$argon2...")
+            User(
+                username="user@name",
+                email="test@example.com",
+                password_hash="$argon2...",
+            )
 
     def test_email_validation(self) -> None:
         """Test email validation."""

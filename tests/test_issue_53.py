@@ -95,8 +95,16 @@ class TestArchitecturalMetricsService:
             self._create_test_database_result(scalar_value=12),  # Tool users
             self._create_test_database_result(
                 all_value=[  # Compliance findings
-                    MagicMock(category="security", severity=VulnerabilitySeverity.HIGH, count=5),
-                    MagicMock(category="security", severity=VulnerabilitySeverity.MEDIUM, count=10),
+                    MagicMock(
+                        category="security",
+                        severity=VulnerabilitySeverity.HIGH,
+                        count=5,
+                    ),
+                    MagicMock(
+                        category="security",
+                        severity=VulnerabilitySeverity.MEDIUM,
+                        count=10,
+                    ),
                     MagicMock(category="quality", severity=VulnerabilitySeverity.LOW, count=20),
                 ]
             ),
@@ -239,7 +247,10 @@ class TestArchitecturalReportGenerator:
                     }
 
                     test_lagging.return_value = {
-                        "architectural_debt_velocity": {"daily_velocity": -0.5, "trend": "improving"},
+                        "architectural_debt_velocity": {
+                            "daily_velocity": -0.5,
+                            "trend": "improving",
+                        },
                         "security_incident_reduction": {"reduction_percentage": 30.0},
                         "maintainability_improvements": {"improvement_rate": 15.0},
                         "development_velocity_impact": {"success_rate": 95.0},
@@ -295,7 +306,10 @@ class TestArchitecturalReportGenerator:
                     }
 
                     test_lagging.return_value = {
-                        "architectural_debt_velocity": {"daily_velocity": -1.0, "trend": "improving"},
+                        "architectural_debt_velocity": {
+                            "daily_velocity": -1.0,
+                            "trend": "improving",
+                        },
                         "security_incident_reduction": {"reduction_percentage": 40.0},
                         "maintainability_improvements": {"improvement_rate": 20.0},
                         "development_velocity_impact": {"success_rate": 98.0},
@@ -431,7 +445,10 @@ class TestScheduledReportService:
 
         # Setup test report generator
         with patch.object(scheduled_service.report_generator, "generate_architectural_metrics_report") as test_gen:
-            test_gen.return_value = {"report_id": "report-123", "file_path": f"{tempfile.gettempdir()}/report.pdf"}
+            test_gen.return_value = {
+                "report_id": "report-123",
+                "file_path": f"{tempfile.gettempdir()}/report.pdf",
+            }
 
             # Execute schedules
             results = await scheduled_service.execute_scheduled_reports()
@@ -548,7 +565,11 @@ class TestAcceptanceCriteria:
         # Verify trends are calculated
         assert "architectural_debt_velocity" in metrics
         assert "trend" in metrics["architectural_debt_velocity"]
-        assert metrics["architectural_debt_velocity"]["trend"] in ["improving", "worsening", "stable"]
+        assert metrics["architectural_debt_velocity"]["trend"] in [
+            "improving",
+            "worsening",
+            "stable",
+        ]
 
     @pytest.mark.asyncio
     async def test_roi_calculation_with_cost_data(self) -> None:
@@ -595,7 +616,10 @@ class TestAcceptanceCriteria:
 
         # Setup test report generation
         with patch.object(service.report_generator, "generate_architectural_metrics_report") as test_gen:
-            test_gen.return_value = {"report_id": "rep-1", "file_path": f"{tempfile.gettempdir()}/report.pdf"}
+            test_gen.return_value = {
+                "report_id": "rep-1",
+                "file_path": f"{tempfile.gettempdir()}/report.pdf",
+            }
 
             # Execute
             results = await service.execute_scheduled_reports()
@@ -771,7 +795,11 @@ class TestDataValidation:
     def test_email_notification_data_validation(self) -> None:
         """Test validation of email notification data."""
         # Valid email addresses
-        valid_emails = ["user@example.com", "admin@company.org", "test.user@domain.co.uk"]
+        valid_emails = [
+            "user@example.com",
+            "admin@company.org",
+            "test.user@domain.co.uk",
+        ]
 
         for email in valid_emails:
             assert "@" in email

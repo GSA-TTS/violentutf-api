@@ -150,7 +150,9 @@ def sanitize_request(
     return decorator
 
 
-def sanitize_fields(**field_rules: Union[FieldSanitizationRule, List[SanitizationType], str]) -> Callable[..., Any]:
+def sanitize_fields(
+    **field_rules: Union[FieldSanitizationRule, List[SanitizationType], str],
+) -> Callable[..., Any]:
     """Decorator to sanitize specific fields with inline rules.
 
     Args:

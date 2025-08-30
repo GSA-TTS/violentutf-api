@@ -14,7 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_user_service
 from app.api.endpoints.users import user_crud_router
 from app.core.config import settings
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
@@ -661,7 +666,11 @@ class TestUserEndpoints:
             # Weak password
             {"username": "user", "email": "test@example.com", "password": "weak"},
             # Username too long
-            {"username": "u" * 101, "email": "test@example.com", "password": "Pass123!"},
+            {
+                "username": "u" * 101,
+                "email": "test@example.com",
+                "password": "Pass123!",
+            },
         ]
 
         for data in invalid_data:

@@ -16,7 +16,11 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Project imports must come after path manipulation
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel  # noqa: E402
+from tools.pre_audit.reporting import (  # noqa: E402
+    ExportManager,
+    ReportConfig,
+    SecurityLevel,
+)
 
 
 def create_sample_audit_data() -> dict[str, Any]:
@@ -54,15 +58,32 @@ def create_sample_audit_data() -> dict[str, Any]:
         },
         "overall_compliance_score": 73.5,
         "discovered_adrs": [
-            {"adr_id": "ADR-001", "title": "API Authentication Strategy", "file_path": "ADRs/adr-001.md"},
-            {"adr_id": "ADR-002", "title": "RBAC Authorization Model", "file_path": "ADRs/adr-002.md"},
-            {"adr_id": "ADR-003", "title": "Rate Limiting Strategy", "file_path": "ADRs/adr-003.md"},
+            {
+                "adr_id": "ADR-001",
+                "title": "API Authentication Strategy",
+                "file_path": "ADRs/adr-001.md",
+            },
+            {
+                "adr_id": "ADR-002",
+                "title": "RBAC Authorization Model",
+                "file_path": "ADRs/adr-002.md",
+            },
+            {
+                "adr_id": "ADR-003",
+                "title": "Rate Limiting Strategy",
+                "file_path": "ADRs/adr-003.md",
+            },
         ],
         "adr_compliance": {
             "ADR-001": {
                 "adr_title": "API Authentication Strategy",
                 "compliance_score": 85,
-                "analysis_methods": ["Semantic Claude Code", "Static Analysis", "Git Forensics", "RAG Enhanced"],
+                "analysis_methods": [
+                    "Semantic Claude Code",
+                    "Static Analysis",
+                    "Git Forensics",
+                    "RAG Enhanced",
+                ],
                 "confidence": 0.92,
                 "dimensions_analyzed": 4,
                 "execution_time": 3.2,
@@ -102,9 +123,18 @@ def create_sample_audit_data() -> dict[str, Any]:
                     "API key hashing implemented correctly",
                 ],
                 "insights": [
-                    {"type": "Security", "text": "Authentication coverage at 85% - critical gaps in user endpoints"},
-                    {"type": "Performance", "text": "Token validation adds ~50ms latency per request"},
-                    {"type": "Maintenance", "text": "Authentication logic well-modularized and testable"},
+                    {
+                        "type": "Security",
+                        "text": "Authentication coverage at 85% - critical gaps in user endpoints",
+                    },
+                    {
+                        "type": "Performance",
+                        "text": "Token validation adds ~50ms latency per request",
+                    },
+                    {
+                        "type": "Maintenance",
+                        "text": "Authentication logic well-modularized and testable",
+                    },
                 ],
                 "remediation_plan": {
                     "estimated_effort": "2-3 days",
@@ -134,7 +164,10 @@ def create_sample_audit_data() -> dict[str, Any]:
                         "technical_debt_hours": 8,
                     }
                 ],
-                "compliant_areas": ["Role model properly defined in database", "Permission system implemented"],
+                "compliant_areas": [
+                    "Role model properly defined in database",
+                    "Permission system implemented",
+                ],
                 "requirements": [
                     "All endpoints must validate user roles",
                     "Role hierarchy must be enforced",
@@ -196,7 +229,10 @@ def create_sample_audit_data() -> dict[str, Any]:
                 "churn_score": 68,
                 "complexity_score": 62,
                 "violation_history": ["ADR-001"],
-                "recommendations": ["Standardize authentication patterns", "Add token refresh mechanism"],
+                "recommendations": [
+                    "Standardize authentication patterns",
+                    "Add token refresh mechanism",
+                ],
             },
         ],
         "recommendations": [

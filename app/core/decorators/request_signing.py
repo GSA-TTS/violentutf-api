@@ -140,7 +140,7 @@ def require_request_signature(
                 query_params=query_params,
                 body=body,
                 config=config,
-                nonce_cache=set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None,
+                nonce_cache=(set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None),
             )
 
             if not result.is_valid:
@@ -291,7 +291,7 @@ def require_admin_signature(
                 query_params=query_params,
                 body=body,
                 config=config,
-                nonce_cache=set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None,
+                nonce_cache=(set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None),
             )
 
             if not result.is_valid:

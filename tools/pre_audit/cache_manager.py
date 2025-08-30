@@ -162,7 +162,11 @@ class MemoryCacheTier(CacheTier):
 
                 # Add/update entry
                 entry = CacheEntry(
-                    key=key, data=value, timestamp=datetime.now(), size_bytes=size, metadata=metadata or {}
+                    key=key,
+                    data=value,
+                    timestamp=datetime.now(),
+                    size_bytes=size,
+                    metadata=metadata or {},
                 )
 
                 # Remove old entry if exists
@@ -225,7 +229,12 @@ class MemoryCacheTier(CacheTier):
 class DiskCacheTier(CacheTier):
     """Persistent disk-based cache tier"""
 
-    def __init__(self, cache_dir: str = ".cache/analysis", max_size_mb: int = 1024, ttl_hours: int = 72):
+    def __init__(
+        self,
+        cache_dir: str = ".cache/analysis",
+        max_size_mb: int = 1024,
+        ttl_hours: int = 72,
+    ):
         super().__init__(max_size_mb, ttl_hours)
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -433,7 +442,12 @@ class DiskCacheTier(CacheTier):
 class RedisCacheTier(CacheTier):
     """Remote Redis cache tier for team sharing"""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379", max_size_mb: int = 2048, ttl_hours: int = 168):
+    def __init__(
+        self,
+        redis_url: str = "redis://localhost:6379",
+        max_size_mb: int = 2048,
+        ttl_hours: int = 168,
+    ):
         super().__init__(max_size_mb, ttl_hours)
         self.redis_url = redis_url
         self.prefix = "arch_analysis:"
@@ -558,7 +572,8 @@ class MultiTierCacheManager:
         # Memory tier (always enabled)
         memory_config = self.config.get("memory", {})
         self.memory_tier = MemoryCacheTier(
-            max_size_mb=memory_config.get("max_size_mb", 100), ttl_hours=memory_config.get("ttl_hours", 24)
+            max_size_mb=memory_config.get("max_size_mb", 100),
+            ttl_hours=memory_config.get("ttl_hours", 24),
         )
         self.tiers.append(self.memory_tier)
 
@@ -666,7 +681,11 @@ class MultiTierCacheManager:
         result = await analyzer_func(file_path)
 
         # Cache result
-        metadata = {"file_path": file_path, "file_hash": file_hash, "timestamp": datetime.now().isoformat()}
+        metadata = {
+            "file_path": file_path,
+            "file_hash": file_hash,
+            "timestamp": datetime.now().isoformat(),
+        }
         await self.set(cache_key, result, metadata)
 
         return result
