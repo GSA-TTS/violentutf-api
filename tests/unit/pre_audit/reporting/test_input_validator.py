@@ -68,6 +68,11 @@ class TestInputValidator:
             "expression(alert('XSS'))",
             "vbscript:msgbox('XSS')",
             "data:text/html,<script>alert('XSS')</script>",
+            # Test malformed end tags that browsers accept (CodeQL py/bad-tag-filter fix)
+            "<script>alert('XSS')</script foo='bar'>",  # Malformed end tag with attributes
+            "<script>alert('XSS')</script\tfoo>",  # Malformed with tab and attribute
+            "<script>alert('XSS')</script\nbar>",  # Malformed with newline
+            "<style>body{background:url(evil.com)}</style attr='test'>",  # Malformed style end tag
         ]
 
         for pattern in xss_patterns:

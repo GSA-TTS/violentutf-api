@@ -184,10 +184,10 @@ async def get_system_metrics() -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error("Failed to get system metrics", error=str(e))
+        logger.error("Failed to get system metrics", error=str(e), exception_type=type(e).__name__)
         return {
             "timestamp": time.time(),
-            "error": str(e),
+            "metrics_error": True,
             "application": resource_usage.copy(),
         }
 
@@ -267,8 +267,8 @@ async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
             cache_healthy = False
 
         if isinstance(metrics, Exception):
-            logger.error("System metrics exception", error=str(metrics))
-            metrics = {"error": str(metrics)}
+            logger.error("System metrics exception", error=str(metrics), exception_type=type(metrics).__name__)
+            metrics = {"metrics_error": True}
 
         total_duration = time.time() - start_time
 
@@ -294,10 +294,10 @@ async def check_dependency_health(cache_ttl: int = 10) -> Dict[str, Any]:
         return result
 
     except Exception as e:
-        logger.error("Dependency health check failed", error=str(e))
+        logger.error("Dependency health check failed", error=str(e), exception_type=type(e).__name__, stack_info=True)
         return {
             "overall_healthy": False,
-            "error": str(e),
+            "metrics_error": True,
             "check_duration_seconds": time.time() - start_time,
         }
 

@@ -42,15 +42,16 @@ class InputValidator:
     # Dangerous patterns to block - comprehensive security patterns
     DANGEROUS_PATTERNS = [
         # Block script tags with comprehensive patterns to prevent XSS
-        re.compile(r"<\s*script[^>]*>.*?<\s*/\s*script\s*>", re.IGNORECASE | re.DOTALL),
+        # Fixed: Handle malformed end tags that browsers accept
+        re.compile(r"<\s*script[^>]*>.*?<\s*/\s*script[^>]*>", re.IGNORECASE | re.DOTALL),
         re.compile(r"<\s*script[^>]*>", re.IGNORECASE),
-        re.compile(r"</\s*script\s*>", re.IGNORECASE),
+        re.compile(r"</\s*script[^>]*>", re.IGNORECASE),  # Handles </script foo="bar">
         # Block other dangerous tags
         re.compile(r"<\s*iframe[^>]*>", re.IGNORECASE),
         re.compile(r"<\s*object[^>]*>", re.IGNORECASE),
         re.compile(r"<\s*embed[^>]*>", re.IGNORECASE),
         re.compile(r"<\s*link[^>]*>", re.IGNORECASE),
-        re.compile(r"<\s*style[^>]*>.*?</\s*style\s*>", re.IGNORECASE | re.DOTALL),
+        re.compile(r"<\s*style[^>]*>.*?</\s*style[^>]*>", re.IGNORECASE | re.DOTALL),  # Also fix style tag
         # Block protocol handlers and event handlers
         re.compile(r"javascript:", re.IGNORECASE),
         re.compile(r"on\w+\s*=", re.IGNORECASE),  # onclick, onerror, etc.

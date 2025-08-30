@@ -207,9 +207,9 @@ class TestSystemMetrics:
             metrics = await get_system_metrics()
 
             assert "timestamp" in metrics
-            assert "error" in metrics
+            assert "metrics_error" in metrics
             assert "application" in metrics
-            assert metrics["error"] == "psutil error"
+            assert metrics["metrics_error"] is True  # Generic error indicator, no detail exposure
 
 
 class TestConnectionCounting:
