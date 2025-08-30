@@ -30,7 +30,10 @@ class TestValidationResult:
     def test_validation_result_with_data(self) -> None:
         """Test ValidationResult with data."""
         result = ValidationResult(
-            is_valid=False, errors=["Error 1", "Error 2"], warnings=["Warning 1"], cleaned_value="cleaned"
+            is_valid=False,
+            errors=["Error 1", "Error 2"],
+            warnings=["Warning 1"],
+            cleaned_value="cleaned",
         )
         assert result.is_valid is False
         assert len(result.errors) == 2
@@ -43,7 +46,12 @@ class TestEmailValidation:
 
     def test_valid_email(self) -> None:
         """Test valid email addresses."""
-        valid_emails = ["test@example.com", "user.name@domain.co.uk", "user+tag@example.org", "123@test.com"]
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org",
+            "123@test.com",
+        ]
 
         for email in valid_emails:
             result = validate_email(email)
@@ -52,7 +60,14 @@ class TestEmailValidation:
 
     def test_invalid_email(self) -> None:
         """Test invalid email addresses."""
-        invalid_emails = ["invalid", "@example.com", "test@", "test..test@example.com", "test@example", ""]
+        invalid_emails = [
+            "invalid",
+            "@example.com",
+            "test@",
+            "test..test@example.com",
+            "test@example",
+            "",
+        ]
 
         for email in invalid_emails:
             result = validate_email(email)
@@ -127,7 +142,13 @@ class TestIpValidation:
 
     def test_valid_ipv4(self) -> None:
         """Test valid IPv4 addresses."""
-        valid_ips = ["192.168.1.1", "10.0.0.1", "127.0.0.1", "255.255.255.255", "0.0.0.0"]  # nosec B104
+        valid_ips = [
+            "192.168.1.1",
+            "10.0.0.1",
+            "127.0.0.1",
+            "255.255.255.255",
+            "0.0.0.0",
+        ]  # nosec B104
 
         for ip in valid_ips:
             result = validate_ip_address(ip)
@@ -201,7 +222,12 @@ class TestXssCheck:
 
     def test_safe_input(self) -> None:
         """Test safe input without XSS patterns."""
-        safe_inputs = ["Hello world", "This is <b>bold</b> text", "User input with & symbols", ""]  # Safe HTML
+        safe_inputs = [
+            "Hello world",
+            "This is <b>bold</b> text",
+            "User input with & symbols",
+            "",
+        ]  # Safe HTML
 
         for input_text in safe_inputs:
             result = check_xss_injection(input_text)
@@ -228,7 +254,12 @@ class TestPromptInjectionCheck:
 
     def test_safe_prompts(self) -> None:
         """Test safe prompts without injection patterns."""
-        safe_prompts = ["What is the capital of France?", "Explain machine learning", "Write a story about a cat", ""]
+        safe_prompts = [
+            "What is the capital of France?",
+            "Explain machine learning",
+            "Write a story about a cat",
+            "",
+        ]
 
         for prompt in safe_prompts:
             result = check_prompt_injection(prompt)

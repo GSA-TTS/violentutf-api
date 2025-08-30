@@ -4,7 +4,15 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base_class import Base
@@ -25,7 +33,11 @@ class APIKey(Base, BaseModelMixin):
 
     # API Key specific fields
     key_hash: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True, comment="SHA256 hash of the API key"
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="SHA256 hash of the API key",
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, comment="Descriptive name for the API key")
@@ -35,7 +47,10 @@ class APIKey(Base, BaseModelMixin):
     )
 
     key_prefix: Mapped[str] = mapped_column(
-        String(10), nullable=False, index=True, comment="First few characters of key for identification"
+        String(10),
+        nullable=False,
+        index=True,
+        comment="First few characters of key for identification",
     )
 
     # Permissions stored as JSON with cross-database compatibility
@@ -49,7 +64,10 @@ class APIKey(Base, BaseModelMixin):
 
     # Usage tracking
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True, index=True, comment="Last time this key was used"
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+        comment="Last time this key was used",
     )
 
     last_used_ip: Mapped[Optional[str]] = mapped_column(
@@ -57,12 +75,19 @@ class APIKey(Base, BaseModelMixin):
     )
 
     usage_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0, server_default="0", comment="Number of times key has been used"
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+        comment="Number of times key has been used",
     )
 
     # Expiration
     expires_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True, index=True, comment="Optional expiration timestamp"
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+        comment="Optional expiration timestamp",
     )
 
     # User relationship
@@ -75,7 +100,10 @@ class APIKey(Base, BaseModelMixin):
     )
 
     revoked_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=None, comment="Timestamp when API key was revoked"
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+        comment="Timestamp when API key was revoked",
     )
 
     user: Mapped["User"] = relationship(
@@ -98,7 +126,11 @@ class APIKey(Base, BaseModelMixin):
     _model_constraints = (
         UniqueConstraint("name", "user_id", "is_deleted", name="uq_apikey_name_user"),
         Index("idx_apikey_user_active", "user_id", "is_deleted"),
-        Index("idx_apikey_expires", "expires_at", postgresql_where=text("expires_at IS NOT NULL")),
+        Index(
+            "idx_apikey_expires",
+            "expires_at",
+            postgresql_where=text("expires_at IS NOT NULL"),
+        ),
     )
     _model_config = {"comment": "API keys for authentication with granular permissions"}
 
@@ -164,9 +196,9 @@ class APIKey(Base, BaseModelMixin):
         if len(value) > 10:
             raise ValueError("Key prefix cannot exceed 10 characters")
 
-        # Should only contain alphanumeric characters and underscores
-        if not all(c.isalnum() or c == "_" for c in value):
-            raise ValueError("Key prefix must contain only alphanumeric characters and underscores")
+        # Should only contain URL-safe base64 characters (alphanumeric, underscores, hyphens)
+        if not all(c.isalnum() or c in "_-" for c in value):
+            raise ValueError("Key prefix must contain only alphanumeric characters, underscores, and hyphens")
 
         return value
 
@@ -239,7 +271,8 @@ class APIKey(Base, BaseModelMixin):
         """Check if the API key is active and valid."""
         # Handle case where is_deleted might be None before database save
         is_not_deleted = self.is_deleted is False or self.is_deleted is None
-        return is_not_deleted and not self.is_expired()
+        is_not_revoked = self.revoked_at is None
+        return is_not_deleted and is_not_revoked and not self.is_expired()
 
     @property
     def is_valid(self: "APIKey") -> bool:
@@ -332,7 +365,7 @@ class APIKey(Base, BaseModelMixin):
             "description": self.description,
             "key_prefix": self.key_prefix,
             "permissions": self.permissions,
-            "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
+            "last_used_at": (self.last_used_at.isoformat() if self.last_used_at else None),
             "usage_count": self.usage_count,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "is_active": self.is_active(),

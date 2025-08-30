@@ -28,7 +28,10 @@ class TestAuthEndpointsSecurity:
     async def test_login_success_returns_enhanced_jwt_claims(self, async_client: AsyncClient) -> None:
         """Test that successful login returns JWT with enhanced claims structure."""
         # This test assumes a test user exists or will be created
-        login_data = {"username": "testuser", "password": "TestPass123!"}  # pragma: allowlist secret
+        login_data = {
+            "username": "testuser",
+            "password": "TestPass123!",
+        }  # pragma: allowlist secret
 
         response = await async_client.post("/api/v1/auth/login", json=login_data)
 
@@ -69,8 +72,14 @@ class TestAuthEndpointsSecurity:
     async def test_login_invalid_credentials_security_response(self, async_client: AsyncClient) -> None:
         """Test that invalid credentials return secure error responses."""
         invalid_credentials = [
-            {"username": "nonexistent", "password": "wrongpass"},  # pragma: allowlist secret
-            {"username": "testuser", "password": "wrongpass"},  # pragma: allowlist secret
+            {
+                "username": "nonexistent",
+                "password": "wrongpass",
+            },  # pragma: allowlist secret
+            {
+                "username": "testuser",
+                "password": "wrongpass",
+            },  # pragma: allowlist secret
             {"username": "", "password": "password"},  # pragma: allowlist secret
             {"username": "user", "password": ""},
             {"username": "admin", "password": "admin"},  # pragma: allowlist secret
@@ -177,7 +186,10 @@ class TestAuthEndpointsSecurity:
         valid_user_attempt = {"username": "testuser", "password": "wrongpass"}
 
         # Test with invalid username
-        invalid_user_attempt = {"username": "nonexistentuser123", "password": "wrongpass"}
+        invalid_user_attempt = {
+            "username": "nonexistentuser123",
+            "password": "wrongpass",
+        }
 
         # Measure timing for each type
         valid_user_times = []
@@ -317,12 +329,13 @@ class TestAuthEndpointsSecurity:
         mock_existing_user.email = registration_data["email"]
 
         # Test scenario: First registration succeeds, second fails due to duplicate username
-        with (
-            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
-            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
-            patch.object(UserRepository, "create_user") as mock_create_user,
-        ):
+        from app.services.user_service_impl import UserServiceImpl
 
+        with (
+            patch.object(UserServiceImpl, "get_user_by_username") as mock_get_by_username,
+            patch.object(UserServiceImpl, "get_user_by_email") as mock_get_by_email,
+            patch.object(UserServiceImpl, "create_user") as mock_create_user,
+        ):
             # First registration: no existing user found
             mock_get_by_username.return_value = None
             mock_get_by_email.return_value = None
@@ -347,10 +360,9 @@ class TestAuthEndpointsSecurity:
 
         # Test scenario: duplicate email detection
         with (
-            patch.object(UserRepository, "get_by_username") as mock_get_by_username,
-            patch.object(UserRepository, "get_by_email") as mock_get_by_email,
+            patch.object(UserServiceImpl, "get_user_by_username") as mock_get_by_username,
+            patch.object(UserServiceImpl, "get_user_by_email") as mock_get_by_email,
         ):
-
             # Different username, but same email
             email_duplicate_data = registration_data.copy()
             email_duplicate_data["username"] = f"different_user_{unique_id}"
@@ -384,7 +396,10 @@ class TestAuthEndpointsSecurity:
             # Try to login with new user to verify JWT claims
             login_response = await async_client.post(
                 "/api/v1/auth/login",
-                json={"username": registration_data["username"], "password": registration_data["password"]},
+                json={
+                    "username": registration_data["username"],
+                    "password": registration_data["password"],
+                },
             )
 
             if login_response.status_code == 200:
@@ -549,7 +564,14 @@ class TestAuthEndpointsSecurity:
         # Test without CSRF token (if implemented)
         auth_endpoints = [
             ("/api/v1/auth/login", {"username": "test", "password": "test"}),
-            ("/api/v1/auth/register", {"username": "test", "email": "test@example.com", "password": "TestPass123!"}),
+            (
+                "/api/v1/auth/register",
+                {
+                    "username": "test",
+                    "email": "test@example.com",
+                    "password": "TestPass123!",
+                },
+            ),
             ("/api/v1/auth/logout", {}),
         ]
 
@@ -574,7 +596,9 @@ class TestAuthEndpointsSecurity:
         for content_type in invalid_content_types:
             headers = {"Content-Type": content_type}
             response = await async_client.post(
-                "/api/v1/auth/login", content="username=test&password=test", headers=headers
+                "/api/v1/auth/login",
+                content="username=test&password=test",
+                headers=headers,
             )
 
             # Should reject wrong content types
@@ -585,7 +609,11 @@ class TestAuthEndpointsSecurity:
         """Test request size limits for auth endpoints."""
         # Create request that exceeds the 10MB limit (InputSanitizationMiddleware MAX_BODY_SIZE)
         # 11MB payload should trigger 413 Request Entity Too Large
-        large_data = {"username": "test", "password": "test", "extra_data": "x" * (11 * 1024 * 1024)}
+        large_data = {
+            "username": "test",
+            "password": "test",
+            "extra_data": "x" * (11 * 1024 * 1024),
+        }
 
         response = await async_client.post("/api/v1/auth/login", json=large_data)
 
@@ -627,7 +655,11 @@ class TestAuthEndpointsSecurity:
 
             # All should return error responses (consistent failure)
             # Include database session error tolerance
-            assert response.status_code in [404, 422, 500]  # Not found, validation error, or db session issues
+            assert response.status_code in [
+                404,
+                422,
+                500,
+            ]  # Not found, validation error, or db session issues
 
             # Only validate structure for non-database-error responses
             if response.status_code in [422]:

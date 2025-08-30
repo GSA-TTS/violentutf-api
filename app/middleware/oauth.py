@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import AuthenticationError
-from app.db.session import get_db
-from app.services.oauth_service import OAuth2Service
+from app.dependencies.middleware import get_middleware_service
+from app.services.middleware_service import MiddlewareService
 
 logger = get_logger(__name__)
 
@@ -82,17 +82,20 @@ async def get_oauth_user(request: Request, token: Optional[str] = None):
         return None
 
     try:
-        # Get database session
-        async for session in get_db():
-            oauth_service = OAuth2Service(session)
+        # Get middleware service
+        async for base_middleware_service in get_middleware_service():
+            middleware_service = MiddlewareService(base_middleware_service.session)
 
-            # Validate token and get user
-            access_token, user, application = await oauth_service.validate_access_token(token)
+            # Validate token and get user using middleware service
+            access_token, user, application = await middleware_service.validate_oauth_access_token(token)
+
+            if not access_token or not user or not application:
+                raise AuthenticationError("Invalid OAuth token")
 
             # Store OAuth context in request state
             request.state.oauth_token = access_token
             request.state.oauth_application = application
-            request.state.oauth_scopes = json.loads(access_token.scopes)
+            request.state.oauth_scopes = await middleware_service.get_oauth_scopes_for_token(access_token)
 
             # Log OAuth access
             logger.info(

@@ -1,6 +1,4 @@
-"""
-Unit tests for the git history parser module.
-"""
+"""Unit tests for the git history parser module."""
 
 import json
 from datetime import datetime, timedelta, timezone
@@ -9,7 +7,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, FixType, GitHistoryParser
+from tools.pre_audit.git_history_parser import (
+    ArchitecturalFix,
+    FileChangePattern,
+    FixType,
+    GitHistoryParser,
+)
 
 
 class TestArchitecturalFix:
@@ -251,7 +254,11 @@ class TestGitHistoryParser:
             "layers/presentation.py",
         ]
 
-        non_arch_files = ["tests/test_user.py", "utils/helpers.py", "config/settings.py"]
+        non_arch_files = [
+            "tests/test_user.py",
+            "utils/helpers.py",
+            "config/settings.py",
+        ]
 
         for file_path in arch_files:
             assert parser._is_architectural_file(file_path)
@@ -455,7 +462,11 @@ class TestIntegration:
         # Initialize git repo
         subprocess.run(["git", "init"], cwd=repo_path, check=True)
         subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path, check=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=repo_path,
+            check=True,
+        )
 
         # Create some commits with architectural fixes
         test_file = repo_path / "test.py"
@@ -463,12 +474,20 @@ class TestIntegration:
         # Commit 1: ADR fix
         test_file.write_text("# Initial code")
         subprocess.run(["git", "add", "test.py"], cwd=repo_path, check=True)
-        subprocess.run(["git", "commit", "-m", "Fix ADR-001 compliance issue"], cwd=repo_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Fix ADR-001 compliance issue"],
+            cwd=repo_path,
+            check=True,
+        )
 
         # Commit 2: Boundary fix
         test_file.write_text("# Updated code\n# Fixed boundary")
         subprocess.run(["git", "add", "test.py"], cwd=repo_path, check=True)
-        subprocess.run(["git", "commit", "-m", "Resolve layer violation"], cwd=repo_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Resolve layer violation"],
+            cwd=repo_path,
+            check=True,
+        )
 
         # Commit 3: Regular commit (not architectural)
         test_file.write_text("# Updated code\n# Fixed boundary\n# Added feature")

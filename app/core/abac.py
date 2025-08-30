@@ -21,11 +21,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.core.errors import ForbiddenError, ValidationError
-from app.models.user import User
+from .errors import ForbiddenError, ValidationError
+from .interfaces.user_interface import IUserPermissionProvider, UserData
 
 logger = get_logger(__name__)
 
@@ -97,7 +96,7 @@ class ABACContext:
         organization_id: Optional[str] = None,
         resource_id: Optional[str] = None,
         resource_owner_id: Optional[str] = None,
-        session: Optional[AsyncSession] = None,
+        permission_provider: Optional[IUserPermissionProvider] = None,
         environment: Optional[Dict[str, Any]] = None,
     ):
         """Initialize ABAC context.
@@ -109,7 +108,7 @@ class ABACContext:
             organization_id: Organization context from JWT token
             resource_id: Specific resource instance ID (if applicable)
             resource_owner_id: Owner of the specific resource (if applicable)
-            session: Database session for attribute lookup
+            permission_provider: Service for loading user permissions
             environment: Additional environmental context
         """
         self.subject_id = subject_id
@@ -118,7 +117,7 @@ class ABACContext:
         self.organization_id = organization_id
         self.resource_id = resource_id
         self.resource_owner_id = resource_owner_id
-        self.session = session
+        self.permission_provider = permission_provider
         self.environment = environment or {}
 
         # Cached attributes
@@ -152,99 +151,87 @@ class ABACContext:
         return self._environment_attributes
 
     async def _load_subject_attributes(self) -> Dict[str, Any]:
-        """Load subject attributes from database."""
+        """Load subject attributes via permission provider."""
         attributes: Dict[str, Any] = {
             "subject_id": self.subject_id,
             "organization_id": self.organization_id,
         }
 
-        if self.session:
+        if self.permission_provider:
             try:
-                from app.repositories.user import UserRepository
-                from app.services.rbac_service import RBACService
+                # First try to get complete user data if provider supports it
+                if hasattr(self.permission_provider, "get_user_data"):
+                    user_data = await self.permission_provider.get_user_data(self.subject_id)
+                    if user_data:
+                        # Include all user data fields in attributes
+                        attributes.update(
+                            {
+                                "username": user_data.username,
+                                "email": user_data.email,
+                                "is_active": user_data.is_active,
+                                "is_verified": user_data.is_verified,
+                                "is_superuser": user_data.is_superuser,
+                                "user_organization_id": (
+                                    str(user_data.organization_id) if user_data.organization_id else None
+                                ),
+                                "roles": user_data.roles,
+                                "permissions": await self.permission_provider.get_user_permissions(self.subject_id),
+                            }
+                        )
 
-                user_repo = UserRepository(self.session)
-                rbac_service = RBACService(self.session)
+                        # Calculate authority level from user data
+                        permissions = await self.permission_provider.get_user_permissions(self.subject_id)
+                        attributes["authority_level"] = self._calculate_authority_level_from_roles(
+                            user_data.roles, permissions
+                        )
+                        attributes["permissions"] = list(permissions)
+                        return attributes
 
-                # Get user information
-                user = await user_repo.get_by_id(self.subject_id, self.organization_id)
-                if user:
-                    attributes.update(
-                        {
-                            "username": user.username,
-                            "email": user.email,
-                            "is_active": user.is_active,
-                            "is_verified": user.is_verified,
-                            "roles": user.roles,
-                            "user_organization_id": str(user.organization_id) if user.organization_id else None,
-                        }
-                    )
+                # Fallback to individual permission/role methods
+                permissions = await self.permission_provider.get_user_permissions(self.subject_id)
+                roles = await self.permission_provider.get_user_roles(self.subject_id)
 
-                    # Get effective permissions
-                    permissions = await rbac_service.get_user_permissions(self.subject_id)
-                    attributes["permissions"] = list(permissions)
-
-                    # Determine authority level
-                    attributes["authority_level"] = self._calculate_authority_level(user, permissions)
+                attributes.update(
+                    {
+                        "roles": roles,
+                        "permissions": list(permissions),
+                        "authority_level": self._calculate_authority_level_from_roles(roles, permissions),
+                    }
+                )
 
             except Exception as e:
-                logger.warning("Failed to load subject attributes", subject_id=self.subject_id, error=str(e))
+                logger.warning(
+                    "Failed to load subject attributes",
+                    subject_id=self.subject_id,
+                    error=str(e),
+                )
 
         return attributes
 
     async def _load_resource_attributes(self) -> Dict[str, Any]:
-        """Load resource attributes."""
+        """Load resource attributes (simplified for core layer)."""
         attributes: Dict[str, Any] = {
             "resource_type": self.resource_type,
             "resource_id": self.resource_id,
             "resource_owner_id": self.resource_owner_id,
+            "resource_organization_id": self.organization_id,
         }
 
-        # Add resource-specific attributes based on type
-        if self.resource_type == "users" and self.resource_id and self.session:
-            try:
-                from app.repositories.user import UserRepository
-
-                user_repo = UserRepository(self.session)
-                resource_user = await user_repo.get_by_id(self.resource_id, self.organization_id)
-                if resource_user:
-                    attributes.update(
-                        {
-                            "resource_is_active": resource_user.is_active,
-                            "resource_organization_id": (
-                                str(resource_user.organization_id) if resource_user.organization_id else None
-                            ),
-                            "resource_roles": resource_user.roles,
-                        }
-                    )
-            except Exception as e:
-                logger.warning("Failed to load user resource attributes", resource_id=self.resource_id, error=str(e))
-
-        elif self.resource_type == "api_keys" and self.resource_id and self.session:
-            try:
-                from app.repositories.api_key import APIKeyRepository
-
-                api_key_repo = APIKeyRepository(self.session)
-                api_key = await api_key_repo.get_by_id(self.resource_id, self.organization_id)
-                if api_key:
-                    attributes.update(
-                        {
-                            "resource_is_active": api_key.is_active(),
-                            "resource_organization_id": (
-                                str(api_key.organization_id) if api_key.organization_id else None
-                            ),
-                            "resource_permissions": api_key.permissions,
-                            "resource_expires_at": api_key.expires_at.isoformat() if api_key.expires_at else None,
-                        }
-                    )
-            except Exception as e:
-                logger.warning("Failed to load API key resource attributes", resource_id=self.resource_id, error=str(e))
+        # Note: Resource-specific attribute loading now happens in service layer
+        # The core layer only has basic resource context information
+        # Detailed resource validation is performed by services that call ABAC
 
         return attributes
 
     def _load_action_attributes(self) -> Dict[str, Any]:
         """Load action attributes."""
-        action_risk_levels = {"read": "low", "write": "medium", "delete": "high", "manage": "high", "*": "critical"}
+        action_risk_levels = {
+            "read": "low",
+            "write": "medium",
+            "delete": "high",
+            "manage": "high",
+            "*": "critical",
+        }
 
         return {
             "action": self.action,
@@ -268,18 +255,18 @@ class ABACContext:
 
         return attributes
 
-    def _calculate_authority_level(self, user: User, permissions: Set[str]) -> str:
+    def _calculate_authority_level_from_roles(self, roles: List[str], permissions: Set[str]) -> str:
         """Calculate user's authority level based on roles and permissions."""
         # Check for global admin permissions
         if "*" in permissions:
             return "global_admin"
 
         # Check for system-level roles (replaces is_superuser boolean)
-        if "admin" in user.roles:
+        if "admin" in roles:
             return "admin"
-        elif "tester" in user.roles:
+        elif "tester" in roles:
             return "tester"
-        elif "viewer" in user.roles:
+        elif "viewer" in roles:
             return "viewer"
         else:
             return "user"
@@ -435,7 +422,6 @@ class EnvironmentalRule(ABACRule):
 
         # High-risk actions during non-business hours require higher privileges
         if action_attrs.get("risk_level") == "high" and not env_attrs.get("is_business_hours", True):
-
             subject_attrs = await context.get_subject_attributes()
             if subject_attrs.get("authority_level") not in ["admin", "global_admin"]:
                 logger.info(
@@ -462,7 +448,7 @@ class ABACPolicyEngine:
         self.rules: List[ABACRule] = []
         self._initialize_default_rules()
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default ABAC rules."""
         # Add rules in priority order (lower priority number = higher precedence)
         self.rules.extend(
@@ -477,7 +463,7 @@ class ABACPolicyEngine:
         # Sort rules by priority
         self.rules.sort(key=lambda r: r.priority)
 
-    def add_rule(self, rule: ABACRule):
+    def add_rule(self, rule: ABACRule) -> None:
         """Add a custom rule to the policy engine."""
         self.rules.append(rule)
         # Re-sort rules by priority
@@ -527,7 +513,10 @@ class ABACPolicyEngine:
 
                 except Exception as e:
                     logger.error(
-                        "Rule evaluation error", rule_id=rule.rule_id, subject_id=context.subject_id, error=str(e)
+                        "Rule evaluation error",
+                        rule_id=rule.rule_id,
+                        subject_id=context.subject_id,
+                        error=str(e),
                     )
                     # Fail-secure: treat evaluation errors as denials
                     deny_reasons.append(f"Rule {rule.rule_id} evaluation failed")
@@ -575,7 +564,7 @@ class ABACPolicyEngine:
                 error=str(e),
             )
             # Fail-secure: deny access on evaluation errors
-            return False, f"Policy evaluation error: {str(e)}"
+            return False, "Access denied due to policy evaluation failure"
 
     async def explain_decision(self, context: ABACContext) -> Dict[str, Any]:
         """Provide detailed explanation of access decision for debugging/auditing."""
@@ -620,7 +609,11 @@ class ABACPolicyEngine:
             return explanation
 
         except Exception as e:
-            logger.error("Failed to generate decision explanation", subject_id=context.subject_id, error=str(e))
+            logger.error(
+                "Failed to generate decision explanation",
+                subject_id=context.subject_id,
+                error=str(e),
+            )
             return {
                 "decision": "DENY",
                 "reason": f"Explanation generation failed: {str(e)}",
@@ -644,7 +637,7 @@ async def check_abac_permission(
     subject_id: str,
     resource_type: str,
     action: str,
-    session: AsyncSession,
+    permission_provider: Optional[IUserPermissionProvider] = None,
     organization_id: Optional[str] = None,
     resource_id: Optional[str] = None,
     resource_owner_id: Optional[str] = None,
@@ -656,7 +649,7 @@ async def check_abac_permission(
         subject_id: ID of the user making the request
         resource_type: Type of resource being accessed
         action: Action being performed
-        session: Database session
+        permission_provider: Service for loading user permissions
         organization_id: Organization context
         resource_id: Specific resource ID (if applicable)
         resource_owner_id: Owner of the resource (if applicable)
@@ -672,7 +665,7 @@ async def check_abac_permission(
         organization_id=organization_id,
         resource_id=resource_id,
         resource_owner_id=resource_owner_id,
-        session=session,
+        permission_provider=permission_provider,
         environment=environment,
     )
 
@@ -684,7 +677,7 @@ async def explain_abac_decision(
     subject_id: str,
     resource_type: str,
     action: str,
-    session: AsyncSession,
+    permission_provider: Optional[IUserPermissionProvider] = None,
     organization_id: Optional[str] = None,
     resource_id: Optional[str] = None,
     resource_owner_id: Optional[str] = None,
@@ -696,7 +689,7 @@ async def explain_abac_decision(
         subject_id: ID of the user making the request
         resource_type: Type of resource being accessed
         action: Action being performed
-        session: Database session
+        permission_provider: Service for loading user permissions
         organization_id: Organization context
         resource_id: Specific resource ID (if applicable)
         resource_owner_id: Owner of the resource (if applicable)
@@ -712,7 +705,7 @@ async def explain_abac_decision(
         organization_id=organization_id,
         resource_id=resource_id,
         resource_owner_id=resource_owner_id,
-        session=session,
+        permission_provider=permission_provider,
         environment=environment,
     )
 

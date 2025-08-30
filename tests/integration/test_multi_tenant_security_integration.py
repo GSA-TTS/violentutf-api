@@ -197,7 +197,11 @@ class TestMultiTenantSecurityIntegration:
 
     @pytest.mark.asyncio
     async def test_cross_tenant_api_key_access_prevention(
-        self, async_client: AsyncClient, org1_test_user: Dict, org2_test_user: Dict, org1_test_api_key: Dict
+        self,
+        async_client: AsyncClient,
+        org1_test_user: Dict,
+        org2_test_user: Dict,
+        org1_test_api_key: Dict,
     ):
         """Test that users cannot access other organizations' API keys."""
         # User from org2 tries to access API key from org1
@@ -310,7 +314,7 @@ class TestMultiTenantSecurityIntegration:
         # Each organization should get consistent results
         if org1_results[0]["response"] and org1_results[1]["response"]:
             # Compare response structure (should be consistent)
-            assert type(org1_results[0]["response"]) == type(org1_results[1]["response"])
+            assert type(org1_results[0]["response"]) is type(org1_results[1]["response"])
 
     @pytest.mark.asyncio
     async def test_jwt_token_manipulation_prevention(self, async_client: AsyncClient, org1_test_user: Dict):
@@ -465,7 +469,8 @@ class TestMultiTenantSecurityIntegration:
         for malicious_input in malicious_inputs:
             # Try SQL injection through search parameters
             response = await async_client.get(
-                f"/api/v1/users?search={malicious_input}", headers=org1_test_user["headers"]
+                f"/api/v1/users?search={malicious_input}",
+                headers=org1_test_user["headers"],
             )
 
             # Should not crash or return unexpected data
@@ -504,7 +509,11 @@ class TestMultiTenantSecurityIntegration:
         assert rate_limited_count < 8  # Not too aggressive
 
     async def cleanup_test_data(
-        self, db_session: AsyncSession, org1_test_user: Dict, org2_test_user: Dict, org1_test_api_key: Dict
+        self,
+        db_session: AsyncSession,
+        org1_test_user: Dict,
+        org2_test_user: Dict,
+        org1_test_api_key: Dict,
     ):
         """Clean up test data after tests complete."""
         try:

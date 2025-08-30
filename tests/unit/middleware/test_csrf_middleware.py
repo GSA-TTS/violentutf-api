@@ -8,7 +8,11 @@ from unittest.mock import patch
 import pytest
 from fastapi import FastAPI
 
-from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRFProtectionMiddleware
+from app.middleware.csrf import (
+    CSRF_COOKIE_NAME,
+    CSRF_HEADER_NAME,
+    CSRFProtectionMiddleware,
+)
 from tests.utils.testclient import SafeTestClient
 
 if TYPE_CHECKING:
@@ -88,7 +92,9 @@ class TestCSRFProtectionMiddleware:
         if csrf_token:
             # Use the token in a POST request
             response = client.post(
-                "/protected", headers={CSRF_HEADER_NAME: csrf_token}, cookies={CSRF_COOKIE_NAME: csrf_token}
+                "/protected",
+                headers={CSRF_HEADER_NAME: csrf_token},
+                cookies={CSRF_COOKIE_NAME: csrf_token},
             )
             # Should succeed with valid token
             assert response.status_code == 200
@@ -117,13 +123,17 @@ class TestCSRFProtectionMiddleware:
 
         # Test with matching cookie and header
         response = client.post(
-            "/protected", headers={CSRF_HEADER_NAME: csrf_token}, cookies={CSRF_COOKIE_NAME: csrf_token}
+            "/protected",
+            headers={CSRF_HEADER_NAME: csrf_token},
+            cookies={CSRF_COOKIE_NAME: csrf_token},
         )
         assert response.status_code == 200
 
         # Test with mismatched cookie and header
         response = client.post(
-            "/protected", headers={CSRF_HEADER_NAME: csrf_token}, cookies={CSRF_COOKIE_NAME: "different_token"}
+            "/protected",
+            headers={CSRF_HEADER_NAME: csrf_token},
+            cookies={CSRF_COOKIE_NAME: "different_token"},
         )
         assert response.status_code == 403
 

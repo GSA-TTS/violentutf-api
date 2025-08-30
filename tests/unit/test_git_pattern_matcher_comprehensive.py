@@ -10,7 +10,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixMatch, FixType, PatternConfig
+from tools.pre_audit.git_pattern_matcher import (
+    ArchitecturalFixPatternMatcher,
+    FixMatch,
+    FixType,
+    PatternConfig,
+)
 
 
 class TestPatternMatcherSecurity:
@@ -139,7 +144,10 @@ class TestPatternMatcherRobustness:
             ("#ADR-001", ["ADR-001"]),
             ("ADR 001", ["ADR-001"]),
             # Multiple references
-            ("Fix ADR-001 and ADR-002, also ADR-003", ["ADR-001", "ADR-002", "ADR-003"]),
+            (
+                "Fix ADR-001 and ADR-002, also ADR-003",
+                ["ADR-001", "ADR-002", "ADR-003"],
+            ),
             # Edge cases
             ("ADR-0", ["ADR-000"]),  # Zero-padded
             ("ADR-9999", ["ADR-9999"]),  # Maximum reasonable number
@@ -184,7 +192,12 @@ class TestPatternMatcherRobustness:
         test_cases = [
             # (message, files, min_confidence, max_confidence)
             ("Fix ADR-001", None, 0.9, 1.0),  # Explicit ADR fix
-            ("Fix architectural violation", None, 0.8, 0.99),  # Architectural fix (capped at 0.99)
+            (
+                "Fix architectural violation",
+                None,
+                0.8,
+                0.99,
+            ),  # Architectural fix (capped at 0.99)
             ("Move code to proper layer", None, 0.5, 0.8),  # Implicit fix
             ("Random commit message", None, 0.0, 0.0),  # No match
             # With architectural files

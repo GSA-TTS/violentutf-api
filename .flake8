@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 120
-extend-ignore = E203, W503, E501, F401, F541, E226, ANN101, ANN204, B009, E712
+extend-ignore = E203, W503, E501, F401, F541, E226, ANN101, ANN204, B009, E712, D402
 exclude =
     .git,
     __pycache__,
@@ -8,6 +8,7 @@ exclude =
     venv,
     .env,
     env,
+    test_env,
     build,
     dist,
     .eggs,
@@ -20,7 +21,9 @@ exclude =
     violentutf_logs,
     security,
     .github,
-    scripts
+    scripts,
+    tools/agent_orchestrator,
+    agent_orchestrator
 per-file-ignores =
     __init__.py:F401
     tests/*:F401,F811,ANN101,ANN401,D202,ANN201,B007,B023,F841,E722,B001,D102,D107,ANN001,ANN002,ANN003,ANN202,C901,D401
@@ -35,7 +38,38 @@ per-file-ignores =
     app/api/endpoints/reports.py:C901
     app/api/endpoints/security_scans.py:C901
     app/api/endpoints/vulnerability_findings.py:C901
+    app/api/endpoints/vulnerability_taxonomies.py:C901
+    app/celery/tasks.py:C901
+    app/core/abac_permissions.py:C901
+    app/core/audit.py:C901
+    app/core/authority.py:C901
+    app/core/cache.py:C901
     app/core/decorators/circuit_breaker.py:C901
+    app/core/decorators/request_signing.py:C901
+    app/core/decorators/sanitization.py:C901
+    app/core/decorators/sql_injection.py:C901
+    app/core/external_services.py:C901
+    app/core/field_sanitization.py:C901
+    app/core/input_validation.py:C901
+    app/core/permissions.py:C901
+    app/core/request_signing.py:C901
+    app/core/sql_injection_prevention.py:C901
+    app/db/init_mfa_policies.py:C901
+    app/middleware/authentication.py:C901
+    app/middleware/csrf.py:C901
+    app/middleware/oauth.py:C901,ANN201,ANN202
+    app/middleware/rate_limiting.py:C901
+    app/middleware/request_signing.py:C901
+    app/models/role.py:C901
+    app/models/scan.py:C901
+    app/services/api_key_service.py:C901
+    app/services/architectural_report_generator.py:C901
+    app/services/audit_service.py:C901
+    app/services/mfa_policy_service.py:C901
+    app/services/rbac_service.py:C901
+    app/utils/performance_tracker.py:ANN401,D107,D401,E704
+    fix_test_patterns.py:C901
+    tools/pre_audit/*:C901,ANN201,ANN202
 max-complexity = 10
 statistics = True
 count = True

@@ -1,7 +1,21 @@
 """Base CRUD router with standardized patterns and comprehensive validation."""
 
 import uuid
-from typing import Any, Dict, Generic, List, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
+
+if TYPE_CHECKING:
+    pass
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.encoders import jsonable_encoder
@@ -10,11 +24,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.context import get_organization_id
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.db.base_class import Base
 from app.db.session import get_db
 from app.models.mixins import BaseModelMixin
-from app.repositories.base import BaseRepository
+
+# Removed BaseRepository import to comply with Clean Architecture
+# Repository access moved to service layer
 from app.schemas.base import (
     AdvancedFilter,
     BaseFilter,
@@ -34,7 +55,15 @@ ResponseSchemaType = TypeVar("ResponseSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseFilter)
 
 
-class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType, FilterSchemaType]):
+class BaseCRUDRouter(
+    Generic[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        ResponseSchemaType,
+        FilterSchemaType,
+    ]
+):
     """
     Base CRUD router providing standardized endpoints for database models.
 
@@ -50,7 +79,6 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
     def __init__(
         self,
         model: Type[ModelType],
-        repository: Type[BaseRepository[ModelType]],
         create_schema: Type[CreateSchemaType],
         update_schema: Type[UpdateSchemaType],
         response_schema: Type[ResponseSchemaType],
@@ -60,13 +88,14 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
         dependencies: Optional[List[Any]] = None,
         require_auth: bool = True,
         require_admin: bool = False,
+        repository: Optional[Type[Any]] = None,  # DEPRECATED: Use service layer instead
     ):
         """
         Initialize CRUD router.
 
         Args:
             model: SQLAlchemy model class
-            repository: Repository class for database operations
+            repository: DEPRECATED - Repository class for database operations (use service layer)
             create_schema: Pydantic schema for create operations
             update_schema: Pydantic schema for update operations
             response_schema: Pydantic schema for responses
@@ -78,7 +107,7 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             require_admin: Whether admin privileges are required
         """
         self.model = model
-        self.repository = repository
+        self.repository = repository  # DEPRECATED: Child classes should use service layer DI
         self.create_schema = create_schema
         self.update_schema = update_schema
         self.response_schema = response_schema
@@ -124,7 +153,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request,
+            item_id: uuid.UUID,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[ResponseSchemaType]:
             return await self._get_item(request, item_id, session)
 
@@ -141,7 +172,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             },
         )
         async def create_item(
-            request: Request, item_data: CreateSchemaType, session: AsyncSession = Depends(get_db)  # noqa: B008
+            request: Request,
+            item_data: CreateSchemaType,
+            session: AsyncSession = Depends(get_db),  # noqa: B008
         ) -> BaseResponse[ResponseSchemaType]:
             return await self._create_item(request, item_data, session)
 
@@ -215,6 +248,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "read")
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Build filters with organization context for multi-tenant isolation
@@ -289,6 +327,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "read", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation
@@ -310,7 +353,9 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             )
 
             return BaseResponse(
-                data=response_item, message="Success", trace_id=getattr(request.state, "trace_id", None)
+                data=response_item,
+                message="Success",
+                trace_id=getattr(request.state, "trace_id", None),
             )
 
         except Exception as e:
@@ -337,6 +382,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "create")
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Prepare data for creation
@@ -417,6 +467,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "update", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation
@@ -485,6 +540,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             await self._check_permissions(request, "delete", item_id)
 
             # Create repository instance
+            if self.repository is None:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="Repository not configured. Use service layer instead.",
+                )
             repo = self.repository(session)
 
             # Get organization context for multi-tenant isolation
@@ -519,7 +579,11 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
                 operation_id=str(uuid.uuid4()),
             )
 
-            return BaseResponse(data=result, message="Success", trace_id=getattr(request.state, "trace_id", None))
+            return BaseResponse(
+                data=result,
+                message="Success",
+                trace_id=getattr(request.state, "trace_id", None),
+            )
 
         except Exception as e:
             if not isinstance(e, (NotFoundError, ForbiddenError)):
@@ -550,7 +614,7 @@ class BaseCRUDRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType, Resp
             "check_permissions",
             has_user=user is not None,
             user_id=getattr(request.state, "user_id", None),
-            request_state_attrs=list(vars(request.state).keys()) if hasattr(request, "state") else None,
+            request_state_attrs=(list(vars(request.state).keys()) if hasattr(request, "state") else None),
         )
         if not user:
             raise ForbiddenError(message="Authentication required")

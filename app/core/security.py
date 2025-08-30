@@ -151,7 +151,9 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
 
 
 def create_token(
-    data: Dict[str, Any], expires_delta: Optional[timedelta] = None, token_type: str = ACCESS_TOKEN_TYPE
+    data: Dict[str, Any],
+    expires_delta: Optional[timedelta] = None,
+    token_type: str = ACCESS_TOKEN_TYPE,
 ) -> str:
     """Create a JWT token (generic function for any token type)."""
     if token_type == ACCESS_TOKEN_TYPE:
@@ -179,8 +181,119 @@ def create_token(
         return str(encoded_jwt)
 
 
-def hash_token(token: str) -> str:
-    """Hash a token using SHA256."""
+def hash_oauth_token(token: str) -> str:
+    """Hash an OAuth token for secure storage using Argon2.
+
+    Uses Argon2 which is a computationally expensive hash function appropriate
+    for sensitive data like OAuth tokens, authorization codes, and refresh tokens.
+    This ensures protection against brute force attacks even if the database is compromised.
+
+    OAuth tokens are considered sensitive authentication credentials similar to passwords
+    and should use computationally expensive hashing algorithms per OWASP recommendations.
+    """
+    pwd_context = _get_pwd_context()
+    return pwd_context.hash(token)
+
+
+def hash_cache_key(key: str) -> str:
+    """Hash a cache key for secure storage using BLAKE2b.
+
+    This function is ONLY for cache keys and non-sensitive identifiers.
+    DO NOT use for passwords - use hash_password(), hash_api_key(), or hash_client_secret().
+    """
     import hashlib
 
-    return hashlib.sha256(token.encode()).hexdigest()
+    from .config import settings
+
+    secret_key = (
+        settings.SECRET_KEY.get_secret_value()
+        if hasattr(settings.SECRET_KEY, "get_secret_value")
+        else str(settings.SECRET_KEY)
+    )
+    # BLAKE2b with key is cryptographically secure for cache key hashing
+    return hashlib.blake2b(
+        key.encode(),
+        key=secret_key.encode()[:64],
+        digest_size=32,  # BLAKE2b key max 64 bytes
+    ).hexdigest()
+
+
+# Legacy function - deprecated, use specific functions above
+def hash_token(token: str) -> str:
+    """DEPRECATED: Use hash_oauth_token() or hash_cache_key() instead."""
+    return hash_oauth_token(token)
+
+
+def hash_client_secret(client_secret: str) -> str:
+    """Hash an OAuth client secret using secure password hashing.
+
+    Uses Argon2 for secure password-based key derivation.
+    This is specifically for OAuth client secrets which should use
+    computationally expensive hashing algorithms.
+    """
+    return pwd_context.hash(client_secret)
+
+
+def hash_api_key(api_key: str) -> str:
+    """Hash an API key using secure password hashing.
+
+    Uses Argon2 for secure password-based key derivation.
+    API keys are sensitive authentication credentials and should use
+    computationally expensive hashing algorithms like passwords.
+    """
+    return pwd_context.hash(api_key)
+
+
+def verify_client_secret(client_secret: str, hashed_secret: str) -> bool:
+    """Verify an OAuth client secret against its hash.
+
+    Uses secure password verification with Argon2 only.
+    Legacy client secrets must be re-hashed using proper password hashing.
+    """
+    try:
+        # Only use Argon2 verification - no fallback to weak hashing
+        return pwd_context.verify(client_secret, hashed_secret)
+    except Exception:
+        # Return False for any verification failure - no weak hash fallback
+        return False
+
+
+def verify_api_key(api_key: str, hashed_key: str) -> bool:
+    """Verify an API key against its hash.
+
+    Uses secure password verification with Argon2 only.
+    Legacy API keys must be re-hashed using proper password hashing.
+    """
+    try:
+        # Only use Argon2 verification - no fallback to weak hashing
+        return pwd_context.verify(api_key, hashed_key)
+    except Exception:
+        # Return False for any verification failure - no weak hash fallback
+        return False
+
+
+def verify_token_hash(token: str, stored_hash: str) -> bool:
+    """Verify a token against a stored hash using Argon2.
+
+    Uses secure Argon2 verification for OAuth tokens, authorization codes,
+    and refresh tokens. This ensures protection against timing attacks and
+    provides proper cryptographic verification.
+
+    Args:
+        token: The plain token to verify
+        stored_hash: The stored Argon2 hash to verify against
+
+    Returns:
+        True if the token matches the stored hash
+    """
+    try:
+        pwd_context = _get_pwd_context()
+        return pwd_context.verify(token, stored_hash)
+    except Exception:
+        # Log migration warning for legacy hashes
+        if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
+            from structlog.stdlib import get_logger
+
+            logger = get_logger(__name__)
+            logger.warning("Legacy token hash detected - token should be regenerated for security")
+        return False

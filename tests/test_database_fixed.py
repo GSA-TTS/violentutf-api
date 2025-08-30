@@ -8,17 +8,30 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.db.base import Base
 
 
-class TestDatabaseManager:
+class DatabaseTestManager:
     """Test database manager with proper lifecycle management."""
 
     def __init__(self, database_url: str | None = None):
         """Initialize test database manager."""
-        self.database_url = database_url or "sqlite+aiosqlite:///./test_violentutf.db"
+        if database_url:
+            self.database_url = database_url
+        else:
+            try:
+                from tests.helpers.windows_compat import get_test_db_path
+
+                self.database_url = get_test_db_path()
+            except ImportError:
+                self.database_url = "sqlite+aiosqlite:///./test_violentutf.db"
         self.engine: AsyncEngine | None = None
         self.session_maker: async_sessionmaker[AsyncSession] | None = None
 
@@ -160,25 +173,27 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="module")
-async def module_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
+async def module_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
     """Provide test database manager per module (for integration tests)."""
-    manager = TestDatabaseManager()
+    manager = DatabaseTestManager()
     await manager.initialize()
     yield manager
     await manager.cleanup()
 
 
 @pytest_asyncio.fixture(scope="function")
-async def function_db_manager() -> AsyncGenerator[TestDatabaseManager, None]:
+async def function_db_manager() -> AsyncGenerator[DatabaseTestManager, None]:
     """Provide test database manager per function (for unit tests with isolation)."""
-    manager = TestDatabaseManager()
+    manager = DatabaseTestManager()
     await manager.initialize()
     yield manager
     await manager.cleanup()
 
 
 @pytest_asyncio.fixture
-async def db_session(module_db_manager: TestDatabaseManager) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    module_db_manager: DatabaseTestManager,
+) -> AsyncGenerator[AsyncSession, None]:
     """Provide database session with transaction rollback for test isolation."""
     async with module_db_manager.session_scope() as session:
         yield session
@@ -186,7 +201,7 @@ async def db_session(module_db_manager: TestDatabaseManager) -> AsyncGenerator[A
 
 @pytest_asyncio.fixture
 async def isolated_db_session(
-    function_db_manager: TestDatabaseManager,
+    function_db_manager: DatabaseTestManager,
 ) -> AsyncGenerator[AsyncSession, None]:
     """Provide completely isolated database session for critical tests."""
     async with function_db_manager.session_scope() as session:
@@ -195,6 +210,8 @@ async def isolated_db_session(
 
 # For backward compatibility, provide test_db_manager as module-scoped
 @pytest_asyncio.fixture(scope="module")
-async def test_db_manager(module_db_manager: TestDatabaseManager) -> TestDatabaseManager:
+async def test_db_manager(
+    module_db_manager: DatabaseTestManager,
+) -> DatabaseTestManager:
     """Backward compatible test database manager (module-scoped)."""
     return module_db_manager

@@ -116,7 +116,10 @@ class TaskResult(BaseModelMixin, Base):
 
     # Relationship to task
     task_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("task.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     task: Mapped[Task] = relationship("Task", back_populates="results")
 

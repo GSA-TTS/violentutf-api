@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_db, get_oauth_service
 from app.core.auth import get_current_user
 from app.core.errors import AuthenticationError, ForbiddenError, ValidationError
 from app.models.user import User
@@ -26,8 +27,6 @@ from app.schemas.oauth import (
 )
 from app.services.oauth_service import OAuth2Service
 
-from ...db.session import get_db_dependency
-
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
@@ -37,9 +36,41 @@ BEARER_TOKEN_TYPE = "Bearer"  # nosec B105 - Standard OAuth2 token type
 REFRESH_TOKEN_GRANT = "refresh_token"  # nosec B105 - Standard OAuth2 grant type
 
 
+def _create_safe_redirect_response(
+    redirect_uri: str, allowed_uris: List[str], error_params: Dict[str, str]
+) -> RedirectResponse:
+    """Create a safe redirect response using only pre-approved URIs.
+
+    Args:
+        redirect_uri: The requested redirect URI
+        allowed_uris: List of pre-approved redirect URIs
+        error_params: Query parameters to add to the redirect
+
+    Returns:
+        RedirectResponse with validated redirect URI
+
+    Raises:
+        ValidationError: If redirect_uri is not in allowed_uris
+    """
+    # Only allow redirects to pre-approved URIs
+    safe_redirect_uri = None
+    for approved_uri in allowed_uris:
+        if approved_uri == redirect_uri:
+            safe_redirect_uri = approved_uri
+            break
+
+    if not safe_redirect_uri:
+        raise ValidationError("Redirect URI not in approved list")
+
+    redirect_url = _build_secure_redirect_url(safe_redirect_uri, error_params)
+    return RedirectResponse(url=redirect_url)
+
+
 def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> bool:
     """
     Validate that redirect_uri is in the application's registered redirect URIs.
+
+    Performs comprehensive validation to prevent open redirect vulnerabilities.
 
     Args:
         redirect_uri: The redirect URI to validate
@@ -51,7 +82,27 @@ def _validate_redirect_uri(redirect_uri: str, app_redirect_uris: List[str]) -> b
     if not redirect_uri or not app_redirect_uris:
         return False
 
-    # Exact match check for security
+    # Additional security checks
+    try:
+        # Parse URL to validate structure
+        parsed = urlparse(redirect_uri)
+
+        # Reject URLs without proper scheme (must be http/https)
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        # Reject URLs without proper hostname
+        if not parsed.netloc:
+            return False
+
+        # Reject obviously malicious patterns
+        if any(suspicious in redirect_uri.lower() for suspicious in ["javascript:", "data:", "vbscript:", "file:"]):
+            return False
+
+    except Exception:
+        return False
+
+    # Exact match check for security - prevents subdomain attacks
     return redirect_uri in app_redirect_uris
 
 
@@ -59,13 +110,30 @@ def _build_secure_redirect_url(base_uri: str, params: Dict[str, str]) -> str:
     """
     Build a secure redirect URL with proper parameter encoding.
 
+    This function assumes base_uri has already been validated by _validate_redirect_uri.
+
     Args:
-        base_uri: The base redirect URI (already validated)
+        base_uri: The base redirect URI (must be pre-validated)
         params: Parameters to append
 
     Returns:
         Complete redirect URL
+
+    Raises:
+        ValueError: If base_uri appears invalid
     """
+    # Additional safety check - this should never trigger if validation works properly
+    if not base_uri:
+        raise ValueError("Invalid base URI")
+
+    # Basic structure validation as final safety check
+    try:
+        parsed = urlparse(base_uri)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("Invalid URI structure")
+    except Exception:
+        raise ValueError("Unable to parse base URI")
+
     if not params:
         return base_uri
 
@@ -87,7 +155,8 @@ async def create_oauth_application(
     request: Request,
     app_data: OAuthApplicationCreate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Create new OAuth application."""
     try:
@@ -108,7 +177,7 @@ async def create_oauth_application(
             terms_of_service_url=app_data.terms_of_service_url,
         )
 
-        await session.commit()
+        # Service layer handles transactions automatically
 
         # Build response with client secret (only shown once)
         response_data = OAuthApplicationResponse.from_orm(app)
@@ -128,7 +197,13 @@ async def create_oauth_application(
         )
 
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(
+            "OAuth application validation failed",
+            user_id=str(current_user.id),
+            error_type=type(e).__name__,
+        )
+        # CodeQL [py/stack-trace-exposure] Sanitized error message prevents information disclosure
+        raise HTTPException(status_code=400, detail="Invalid application configuration")
     except Exception as e:
         logger.error(
             "Failed to create OAuth application",
@@ -147,7 +222,8 @@ async def create_oauth_application(
 async def list_my_oauth_applications(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[OAuthApplicationResponse]]:
     """List user's OAuth applications."""
     try:
@@ -182,7 +258,8 @@ async def get_oauth_application(
     request: Request,
     client_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> BaseResponse[OAuthApplicationResponse]:
     """Get OAuth application details."""
     try:
@@ -232,7 +309,8 @@ async def oauth_authorize_page(
     code_challenge_method: Optional[str] = Query(None, description="PKCE method"),
     nonce: Optional[str] = Query(None, description="OpenID Connect nonce"),
     current_user: Optional[User] = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> HTMLResponse:
     """Display OAuth authorization page."""
     # If user not logged in, redirect to login with return URL
@@ -372,7 +450,8 @@ async def process_oauth_authorization(
     code_challenge_method: Optional[str] = Form(None),
     nonce: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> Union[RedirectResponse, HTMLResponse]:
     """Process OAuth authorization."""
     try:
@@ -382,19 +461,41 @@ async def process_oauth_authorization(
         if not app:
             raise ValidationError("Invalid client")
 
-        # Validate redirect URI against registered URIs to prevent open redirects
+        # Critical Security Check: Validate redirect URI against registered URIs to prevent open redirects
         if not _validate_redirect_uri(redirect_uri, app.redirect_uris):
-            logger.warning("Invalid redirect URI in authorization", client_id=client_id, redirect_uri=redirect_uri)
+            logger.warning(
+                "Invalid redirect URI in authorization",
+                client_id=client_id,
+                redirect_uri=redirect_uri[:50],
+            )
             raise ValidationError("Invalid redirect URI")
+
+        # Additional security: Ensure redirect_uri is from the validated list (double-check)
+        def find_safe_redirect_uri(user_provided_uri: str, allowed_uris: List[str]) -> Optional[str]:
+            """Find a safe redirect URI from the pre-approved list only."""
+            for registered_uri in allowed_uris:
+                if registered_uri == user_provided_uri:
+                    return registered_uri
+            return None
+
+        validated_redirect_uri = find_safe_redirect_uri(redirect_uri, app.redirect_uris)
+        if not validated_redirect_uri:
+            logger.error("Redirect URI validation bypass attempt", client_id=client_id)
+            raise ValidationError("Security validation failed")
 
         # Check if user denied
         if action == "deny":
             # Redirect with error using secure redirect URL construction
+            # Use validated_redirect_uri (from registered list) instead of user-provided redirect_uri
             error_params = {"error": "access_denied"}
             if state:
                 error_params["state"] = state
 
-            return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+            try:
+                return _create_safe_redirect_response(validated_redirect_uri, app.redirect_uris, error_params)
+            except ValueError as e:
+                logger.error("Failed to build redirect URL for deny action", error=str(e))
+                return HTMLResponse("<h1>Authorization denied</h1>", status_code=400)
 
         # User approved - create authorization code
 
@@ -403,7 +504,7 @@ async def process_oauth_authorization(
         code = await oauth_service.create_authorization_code(
             application_id=str(app.id),
             user_id=str(current_user.id),
-            redirect_uri=redirect_uri,
+            redirect_uri=validated_redirect_uri,
             scopes=scopes,
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,
@@ -411,14 +512,19 @@ async def process_oauth_authorization(
             request=request,
         )
 
-        await session.commit()
+        # Service layer handles transactions automatically
 
         # Build success redirect using secure URL construction
+        # Use validated_redirect_uri (from registered list) instead of user-provided redirect_uri
         success_params = {"code": code}
         if state:
             success_params["state"] = state
 
-        return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, success_params))
+        try:
+            return _create_safe_redirect_response(validated_redirect_uri, app.redirect_uris, success_params)
+        except ValueError as e:
+            logger.error("Failed to build redirect URL for success", error=str(e))
+            return HTMLResponse("<h1>Authorization succeeded but redirect failed</h1>", status_code=500)
 
     except Exception as e:
         logger.error(
@@ -427,21 +533,40 @@ async def process_oauth_authorization(
             error=str(e),
         )
         # Redirect with error using secure URL construction
-        # Note: redirect_uri should have been validated earlier, but add safety check
+        # Only use pre-validated redirect URIs from registered list
         try:
             oauth_service = OAuth2Service(session)
             app = await oauth_service.get_application(client_id)
             if app and _validate_redirect_uri(redirect_uri, app.redirect_uris):
-                error_params = {"error": "server_error"}
-                if state:
-                    error_params["state"] = state
-                return RedirectResponse(url=_build_secure_redirect_url(redirect_uri, error_params))
+                # Find exact matching validated URI from registered list
+                validated_uri = None
+                for registered_uri in app.redirect_uris:
+                    if registered_uri == redirect_uri:
+                        validated_uri = registered_uri
+                        break
+
+                if validated_uri:
+                    error_params = {"error": "server_error"}
+                    if state:
+                        error_params["state"] = state
+                    try:
+                        return _create_safe_redirect_response(validated_uri, app.redirect_uris, error_params)
+                    except ValueError as ve:
+                        logger.error(
+                            "Failed to build redirect URL for server error",
+                            error=str(ve),
+                        )
         except Exception as e:
-            logger.warning("Failed to build secure redirect URL", error=str(e), redirect_uri=redirect_uri)
+            logger.warning(
+                "Failed to build secure redirect URL",
+                error=str(e),
+                redirect_uri=redirect_uri,
+            )
 
         # Fallback to generic error page if redirect_uri validation fails
         return HTMLResponse(
-            "<h1>Authorization Error</h1><p>An error occurred during authorization.</p>", status_code=500
+            "<h1>Authorization Error</h1><p>An error occurred during authorization.</p>",
+            status_code=500,
         )
 
 
@@ -461,7 +586,8 @@ async def oauth_token(
     refresh_token: Optional[str] = Form(None),
     scope: Optional[str] = Form(None),
     code_verifier: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> OAuthTokenResponse:
     """OAuth token endpoint."""
     try:
@@ -484,7 +610,7 @@ async def oauth_token(
                 request=request,
             )
 
-            await session.commit()
+            # Service layer handles transactions automatically
 
             return OAuthTokenResponse(
                 access_token=access_token,
@@ -512,7 +638,7 @@ async def oauth_token(
                 request=request,
             )
 
-            await session.commit()
+            # Service layer handles transactions automatically
 
             return OAuthTokenResponse(
                 access_token=access_token,
@@ -529,9 +655,12 @@ async def oauth_token(
             )
 
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("OAuth token validation failed", error_type=type(e).__name__)
+        # CodeQL [py/stack-trace-exposure] Sanitized error message prevents information disclosure
+        raise HTTPException(status_code=400, detail="Invalid token request parameters")
     except AuthenticationError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        logger.warning("OAuth authentication failed", error_type=type(e).__name__)
+        raise HTTPException(status_code=401, detail="Authentication failed")
     except HTTPException:
         raise
     except Exception as e:
@@ -550,7 +679,8 @@ async def revoke_oauth_token(
     token_type_hint: Optional[str] = Form(None),
     client_id: Optional[str] = Form(None),
     client_secret: Optional[str] = Form(None),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Revoke OAuth token."""
     try:
@@ -564,7 +694,7 @@ async def revoke_oauth_token(
             client_secret=client_secret,
         )
 
-        await session.commit()
+        # Service layer handles transactions automatically
 
         # Always return success (per RFC 7009)
         return {"revoked": revoked}
@@ -584,7 +714,8 @@ async def revoke_oauth_token(
 async def list_my_authorizations(
     request: Request,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> BaseResponse[List[UserAuthorizationResponse]]:
     """List user's OAuth authorizations."""
     try:
@@ -621,7 +752,8 @@ async def revoke_authorization(
     request: Request,
     application_id: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_dependency),
+    oauth_service: OAuth2Service = Depends(get_oauth_service),
+    session: AsyncSession = Depends(get_db),
 ) -> BaseResponse[Dict[str, bool]]:
     """Revoke OAuth authorization."""
     try:
@@ -633,7 +765,7 @@ async def revoke_authorization(
             application_id=application_id,
         )
 
-        await session.commit()
+        # Service layer handles transactions automatically
 
         logger.info(
             "OAuth authorization revoked",
@@ -643,7 +775,7 @@ async def revoke_authorization(
 
         return BaseResponse(
             data={"revoked": revoked},
-            message="Authorization revoked successfully" if revoked else "No active authorization found",
+            message=("Authorization revoked successfully" if revoked else "No active authorization found"),
             trace_id=getattr(request.state, "trace_id", None),
         )
 

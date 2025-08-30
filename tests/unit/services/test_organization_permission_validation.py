@@ -28,7 +28,10 @@ class TestOrganizationPermissionValidation:
     @pytest.fixture
     def rbac_service(self, mock_session):
         """Create RBAC service with mocked dependencies."""
-        with patch("app.services.rbac_service.RoleRepository"), patch("app.services.rbac_service.UserRepository"):
+        with (
+            patch("app.services.rbac_service.RoleRepository"),
+            patch("app.services.rbac_service.UserRepository"),
+        ):
             return RBACService(mock_session)
 
     @pytest.fixture
@@ -62,7 +65,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify
@@ -85,7 +91,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify - should fail because user doesn't own the resource
@@ -103,7 +112,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify - should fail without organization context for :own permissions
@@ -122,7 +134,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify - should fail when user not found in organization
@@ -163,7 +178,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify - admin should bypass ownership checks
@@ -183,7 +201,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify - wildcard should match with ownership validation
@@ -201,7 +222,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id="user-123"
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id="user-123",
         )
 
         # Verify - broader permission should cover :own scope
@@ -218,7 +242,9 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service._validate_ownership_context(
-            user_id=user_id, resource_owner_id=resource_owner_id, organization_id=organization_id
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            organization_id=organization_id,
         )
 
         # Verify
@@ -234,7 +260,9 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service._validate_ownership_context(
-            user_id=user_id, resource_owner_id=resource_owner_id, organization_id=organization_id
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            organization_id=organization_id,
         )
 
         # Verify
@@ -249,7 +277,9 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service._validate_ownership_context(
-            user_id=user_id, resource_owner_id=resource_owner_id, organization_id=organization_id
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            organization_id=organization_id,
         )
 
         # Verify
@@ -264,7 +294,9 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service._validate_ownership_context(
-            user_id=user_id, resource_owner_id=resource_owner_id, organization_id=organization_id
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            organization_id=organization_id,
         )
 
         # Verify
@@ -281,7 +313,9 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service._validate_ownership_context(
-            user_id=user_id, resource_owner_id=resource_owner_id, organization_id=organization_id
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            organization_id=organization_id,
         )
 
         # Verify
@@ -311,7 +345,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # Verify
@@ -335,7 +372,10 @@ class TestOrganizationPermissionValidation:
 
         # Execute
         result = await rbac_service.check_organization_permission(
-            user_id=user_id, permission=permission, organization_id=organization_id, resource_owner_id=resource_owner_id
+            user_id=user_id,
+            permission=permission,
+            organization_id=organization_id,
+            resource_owner_id=resource_owner_id,
         )
 
         # CRITICAL: Verify the security fix is implemented

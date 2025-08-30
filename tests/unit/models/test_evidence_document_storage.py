@@ -16,7 +16,11 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ForbiddenError, ValidationError
-from app.models.evidence_document import EvidenceDocument, EvidenceType, SecurityClassification
+from app.models.evidence_document import (
+    EvidenceDocument,
+    EvidenceType,
+    SecurityClassification,
+)
 
 
 class TestEvidenceDocumentModel:
@@ -397,7 +401,12 @@ class TestEvidenceDocumentSecurity:
 
         # Verify no unnecessary personal data
         evidence_keys = set(minimal_evidence.evidence_data.keys())
-        prohibited_keys = {"password", "social_security", "credit_card", "personal_address"}
+        prohibited_keys = {
+            "password",
+            "social_security",
+            "credit_card",
+            "personal_address",
+        }
 
         assert evidence_keys.isdisjoint(prohibited_keys)
 

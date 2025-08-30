@@ -164,7 +164,11 @@ class TestPaginationPerformance:
             repository = EnhancedRepository(session, User)
 
             # Get initial page
-            filters = EnhancedFilter(per_page=50, sort=[SortField(field="id", direction="asc")], use_cache=False)
+            filters = EnhancedFilter(
+                per_page=50,
+                sort=[SortField(field="id", direction="asc")],
+                use_cache=False,
+            )
 
             benchmark.start_timer()
             first_page = await repository.list_with_filters(filters, use_cache=False)
@@ -218,7 +222,9 @@ class TestFilteringPerformance:
 
             for field, operator, value in test_cases:
                 filters = EnhancedFilter(
-                    filters={field: FieldFilter(operator=operator, value=value)}, per_page=100, use_cache=False
+                    filters={field: FieldFilter(operator=operator, value=value)},
+                    per_page=100,
+                    use_cache=False,
                 )
 
                 benchmark.start_timer()
@@ -247,7 +253,9 @@ class TestFilteringPerformance:
 
             for field, operator, value in test_cases:
                 filters = EnhancedFilter(
-                    filters={field: FieldFilter(operator=operator, value=value)}, per_page=100, use_cache=False
+                    filters={field: FieldFilter(operator=operator, value=value)},
+                    per_page=100,
+                    use_cache=False,
                 )
 
                 benchmark.start_timer()
@@ -276,7 +284,9 @@ class TestFilteringPerformance:
 
             for field, operator, value in test_cases:
                 filters = EnhancedFilter(
-                    filters={field: FieldFilter(operator=operator, value=value)}, per_page=100, use_cache=False
+                    filters={field: FieldFilter(operator=operator, value=value)},
+                    per_page=100,
+                    use_cache=False,
                 )
 
                 benchmark.start_timer()
@@ -305,7 +315,10 @@ class TestFilteringPerformance:
                     "username": FieldFilter(operator=FilterOperator.CONTAINS, value="user_0"),
                     "created_at": FieldFilter(operator=FilterOperator.GT, value=cutoff_date),
                 },
-                sort=[SortField(field="created_at", direction="desc"), SortField(field="username", direction="asc")],
+                sort=[
+                    SortField(field="created_at", direction="desc"),
+                    SortField(field="username", direction="asc"),
+                ],
                 per_page=50,
                 use_cache=False,
             )
@@ -336,7 +349,9 @@ class TestSortingPerformance:
             for field in sort_fields:
                 for direction in ["asc", "desc"]:
                     filters = EnhancedFilter(
-                        sort=[SortField(field=field, direction=direction)], per_page=100, use_cache=False
+                        sort=[SortField(field=field, direction=direction)],
+                        per_page=100,
+                        use_cache=False,
                     )
 
                     benchmark.start_timer()
@@ -363,7 +378,10 @@ class TestSortingPerformance:
 
             # Test multi-field sorting combinations
             sort_combinations = [
-                [SortField(field="is_active", direction="desc"), SortField(field="created_at", direction="desc")],
+                [
+                    SortField(field="is_active", direction="desc"),
+                    SortField(field="created_at", direction="desc"),
+                ],
                 [
                     SortField(field="is_superuser", direction="desc"),
                     SortField(field="is_active", direction="desc"),
@@ -421,7 +439,8 @@ class TestCachePerformance:
             repository = EnhancedRepository(session, User)
 
             filters = EnhancedFilter(
-                filters={"is_active": FieldFilter(operator=FilterOperator.EQ, value=True)}, per_page=50
+                filters={"is_active": FieldFilter(operator=FilterOperator.EQ, value=True)},
+                per_page=50,
             )
 
             # Test without cache
@@ -489,7 +508,10 @@ async def test_comprehensive_performance_suite(populated_db, benchmark):
 
         # Test various scenarios
         scenarios = [
-            {"name": "basic_list", "filters": EnhancedFilter(per_page=20, use_cache=False)},
+            {
+                "name": "basic_list",
+                "filters": EnhancedFilter(per_page=20, use_cache=False),
+            },
             {
                 "name": "filtered_list",
                 "filters": EnhancedFilter(
@@ -501,7 +523,9 @@ async def test_comprehensive_performance_suite(populated_db, benchmark):
             {
                 "name": "sorted_list",
                 "filters": EnhancedFilter(
-                    sort=[SortField(field="created_at", direction="desc")], per_page=20, use_cache=False
+                    sort=[SortField(field="created_at", direction="desc")],
+                    per_page=20,
+                    use_cache=False,
                 ),
             },
             {

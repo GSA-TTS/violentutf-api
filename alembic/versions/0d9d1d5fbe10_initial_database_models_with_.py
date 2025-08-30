@@ -38,7 +38,12 @@ def upgrade() -> None:
             nullable=False,
             comment="Type of resource affected (e.g., 'user', 'api_key')",
         ),
-        sa.Column("resource_id", sa.String(length=255), nullable=True, comment="ID of the affected resource"),
+        sa.Column(
+            "resource_id",
+            sa.String(length=255),
+            nullable=True,
+            comment="ID of the affected resource",
+        ),
         sa.Column(
             "user_id",
             sa.String(length=36),
@@ -51,11 +56,29 @@ def upgrade() -> None:
             nullable=True,
             comment="Email of user at time of action (denormalized for history)",
         ),
-        sa.Column("ip_address", sa.String(length=45), nullable=True, comment="IP address of the request"),
-        sa.Column("user_agent", sa.String(length=500), nullable=True, comment="User agent string from the request"),
-        sa.Column("changes", sa.TEXT(), nullable=True, comment="JSON string with before/after values for updates"),
         sa.Column(
-            "action_metadata", sa.TEXT(), nullable=True, comment="Additional context or metadata about the action"
+            "ip_address",
+            sa.String(length=45),
+            nullable=True,
+            comment="IP address of the request",
+        ),
+        sa.Column(
+            "user_agent",
+            sa.String(length=500),
+            nullable=True,
+            comment="User agent string from the request",
+        ),
+        sa.Column(
+            "changes",
+            sa.TEXT(),
+            nullable=True,
+            comment="JSON string with before/after values for updates",
+        ),
+        sa.Column(
+            "action_metadata",
+            sa.TEXT(),
+            nullable=True,
+            comment="Additional context or metadata about the action",
         ),
         sa.Column(
             "status",
@@ -64,12 +87,32 @@ def upgrade() -> None:
             nullable=False,
             comment="Result status: success, failure, error",
         ),
-        sa.Column("error_message", sa.String(length=1000), nullable=True, comment="Error message if action failed"),
-        sa.Column("duration_ms", sa.Integer(), nullable=True, comment="Duration of the action in milliseconds"),
+        sa.Column(
+            "error_message",
+            sa.String(length=1000),
+            nullable=True,
+            comment="Error message if action failed",
+        ),
+        sa.Column(
+            "duration_ms",
+            sa.Integer(),
+            nullable=True,
+            comment="Duration of the action in milliseconds",
+        ),
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("created_by", sa.String(length=255), server_default="system", nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("updated_by", sa.String(length=255), server_default="system", nullable=False),
         sa.Column("version", sa.Integer(), server_default="1", nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -78,7 +121,12 @@ def upgrade() -> None:
     op.create_index("idx_audit_log_created", "audit_log", ["created_at", "created_by"], unique=False)
     op.create_index("idx_audit_log_updated", "audit_log", ["updated_at", "updated_by"], unique=False)
     op.create_index("idx_audit_log_version", "audit_log", ["version"], unique=False)
-    op.create_index("idx_auditlog_resource", "audit_log", ["resource_type", "resource_id"], unique=False)
+    op.create_index(
+        "idx_auditlog_resource",
+        "audit_log",
+        ["resource_type", "resource_id"],
+        unique=False,
+    )
     op.create_index("idx_auditlog_status", "audit_log", ["status", "created_at"], unique=False)
     op.create_index("idx_auditlog_timestamp", "audit_log", ["created_at"], unique=False)
     op.create_index("idx_auditlog_user_action", "audit_log", ["user_id", "action"], unique=False)
@@ -89,10 +137,25 @@ def upgrade() -> None:
     op.create_index(op.f("ix_audit_log_user_id"), "audit_log", ["user_id"], unique=False)
     op.create_table(
         "user",
-        sa.Column("username", sa.String(length=100), nullable=False, comment="Unique username for login"),
+        sa.Column(
+            "username",
+            sa.String(length=100),
+            nullable=False,
+            comment="Unique username for login",
+        ),
         sa.Column("email", sa.String(length=254), nullable=False, comment="User email address"),
-        sa.Column("password_hash", sa.String(length=255), nullable=False, comment="Argon2 password hash"),
-        sa.Column("full_name", sa.String(length=255), nullable=True, comment="User's full display name"),
+        sa.Column(
+            "password_hash",
+            sa.String(length=255),
+            nullable=False,
+            comment="Argon2 password hash",
+        ),
+        sa.Column(
+            "full_name",
+            sa.String(length=255),
+            nullable=True,
+            comment="User's full display name",
+        ),
         sa.Column(
             "is_active",
             sa.Boolean(),
@@ -108,9 +171,19 @@ def upgrade() -> None:
             comment="Whether the user has administrative privileges",
         ),
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("created_by", sa.String(length=255), server_default="system", nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("updated_by", sa.String(length=255), server_default="system", nullable=False),
         sa.Column("version", sa.Integer(), server_default="1", nullable=False),
         sa.Column("is_deleted", sa.Boolean(), server_default="false", nullable=False),
@@ -118,7 +191,12 @@ def upgrade() -> None:
         sa.Column("deleted_by", sa.String(length=255), nullable=True),
         sa.Column("owner_id", sa.String(length=255), nullable=True),
         sa.Column("organization_id", sa.String(length=36), nullable=True),
-        sa.Column("access_level", sa.String(length=50), server_default="private", nullable=False),
+        sa.Column(
+            "access_level",
+            sa.String(length=50),
+            server_default="private",
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email", "is_deleted", name="uq_user_email_active"),
         sa.UniqueConstraint("username", "is_deleted", name="uq_user_username_active"),
@@ -136,11 +214,29 @@ def upgrade() -> None:
     op.create_index(op.f("ix_user_username"), "user", ["username"], unique=True)
     op.create_table(
         "api_key",
-        sa.Column("key_hash", sa.String(length=255), nullable=False, comment="SHA256 hash of the API key"),
-        sa.Column("name", sa.String(length=255), nullable=False, comment="Descriptive name for the API key"),
-        sa.Column("description", sa.String(length=1000), nullable=True, comment="Detailed description of key purpose"),
         sa.Column(
-            "key_prefix", sa.String(length=10), nullable=False, comment="First few characters of key for identification"
+            "key_hash",
+            sa.String(length=255),
+            nullable=False,
+            comment="SHA256 hash of the API key",
+        ),
+        sa.Column(
+            "name",
+            sa.String(length=255),
+            nullable=False,
+            comment="Descriptive name for the API key",
+        ),
+        sa.Column(
+            "description",
+            sa.String(length=1000),
+            nullable=True,
+            comment="Detailed description of key purpose",
+        ),
+        sa.Column(
+            "key_prefix",
+            sa.String(length=10),
+            nullable=False,
+            comment="First few characters of key for identification",
         ),
         sa.Column(
             "permissions",
@@ -149,19 +245,51 @@ def upgrade() -> None:
             nullable=False,
             comment="JSON string containing permission scopes",
         ),
-        sa.Column("last_used_at", sa.DateTime(), nullable=True, comment="Last time this key was used"),
         sa.Column(
-            "last_used_ip", sa.String(length=45), nullable=True, comment="IP address from last use (supports IPv6)"
+            "last_used_at",
+            sa.DateTime(),
+            nullable=True,
+            comment="Last time this key was used",
         ),
         sa.Column(
-            "usage_count", sa.Integer(), server_default="0", nullable=False, comment="Number of times key has been used"
+            "last_used_ip",
+            sa.String(length=45),
+            nullable=True,
+            comment="IP address from last use (supports IPv6)",
         ),
-        sa.Column("expires_at", sa.DateTime(), nullable=True, comment="Optional expiration timestamp"),
-        sa.Column("user_id", sa.String(length=36), nullable=False, comment="User who owns this API key"),
+        sa.Column(
+            "usage_count",
+            sa.Integer(),
+            server_default="0",
+            nullable=False,
+            comment="Number of times key has been used",
+        ),
+        sa.Column(
+            "expires_at",
+            sa.DateTime(),
+            nullable=True,
+            comment="Optional expiration timestamp",
+        ),
+        sa.Column(
+            "user_id",
+            sa.String(length=36),
+            nullable=False,
+            comment="User who owns this API key",
+        ),
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("created_by", sa.String(length=255), server_default="system", nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.Column("updated_by", sa.String(length=255), server_default="system", nullable=False),
         sa.Column("version", sa.Integer(), server_default="1", nullable=False),
         sa.Column("is_deleted", sa.Boolean(), server_default="false", nullable=False),
@@ -169,7 +297,12 @@ def upgrade() -> None:
         sa.Column("deleted_by", sa.String(length=255), nullable=True),
         sa.Column("owner_id", sa.String(length=255), nullable=True),
         sa.Column("organization_id", sa.String(length=36), nullable=True),
-        sa.Column("access_level", sa.String(length=50), server_default="private", nullable=False),
+        sa.Column(
+            "access_level",
+            sa.String(length=50),
+            server_default="private",
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", "user_id", "is_deleted", name="uq_apikey_name_user"),

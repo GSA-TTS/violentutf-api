@@ -524,7 +524,7 @@ class TestRequestSigningDecorators:
         request.headers = Headers({"host": "example.com"})
         request.state = Mock()
         # Ensure state doesn't have signature attribute
-        delattr(request.state, "signature") if hasattr(request.state, "signature") else None
+        (delattr(request.state, "signature") if hasattr(request.state, "signature") else None)
 
         # Create decorated function
         @require_request_signature()

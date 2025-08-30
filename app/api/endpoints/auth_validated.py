@@ -10,6 +10,13 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_audit_service, get_db, get_user_service
+
+# Removed UserRepository import to comply with Clean Architecture
+# Repository access moved to service layer
+from app.services.audit_service import AuditService
+from app.services.user_service_impl import UserServiceImpl
+
 from ...core.errors import ValidationError
 from ...core.input_validation import (
     EMAIL_RULE,
@@ -22,9 +29,11 @@ from ...core.input_validation import (
     validate_request_data,
 )
 from ...core.rate_limiting import rate_limit
-from ...core.security import create_access_token, create_refresh_token, validate_password_strength
-from ...db.session import get_db_dependency
-from ...repositories.user import UserRepository
+from ...core.security import (
+    create_access_token,
+    create_refresh_token,
+    validate_password_strength,
+)
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -118,7 +127,9 @@ AUTH_VALIDATION_CONFIG = ValidationConfig(
 async def login(
     request: LoginRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    user_service: UserServiceImpl = Depends(get_user_service),
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Authenticate user and return JWT tokens with comprehensive input validation."""
     try:
@@ -128,11 +139,10 @@ async def login(
         # Get client IP address for logging
         client_ip = http_request.client.host if http_request.client else None
 
-        # Create user repository
-        user_repo = UserRepository(db)
+        # Use user service from dependency injection
 
-        # Authenticate user
-        user = await user_repo.authenticate(
+        # Authenticate user through service layer
+        user = await user_service.authenticate_user(
             username=request.username,
             password=request.password,
             ip_address=client_ip,
@@ -168,7 +178,7 @@ async def login(
         token_data = {
             "sub": str(user.id),
             "roles": user.roles,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
         }
         access_token = create_access_token(data=token_data)
         refresh_token = create_refresh_token(data=token_data)
@@ -208,7 +218,9 @@ async def login(
 )
 async def register(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    user_service: UserServiceImpl = Depends(get_user_service),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Register a new user account with comprehensive input validation."""
     try:
@@ -221,34 +233,34 @@ async def register(
                 detail=f"Password validation failed: {message}",
             )
 
-        # Create user repository
-        user_repo = UserRepository(db)
+        # Use user service from dependency injection
 
-        # Check if username already exists
-        existing_user = await user_repo.get_by_username(user_data.username)
+        # Check if username already exists through service layer
+        existing_user = await user_service.get_by_username(user_data.username)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Username already exists",
             )
 
-        # Check if email already exists
-        existing_email = await user_repo.get_by_email(user_data.email)
+        # Check if email already exists through service layer
+        existing_email = await user_service.get_by_email(user_data.email)
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email already exists",
             )
 
-        # Create user using repository method (password will be hashed internally)
-        new_user = await user_repo.create_user(
-            username=user_data.username,
-            email=user_data.email,
-            password=user_data.password,
-            full_name=None,  # Can be added later
-            is_superuser=False,
-            created_by="registration",
-        )
+        # Create user using service layer (password will be hashed internally)
+        user_data_dict = {
+            "username": user_data.username,
+            "email": user_data.email,
+            "password": user_data.password,
+            "full_name": None,  # Can be added later
+            "is_superuser": False,
+            "created_by": "registration",
+        }
+        new_user = await user_service.create_user(user_data_dict)
 
         logger.info(
             "user_registered_successfully",
@@ -290,7 +302,9 @@ async def register(
 )
 async def refresh_token(
     request: TokenRefreshRequest,
-    db: AsyncSession = Depends(get_db_dependency),
+    audit_service: AuditService = Depends(get_audit_service),
+    user_service: UserServiceImpl = Depends(get_user_service),
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Refresh access token using refresh token with comprehensive validation."""
     try:
@@ -326,9 +340,8 @@ async def refresh_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Verify user still exists and is active
-        user_repo = UserRepository(db)
-        user = await user_repo.get(user_id)
+        # Verify user still exists and is active through service layer
+        user = await user_service.get_by_id(user_id)
 
         if not user or not user.can_login():
             logger.warning(
@@ -347,7 +360,7 @@ async def refresh_token(
         token_data = {
             "sub": str(user.id),
             "roles": user.roles,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
         }
         new_access_token = create_access_token(data=token_data)
         new_refresh_token = create_refresh_token(data=token_data)

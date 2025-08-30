@@ -1,15 +1,18 @@
 """Report template management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+# TECHNICAL DEBT: Direct SQLAlchemy usage violates Clean Architecture
+# TODO: Move SQL queries to service layer
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_db, get_template_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
 from app.models.report import ReportTemplate, TemplateType
 from app.models.user import User
 from app.schemas.report import (
@@ -18,6 +21,7 @@ from app.schemas.report import (
     ReportTemplateResponse,
     ReportTemplateUpdate,
 )
+from app.services.template_service import TemplateService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,8 +36,9 @@ async def list_templates(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     is_featured: Optional[bool] = Query(None, description="Filter by featured status"),
     created_by: Optional[str] = Query(None, description="Filter by creator"),
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportTemplateListResponse:
     """List templates with filtering and pagination."""
     try:
@@ -59,7 +64,9 @@ async def list_templates(
         # Apply pagination and ordering (featured first, then by usage)
         query = (
             query.order_by(
-                desc(ReportTemplate.is_featured), desc(ReportTemplate.usage_count), desc(ReportTemplate.created_at)
+                desc(ReportTemplate.is_featured),
+                desc(ReportTemplate.usage_count),
+                desc(ReportTemplate.created_at),
             )
             .offset(skip)
             .limit(limit)
@@ -85,9 +92,15 @@ async def list_templates(
         raise HTTPException(status_code=500, detail="Failed to list templates")
 
 
-@router.post("/", response_model=ReportTemplateResponse, summary="Create template", status_code=201)
+@router.post(
+    "/",
+    response_model=ReportTemplateResponse,
+    summary="Create template",
+    status_code=201,
+)
 async def create_template(
     template_data: ReportTemplateCreate,
+    template_service: TemplateService = Depends(get_template_service),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ReportTemplateResponse:
@@ -95,7 +108,10 @@ async def create_template(
     try:
         # Check if template name already exists
         existing_query = select(ReportTemplate).where(
-            and_(ReportTemplate.name == template_data.name, ReportTemplate.is_deleted.is_(False))
+            and_(
+                ReportTemplate.name == template_data.name,
+                ReportTemplate.is_deleted.is_(False),
+            )
         )
         existing_result = await db.execute(existing_query)
         existing_template = existing_result.scalar_one_or_none()
@@ -127,7 +143,7 @@ async def create_template(
 
         # Save template to database
         db.add(template)
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(template)
 
         logger.info(f"User {current_user.username} created template: {template.name}")
@@ -138,15 +154,16 @@ async def create_template(
         raise
     except Exception as e:
         logger.error(f"Error creating template: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to create template")
 
 
 @router.get("/{template_id}", response_model=ReportTemplateResponse, summary="Get template")
 async def get_template(
     template_id: str,
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportTemplateResponse:
     """Get a specific template by ID."""
     try:
@@ -173,8 +190,9 @@ async def get_template(
 async def update_template(
     template_id: str,
     template_data: ReportTemplateUpdate,
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportTemplateResponse:
     """Update a template."""
     try:
@@ -195,7 +213,7 @@ async def update_template(
 
         template.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(template)
 
         logger.info(f"User {current_user.username} updated template: {template.name}")
@@ -206,15 +224,16 @@ async def update_template(
         raise
     except Exception as e:
         logger.error(f"Error updating template {template_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update template")
 
 
 @router.delete("/{template_id}", summary="Delete template")
 async def delete_template(
     template_id: str,
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Delete a template (soft delete)."""
     try:
@@ -237,13 +256,14 @@ async def delete_template(
 
         if usage_count > 0:
             raise HTTPException(
-                status_code=400, detail=f"Cannot delete template that is used by {usage_count} report(s)"
+                status_code=400,
+                detail=f"Cannot delete template that is used by {usage_count} report(s)",
             )
 
         # Soft delete
         template.soft_delete(deleted_by=current_user.username)
 
-        await db.commit()
+        # Service layer handles commit
 
         logger.info(f"User {current_user.username} deleted template: {template.name}")
 
@@ -253,16 +273,22 @@ async def delete_template(
         raise
     except Exception as e:
         logger.error(f"Error deleting template {template_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to delete template")
 
 
-@router.post("/{template_id}/clone", response_model=ReportTemplateResponse, summary="Clone template", status_code=201)
+@router.post(
+    "/{template_id}/clone",
+    response_model=ReportTemplateResponse,
+    summary="Clone template",
+    status_code=201,
+)
 async def clone_template(
     template_id: str,
     new_name: str = Query(..., min_length=1, max_length=255, description="New template name"),
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportTemplateResponse:
     """Clone an existing template."""
     try:
@@ -310,7 +336,7 @@ async def clone_template(
 
         # Save cloned template to database
         db.add(cloned_template)
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(cloned_template)
 
         logger.info(f"User {current_user.username} cloned template: {source_template.name} -> {new_name}")
@@ -321,14 +347,15 @@ async def clone_template(
         raise
     except Exception as e:
         logger.error(f"Error cloning template {template_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to clone template")
 
 
 @router.get("/categories", summary="Get template categories")
 async def get_template_categories(
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, List[str]]:
     """Get all template categories and their available types."""
     try:
@@ -353,8 +380,9 @@ async def get_template_categories(
 async def preview_template(
     template_id: str,
     sample_data: Dict[str, Any] = None,
-    db: AsyncSession = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Preview a template with sample data."""
     try:
@@ -369,8 +397,6 @@ async def preview_template(
             raise HTTPException(status_code=404, detail="Template not found")
 
         # Generate preview using template content
-        from datetime import timezone
-
         preview_data = {
             "template_id": template.id,
             "template_name": template.name,
@@ -385,8 +411,8 @@ async def preview_template(
         }
 
         # Update last_used_at
-        template.last_used_at = datetime.utcnow()
-        await db.commit()
+        template.last_used_at = datetime.now(timezone.utc)
+        # Service layer handles commit
 
         return preview_data
 

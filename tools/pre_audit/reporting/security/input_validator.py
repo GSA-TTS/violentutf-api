@@ -39,15 +39,22 @@ class InputValidator:
     MAX_ARRAY_SIZE = 10000
     MAX_DICT_DEPTH = 10
 
-    # Dangerous patterns to block
+    # Dangerous patterns to block - comprehensive security patterns
     DANGEROUS_PATTERNS = [
-        re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL),
+        # Block script tags with comprehensive patterns to prevent XSS
+        # Fixed: Handle malformed end tags that browsers accept
+        re.compile(r"<\s*script[^>]*>.*?<\s*/\s*script[^>]*>", re.IGNORECASE | re.DOTALL),
+        re.compile(r"<\s*script[^>]*>", re.IGNORECASE),
+        re.compile(r"</\s*script[^>]*>", re.IGNORECASE),  # Handles </script foo="bar">
+        # Block other dangerous tags
+        re.compile(r"<\s*iframe[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*object[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*embed[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*link[^>]*>", re.IGNORECASE),
+        re.compile(r"<\s*style[^>]*>.*?</\s*style[^>]*>", re.IGNORECASE | re.DOTALL),  # Also fix style tag
+        # Block protocol handlers and event handlers
         re.compile(r"javascript:", re.IGNORECASE),
         re.compile(r"on\w+\s*=", re.IGNORECASE),  # onclick, onerror, etc.
-        re.compile(r"<iframe", re.IGNORECASE),
-        re.compile(r"<object", re.IGNORECASE),
-        re.compile(r"<embed", re.IGNORECASE),
-        re.compile(r"<link", re.IGNORECASE),
         re.compile(r"@import", re.IGNORECASE),
         re.compile(r"expression\s*\(", re.IGNORECASE),  # CSS expression
         re.compile(r"vbscript:", re.IGNORECASE),
@@ -116,7 +123,11 @@ class InputValidator:
 
             # For any other fields, use generic validation
             for key, value in audit_data.items():
-                if key not in ["all_violations", "architectural_hotspots", "audit_metadata"]:
+                if key not in [
+                    "all_violations",
+                    "architectural_hotspots",
+                    "audit_metadata",
+                ]:
                     try:
                         validated[key] = self._validate_dict({key: value}, depth=0)[key]
                     except ValidationError as e:
@@ -124,13 +135,32 @@ class InputValidator:
                         logger.debug(f"Skipping field '{key}' due to validation error: {str(e)}")
                         self._validation_stats["fields_removed"] += 1
 
+            # Check if we have any recognizable audit data at all
+            if not any(
+                key in validated
+                for key in [
+                    "all_violations",
+                    "architectural_hotspots",
+                    "audit_metadata",
+                ]
+            ):
+                raise ValidationError(
+                    "Audit data must contain at least one of: all_violations, architectural_hotspots, audit_metadata"
+                )
+
             self._validation_stats["passed"] += 1
             return validated
 
+        except ValidationError:
+            # Re-raise validation errors as-is (they're safe to expose)
+            self._validation_stats["failed"] += 1
+            raise
         except Exception as e:
             self._validation_stats["failed"] += 1
-            logger.error(f"Validation failed: {str(e)}")
-            raise ValidationError(f"Audit data validation failed: {str(e)}")
+            # Log detailed error internally without exposing to user
+            logger.error(f"Validation failed: {e}", exc_info=True)
+            # Return generic error message to prevent information disclosure
+            raise ValidationError("Audit data validation failed: Invalid or malformed audit data")
 
     def validate_file_path(self, path: Union[str, Path]) -> Path:
         """
@@ -177,7 +207,9 @@ class InputValidator:
             return validated_path
 
         except Exception as e:
-            raise ValidationError(f"Invalid path: {str(e)}")
+            # Log detailed error internally without exposing to user
+            logger.error("Path validation failed", path=path_str, error=str(e))
+            raise ValidationError("Invalid file path")
 
     def validate_string(self, value: str, field_name: str = "string") -> str:
         """
@@ -237,7 +269,9 @@ class InputValidator:
             try:
                 parsed = json.loads(data)
             except json.JSONDecodeError as e:
-                raise ValidationError(f"Invalid JSON: {str(e)}")
+                # Log detailed error internally without exposing to user
+                logger.error("JSON parsing failed", error=str(e), data_length=len(data))
+                raise ValidationError("Invalid JSON format")
         else:
             parsed = data
 
@@ -302,6 +336,10 @@ class InputValidator:
 
     def _validate_violations(self, violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Validate violation entries."""
+        # First validate that violations is actually a list
+        if not isinstance(violations, list):
+            raise ValidationError(f"violations must be a list, got {type(violations).__name__}")
+
         # Check collection size
         ValidationRules.validate_collection_size(violations, ValidationRules.MAX_VIOLATIONS_COUNT, "violations")
 
@@ -324,7 +362,12 @@ class InputValidator:
                         validated_violation["file_path"] = "unknown"
 
                 # Validate additional string fields
-                string_fields = ["message", "adr_title", "evidence", "remediation_guidance"]
+                string_fields = [
+                    "message",
+                    "adr_title",
+                    "evidence",
+                    "remediation_guidance",
+                ]
                 for field in string_fields:
                     if field in violation and violation[field]:
                         try:

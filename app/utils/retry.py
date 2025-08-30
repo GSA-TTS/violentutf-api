@@ -87,7 +87,9 @@ def calculate_delay(attempt: int, config: RetryConfig) -> float:
 
 
 async def _execute_with_timing(
-    func: Union[Callable[..., Coroutine[Any, Any, T]], Callable[..., T]], *args: object, **kwargs: object
+    func: Union[Callable[..., Coroutine[Any, Any, T]], Callable[..., T]],
+    *args: object,
+    **kwargs: object,
 ) -> T:
     """Execute function and return result."""
     if asyncio.iscoroutinefunction(func):
@@ -113,7 +115,13 @@ async def _handle_retry_delay(attempt: int, config: RetryConfig, state: RetrySta
         state.total_delay += delay
 
 
-def _log_retry_outcome(attempt: int, state: RetryState, config: RetryConfig, func_name: str, duration: float) -> None:
+def _log_retry_outcome(
+    attempt: int,
+    state: RetryState,
+    config: RetryConfig,
+    func_name: str,
+    duration: float,
+) -> None:
     """Log successful retry outcome."""
     if attempt > 0:
         logger.info(
@@ -131,7 +139,11 @@ def _handle_retry_exception(e: Exception, attempt: int, state: RetryState, confi
     state.last_exception = e
 
     if not isinstance(e, config.exceptions):
-        logger.warning("Exception not configured for retry", exception_type=type(e).__name__, function=func_name)
+        logger.warning(
+            "Exception not configured for retry",
+            exception_type=type(e).__name__,
+            function=func_name,
+        )
         raise
 
     if attempt < config.max_attempts - 1:
@@ -202,7 +214,12 @@ async def retry_async(
         raise RuntimeError("All retry attempts failed")
 
 
-def retry_sync(func: Callable[..., T], config: Optional[RetryConfig] = None, *args: object, **kwargs: object) -> T:
+def retry_sync(
+    func: Callable[..., T],
+    config: Optional[RetryConfig] = None,
+    *args: object,
+    **kwargs: object,
+) -> T:
     """
     Retry a synchronous function with exponential backoff.
 
@@ -261,7 +278,9 @@ def retry_sync(func: Callable[..., T], config: Optional[RetryConfig] = None, *ar
             # Check if this exception type should be retried
             if not isinstance(e, config.exceptions):
                 logger.warning(
-                    "Exception not configured for retry", exception_type=type(e).__name__, function=func.__name__
+                    "Exception not configured for retry",
+                    exception_type=type(e).__name__,
+                    function=func.__name__,
                 )
                 raise
 
@@ -307,7 +326,9 @@ def with_retry(
             pass
     """
 
-    def decorator(func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, T]],
+    ) -> Callable[..., Coroutine[Any, Any, T]]:
         @functools.wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> T:
             return await retry_async(func, config, *args, **kwargs)
@@ -317,7 +338,9 @@ def with_retry(
     return decorator
 
 
-def with_retry_sync(config: Optional[RetryConfig] = None) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def with_retry_sync(
+    config: Optional[RetryConfig] = None,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Decorate synchronous functions for automatic retry.
 

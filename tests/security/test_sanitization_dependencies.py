@@ -4,7 +4,12 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.dependencies.sanitization import MessageInput, SanitizedModel, UserInput, get_sanitized_body
+from app.dependencies.sanitization import (
+    MessageInput,
+    SanitizedModel,
+    UserInput,
+    get_sanitized_body,
+)
 
 
 class TestSanitizationDependencies:
@@ -21,7 +26,10 @@ class TestSanitizationDependencies:
         client = TestClient(app)
 
         # Test with XSS attempt
-        response = client.post("/echo", json={"message": "<script>alert('xss')</script>", "safe": "normal text"})
+        response = client.post(
+            "/echo",
+            json={"message": "<script>alert('xss')</script>", "safe": "normal text"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -31,7 +39,11 @@ class TestSanitizationDependencies:
     def test_sanitized_model(self):
         """Test that SanitizedModel automatically sanitizes fields."""
         # Test with malicious input
-        user = UserInput(name="<script>Evil User</script>", email="test@example.com", bio="<b>Bold bio</b>")
+        user = UserInput(
+            name="<script>Evil User</script>",
+            email="test@example.com",
+            bio="<b>Bold bio</b>",
+        )
 
         # Strings should be sanitized
         assert user.name == "[FILTERED]"
@@ -41,7 +53,8 @@ class TestSanitizationDependencies:
     def test_nested_sanitization(self):
         """Test nested data sanitization."""
         message = MessageInput(
-            content="<script>alert('xss')</script>", metadata={"user": "<b>John</b>", "action": "post"}
+            content="<script>alert('xss')</script>",
+            metadata={"user": "<b>John</b>", "action": "post"},
         )
 
         assert message.content == "[FILTERED]"
@@ -60,7 +73,12 @@ class TestSanitizationDependencies:
         client = TestClient(app)
 
         response = client.post(
-            "/users", json={"name": "<h1>Test User</h1>", "email": "test@test.com", "bio": "javascript:alert(1)"}
+            "/users",
+            json={
+                "name": "<h1>Test User</h1>",
+                "email": "test@test.com",
+                "bio": "javascript:alert(1)",
+            },
         )
 
         assert response.status_code == 200

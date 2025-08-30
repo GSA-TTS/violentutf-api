@@ -8,7 +8,14 @@ import pytest
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.scan import Scan, ScanFinding, ScanReport, ScanSeverity, ScanStatus, ScanType
+from app.models.scan import (
+    Scan,
+    ScanFinding,
+    ScanReport,
+    ScanSeverity,
+    ScanStatus,
+    ScanType,
+)
 from app.schemas.scan import ScanCreate, ScanUpdate
 from tests.helpers.database import create_test_scan, create_test_user
 
@@ -22,7 +29,10 @@ class TestScansEndpoints:
             "name": "Test Security Scan",
             "scan_type": "PYRIT_ORCHESTRATOR",
             "description": "A test security scan",
-            "target_config": {"endpoint": "https://api.example.com", "auth_type": "bearer"},
+            "target_config": {
+                "endpoint": "https://api.example.com",
+                "auth_type": "bearer",
+            },
             "scan_config": {"max_requests": 100, "timeout": 30},
             "parameters": {"intensity": "medium"},
             "tags": ["security", "test"],
@@ -31,7 +41,9 @@ class TestScansEndpoints:
         }
 
         response = await async_client.post(
-            "/api/v1/scans/", json=scan_data, headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/scans/",
+            json=scan_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -75,7 +87,9 @@ class TestScansEndpoints:
         }
 
         response = await async_client.post(
-            "/api/v1/scans/", json=scan_data, headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/scans/",
+            json=scan_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -84,7 +98,10 @@ class TestScansEndpoints:
         """Test successful scan retrieval (ADR-007 status polling)."""
         scan = await create_test_scan(db_session, created_by=test_user.username)
 
-        response = await async_client.get(f"/api/v1/scans/{scan.id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/scans/{scan.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -97,7 +114,10 @@ class TestScansEndpoints:
         """Test scan retrieval with non-existent ID."""
         fake_id = str(uuid4())
 
-        response = await async_client.get(f"/api/v1/scans/{fake_id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/scans/{fake_id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -109,7 +129,7 @@ class TestScansEndpoints:
             scan = await create_test_scan(
                 db_session,
                 name=f"Security Scan {i}",
-                scan_type=ScanType.PYRIT_ORCHESTRATOR if i % 2 == 0 else ScanType.GARAK_PROBE,
+                scan_type=(ScanType.PYRIT_ORCHESTRATOR if i % 2 == 0 else ScanType.GARAK_PROBE),
                 created_by=test_user.username,
             )
             scans.append(scan)
@@ -144,7 +164,8 @@ class TestScansEndpoints:
 
         # Filter by scan type
         response = await async_client.get(
-            "/api/v1/scans/?scan_type=PYRIT_ORCHESTRATOR", headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/scans/?scan_type=PYRIT_ORCHESTRATOR",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -154,7 +175,8 @@ class TestScansEndpoints:
 
         # Filter by status
         response = await async_client.get(
-            "/api/v1/scans/?status=RUNNING", headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/scans/?status=RUNNING",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -173,7 +195,9 @@ class TestScansEndpoints:
         }
 
         response = await async_client.put(
-            f"/api/v1/scans/{scan.id}", json=update_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -189,7 +213,9 @@ class TestScansEndpoints:
         update_data = {"name": "Should not update"}
 
         response = await async_client.put(
-            f"/api/v1/scans/{scan.id}", json=update_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -201,7 +227,8 @@ class TestScansEndpoints:
         scan = await create_test_scan(db_session, created_by=test_user.username)
 
         response = await async_client.delete(
-            f"/api/v1/scans/{scan.id}", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -209,7 +236,10 @@ class TestScansEndpoints:
         assert data["message"] == "Scan deleted successfully"
 
         # Verify scan is soft deleted
-        response = await async_client.get(f"/api/v1/scans/{scan.id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/scans/{scan.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_delete_running_scan_fails(self, async_client, test_user, auth_token, db_session: AsyncSession):
@@ -217,7 +247,8 @@ class TestScansEndpoints:
         scan = await create_test_scan(db_session, status=ScanStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.delete(
-            f"/api/v1/scans/{scan.id}", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -250,7 +281,8 @@ class TestScansEndpoints:
         scan = await create_test_scan(db_session, status=ScanStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/scans/{scan.id}/execute", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/execute",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -262,7 +294,8 @@ class TestScansEndpoints:
         scan = await create_test_scan(db_session, status=ScanStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/scans/{scan.id}/cancel", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/cancel",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -274,7 +307,8 @@ class TestScansEndpoints:
         scan = await create_test_scan(db_session, status=ScanStatus.COMPLETED, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/scans/{scan.id}/cancel", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/cancel",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -302,7 +336,8 @@ class TestScansEndpoints:
         await db_session.commit()
 
         response = await async_client.get(
-            f"/api/v1/scans/{scan.id}/findings", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/findings",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -341,7 +376,8 @@ class TestScansEndpoints:
 
         # Filter by severity
         response = await async_client.get(
-            f"/api/v1/scans/{scan.id}/findings?severity=HIGH", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/findings?severity=HIGH",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -373,7 +409,8 @@ class TestScansEndpoints:
         await db_session.commit()
 
         response = await async_client.get(
-            f"/api/v1/scans/{scan.id}/reports", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{scan.id}/reports",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -426,14 +463,18 @@ class TestScansEndpoints:
 
     async def test_invalid_scan_id_format(self, async_client, test_user, auth_token):
         """Test endpoints with invalid scan ID format."""
-        response = await async_client.get("/api/v1/scans/invalid-id", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            "/api/v1/scans/invalid-id",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_scan_not_found_for_findings(self, async_client, test_user, auth_token):
         """Test findings endpoint with non-existent scan ID."""
         fake_id = str(uuid4())
         response = await async_client.get(
-            f"/api/v1/scans/{fake_id}/findings", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{fake_id}/findings",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -441,6 +482,7 @@ class TestScansEndpoints:
         """Test reports endpoint with non-existent scan ID."""
         fake_id = str(uuid4())
         response = await async_client.get(
-            f"/api/v1/scans/{fake_id}/reports", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/scans/{fake_id}/reports",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND

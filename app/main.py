@@ -48,7 +48,10 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 
     return JSONResponse(
         status_code=429,
-        content={"detail": f"Rate limit exceeded: {exc.detail}", "type": "rate_limit_exceeded"},
+        content={
+            "detail": f"Rate limit exceeded: {exc.detail}",
+            "type": "rate_limit_exceeded",
+        },
         headers={"Retry-After": "60"},  # Default retry after 60 seconds
     )
 
@@ -61,10 +64,35 @@ async def _initialize_database() -> None:
         session_maker = get_session_maker()
         if session_maker:
             logger.info("database_initialized")
+
+            # Register repositories after successful database initialization
+            await _initialize_repositories()
         else:
             logger.info("database_not_configured")
     except Exception as e:
         logger.error("database_initialization_failed", error=str(e))
+
+
+async def _initialize_repositories() -> None:
+    """Initialize repository registrations in dependency container."""
+    try:
+        from .core.container import register_repositories
+        from .db.session import get_session_maker
+
+        # Create session factory for repositories using the session maker
+        session_maker = get_session_maker()
+        if session_maker:
+
+            def session_factory() -> Any:
+                return session_maker()
+
+            await register_repositories(session_factory)
+            logger.info("repositories_initialized")
+        else:
+            logger.warning("repositories_not_initialized_no_session_maker")
+    except Exception as e:
+        logger.error("repository_initialization_failed", error=str(e))
+        # Don't raise here to allow graceful degradation
 
 
 async def _initialize_cache() -> None:
@@ -81,9 +109,23 @@ async def _initialize_cache() -> None:
         logger.error("cache_initialization_failed", error=str(e))
 
 
+async def _shutdown_repositories() -> None:
+    """Clean up repository registrations."""
+    try:
+        from .core.container import clear_repository_registrations
+
+        clear_repository_registrations()
+        logger.info("repository_registrations_cleared")
+    except Exception as e:
+        logger.error("repository_shutdown_error", error=str(e))
+
+
 async def _shutdown_database() -> None:
     """Close database connections."""
     try:
+        # Clean up repositories before closing database connections
+        await _shutdown_repositories()
+
         from .db.session import close_database_connections
 
         await close_database_connections()
@@ -143,9 +185,9 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
         title=app_settings.PROJECT_NAME,
         description=app_settings.DESCRIPTION,
         version=app_settings.VERSION,
-        openapi_url=f"{app_settings.API_V1_STR}/openapi.json" if not app_settings.is_production else None,
-        docs_url=f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
-        redoc_url=f"{app_settings.API_V1_STR}/redoc" if not app_settings.is_production else None,
+        openapi_url=(f"{app_settings.API_V1_STR}/openapi.json" if not app_settings.is_production else None),
+        docs_url=(f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None),
+        redoc_url=(f"{app_settings.API_V1_STR}/redoc" if not app_settings.is_production else None),
         lifespan=lifespan,
     )
 
@@ -156,7 +198,8 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
     setup_error_handlers(app, development_mode=app_settings.is_development)
 
     # Add exception handler for rate limiting
-    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+    # Type ignore needed for mypy strict mode in CI environment
+    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)  # type: ignore[arg-type,unused-ignore]
 
     # Setup middleware (order matters!)
     # 1. Request ID (needs to be first)
@@ -228,7 +271,7 @@ def create_application(custom_settings: Optional[Settings] = None) -> FastAPI:
             "service": app_settings.PROJECT_NAME,
             "version": app_settings.VERSION,
             "status": "operational",
-            "docs": f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None,
+            "docs": (f"{app_settings.API_V1_STR}/docs" if not app_settings.is_production else None),
         }
 
     return app

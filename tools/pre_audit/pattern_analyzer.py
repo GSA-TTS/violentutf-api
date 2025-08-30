@@ -109,7 +109,10 @@ class PatternAnalyzer:
                     r"@require_auth",
                 ],
                 severity="critical",
-                file_filters=["app/api/endpoints/*.py", "!app/api/endpoints/public*.py"],
+                file_filters=[
+                    "app/api/endpoints/*.py",
+                    "!app/api/endpoints/public*.py",
+                ],
             ),
             PatternRule(
                 id="SEC-001",
@@ -251,7 +254,7 @@ class PatternAnalyzer:
                     return False
             else:
                 # Inclusion pattern
-                if self._match_pattern(file_path, pattern):
+                if self._match_pattern(file_path, filter_pattern):
                     matched = True
 
         return matched
@@ -357,7 +360,7 @@ class PatternAnalyzer:
             "code_snippet": violation.code_snippet,
         }
 
-    def analyze_changed_files_only(self, base_ref: str = "origin/main") -> Dict[str, Any]:
+    def analyze_changed_files_only(self, base_ref: str = "origin/master") -> Dict[str, Any]:
         """Analyze only files changed in PR/commit"""
         # Get changed files using git
         try:
@@ -435,7 +438,12 @@ Found **{len(violations)}** architectural violations in **{len(violations_by_fil
             comment += f"\n#### 📄 `{file_path}`\n\n"
 
             for v in file_violations:
-                severity_emoji = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}.get(v["severity"], "⚪")
+                severity_emoji = {
+                    "critical": "🔴",
+                    "high": "🟠",
+                    "medium": "🟡",
+                    "low": "🟢",
+                }.get(v["severity"], "⚪")
 
                 comment += f"""**Line {v['line']}** {severity_emoji} {v['severity'].upper()}: {v['description']}
 - ADR: {v['adr_id']}
@@ -471,12 +479,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Pattern-based Architectural Analyzer for CI")
     parser.add_argument("files", nargs="*", help="Files to analyze")
     parser.add_argument("--mode", choices=["ci", "full"], default="ci", help="Analysis mode")
-    parser.add_argument("--config", default="config/ci_violation_patterns.yml", help="Pattern config file")
-    parser.add_argument("--output", choices=["json", "github-comment"], default="json", help="Output format")
+    parser.add_argument(
+        "--config",
+        default="config/ci_violation_patterns.yml",
+        help="Pattern config file",
+    )
+    parser.add_argument(
+        "--output",
+        choices=["json", "github-comment"],
+        default="json",
+        help="Output format",
+    )
     parser.add_argument("--output-file", help="Output file path")
     parser.add_argument("--changed-files-only", action="store_true", help="Analyze only changed files")
-    parser.add_argument("--base-ref", default="origin/main", help="Base reference for changed files")
-    parser.add_argument("--fail-on-violations", action="store_true", help="Exit with error if violations found")
+    parser.add_argument("--base-ref", default="origin/master", help="Base reference for changed files")
+    parser.add_argument(
+        "--fail-on-violations",
+        action="store_true",
+        help="Exit with error if violations found",
+    )
 
     args = parser.parse_args()
 

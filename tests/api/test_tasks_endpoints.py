@@ -29,7 +29,9 @@ class TestTasksEndpoints:
         }
 
         response = await async_client.post(
-            "/api/v1/tasks/", json=task_data, headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/tasks/",
+            json=task_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         print(f"Response status: {response.status_code}")
@@ -48,7 +50,9 @@ class TestTasksEndpoints:
         task_data = {"name": "", "task_type": "test_type"}  # Invalid: empty name
 
         response = await async_client.post(
-            "/api/v1/tasks/", json=task_data, headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/tasks/",
+            json=task_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -57,7 +61,10 @@ class TestTasksEndpoints:
         """Test successful task retrieval."""
         task = await create_test_task(db_session, created_by=test_user.username)
 
-        response = await async_client.get(f"/api/v1/tasks/{task.id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/tasks/{task.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -69,7 +76,10 @@ class TestTasksEndpoints:
         """Test task retrieval with non-existent ID."""
         fake_id = str(uuid4())
 
-        response = await async_client.get(f"/api/v1/tasks/{fake_id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/tasks/{fake_id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -96,11 +106,15 @@ class TestTasksEndpoints:
         # Create tasks with different statuses
         pending_task = await create_test_task(db_session, name="Pending Task", created_by=test_user.username)
         running_task = await create_test_task(
-            db_session, name="Running Task", status=TaskStatus.RUNNING, created_by=test_user.username
+            db_session,
+            name="Running Task",
+            status=TaskStatus.RUNNING,
+            created_by=test_user.username,
         )
 
         response = await async_client.get(
-            "/api/v1/tasks/?status=RUNNING", headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/tasks/?status=RUNNING",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -112,10 +126,16 @@ class TestTasksEndpoints:
         """Test successful task update."""
         task = await create_test_task(db_session, created_by=test_user.username)
 
-        update_data = {"name": "Updated Task Name", "description": "Updated description", "priority": "HIGH"}
+        update_data = {
+            "name": "Updated Task Name",
+            "description": "Updated description",
+            "priority": "HIGH",
+        }
 
         response = await async_client.put(
-            f"/api/v1/tasks/{task.id}", json=update_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -131,7 +151,9 @@ class TestTasksEndpoints:
         update_data = {"name": "Should not update"}
 
         response = await async_client.put(
-            f"/api/v1/tasks/{task.id}", json=update_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}",
+            json=update_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -141,7 +163,8 @@ class TestTasksEndpoints:
         task = await create_test_task(db_session, created_by=test_user.username)
 
         response = await async_client.delete(
-            f"/api/v1/tasks/{task.id}", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -149,7 +172,10 @@ class TestTasksEndpoints:
         assert data["message"] == "Task deleted successfully"
 
         # Verify task is soft deleted
-        response = await async_client.get(f"/api/v1/tasks/{task.id}", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            f"/api/v1/tasks/{task.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_delete_running_task_fails(self, async_client, test_user, auth_token, db_session: AsyncSession):
@@ -157,7 +183,8 @@ class TestTasksEndpoints:
         task = await create_test_task(db_session, status=TaskStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.delete(
-            f"/api/v1/tasks/{task.id}", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -188,7 +215,8 @@ class TestTasksEndpoints:
         task = await create_test_task(db_session, status=TaskStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/tasks/{task.id}/execute", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/execute",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -198,7 +226,8 @@ class TestTasksEndpoints:
         task = await create_test_task(db_session, status=TaskStatus.RUNNING, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/tasks/{task.id}/cancel", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/cancel",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -210,7 +239,8 @@ class TestTasksEndpoints:
         task = await create_test_task(db_session, status=TaskStatus.COMPLETED, created_by=test_user.username)
 
         response = await async_client.post(
-            f"/api/v1/tasks/{task.id}/cancel", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/cancel",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -227,7 +257,9 @@ class TestTasksEndpoints:
         }
 
         response = await async_client.patch(
-            f"/api/v1/tasks/{task.id}/status", json=status_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/status",
+            json=status_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -241,7 +273,9 @@ class TestTasksEndpoints:
         retry_data = {"reset_progress": True, "clear_errors": True}
 
         response = await async_client.post(
-            f"/api/v1/tasks/{task.id}/retry", json=retry_data, headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/retry",
+            json=retry_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -260,7 +294,9 @@ class TestTasksEndpoints:
         bulk_data = {"action": "delete", "task_ids": task_ids}
 
         response = await async_client.post(
-            "/api/v1/tasks/bulk", json=bulk_data, headers={"Authorization": f"Bearer {auth_token}"}
+            "/api/v1/tasks/bulk",
+            json=bulk_data,
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -294,7 +330,10 @@ class TestTasksEndpoints:
 
     async def test_invalid_task_id_format(self, async_client, test_user, auth_token):
         """Test endpoints with invalid task ID format."""
-        response = await async_client.get("/api/v1/tasks/invalid-id", headers={"Authorization": f"Bearer {auth_token}"})
+        response = await async_client.get(
+            "/api/v1/tasks/invalid-id",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -319,7 +358,8 @@ class TestTaskResultsEndpoints:
         await db_session.commit()
 
         response = await async_client.get(
-            f"/api/v1/tasks/{task.id}/results", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/results",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -334,7 +374,8 @@ class TestTaskResultsEndpoints:
         task = await create_test_task(db_session, created_by=test_user.username)
 
         response = await async_client.get(
-            f"/api/v1/tasks/{task.id}/results", headers={"Authorization": f"Bearer {auth_token}"}
+            f"/api/v1/tasks/{task.id}/results",
+            headers={"Authorization": f"Bearer {auth_token}"},
         )
 
         assert response.status_code == status.HTTP_200_OK

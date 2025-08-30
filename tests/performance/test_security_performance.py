@@ -483,7 +483,10 @@ class TestResourceMonitoring:
 
         operations = [
             ("HTML sanitization", lambda: sanitize_html("<p>Test</p>" * 1000)),
-            ("Large dict sanitization", lambda: sanitize_dict({"key": "value"} for _ in range(1000))),
+            (
+                "Large dict sanitization",
+                lambda: sanitize_dict({"key": "value"} for _ in range(1000)),
+            ),
             ("AI prompt sanitization", lambda: sanitize_ai_prompt("prompt " * 10000)),
         ]
 
@@ -507,12 +510,18 @@ class TestResourceMonitoring:
     def test_cpu_usage_profiling(self):
         """Profile CPU usage for different security operations."""
         operations = [
-            ("URL validation", lambda: [sanitize_url(f"http://example.com/{i}") for i in range(1000)]),
+            (
+                "URL validation",
+                lambda: [sanitize_url(f"http://example.com/{i}") for i in range(1000)],
+            ),
             (
                 "SQL sanitization",
                 lambda: [sanitize_sql_input(f"SELECT * FROM table_{i}") for i in range(1000)],  # nosec B608
             ),
-            ("String sanitization", lambda: [sanitize_string(f"String {i} <script>") for i in range(1000)]),
+            (
+                "String sanitization",
+                lambda: [sanitize_string(f"String {i} <script>") for i in range(1000)],
+            ),
         ]
 
         cpu_usage = {}

@@ -17,7 +17,12 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-from app.core.rate_limiting import RATE_LIMITS, get_rate_limit, get_rate_limit_key, rate_limit
+from app.core.rate_limiting import (
+    RATE_LIMITS,
+    get_rate_limit,
+    get_rate_limit_key,
+    rate_limit,
+)
 from app.main import app, limiter
 from tests.utils.testclient import SafeTestClient
 
@@ -102,12 +107,20 @@ class TestRateLimitingIntegration:
 
         # Make requests up to the limit
         for i in range(limit_count):
-            register_data = {"username": f"testuser{i}", "email": f"test{i}@example.com", "password": "TestPass123!"}
+            register_data = {
+                "username": f"testuser{i}",
+                "email": f"test{i}@example.com",
+                "password": "TestPass123!",
+            }
             response = client.post("/api/v1/auth/register", json=register_data)
             assert response.status_code != 429, f"Request {i+1} was rate limited"
 
         # Next request should be rate limited
-        register_data = {"username": "testuser_extra", "email": "extra@example.com", "password": "TestPass123!"}
+        register_data = {
+            "username": "testuser_extra",
+            "email": "extra@example.com",
+            "password": "TestPass123!",
+        }
         response = client.post("/api/v1/auth/register", json=register_data)
         assert response.status_code == 429
         assert "Rate limit exceeded" in response.json()["detail"]
@@ -299,7 +312,8 @@ class TestRateLimitingConfiguration:
         test_app = FastAPI()
         test_app.state.limiter = custom_limiter
         test_app.add_exception_handler(
-            RateLimitExceeded, lambda r, e: JSONResponse(status_code=429, content={"detail": "Too many requests"})
+            RateLimitExceeded,
+            lambda r, e: JSONResponse(status_code=429, content={"detail": "Too many requests"}),
         )
 
         # Add route

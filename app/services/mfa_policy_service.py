@@ -1,16 +1,18 @@
 """MFA Policy Service for enforcement of MFA requirements."""
 
 import json
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple, Union
 
-from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import ValidationError
 from app.models.mfa import MFAMethod, MFAPolicy
 from app.models.user import User
+from app.repositories.mfa_policy import MFAPolicyRepository
+from app.repositories.role import RoleRepository
+from app.repositories.user import UserRepository
 
 logger = get_logger(__name__)
 
@@ -18,9 +20,25 @@ logger = get_logger(__name__)
 class MFAPolicyService:
     """Service for managing and enforcing MFA policies."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session_or_mfa_policy_repo: Union[AsyncSession, MFAPolicyRepository],
+        role_repo: Optional[RoleRepository] = None,
+        user_repo: Optional[UserRepository] = None,
+    ):
         """Initialize MFA policy service."""
-        self.session = session
+        if isinstance(session_or_mfa_policy_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.mfa_policy_repo = MFAPolicyRepository(session_or_mfa_policy_repo)
+            self.role_repo = RoleRepository(session_or_mfa_policy_repo)
+            self.user_repo = UserRepository(session_or_mfa_policy_repo)
+            self.session = session_or_mfa_policy_repo
+        else:
+            # Legacy pattern: use provided repositories
+            self.mfa_policy_repo = session_or_mfa_policy_repo
+            self.role_repo = role_repo
+            self.user_repo = user_repo
+            self.session = None
 
     async def create_policy(
         self,
@@ -48,27 +66,25 @@ class MFAPolicyService:
                 raise ValidationError(f"Invalid MFA method: {method}")
 
         # Check for duplicate policy name
-        query = select(MFAPolicy).where(MFAPolicy.name == name)
-        result = await self.session.execute(query)
-        if result.scalar_one_or_none():
+        existing_policy = await self.mfa_policy_repo.get_by_name(name)
+        if existing_policy:
             raise ValidationError(f"Policy with name '{name}' already exists")
 
         # Create policy
-        policy = MFAPolicy(
-            name=name,
-            description=description,
-            conditions=json.dumps(conditions),
-            required_methods=json.dumps(required_methods),
-            min_methods=min_methods,
-            grace_period_days=grace_period_days,
-            enforcement_level=enforcement_level,
-            bypass_permissions=json.dumps(bypass_permissions) if bypass_permissions else None,
-            priority=priority,
-            created_by=created_by,
-        )
+        policy_data = {
+            "name": name,
+            "description": description,
+            "conditions": json.dumps(conditions),
+            "required_methods": json.dumps(required_methods),
+            "min_methods": min_methods,
+            "grace_period_days": grace_period_days,
+            "enforcement_level": enforcement_level,
+            "bypass_permissions": (json.dumps(bypass_permissions) if bypass_permissions else None),
+            "priority": priority,
+            "created_by": created_by,
+        }
 
-        self.session.add(policy)
-        await self.session.flush()
+        policy = await self.mfa_policy_repo.create(policy_data)
 
         logger.info(
             "mfa_policy_created",
@@ -81,11 +97,8 @@ class MFAPolicyService:
 
     async def get_applicable_policies(self, user: User) -> List[MFAPolicy]:
         """Get all MFA policies applicable to a user, ordered by priority."""
-        # Get all active policies
-        query = select(MFAPolicy).where(MFAPolicy.is_active == True).order_by(desc(MFAPolicy.priority))
-
-        result = await self.session.execute(query)
-        policies = result.scalars().all()
+        # Get all active policies ordered by priority
+        policies = await self.mfa_policy_repo.get_active_policies_ordered()
 
         # Filter policies based on conditions
         applicable_policies = []
@@ -145,9 +158,13 @@ class MFAPolicyService:
 
     async def _get_user_permissions(self, user: User) -> List[str]:
         """Get all permissions for a user through their roles."""
-        # This would integrate with the RBAC system
-        # For now, return empty list
-        return []
+        # Get user roles and extract permissions
+        roles = await self.role_repo.get_user_roles(str(user.id))
+        permissions = []
+        for role in roles:
+            if role.permissions:
+                permissions.extend(role.permissions)
+        return list(set(permissions))  # Remove duplicates
 
     async def check_mfa_requirement(self, user: User) -> Tuple[bool, Optional[MFAPolicy], Dict]:
         """
@@ -164,7 +181,11 @@ class MFAPolicyService:
             return (
                 False,
                 None,
-                {"required": False, "enforcement_level": "optional", "reason": "No MFA policies apply to this user"},
+                {
+                    "required": False,
+                    "enforcement_level": "optional",
+                    "reason": "No MFA policies apply to this user",
+                },
             )
 
         # Use highest priority policy (first in list)
@@ -230,15 +251,13 @@ class MFAPolicyService:
 
     async def update_policy(self, policy_id: str, **kwargs) -> MFAPolicy:
         """Update an existing MFA policy."""
-        # Get policy
-        query = select(MFAPolicy).where(MFAPolicy.id == policy_id)
-        result = await self.session.execute(query)
-        policy = result.scalar_one_or_none()
-
+        # Check if policy exists
+        policy = await self.mfa_policy_repo.get_by_id(policy_id)
         if not policy:
             raise ValidationError("MFA policy not found")
 
-        # Update allowed fields
+        # Prepare update data
+        update_data = {}
         allowed_fields = [
             "name",
             "description",
@@ -258,56 +277,43 @@ class MFAPolicyService:
                 if field in ["conditions", "required_methods", "bypass_permissions"]:
                     if value is not None:
                         value = json.dumps(value)
-                setattr(policy, field, value)
+                update_data[field] = value
 
-        policy.updated_at = datetime.now(timezone.utc)
-        policy.updated_by = kwargs.get("updated_by", "system")
+        update_data["updated_by"] = kwargs.get("updated_by", "system")
 
-        await self.session.flush()
+        # Update policy
+        updated_policy = await self.mfa_policy_repo.update(policy_id, **update_data)
 
         logger.info(
             "mfa_policy_updated",
-            policy_id=str(policy.id),
-            policy_name=policy.name,
+            policy_id=str(updated_policy.id),
+            policy_name=updated_policy.name,
             updates=list(kwargs.keys()),
         )
 
-        return policy
+        return updated_policy
 
     async def delete_policy(self, policy_id: str, deleted_by: str = "system") -> bool:
         """Soft delete an MFA policy."""
-        query = select(MFAPolicy).where(MFAPolicy.id == policy_id)
-        result = await self.session.execute(query)
-        policy = result.scalar_one_or_none()
+        # Deactivate policy instead of hard delete
+        updated_policy = await self.mfa_policy_repo.update(policy_id, is_active=False, updated_by=deleted_by)
 
-        if not policy:
+        if not updated_policy:
             return False
-
-        policy.is_active = False
-        policy.updated_at = datetime.now(timezone.utc)
-        policy.updated_by = deleted_by
-
-        await self.session.flush()
 
         logger.info(
             "mfa_policy_deleted",
-            policy_id=str(policy.id),
-            policy_name=policy.name,
+            policy_id=str(updated_policy.id),
+            policy_name=updated_policy.name,
         )
 
         return True
 
     async def list_policies(self, active_only: bool = True, limit: int = 100, offset: int = 0) -> List[Dict]:
         """List MFA policies with details."""
-        query = select(MFAPolicy)
-
-        if active_only:
-            query = query.where(MFAPolicy.is_active == True)
-
-        query = query.order_by(desc(MFAPolicy.priority)).limit(limit).offset(offset)
-
-        result = await self.session.execute(query)
-        policies = result.scalars().all()
+        policies = await self.mfa_policy_repo.list_policies_paginated(
+            active_only=active_only, limit=limit, offset=offset
+        )
 
         # Convert to dict with parsed JSON fields
         policy_list = []
@@ -321,26 +327,26 @@ class MFAPolicyService:
                 "enforcement_level": policy.enforcement_level,
                 "grace_period_days": policy.grace_period_days,
                 "min_methods": policy.min_methods,
-                "created_at": policy.created_at.isoformat() if policy.created_at else None,
-                "updated_at": policy.updated_at.isoformat() if policy.updated_at else None,
+                "created_at": (policy.created_at.isoformat() if policy.created_at else None),
+                "updated_at": (policy.updated_at.isoformat() if policy.updated_at else None),
             }
 
             # Parse JSON fields
             try:
                 policy_dict["conditions"] = json.loads(policy.conditions)
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["conditions"] = {}
 
             try:
                 policy_dict["required_methods"] = json.loads(policy.required_methods)
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["required_methods"] = []
 
             try:
                 policy_dict["bypass_permissions"] = (
                     json.loads(policy.bypass_permissions) if policy.bypass_permissions else []
                 )
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 policy_dict["bypass_permissions"] = []
 
             policy_list.append(policy_dict)

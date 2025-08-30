@@ -7,11 +7,21 @@ from typing import AsyncGenerator, Dict, Optional, Union
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from structlog.stdlib import get_logger
 
 from ..core.config import settings
-from ..utils.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerException, CircuitState
+from ..utils.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerException,
+    CircuitState,
+)
 from ..utils.retry import with_retry
 
 logger = get_logger(__name__)
@@ -40,7 +50,22 @@ def create_database_engine() -> Optional[AsyncEngine]:
 
     # Only use test fallback if no URL configured and not in unit test environment
     if not database_url and os.getenv("TESTING") and not os.getenv("PYTEST_CURRENT_TEST"):
-        database_url = "sqlite+aiosqlite:///./test.db"
+        # Use Windows-compatible test database path
+        try:
+            import platform
+            import tempfile
+            import uuid
+
+            if platform.system() == "Windows":
+                temp_dir = tempfile.gettempdir()
+                unique_id = str(uuid.uuid4()).replace("-", "")[:8]
+                database_url = f"sqlite+aiosqlite:///{temp_dir}/test_{os.getpid()}_{unique_id}.db"
+            else:
+                unique_id = str(uuid.uuid4()).replace("-", "")[:8]
+                database_url = f"sqlite+aiosqlite:///./test_{os.getpid()}_{unique_id}.db"
+        except Exception:
+            # Fallback to original path if something goes wrong
+            database_url = "sqlite+aiosqlite:///./test.db"
         logger.info("Using test database URL", url=database_url)
 
     if not database_url:
@@ -59,7 +84,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
         }
 
         # SQLite-specific optimizations
-        if settings.DATABASE_URL and settings.DATABASE_URL.startswith(("sqlite", "sqlite+aiosqlite")):
+        if database_url and database_url.startswith(("sqlite", "sqlite+aiosqlite")):
             # SQLite doesn't support connection pooling parameters
             pool_settings = {
                 "pool_pre_ping": True,  # Validate connections before use
@@ -69,11 +94,11 @@ def create_database_engine() -> Optional[AsyncEngine]:
             logger.debug("Using SQLite-optimized connection settings")
 
         # Create async engine with enhanced settings
-        if not settings.DATABASE_URL:
+        if not database_url:
             raise ValueError("DATABASE_URL is not configured")
 
         db_engine = create_async_engine(
-            settings.DATABASE_URL,
+            database_url,
             echo=settings.DEBUG,
             **pool_settings,
             # Additional resilience settings
@@ -81,7 +106,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
                 {
                     "check_same_thread": False,  # For SQLite async compatibility
                 }
-                if settings.DATABASE_URL and settings.DATABASE_URL.startswith("sqlite")
+                if database_url and database_url.startswith("sqlite")
                 else {}
             ),
         )
@@ -90,7 +115,7 @@ def create_database_engine() -> Optional[AsyncEngine]:
             "Database engine created successfully",
             pool_size=pool_settings.get("pool_size", "N/A"),
             max_overflow=pool_settings.get("max_overflow", "N/A"),
-            database_type="sqlite" if settings.DATABASE_URL and "sqlite" in settings.DATABASE_URL else "postgresql",
+            database_type=("sqlite" if database_url and "sqlite" in database_url else "postgresql"),
         )
 
         # Sync public engine attribute for testing compatibility
@@ -431,7 +456,9 @@ async def init_database() -> None:
     logger.info("Database initialized successfully")
 
 
-def create_async_session_maker(bind_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+def create_async_session_maker(
+    bind_engine: AsyncEngine,
+) -> async_sessionmaker[AsyncSession]:
     """
     Create an async session maker with the given engine.
 
@@ -459,7 +486,11 @@ async def recover_database_connection(max_attempts: int = 3, retry_delay: float 
     Returns:
         True if recovery succeeded, False otherwise
     """
-    logger.warning("Starting database connection recovery", max_attempts=max_attempts, retry_delay=retry_delay)
+    logger.warning(
+        "Starting database connection recovery",
+        max_attempts=max_attempts,
+        retry_delay=retry_delay,
+    )
 
     for attempt in range(1, max_attempts + 1):
         try:
@@ -575,6 +606,7 @@ def reset_engine() -> None:
 async def init_db() -> None:
     """
     Initialize database with Alembic migrations.
+
     This function is used by the setup script to initialize the database schema.
     """
     import os

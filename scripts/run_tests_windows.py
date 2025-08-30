@@ -22,7 +22,7 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(project_root)
 
-    # Run pytest
+    # Run pytest with Windows-specific adjustments
     cmd = [
         sys.executable,
         "-m",
@@ -33,9 +33,14 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
         "--cov=app",
         "--cov-report=xml",
         "--timeout=300",
-        "-n",
-        "auto",
     ]
+
+    # Only add parallel execution if not on Windows or if explicitly enabled
+    if os.name != "nt":
+        cmd.extend(["-n", "auto"])
+    else:
+        # On Windows, use fewer workers to avoid process creation issues
+        cmd.extend(["-n", "2"])
 
     print(f"Running tests in {test_dir}...")
     result = subprocess.run(cmd, env=env)
@@ -45,8 +50,16 @@ def run_tests(test_dir: str = "tests/unit", install_deps: bool = False) -> int:
 def main() -> None:
     """Run the main entry point."""
     parser = argparse.ArgumentParser(description="Run ViolentUTF API tests")
-    parser.add_argument("--test-dir", default="tests/unit", help="Test directory to run (default: tests/unit)")
-    parser.add_argument("--install-deps", action="store_true", help="Install dependencies before running tests")
+    parser.add_argument(
+        "--test-dir",
+        default="tests/unit",
+        help="Test directory to run (default: tests/unit)",
+    )
+    parser.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Install dependencies before running tests",
+    )
 
     args = parser.parse_args()
     sys.exit(run_tests(args.test_dir, args.install_deps))

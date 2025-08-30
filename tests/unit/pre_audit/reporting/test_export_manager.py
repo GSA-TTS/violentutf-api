@@ -12,7 +12,12 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel, ValidationError
+from tools.pre_audit.reporting import (
+    ExportManager,
+    ReportConfig,
+    SecurityLevel,
+    ValidationError,
+)
 
 
 class TestExportManager:
@@ -27,7 +32,11 @@ class TestExportManager:
     @pytest.fixture
     def config(self, temp_dir):
         """Create test configuration."""
-        return ReportConfig(output_dir=temp_dir, enable_parallel_export=True, export_formats=["html", "json", "pdf"])
+        return ReportConfig(
+            output_dir=temp_dir,
+            enable_parallel_export=True,
+            export_formats=["html", "json", "pdf"],
+        )
 
     @pytest.fixture
     def manager(self, config):
@@ -38,7 +47,10 @@ class TestExportManager:
     def sample_audit_data(self):
         """Create sample audit data."""
         return {
-            "audit_metadata": {"total_files_analyzed": 100, "repository_path": "/test/repo"},
+            "audit_metadata": {
+                "total_files_analyzed": 100,
+                "repository_path": "/test/repo",
+            },
             "overall_compliance_score": 85.0,
             "all_violations": [],
         }
@@ -58,7 +70,8 @@ class TestExportManager:
         config = ReportConfig(output_dir=temp_dir, export_formats=["html", "json", "pdf"])
 
         with patch(
-            "tools.pre_audit.reporting.exporters.PDFReportGenerator", side_effect=ImportError("ReportLab not installed")
+            "tools.pre_audit.reporting.export_manager.PDFReportGenerator",
+            side_effect=ImportError("ReportLab not installed"),
         ):
             manager = ExportManager(config)
 
@@ -70,12 +83,14 @@ class TestExportManager:
         # Disable parallel export
         manager.config.enable_parallel_export = False
 
-        # Mock generators
+        # Mock generators and track which ones we mocked
+        mocked_generators = {}
         for format_name in ["html", "json"]:
             if format_name in manager.generators:
                 mock_gen = MagicMock()
                 mock_gen.generate.return_value = temp_dir / f"report.{format_name}"
                 manager.generators[format_name] = mock_gen
+                mocked_generators[format_name] = mock_gen
 
         results = manager.export_all(sample_audit_data)
 
@@ -85,9 +100,11 @@ class TestExportManager:
         assert all(isinstance(p, Path) for p in results.values() if p)
 
         # Verify generators were called
-        for format_name, generator in manager.generators.items():
-            if hasattr(generator, "generate"):
-                generator.generate.assert_called_once()
+        for format_name in ["html", "json"]:
+            if format_name in manager.generators:
+                generator = manager.generators[format_name]
+                if hasattr(generator.generate, "assert_called_once"):
+                    generator.generate.assert_called_once()
 
     def test_export_all_parallel(self, manager, sample_audit_data, temp_dir):
         """Test parallel export of all formats."""
@@ -118,14 +135,23 @@ class TestExportManager:
 
     def test_export_all_handles_validation_error(self, manager):
         """Test that validation errors are handled properly."""
-        # The current implementation is robust and handles missing fields gracefully
-        # Test with minimal data to ensure it doesn't crash
-        minimal_data = {"invalid": "data"}
+        # Test with invalid data that should fail validation
+        invalid_data = {"invalid": "data"}
 
-        # The system should handle this gracefully
-        results = manager.export_all(minimal_data)
+        # This should raise a validation error since it lacks required audit data fields
+        with pytest.raises(ValidationError, match="Audit data must contain at least one of"):
+            manager.export_all(invalid_data)
 
-        # All exports should complete successfully with default values
+        # Test with minimal but valid data
+        minimal_valid_data = {
+            "all_violations": [],
+            "audit_metadata": {"timestamp": "2025-08-20T15:00:00Z"},
+        }
+
+        # This should work gracefully
+        results = manager.export_all(minimal_valid_data)
+
+        # All exports should complete successfully
         assert all(path is not None for path in results.values())
         assert len(results) >= 1  # At least one format exported
 
@@ -142,7 +168,9 @@ class TestExportManager:
         """Test handling of generator errors."""
         # Mock the HTML generator to fail
         with patch.object(
-            manager.generators.get("html", MagicMock()), "generate", side_effect=Exception("Generator failed")
+            manager.generators.get("html", MagicMock()),
+            "generate",
+            side_effect=Exception("Generator failed"),
         ):
             results = manager.export_all(sample_audit_data)
 

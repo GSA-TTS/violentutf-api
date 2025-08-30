@@ -154,7 +154,11 @@ class TestFileSecretsManager:
 
     async def test_secret_name_sanitization(self, file_manager):
         """Test that secret names are properly sanitized for file paths."""
-        dangerous_names = ["../../../etc/passwd", "secret\\with\\backslashes", "secret/with/slashes"]
+        dangerous_names = [
+            "../../../etc/passwd",
+            "secret\\with\\backslashes",
+            "secret/with/slashes",
+        ]
 
         for name in dangerous_names:
             success = await file_manager.store_secret(name, "test_value")
@@ -361,7 +365,10 @@ class TestSecretsManagerFactory:
     def test_create_vault_secrets_manager(self):
         """Test creating Vault secrets manager."""
         manager = create_secrets_manager(
-            "vault", vault_url="https://vault.test", vault_token="token123", mount_path="secret"
+            "vault",
+            vault_url="https://vault.test",
+            vault_token="token123",
+            mount_path="secret",
         )
 
         assert isinstance(manager, SecretsManager)
@@ -370,7 +377,10 @@ class TestSecretsManagerFactory:
     def test_create_aws_secrets_manager(self):
         """Test creating AWS secrets manager."""
         manager = create_secrets_manager(
-            "aws", region="us-east-1", access_key_id="ACCESS_KEY", secret_access_key="SECRET_KEY"
+            "aws",
+            region="us-east-1",
+            access_key_id="ACCESS_KEY",
+            secret_access_key="SECRET_KEY",
         )
 
         assert isinstance(manager, SecretsManager)
@@ -541,7 +551,7 @@ class TestSecretsManagerEnhancedAPIMethods:
     async def test_store_api_key_hash_sha256_legacy(self, secrets_manager, mock_provider):
         """Test storing SHA256 API key hash (legacy support)."""
         key_id = "legacy-key-456"
-        key_hash = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"
+        key_hash = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"[:64]
 
         result = await secrets_manager.store_api_key_hash(key_id, key_hash)
 
@@ -559,7 +569,10 @@ class TestSecretsManagerEnhancedAPIMethods:
         expected_hash = "$argon2id$v=19$m=65536,t=3,p=4$salt$hash"
 
         # Mock provider returns secret data
-        mock_secret = SecretData(value=expected_hash, metadata={"type": "api_key_hash", "algorithm": "argon2"})
+        mock_secret = SecretData(
+            value=expected_hash,
+            metadata={"type": "api_key_hash", "algorithm": "argon2"},
+        )
         mock_provider.get_secret.return_value = mock_secret
 
         result = await secrets_manager.get_api_key_hash(key_id)

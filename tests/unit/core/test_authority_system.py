@@ -240,7 +240,10 @@ class TestAuthorityEvaluator:
         evaluator.session = MagicMock(spec=AsyncSession)
 
         mock_rbac_service = AsyncMock()
-        mock_rbac_service.get_user_permissions.return_value = {"users:*", "api_keys:read"}
+        mock_rbac_service.get_user_permissions.return_value = {
+            "users:*",
+            "api_keys:read",
+        }
 
         with patch("app.services.rbac_service.RBACService", return_value=mock_rbac_service):
             authority = await evaluator.evaluate_user_authority(sample_user, permissions=None)
@@ -609,7 +612,11 @@ class TestAuthoritySystemIntegration:
 
         # Mock RBAC service
         mock_rbac_service = AsyncMock()
-        mock_rbac_service.get_user_permissions.return_value = {"users:*", "api_keys:write", "sessions:read"}
+        mock_rbac_service.get_user_permissions.return_value = {
+            "users:*",
+            "api_keys:write",
+            "sessions:read",
+        }
 
         with patch("app.services.rbac_service.RBACService", return_value=mock_rbac_service):
             # Create authority context

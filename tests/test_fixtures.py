@@ -134,16 +134,19 @@ async def test_user(test_db_manager: DatabaseTestManager) -> User:
 @pytest_asyncio.fixture(scope="module")
 async def admin_token(admin_user: User, async_client: AsyncClient) -> str:
     """Generate authentication token for admin user."""
-    # Login with admin credentials
+    # Login with admin credentials - use exact values from create_admin_user
+    # Try JSON format first since endpoint expects Pydantic model
     login_response = await async_client.post(
         "/api/v1/auth/login",
         json={
-            "username": admin_user.username,
-            "password": "AdminPass123!",  # Password used in factory
+            "username": "testadmin",  # Exact username from create_admin_user
+            "password": "AdminPass123!",  # Exact password from create_admin_user
         },
     )
 
     if login_response.status_code != 200:
+        print(f"DEBUG: Login failed for user {admin_user.username} with status {login_response.status_code}")
+        print(f"DEBUG: Response: {login_response.text}")
         raise RuntimeError(f"Admin login failed: {login_response.status_code} - {login_response.text}")
 
     response_data = login_response.json()

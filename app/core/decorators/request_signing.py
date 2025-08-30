@@ -140,7 +140,7 @@ def require_request_signature(
                 query_params=query_params,
                 body=body,
                 config=config,
-                nonce_cache=set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None,
+                nonce_cache=(set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None),
             )
 
             if not result.is_valid:
@@ -291,7 +291,7 @@ def require_admin_signature(
                 query_params=query_params,
                 body=body,
                 config=config,
-                nonce_cache=set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None,
+                nonce_cache=(set(nonce_cache._nonces.keys()) if hasattr(nonce_cache, "_nonces") else None),
             )
 
             if not result.is_valid:
@@ -425,10 +425,11 @@ def verify_webhook_signature(
             import hashlib
             import hmac
 
+            # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signature verification, not sensitive data storage
             expected_signature = hmac.new(
                 secret_key.encode(),
                 f"{timestamp}.{body.decode()}".encode(),
-                hashlib.sha256,
+                hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
             ).hexdigest()
 
             # Verify signature

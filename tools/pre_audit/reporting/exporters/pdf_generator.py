@@ -39,10 +39,37 @@ try:
 except ImportError:
     HAS_REPORTLAB = False
     # Create dummy classes to prevent NameError during class definition
-    ParagraphStyle = type("ParagraphStyle", (), {})
+    ParagraphStyle = type("ParagraphStyle", (), {"__init__": lambda *args, **kwargs: None})
     TableStyle = type("TableStyle", (), {})
     Paragraph = type("Paragraph", (), {})
     Table = type("Table", (), {})
+
+    # Create dummy colors module with HexColor class
+    class DummyColors:
+        """Dummy colors module for when reportlab is not available."""
+
+        @staticmethod
+        def HexColor(color_str: str) -> str:
+            return color_str
+
+    colors = DummyColors()
+    A4 = (595.27, 841.89)  # A4 dimensions in points
+    # Dummy enums
+    TA_CENTER = 1
+    TA_JUSTIFY = 2
+    TA_RIGHT = 3
+
+    # Dummy function to return styles
+    def getSampleStyleSheet():
+        class DummyStyleSheet:
+            def __getitem__(self, key):
+                return ParagraphStyle()
+
+            def add(self, style):
+                pass
+
+        return DummyStyleSheet()
+
     logger = logging.getLogger(__name__)
     logger.warning("ReportLab not available - PDF generation disabled")
 
@@ -80,9 +107,8 @@ class PDFReportGenerator(ReportGenerator):
 
         # PDF settings
         self.page_size = A4
-        self.styles = self._create_custom_styles()
 
-        # Color scheme
+        # Color scheme - must be defined before creating styles
         self.colors = {
             "primary": colors.HexColor("#1976d2"),
             "success": colors.HexColor("#4caf50"),
@@ -92,6 +118,8 @@ class PDFReportGenerator(ReportGenerator):
             "light_gray": colors.HexColor("#f5f5f5"),
             "medium_gray": colors.HexColor("#666666"),
         }
+
+        self.styles = self._create_custom_styles()
 
     def generate(self, audit_data: Dict[str, Any]) -> Path:
         """
@@ -181,7 +209,11 @@ class PDFReportGenerator(ReportGenerator):
                 story.extend(self._create_recommendations_section(report_data))
 
             # Build PDF
-            doc.build(story, onFirstPage=self._add_header_footer, onLaterPages=self._add_header_footer)
+            doc.build(
+                story,
+                onFirstPage=self._add_header_footer,
+                onLaterPages=self._add_header_footer,
+            )
 
             logger.info(f"PDF report generated: {output_path}")
             return output_path
@@ -246,7 +278,10 @@ class PDFReportGenerator(ReportGenerator):
                         ]
                     )
 
-                hotspot_table = Table(hotspot_table_data, colWidths=[3 * inch, 1.5 * inch, 1.5 * inch, 1 * inch])
+                hotspot_table = Table(
+                    hotspot_table_data,
+                    colWidths=[3 * inch, 1.5 * inch, 1.5 * inch, 1 * inch],
+                )
                 hotspot_table.setStyle(self._get_table_style(highlight_header=True))
                 story.append(hotspot_table)
 
@@ -268,23 +303,18 @@ class PDFReportGenerator(ReportGenerator):
             )
         )
 
-        # Custom heading styles
-        styles.add(
-            ParagraphStyle(
-                name="Heading1", parent=styles["Heading1"], fontSize=18, textColor=self.colors["primary"], spaceAfter=12
+        # Note: Using built-in styles to avoid conflicts
+        # Only add BodyText style if it doesn't exist
+        if "BodyText" not in styles:
+            styles.add(
+                ParagraphStyle(
+                    name="BodyText",
+                    parent=styles["Normal"],
+                    fontSize=10,
+                    alignment=TA_JUSTIFY,
+                    spaceAfter=6,
+                )
             )
-        )
-
-        styles.add(
-            ParagraphStyle(
-                name="Heading2", parent=styles["Heading2"], fontSize=14, textColor=self.colors["text"], spaceAfter=8
-            )
-        )
-
-        # Custom body text
-        styles.add(
-            ParagraphStyle(name="BodyText", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6)
-        )
 
         # Risk level styles
         for level, color in [
@@ -341,7 +371,10 @@ class PDFReportGenerator(ReportGenerator):
             ["Repository:", metadata.get("repository_path", "Unknown")],
             ["Generated:", self._format_timestamp(metadata.get("timestamp", ""))],
             ["Files Analyzed:", str(metadata.get("total_files_analyzed", 0))],
-            ["Analysis Duration:", f"{metadata.get('analysis_duration', 0):.1f} seconds"],
+            [
+                "Analysis Duration:",
+                f"{metadata.get('analysis_duration', 0):.1f} seconds",
+            ],
         ]
 
         info_table = Table(info_data, colWidths=[2 * inch, 4 * inch])
@@ -418,33 +451,41 @@ class PDFReportGenerator(ReportGenerator):
         # Summary table
         summary_data = [
             ["Metric", "Count", "Percentage"],
-            ["Total Violations", str(report_data["summary"]["total_violations"]), "100%"],
+            [
+                "Total Violations",
+                str(report_data["summary"]["total_violations"]),
+                "100%",
+            ],
             [
                 "Critical",
                 str(report_data["summary"]["critical_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["critical_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["critical_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "High",
                 str(report_data["summary"]["high_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["high_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["high_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "Medium",
                 str(report_data["summary"]["medium_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["medium_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["medium_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
             [
                 "Low",
                 str(report_data["summary"]["low_violations"]),
                 self._calculate_percentage(
-                    report_data["summary"]["low_violations"], report_data["summary"]["total_violations"]
+                    report_data["summary"]["low_violations"],
+                    report_data["summary"]["total_violations"],
                 ),
             ],
         ]
@@ -459,7 +500,10 @@ class PDFReportGenerator(ReportGenerator):
         story.append(Paragraph("Technical Debt", self.styles["Heading2"]))
         debt_days = report_data["summary"]["technical_debt_days"]
         story.append(
-            Paragraph(f"Estimated effort to resolve all violations: {debt_days:.1f} days", self.styles["BodyText"])
+            Paragraph(
+                f"Estimated effort to resolve all violations: {debt_days:.1f} days",
+                self.styles["BodyText"],
+            )
         )
 
         return story
@@ -554,7 +598,10 @@ class PDFReportGenerator(ReportGenerator):
             risk_violations = by_risk[risk_level]
 
             story.append(
-                Paragraph(f"{risk_level.title()} Risk Violations ({len(risk_violations)})", self.styles["Heading2"])
+                Paragraph(
+                    f"{risk_level.title()} Risk Violations ({len(risk_violations)})",
+                    self.styles["Heading2"],
+                )
             )
             story.append(Spacer(1, 0.1 * inch))
 
@@ -603,12 +650,20 @@ class PDFReportGenerator(ReportGenerator):
 
             priority_recs = by_priority[priority]
 
-            story.append(Paragraph(f"{priority.title()} Priority ({len(priority_recs)})", self.styles["Heading2"]))
+            story.append(
+                Paragraph(
+                    f"{priority.title()} Priority ({len(priority_recs)})",
+                    self.styles["Heading2"],
+                )
+            )
             story.append(Spacer(1, 0.1 * inch))
 
             for rec in priority_recs[:5]:  # Limit to 5 per priority
                 story.append(
-                    Paragraph(f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}", self.styles["BodyText"])
+                    Paragraph(
+                        f"<b>{rec.get('id', '')}</b>: {rec.get('description', '')}",
+                        self.styles["BodyText"],
+                    )
                 )
                 story.append(
                     Paragraph(
@@ -657,7 +712,9 @@ class PDFReportGenerator(ReportGenerator):
         canvas.setFillColor(self.colors["medium_gray"])
         canvas.drawString(inch, self.page_size[1] - 0.5 * inch, "Architectural Audit Report")
         canvas.drawRightString(
-            self.page_size[0] - inch, self.page_size[1] - 0.5 * inch, datetime.now().strftime("%Y-%m-%d")
+            self.page_size[0] - inch,
+            self.page_size[1] - 0.5 * inch,
+            datetime.now().strftime("%Y-%m-%d"),
         )
 
         # Footer
@@ -666,7 +723,12 @@ class PDFReportGenerator(ReportGenerator):
 
         # Line separators
         canvas.setStrokeColor(self.colors["light_gray"])
-        canvas.line(inch, self.page_size[1] - 0.6 * inch, self.page_size[0] - inch, self.page_size[1] - 0.6 * inch)
+        canvas.line(
+            inch,
+            self.page_size[1] - 0.6 * inch,
+            self.page_size[0] - inch,
+            self.page_size[1] - 0.6 * inch,
+        )
         canvas.line(inch, 0.7 * inch, self.page_size[0] - inch, 0.7 * inch)
 
         canvas.restoreState()

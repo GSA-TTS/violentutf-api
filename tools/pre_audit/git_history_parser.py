@@ -12,7 +12,10 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union
+
+if TYPE_CHECKING:
+    import git
 
 try:
     import git
@@ -21,7 +24,11 @@ try:
 except ImportError:
     HAS_GIT = False
 
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixMatch, FixType
+from tools.pre_audit.git_pattern_matcher import (
+    ArchitecturalFixPatternMatcher,
+    FixMatch,
+    FixType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +77,7 @@ class FileChangePattern:
 
 
 class GitHistoryParser:
+    """Parser for analyzing git repository history and extracting commit data."""
 
     def _validate_path_input(self, path: Union[str, Path]) -> Path:
         """Validate path input to prevent directory traversal."""
@@ -184,7 +192,7 @@ class GitHistoryParser:
 
         return fixes
 
-    def _analyze_commit(self, commit: git.Commit, target_adr: Optional[str] = None) -> Optional[ArchitecturalFix]:
+    def _analyze_commit(self, commit: "git.Commit", target_adr: Optional[str] = None) -> Optional[ArchitecturalFix]:
         """
         Analyze a single commit for architectural fixes.
 
@@ -285,7 +293,9 @@ class GitHistoryParser:
                         patterns[file_set].commits.append(commit.hexsha[:8])
                     else:
                         patterns[file_set] = FileChangePattern(
-                            files=changed_files, frequency=1, commits=[commit.hexsha[:8]]
+                            files=changed_files,
+                            frequency=1,
+                            commits=[commit.hexsha[:8]],
                         )
 
             except Exception as e:
@@ -393,7 +403,10 @@ class GitHistoryParser:
 
         # Date range
         dates = [fix.date for fix in fixes]
-        date_range = {"earliest": min(dates).isoformat(), "latest": max(dates).isoformat()}
+        date_range = {
+            "earliest": min(dates).isoformat(),
+            "latest": max(dates).isoformat(),
+        }
 
         return {
             "total_fixes": len(fixes),

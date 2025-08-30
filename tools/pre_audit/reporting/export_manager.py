@@ -65,7 +65,8 @@ class ExportManager:
 
         # Rate limiting (10 exports per minute by default)
         self.rate_limiter = RateLimiter(
-            max_requests=getattr(config, "rate_limit_max", 10), window_seconds=getattr(config, "rate_limit_window", 60)
+            max_requests=getattr(config, "rate_limit_max", 10),
+            window_seconds=getattr(config, "rate_limit_window", 60),
         )
 
     def _init_generators(self):

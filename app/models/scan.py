@@ -97,7 +97,10 @@ class Scan(BaseModelMixin, Base):
     # Integration details
     orchestrator_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     task_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("task.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("task.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     # Tags for organization
@@ -165,7 +168,10 @@ class ScanFinding(BaseModelMixin, Base):
 
     # Relationship to scan
     scan_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("scan.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("scan.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     scan: Mapped[Scan] = relationship("Scan", back_populates="findings")
 
@@ -241,7 +247,10 @@ class ScanReport(BaseModelMixin, Base):
 
     # Relationship to scan
     scan_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("scan.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("scan.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     scan: Mapped[Scan] = relationship("Scan", back_populates="reports")
 

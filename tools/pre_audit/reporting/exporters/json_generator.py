@@ -59,7 +59,11 @@ class JSONReportGenerator(ReportGenerator):
                 "type": "object",
                 "required": ["compliance_score", "total_violations"],
                 "properties": {
-                    "compliance_score": {"type": "number", "minimum": 0, "maximum": 100},
+                    "compliance_score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100,
+                    },
                     "total_violations": {"type": "integer", "minimum": 0},
                     "critical_violations": {"type": "integer", "minimum": 0},
                     "high_violations": {"type": "integer", "minimum": 0},
@@ -67,7 +71,10 @@ class JSONReportGenerator(ReportGenerator):
                     "low_violations": {"type": "integer", "minimum": 0},
                     "technical_debt_hours": {"type": "number", "minimum": 0},
                     "technical_debt_days": {"type": "number", "minimum": 0},
-                    "risk_assessment": {"type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]},
+                    "risk_assessment": {
+                        "type": "string",
+                        "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+                    },
                 },
             },
             "violations": {
@@ -79,7 +86,10 @@ class JSONReportGenerator(ReportGenerator):
                         "file_path": {"type": "string"},
                         "line_number": {"type": ["integer", "null"]},
                         "adr_id": {"type": "string"},
-                        "risk_level": {"type": "string", "enum": ["critical", "high", "medium", "low", "unknown"]},
+                        "risk_level": {
+                            "type": "string",
+                            "enum": ["critical", "high", "medium", "low", "unknown"],
+                        },
                         "message": {"type": "string"},
                         "category": {"type": "string"},
                         "impact_assessment": {"type": "string"},
@@ -200,7 +210,12 @@ class JSONReportGenerator(ReportGenerator):
                 else:
                     # Pretty print for internal use - still use ensure_ascii for security
                     json.dump(
-                        filtered_data, f, indent=2, ensure_ascii=True, sort_keys=True, default=self._json_serializer
+                        filtered_data,
+                        f,
+                        indent=2,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        default=self._json_serializer,
                     )
 
             logger.info(f"JSON report generated: {output_path}")
@@ -275,7 +290,10 @@ class JSONReportGenerator(ReportGenerator):
             # Remove detailed recommendations
             if "recommendations" in filtered:
                 filtered["recommendations"] = [
-                    {"priority": rec.get("priority", "medium"), "category": rec.get("category", "general")}
+                    {
+                        "priority": rec.get("priority", "medium"),
+                        "category": rec.get("category", "general"),
+                    }
                     for rec in filtered["recommendations"][:5]
                 ]
 
@@ -352,13 +370,21 @@ class JSONReportGenerator(ReportGenerator):
                 # Write metadata
                 f.write('  "metadata": ')
                 json.dump(
-                    self.data_processor._generate_metadata(audit_data), f, indent=2, default=self._json_serializer
+                    self.data_processor._generate_metadata(audit_data),
+                    f,
+                    indent=2,
+                    default=self._json_serializer,
                 )
                 f.write(",\n")
 
                 # Write summary
                 f.write('  "summary": ')
-                json.dump(self.data_processor._generate_summary(audit_data), f, indent=2, default=self._json_serializer)
+                json.dump(
+                    self.data_processor._generate_summary(audit_data),
+                    f,
+                    indent=2,
+                    default=self._json_serializer,
+                )
                 f.write(",\n")
 
                 # Stream violations

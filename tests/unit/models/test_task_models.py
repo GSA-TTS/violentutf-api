@@ -1,6 +1,6 @@
 """Unit tests for Task models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -126,7 +126,7 @@ class TestTaskResultModel:
             result_type="output",
             name="Test Result",
             data={"key": "value"},
-            result_metadata={"generated_at": datetime.utcnow().isoformat()},
+            result_metadata={"generated_at": datetime.now(timezone.utc).isoformat()},
             is_primary=True,
             created_by="testuser",
         )
@@ -175,7 +175,10 @@ class TestTaskResultModel:
             "statistics": {
                 "total_processed": 1000,
                 "success_rate": 0.95,
-                "errors": [{"type": "timeout", "count": 30}, {"type": "validation", "count": 20}],
+                "errors": [
+                    {"type": "timeout", "count": 30},
+                    {"type": "validation", "count": 20},
+                ],
             },
             "summary": {
                 "start_time": "2025-01-01T00:00:00Z",
@@ -221,11 +224,19 @@ class TestTaskResultModel:
         task_id = str(uuid4())
 
         # Primary result
-        primary_result = TaskResult(task_id=task_id, result_type="final_output", is_primary=True, created_by="testuser")
+        primary_result = TaskResult(
+            task_id=task_id,
+            result_type="final_output",
+            is_primary=True,
+            created_by="testuser",
+        )
 
         # Secondary result
         secondary_result = TaskResult(
-            task_id=task_id, result_type="intermediate_log", is_primary=False, created_by="testuser"
+            task_id=task_id,
+            result_type="intermediate_log",
+            is_primary=False,
+            created_by="testuser",
         )
 
         assert primary_result.is_primary is True
@@ -235,7 +246,15 @@ class TestTaskResultModel:
         """Test different task result types."""
         task_id = str(uuid4())
 
-        result_types = ["output", "log", "error", "metrics", "file", "screenshot", "report"]
+        result_types = [
+            "output",
+            "log",
+            "error",
+            "metrics",
+            "file",
+            "screenshot",
+            "report",
+        ]
 
         for result_type in result_types:
             result = TaskResult(

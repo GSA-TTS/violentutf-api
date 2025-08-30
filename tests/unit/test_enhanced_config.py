@@ -10,7 +10,13 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import ConfigurationError, Settings, get_settings, reload_settings, validate_environment_file
+from app.core.config import (
+    ConfigurationError,
+    Settings,
+    get_settings,
+    reload_settings,
+    validate_environment_file,
+)
 
 
 class SettingsForTesting(Settings):
@@ -37,7 +43,11 @@ class TestSettingsValidation:
     def test_production_settings_validation(self) -> None:
         """Test production-specific validation."""
         strong_key = secrets.token_urlsafe(32)
-        clean_env = {"SECRET_KEY": strong_key, "ENVIRONMENT": "production", "DEBUG": "false"}
+        clean_env = {
+            "SECRET_KEY": strong_key,
+            "ENVIRONMENT": "production",
+            "DEBUG": "false",
+        }
         with patch.dict(os.environ, clean_env, clear=True):
             settings = SettingsForTesting()
             assert settings.is_production
@@ -46,7 +56,11 @@ class TestSettingsValidation:
     def test_production_debug_error(self) -> None:
         """Test that DEBUG=True in production raises error."""
         strong_key = secrets.token_urlsafe(32)
-        clean_env = {"SECRET_KEY": strong_key, "ENVIRONMENT": "production", "DEBUG": "true"}
+        clean_env = {
+            "SECRET_KEY": strong_key,
+            "ENVIRONMENT": "production",
+            "DEBUG": "true",
+        }
         with patch.dict(os.environ, clean_env, clear=True):
             with pytest.raises(ValidationError, match="DEBUG must be False in production"):
                 SettingsForTesting()
@@ -108,7 +122,13 @@ class TestSettingsValidation:
 
     def test_valid_server_hosts(self) -> None:
         """Test valid server host formats."""
-        valid_hosts = ["127.0.0.1", "0.0.0.0", "localhost", "example.com", "sub.domain.com"]  # nosec B104
+        valid_hosts = [
+            "127.0.0.1",
+            "0.0.0.0",
+            "localhost",
+            "example.com",
+            "sub.domain.com",
+        ]  # nosec B104
 
         for host in valid_hosts:
             clean_env = {"SECRET_KEY": "a" * 32, "SERVER_HOST": host}
@@ -119,7 +139,11 @@ class TestSettingsValidation:
     def test_rate_limiting_validation(self) -> None:
         """Test rate limiting validation."""
         strong_key = secrets.token_urlsafe(32)
-        clean_env = {"SECRET_KEY": strong_key, "RATE_LIMIT_ENABLED": "true", "RATE_LIMIT_PER_MINUTE": "5"}
+        clean_env = {
+            "SECRET_KEY": strong_key,
+            "RATE_LIMIT_ENABLED": "true",
+            "RATE_LIMIT_PER_MINUTE": "5",
+        }
         with patch.dict(os.environ, clean_env, clear=True):
             with pytest.raises(ValidationError, match="greater than or equal to 10"):
                 SettingsForTesting()
@@ -305,7 +329,11 @@ class TestAllowedOrigins:
 
     def test_valid_origins(self) -> None:
         """Test valid origin URLs."""
-        valid_origins = ["http://example.com", "https://secure.example.com", "http://localhost:3000"]
+        valid_origins = [
+            "http://example.com",
+            "https://secure.example.com",
+            "http://localhost:3000",
+        ]
 
         origins_json = json.dumps(valid_origins)
         clean_env = {"SECRET_KEY": "a" * 32, "ALLOWED_ORIGINS": origins_json}
@@ -316,17 +344,29 @@ class TestAllowedOrigins:
 
     def test_invalid_origins_filtered(self) -> None:
         """Test that invalid origins are filtered out."""
-        mixed_origins = ["http://valid.com", "invalid-url", "ftp://not-allowed.com", "https://also-valid.com"]
+        mixed_origins = [
+            "http://valid.com",
+            "invalid-url",
+            "ftp://not-allowed.com",
+            "https://also-valid.com",
+        ]
 
         origins_json = json.dumps(mixed_origins)
         clean_env = {"SECRET_KEY": "a" * 32, "ALLOWED_ORIGINS": origins_json}
         with patch.dict(os.environ, clean_env, clear=True):
             settings = SettingsForTesting()
 
-            assert "http://valid.com" in settings.ALLOWED_ORIGINS
-            assert "https://also-valid.com" in settings.ALLOWED_ORIGINS
-            assert "invalid-url" not in settings.ALLOWED_ORIGINS
-            assert "ftp://not-allowed.com" not in settings.ALLOWED_ORIGINS
+            # Use exact URL matching to prevent URL substring vulnerabilities
+            expected_valid_origins = {"http://valid.com", "https://also-valid.com"}
+            expected_invalid_origins = {"invalid-url", "ftp://not-allowed.com"}
+
+            # Convert to sets for exact matching
+            actual_origins = set(settings.ALLOWED_ORIGINS)
+
+            # Check that valid origins are present
+            assert expected_valid_origins.issubset(actual_origins)
+            # Check that invalid origins are not present
+            assert not expected_invalid_origins.intersection(actual_origins)
 
 
 class TestGetSettings:
@@ -361,7 +401,10 @@ class TestGetSettings:
 
     def test_get_settings_with_invalid_config(self) -> None:
         """Test get_settings with invalid configuration."""
-        clean_env = {"SECRET_KEY": "short", "ENVIRONMENT": "production"}  # pragma: allowlist secret
+        clean_env = {
+            "SECRET_KEY": "short",
+            "ENVIRONMENT": "production",
+        }  # pragma: allowlist secret
         with patch.dict(os.environ, clean_env, clear=True):
             # Clear cache first to ensure fresh settings
             get_settings.cache_clear()

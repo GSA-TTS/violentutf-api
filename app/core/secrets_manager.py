@@ -32,7 +32,10 @@ class SecretsManagerProvider(ABC):
 
     @abstractmethod
     async def store_secret(
-        self, secret_name: str, secret_value: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        secret_name: str,
+        secret_value: str,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Store a secret."""
         pass
@@ -87,7 +90,7 @@ class FileSecretsManager(SecretsManagerProvider):
         # Reverse the safe encoding
         return base_name.replace("__SLASH__", "/").replace("__BACKSLASH__", "\\")
 
-    def _rebuild_name_mapping(self):
+    def _rebuild_name_mapping(self) -> None:
         """Rebuild name mapping by reading existing files (for recovery)."""
         try:
             for filename in os.listdir(self.secrets_dir):
@@ -115,7 +118,10 @@ class FileSecretsManager(SecretsManagerProvider):
             return None
 
     async def store_secret(
-        self, secret_name: str, secret_value: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        secret_name: str,
+        secret_value: str,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Store secret to file."""
         try:
@@ -144,12 +150,33 @@ class FileSecretsManager(SecretsManagerProvider):
         try:
             secret_path = self._get_secret_path(secret_name)
             if os.path.exists(secret_path):
-                os.remove(secret_path)
+                # Windows-compatible file removal with retries
+                import platform
+                import time
+
+                if platform.system() == "Windows":
+                    # Retry logic for Windows file locking issues
+                    for attempt in range(3):
+                        try:
+                            os.remove(secret_path)
+                            break
+                        except PermissionError:
+                            if attempt < 2:
+                                time.sleep(0.1 * (2**attempt))
+                                continue
+                            else:
+                                raise
+                else:
+                    os.remove(secret_path)
                 logger.info("Secret deleted from file", secret_name=secret_name)
             return True
 
         except Exception as e:
-            logger.error("Failed to delete secret from file", secret_name=secret_name, error=str(e))
+            logger.error(
+                "Failed to delete secret from file",
+                secret_name=secret_name,
+                error=str(e),
+            )
             return False
 
     async def list_secrets(self, prefix: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
@@ -192,7 +219,11 @@ class VaultSecretsManager(SecretsManagerProvider):
         self.vault_url = vault_url
         self.vault_token = vault_token
         self.mount_path = mount_path
-        logger.info("Initialized Vault secrets manager", vault_url=vault_url, mount_path=mount_path)
+        logger.info(
+            "Initialized Vault secrets manager",
+            vault_url=vault_url,
+            mount_path=mount_path,
+        )
 
     async def get_secret(self, secret_name: str) -> Optional[SecretData]:
         """Get secret from Vault (to be implemented)."""
@@ -201,7 +232,10 @@ class VaultSecretsManager(SecretsManagerProvider):
         return None
 
     async def store_secret(
-        self, secret_name: str, secret_value: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        secret_name: str,
+        secret_value: str,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Store secret in Vault (to be implemented)."""
         # TODO: Implement HashiCorp Vault integration
@@ -227,7 +261,12 @@ class VaultSecretsManager(SecretsManagerProvider):
 class AWSSecretsManager(SecretsManagerProvider):
     """AWS Secrets Manager integration (stub for future implementation)."""
 
-    def __init__(self, region: str, access_key_id: Optional[str] = None, secret_access_key: Optional[str] = None):
+    def __init__(
+        self,
+        region: str,
+        access_key_id: Optional[str] = None,
+        secret_access_key: Optional[str] = None,
+    ):
         """Initialize AWS Secrets Manager."""
         self.region = region
         self.access_key_id = access_key_id
@@ -241,7 +280,10 @@ class AWSSecretsManager(SecretsManagerProvider):
         return None
 
     async def store_secret(
-        self, secret_name: str, secret_value: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        secret_name: str,
+        secret_value: str,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Store secret in AWS Secrets Manager (to be implemented)."""
         logger.warning("AWS Secrets Manager integration not yet implemented")

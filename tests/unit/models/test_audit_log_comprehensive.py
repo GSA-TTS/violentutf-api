@@ -121,7 +121,12 @@ class TestAuditLogValidations:
         """Test action validation without dot notation."""
         audit_log = AuditLog()
 
-        invalid_actions = ["create", "userupdate", "action_without_dot", "noresourcetype"]
+        invalid_actions = [
+            "create",
+            "userupdate",
+            "action_without_dot",
+            "noresourcetype",
+        ]
 
         for action in invalid_actions:
             with pytest.raises(ValueError, match="Action must follow 'resource.action' format"):
@@ -384,10 +389,17 @@ class TestAuditLogClassMethods:
         metadata = {"browser": "Chrome", "device": "mobile"}
 
         audit_log = AuditLog.log_action(
-            action="user.profile_update", resource_type="user", request_id="req-def456", metadata=metadata
+            action="user.profile_update",
+            resource_type="user",
+            request_id="req-def456",
+            metadata=metadata,
         )
 
-        expected_metadata = {"browser": "Chrome", "device": "mobile", "request_id": "req-def456"}
+        expected_metadata = {
+            "browser": "Chrome",
+            "device": "mobile",
+            "request_id": "req-def456",
+        }
         assert audit_log.action_metadata == expected_metadata
 
     def test_log_action_full_parameters(self):
@@ -420,7 +432,11 @@ class TestAuditLogClassMethods:
         assert audit_log.error_message is None
 
         # Check combined metadata
-        expected_metadata = {"api_version": "v1", "client": "web", "request_id": "req-ghi789"}
+        expected_metadata = {
+            "api_version": "v1",
+            "client": "web",
+            "request_id": "req-ghi789",
+        }
         assert audit_log.action_metadata == expected_metadata
 
     def test_log_action_with_failure_status(self):
@@ -443,7 +459,12 @@ class TestAuditLogRepresentation:
 
     def test_repr_with_resource_id(self):
         """Test __repr__ method with resource_id."""
-        audit_log = AuditLog(action="user.update", resource_type="user", resource_id="user-123", status="success")
+        audit_log = AuditLog(
+            action="user.update",
+            resource_type="user",
+            resource_id="user-123",
+            status="success",
+        )
 
         repr_str = repr(audit_log)
         expected = "<AuditLog(action=user.update, resource=user:user-123, status=success)>"
@@ -451,7 +472,12 @@ class TestAuditLogRepresentation:
 
     def test_repr_without_resource_id(self):
         """Test __repr__ method without resource_id."""
-        audit_log = AuditLog(action="system.startup", resource_type="system", resource_id=None, status="success")
+        audit_log = AuditLog(
+            action="system.startup",
+            resource_type="system",
+            resource_id=None,
+            status="success",
+        )
 
         repr_str = repr(audit_log)
         expected = "<AuditLog(action=system.startup, resource=system:None, status=success)>"
@@ -459,7 +485,12 @@ class TestAuditLogRepresentation:
 
     def test_repr_with_failure_status(self):
         """Test __repr__ method with failure status."""
-        audit_log = AuditLog(action="user.create", resource_type="user", resource_id="user-456", status="failure")
+        audit_log = AuditLog(
+            action="user.create",
+            resource_type="user",
+            resource_id="user-456",
+            status="failure",
+        )
 
         repr_str = repr(audit_log)
         expected = "<AuditLog(action=user.create, resource=user:user-456, status=failure)>"
@@ -699,7 +730,11 @@ class TestAuditLogValidationEdgeCases:
         """Test validation when security validation fails."""
         audit_log = AuditLog()
 
-        with patch.object(audit_log, "validate_string_security", side_effect=ValueError("Security validation failed")):
+        with patch.object(
+            audit_log,
+            "validate_string_security",
+            side_effect=ValueError("Security validation failed"),
+        ):
             with pytest.raises(ValueError, match="Security validation failed"):
                 audit_log.validate_resource_type("resource_type", "user")
 
@@ -708,7 +743,12 @@ class TestAuditLogValidationEdgeCases:
         audit_log = AuditLog()
 
         # These should be valid since they follow resource.action format
-        sql_keyword_actions = ["user.create", "table.update", "index.delete", "view.select"]
+        sql_keyword_actions = [
+            "user.create",
+            "table.update",
+            "index.delete",
+            "view.select",
+        ]
 
         for action in sql_keyword_actions:
             result = audit_log.validate_action("action", action)

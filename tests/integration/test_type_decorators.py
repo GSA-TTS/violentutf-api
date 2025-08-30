@@ -19,7 +19,7 @@ from app.db.types import GUID, JSONType
 Base = declarative_base()
 
 
-class TestModel(Base):
+class TypeTestModel(Base):
     """Test model for type decorator testing."""
 
     __tablename__ = "test_type_model"
@@ -157,14 +157,14 @@ class TestGUIDType:
         test_uuid = uuid.uuid4()
 
         # Insert
-        model = TestModel(guid_field=test_uuid)
+        model = TypeTestModel(guid_field=test_uuid)
         async_session.add(model)
         await async_session.flush()  # Get the ID without closing session
         model_id = model.id  # Store ID while session is active
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id == model_id))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id == model_id))
         loaded = result.scalar_one()
 
         # Should be string after roundtrip
@@ -175,12 +175,12 @@ class TestGUIDType:
         test_uuid = uuid.uuid4()
 
         # Insert
-        model = TestModel(guid_field=test_uuid)
+        model = TypeTestModel(guid_field=test_uuid)
         sync_session.add(model)
         sync_session.commit()
 
         # Query
-        loaded = sync_session.query(TestModel).filter_by(id=model.id).first()
+        loaded = sync_session.query(TypeTestModel).filter_by(id=model.id).first()
 
         # Should be string after roundtrip
         assert loaded.guid_field == str(test_uuid)
@@ -277,7 +277,11 @@ class TestJSONType:
         json_type = JSONType()
 
         # UUID in dict
-        test_data = {"id": uuid.uuid4(), "created": datetime.now(), "amount": Decimal("123.45")}
+        test_data = {
+            "id": uuid.uuid4(),
+            "created": datetime.now(),
+            "amount": Decimal("123.45"),
+        }
 
         sqlite_dialect = sqlite.dialect()
         result = json_type.process_bind_param(test_data, sqlite_dialect)
@@ -348,14 +352,14 @@ class TestJSONType:
         }
 
         # Insert
-        model = TestModel(json_field=test_data)
+        model = TypeTestModel(json_field=test_data)
         async_session.add(model)
         await async_session.flush()  # Get the ID without closing session
         model_id = model.id  # Store ID while session is active
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id == model_id))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id == model_id))
         loaded = result.scalar_one()
 
         # Should preserve structure
@@ -368,14 +372,14 @@ class TestJSONType:
         test_data = [1, "two", {"three": 3}, [4, 5, 6]]
 
         # Insert
-        model = TestModel(json_field=test_data)
+        model = TypeTestModel(json_field=test_data)
         async_session.add(model)
         await async_session.flush()  # Get the ID without closing session
         model_id = model.id  # Store ID while session is active
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id == model_id))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id == model_id))
         loaded = result.scalar_one()
 
         # Should preserve structure
@@ -386,12 +390,12 @@ class TestJSONType:
         test_data = {"sync": True, "data": [1, 2, 3], "nested": {"key": "value"}}
 
         # Insert
-        model = TestModel(json_field=test_data)
+        model = TypeTestModel(json_field=test_data)
         sync_session.add(model)
         sync_session.commit()
 
         # Query
-        loaded = sync_session.query(TestModel).filter_by(id=model.id).first()
+        loaded = sync_session.query(TypeTestModel).filter_by(id=model.id).first()
 
         # Should preserve structure
         assert loaded.json_field == test_data
@@ -400,11 +404,11 @@ class TestJSONType:
     async def test_json_with_empty_structures(self, async_session: AsyncSession):
         """Test JSON with empty dict and list."""
         # Empty dict
-        model1 = TestModel(json_field={})
+        model1 = TypeTestModel(json_field={})
         async_session.add(model1)
 
         # Empty list
-        model2 = TestModel(json_field=[])
+        model2 = TypeTestModel(json_field=[])
         async_session.add(model2)
 
         await async_session.flush()  # Get the IDs without closing session
@@ -413,7 +417,7 @@ class TestJSONType:
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id.in_([model1_id, model2_id])))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id.in_([model1_id, model2_id])))
         models = result.scalars().all()
 
         json_fields = [m.json_field for m in models]
@@ -423,17 +427,23 @@ class TestJSONType:
     @pytest.mark.asyncio
     async def test_json_with_unicode(self, async_session: AsyncSession):
         """Test JSON with Unicode characters."""
-        test_data = {"english": "Hello", "chinese": "你好", "emoji": "😀🎉", "special": "café", "symbols": "♠♣♥♦"}
+        test_data = {
+            "english": "Hello",
+            "chinese": "你好",
+            "emoji": "😀🎉",
+            "special": "café",
+            "symbols": "♠♣♥♦",
+        }
 
         # Insert
-        model = TestModel(json_field=test_data)
+        model = TypeTestModel(json_field=test_data)
         async_session.add(model)
         await async_session.flush()  # Get the ID without closing session
         model_id = model.id  # Store ID while session is active
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id == model_id))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id == model_id))
         loaded = result.scalar_one()
 
         # Unicode should be preserved
@@ -445,19 +455,22 @@ class TestJSONType:
         """Test JSON with large data structure."""
         # Create large nested structure
         test_data = {
-            f"key_{i}": {"data": list(range(100)), "nested": {f"inner_{j}": f"value_{j}" for j in range(10)}}
+            f"key_{i}": {
+                "data": list(range(100)),
+                "nested": {f"inner_{j}": f"value_{j}" for j in range(10)},
+            }
             for i in range(10)
         }
 
         # Insert
-        model = TestModel(json_field=test_data)
+        model = TypeTestModel(json_field=test_data)
         async_session.add(model)
         await async_session.flush()  # Get the ID without closing session
         model_id = model.id  # Store ID while session is active
         await async_session.commit()
 
         # Query
-        result = await async_session.execute(select(TestModel).where(TestModel.id == model_id))
+        result = await async_session.execute(select(TypeTestModel).where(TypeTestModel.id == model_id))
         loaded = result.scalar_one()
 
         # Should handle large data

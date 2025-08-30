@@ -24,10 +24,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from multi_agent_auditor import ArchitecturalAnalysisOrchestrator
-from pattern_analyzer import PatternAnalyzer
-from safe_cache_manager import MultiTierCacheManager
-from smart_analyzer import SmartArchitecturalAnalyzer
+from multi_agent_auditor import ArchitecturalAnalysisOrchestrator  # noqa: E402
+from pattern_analyzer import PatternAnalyzer  # noqa: E402
+from safe_cache_manager import MultiTierCacheManager  # noqa: E402
+from smart_analyzer import SmartArchitecturalAnalyzer  # noqa: E402
 
 
 @dataclass
@@ -276,12 +276,15 @@ class IncrementalAnalyzer:
         self.orchestrator: Optional[ArchitecturalAnalysisOrchestrator]
         try:
             self.orchestrator = ArchitecturalAnalysisOrchestrator(str(self.repo_path))
-        except:
+        except Exception as e:
             self.orchestrator = None
-            self.logger.warning("Multi-agent orchestrator not available")
+            self.logger.warning(f"Multi-agent orchestrator not available: {e}")
 
     async def analyze_changes(
-        self, base_ref: str = "HEAD~1", use_claude: bool = True, force_reanalysis: bool = False
+        self,
+        base_ref: str = "HEAD~1",
+        use_claude: bool = True,
+        force_reanalysis: bool = False,
     ) -> Dict[str, Any]:
         """Analyze only changed files incrementally"""
         start_time = datetime.now()
@@ -350,7 +353,12 @@ class IncrementalAnalyzer:
         # Generate summary
         execution_time = (datetime.now() - start_time).total_seconds()
         summary = self._generate_summary(
-            all_results, changes, len(cached_results), len(files_to_analyze), execution_time, base_ref
+            all_results,
+            changes,
+            len(cached_results),
+            len(files_to_analyze),
+            execution_time,
+            base_ref,
         )
 
         return summary
@@ -512,7 +520,10 @@ async def main() -> None:
     args = parser.parse_args()
 
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     # Initialize analyzer
     analyzer = IncrementalAnalyzer()

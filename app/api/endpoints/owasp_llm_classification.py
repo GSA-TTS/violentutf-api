@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 from app.core.enums import OWASPLLMCategory
 from app.schemas.base import BaseResponse
-from app.services.owasp_llm_classifier import ClassificationConfidence, OWASPLLMClassifier
+from app.services.owasp_llm_classifier import (
+    ClassificationConfidence,
+    OWASPLLMClassifier,
+)
 
 router = APIRouter(prefix="/owasp-llm", tags=["OWASP LLM Classification"])
 
@@ -212,7 +215,8 @@ async def suggest_taxonomy_mapping(
     )
 
     response_data = TaxonomySuggestionResponse(
-        suggested_mapping=suggested_mapping, classification_details=classification_details
+        suggested_mapping=suggested_mapping,
+        classification_details=classification_details,
     )
 
     message = "Taxonomy mapping suggestion generated"

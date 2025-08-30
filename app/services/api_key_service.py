@@ -2,13 +2,18 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from passlib.hash import argon2
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.secrets_manager import create_secrets_manager
 from app.models.api_key import APIKey
 from app.repositories.api_key import APIKeyRepository
@@ -20,10 +25,18 @@ logger = get_logger(__name__)
 class APIKeyService:
     """Enhanced API key service with security features and business logic."""
 
-    def __init__(self, session: AsyncSession, secrets_manager=None) -> None:
+    def __init__(
+        self,
+        repository_or_session: Union[APIKeyRepository, AsyncSession],
+        secrets_manager=None,
+    ) -> None:
         """Initialize API key service."""
-        self.session = session
-        self.repository = APIKeyRepository(session)
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = APIKeyRepository(repository_or_session)
+            self.session = repository_or_session
+        else:
+            self.repository = repository_or_session
+            self.session = None
         self.secrets_manager = secrets_manager
 
     async def create_api_key(
@@ -95,14 +108,17 @@ class APIKeyService:
                 "name": key_data.name,
                 "permissions": key_data.permissions,
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "expires_at": key_data.expires_at.isoformat() if key_data.expires_at else None,
+                "expires_at": (key_data.expires_at.isoformat() if key_data.expires_at else None),
             }
             await self.secrets_manager.store_api_key_metadata(str(api_key.id), metadata)
 
             logger.info("API key hash stored in secrets manager", api_key_id=str(api_key.id))
         else:
             # Hash is already stored in database during creation
-            logger.warning("No secrets manager configured - storing hash in database", api_key_id=str(api_key.id))
+            logger.warning(
+                "No secrets manager configured - storing hash in database",
+                api_key_id=str(api_key.id),
+            )
 
         logger.info(
             "api_key_created",
@@ -206,7 +222,8 @@ class APIKeyService:
                 }
             else:
                 logger.warning(
-                    "Failed to store rotated hash in secrets manager, using database fallback", key_id=key_id
+                    "Failed to store rotated hash in secrets manager, using database fallback",
+                    key_id=key_id,
                 )
                 # Fallback to database storage
                 update_data = {
@@ -230,9 +247,9 @@ class APIKeyService:
                 "key_id": key_id,
                 "user_id": user_id,
                 "rotated_at": datetime.now(timezone.utc).isoformat(),
-                "previous_hash_preview": old_key_hash[:16] + "..." if old_key_hash else None,
+                "previous_hash_preview": (old_key_hash[:16] + "..." if old_key_hash else None),
                 "permissions": updated_key.permissions,
-                "expires_at": updated_key.expires_at.isoformat() if updated_key.expires_at else None,
+                "expires_at": (updated_key.expires_at.isoformat() if updated_key.expires_at else None),
             }
             await self.secrets_manager.store_api_key_metadata(key_id, metadata)
 
@@ -248,7 +265,7 @@ class APIKeyService:
 
     async def validate_api_key(self, key_value: str) -> Optional[APIKey]:
         """
-        Validate an API key using secure Argon2 verification with SHA256 fallback.
+        Validate an API key using secure Argon2 verification.
 
         Args:
             key_value: Full API key string to validate
@@ -257,7 +274,10 @@ class APIKeyService:
             APIKey model if valid, None if invalid
         """
         if not key_value or not key_value.startswith("vutf_"):
-            logger.debug("Invalid API key format", key_format=key_value[:10] if key_value else None)
+            logger.debug(
+                "Invalid API key format",
+                key_format=key_value[:10] if key_value else None,
+            )
             return None
 
         key_prefix = key_value[:10]
@@ -280,9 +300,16 @@ class APIKeyService:
                     stored_hash = await self.secrets_manager.get_api_key_hash(str(api_key.id))
                     if stored_hash:
                         hash_source = "secrets_manager"
-                        logger.debug("Retrieved hash from secrets manager", key_id=str(api_key.id))
+                        logger.debug(
+                            "Retrieved hash from secrets manager",
+                            key_id=str(api_key.id),
+                        )
                 except Exception as e:
-                    logger.warning("Failed to retrieve hash from secrets manager", key_id=str(api_key.id), error=str(e))
+                    logger.warning(
+                        "Failed to retrieve hash from secrets manager",
+                        key_id=str(api_key.id),
+                        error=str(e),
+                    )
 
             # Priority 2: Fallback to database hash (for backward compatibility)
             if not stored_hash and api_key.key_hash:
@@ -308,7 +335,7 @@ class APIKeyService:
 
                     asyncio.create_task(self._migrate_hash_to_secrets_manager(api_key, stored_hash))
 
-                # Legacy SHA256 migration (if still needed)
+                # Legacy weak hash migration (if still needed)
                 if len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
                     # Schedule Argon2 migration (don't wait for completion)
                     import asyncio
@@ -325,7 +352,9 @@ class APIKeyService:
                 return api_key
 
         logger.debug(
-            "API key validation failed - no matching hash", key_prefix=key_prefix, candidates=len(potential_keys)
+            "API key validation failed - no matching hash",
+            key_prefix=key_prefix,
+            candidates=len(potential_keys),
         )
         return None
 
@@ -338,7 +367,7 @@ class APIKeyService:
             ip_address: Optional IP address of the request
         """
         api_key.record_usage(ip_address)
-        await self.session.commit()
+        # Repository handles persistence automatically
 
         logger.debug(
             "api_key_usage_recorded",
@@ -346,6 +375,21 @@ class APIKeyService:
             usage_count=api_key.usage_count,
             ip_address=ip_address,
         )
+
+    async def get_api_key(self, key_id: str) -> Optional[APIKey]:
+        """Get an API key by ID.
+
+        Args:
+            key_id: API key ID
+
+        Returns:
+            APIKey instance if found, None otherwise
+        """
+        try:
+            return await self.repository.get(key_id)
+        except Exception as e:
+            logger.error("Failed to get API key", key_id=key_id, error=str(e))
+            return None
 
     async def get_user_keys(
         self,
@@ -464,14 +508,14 @@ class APIKeyService:
         key_prefix = full_key[:10]
 
         # Create Argon2 hash (secure against rainbow table attacks)
-        # NOTE: New API keys use Argon2, existing keys still use SHA256 for compatibility
+        # NOTE: All API keys now use secure Argon2 hashing for security compliance
         key_hash = argon2.hash(full_key)
 
         return full_key, key_prefix, key_hash
 
     async def _verify_key_hash(self, key_value: str, stored_hash: str) -> bool:
         """
-        Verify API key against stored hash supporting both Argon2 and SHA256.
+        Verify API key against stored hash using secure Argon2 only.
 
         Args:
             key_value: Plain API key value
@@ -481,16 +525,18 @@ class APIKeyService:
             True if key matches hash, False otherwise
         """
         try:
-            # Detect hash type based on format
+            # Only accept Argon2 hashes for security compliance
             if stored_hash.startswith("$argon2"):
-                # Argon2 hash verification
+                # Argon2 hash verification (secure)
                 return argon2.verify(key_value, stored_hash)
             elif len(stored_hash) == 64 and all(c in "0123456789abcdef" for c in stored_hash.lower()):
-                # SHA256 hash verification (legacy support)
-                import hashlib
-
-                computed_hash = hashlib.sha256(key_value.encode()).hexdigest()
-                return computed_hash == stored_hash
+                # Legacy weak hash detected - reject and log for migration
+                logger.warning(
+                    "Legacy weak API key hash detected - key must be regenerated",
+                    key_id=getattr(self, "_current_key_id", "unknown"),
+                    migration_required=True,
+                )
+                return False
             else:
                 # Unknown hash format
                 logger.warning("Unknown API key hash format", hash_prefix=stored_hash[:20])
@@ -501,7 +547,7 @@ class APIKeyService:
             logger.error(
                 "API key verification error",
                 error=str(e),
-                hash_type="argon2" if stored_hash.startswith("$argon2") else "sha256",
+                hash_type="argon2" if stored_hash.startswith("$argon2") else "unknown",
             )
             return False
 
@@ -529,20 +575,27 @@ class APIKeyService:
                 logger.info(
                     "Successfully migrated API key hash to secrets manager",
                     key_id=str(api_key.id),
-                    algorithm="argon2" if hash_value.startswith("$argon2") else "sha256",
+                    algorithm=("argon2" if hash_value.startswith("$argon2") else "legacy"),
                 )
                 return True
             else:
-                logger.error("Failed to migrate API key hash to secrets manager", key_id=str(api_key.id))
+                logger.error(
+                    "Failed to migrate API key hash to secrets manager",
+                    key_id=str(api_key.id),
+                )
                 return False
 
         except Exception as e:
-            logger.error("Exception during hash migration to secrets manager", key_id=str(api_key.id), error=str(e))
+            logger.error(
+                "Exception during hash migration to secrets manager",
+                key_id=str(api_key.id),
+                error=str(e),
+            )
             return False
 
     async def _migrate_legacy_key(self, api_key: APIKey, key_value: str) -> bool:
         """
-        Migrate legacy SHA256 key to Argon2 on successful verification.
+        Migrate legacy weak hash key to Argon2 on successful verification.
 
         Args:
             api_key: API key model to migrate
@@ -552,7 +605,7 @@ class APIKeyService:
             True if migration successful, False otherwise
         """
         try:
-            # Only migrate SHA256 keys
+            # Only migrate legacy weak hash keys
             if not (len(api_key.key_hash) == 64 and all(c in "0123456789abcdef" for c in api_key.key_hash.lower())):
                 return False
 
@@ -565,17 +618,26 @@ class APIKeyService:
                 if success:
                     # Clear hash from database after successful secrets manager storage
                     await self.repository.update(str(api_key.id), key_hash="")
-                    logger.info("API key migrated to Argon2 in secrets manager", key_id=str(api_key.id))
+                    logger.info(
+                        "API key migrated to Argon2 in secrets manager",
+                        key_id=str(api_key.id),
+                    )
                     return True
                 else:
-                    logger.error("Failed to store migrated Argon2 hash in secrets manager", key_id=str(api_key.id))
+                    logger.error(
+                        "Failed to store migrated Argon2 hash in secrets manager",
+                        key_id=str(api_key.id),
+                    )
                     # Fall through to database storage
 
             # Fallback: Update the key hash in database
             success = await self.repository.update(str(api_key.id), key_hash=new_hash)
 
             if success:
-                logger.info("API key migrated to Argon2 in database (fallback)", key_id=str(api_key.id))
+                logger.info(
+                    "API key migrated to Argon2 in database (fallback)",
+                    key_id=str(api_key.id),
+                )
                 return True
             else:
                 logger.error("Failed to migrate API key to Argon2", key_id=str(api_key.id))
@@ -671,7 +733,7 @@ class APIKeyService:
             recent_usage["most_active_key"] = {
                 "name": most_active.name,
                 "usage_count": most_active.usage_count,
-                "last_used": most_active.last_used_at.isoformat() if most_active.last_used_at else None,
+                "last_used": (most_active.last_used_at.isoformat() if most_active.last_used_at else None),
             }
 
         return recent_usage

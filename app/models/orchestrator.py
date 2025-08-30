@@ -63,7 +63,10 @@ class OrchestratorConfiguration(BaseModelMixin, Base):
 
     # Status tracking
     status: Mapped[OrchestratorStatus] = mapped_column(
-        SQLEnum(OrchestratorStatus), nullable=False, default=OrchestratorStatus.CONFIGURED, index=True
+        SQLEnum(OrchestratorStatus),
+        nullable=False,
+        default=OrchestratorStatus.CONFIGURED,
+        index=True,
     )
 
     # PyRIT-specific fields
@@ -72,7 +75,9 @@ class OrchestratorConfiguration(BaseModelMixin, Base):
 
     # Relationships
     executions: Mapped[list["OrchestratorExecution"]] = relationship(
-        "OrchestratorExecution", back_populates="orchestrator", cascade="all, delete-orphan"
+        "OrchestratorExecution",
+        back_populates="orchestrator",
+        cascade="all, delete-orphan",
     )
 
     # Model-specific constraints
@@ -91,7 +96,10 @@ class OrchestratorExecution(BaseModelMixin, Base):
 
     # Relationship to orchestrator
     orchestrator_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("orchestrator_configuration.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("orchestrator_configuration.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     orchestrator: Mapped[OrchestratorConfiguration] = relationship(
         "OrchestratorConfiguration", back_populates="executions"
@@ -101,7 +109,10 @@ class OrchestratorExecution(BaseModelMixin, Base):
     execution_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     execution_type: Mapped[ExecutionType] = mapped_column(SQLEnum(ExecutionType), nullable=False, index=True)
     status: Mapped[ExecutionStatus] = mapped_column(
-        SQLEnum(ExecutionStatus), nullable=False, default=ExecutionStatus.PENDING, index=True
+        SQLEnum(ExecutionStatus),
+        nullable=False,
+        default=ExecutionStatus.PENDING,
+        index=True,
     )
 
     # Input and configuration
@@ -133,7 +144,10 @@ class OrchestratorExecution(BaseModelMixin, Base):
 
     # Task integration
     task_id: Mapped[Optional[str]] = mapped_column(
-        String(255), ForeignKey("task.id", ondelete="SET NULL"), nullable=True, index=True
+        String(255),
+        ForeignKey("task.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     task: Mapped[Optional[Task]] = relationship("Task", foreign_keys=[task_id])
 
@@ -199,7 +213,10 @@ class OrchestratorScore(BaseModelMixin, Base):
 
     # Relationship to execution
     execution_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("orchestrator_execution.id", ondelete="CASCADE"), nullable=False, index=True
+        String(255),
+        ForeignKey("orchestrator_execution.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     execution: Mapped[OrchestratorExecution] = relationship("OrchestratorExecution")
 

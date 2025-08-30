@@ -33,29 +33,26 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.enabled = enabled if enabled is not None else settings.RATE_LIMIT_ENABLED
 
         # Define endpoint patterns and their rate limit types
-        self.endpoint_patterns = {
+        # Using list of tuples to handle duplicate patterns with different methods
+        self.endpoint_patterns = [
             # Authentication endpoints
-            r"/api/v1/auth/login$": "auth_login",
-            r"/api/v1/auth/register$": "auth_register",
-            r"/api/v1/auth/refresh$": "auth_refresh",
-            r"/api/v1/auth/logout$": "auth_logout",
-            r"/api/v1/auth/password-reset$": "auth_password_reset",
-            # User management endpoints
-            r"/api/v1/users/?$": "user_create",  # POST
-            r"/api/v1/users/[^/]+/?$": "user_read",  # GET
-            r"/api/v1/users/[^/]+/?$": "user_update",  # PUT/PATCH
-            r"/api/v1/users/[^/]+/?$": "user_delete",  # DELETE
-            r"/api/v1/users/?$": "user_list",  # GET
-            # API key management endpoints
-            r"/api/v1/api-keys/?$": "api_key_create",  # POST
-            r"/api/v1/api-keys/?$": "api_key_list",  # GET
-            r"/api/v1/api-keys/[^/]+/?$": "api_key_delete",  # DELETE
+            (r"/api/v1/auth/login$", "auth_login"),
+            (r"/api/v1/auth/register$", "auth_register"),
+            (r"/api/v1/auth/refresh$", "auth_refresh"),
+            (r"/api/v1/auth/logout$", "auth_logout"),
+            (r"/api/v1/auth/password-reset$", "auth_password_reset"),
+            # User management endpoints (method-specific handling in get_endpoint_type)
+            (r"/api/v1/users/?$", "user_crud"),  # POST/GET
+            (r"/api/v1/users/[^/]+/?$", "user_crud"),  # GET/PUT/PATCH/DELETE
+            # API key management endpoints (method-specific handling in get_endpoint_type)
+            (r"/api/v1/api-keys/?$", "api_key_crud"),  # POST/GET
+            (r"/api/v1/api-keys/[^/]+/?$", "api_key_crud"),  # DELETE
             # Health endpoints
-            r"/api/v1/health/?$": "health_check",
-            r"/api/v1/ready/?$": "readiness",
+            (r"/api/v1/health/?$", "health_check"),
+            (r"/api/v1/ready/?$", "readiness"),
             # Admin endpoints
-            r"/api/v1/admin/.*": "admin_operation",
-        }
+            (r"/api/v1/admin/.*", "admin_operation"),
+        ]
 
     async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Any:
         """Process request with rate limiting."""
@@ -90,7 +87,12 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
             return response
 
         except Exception as e:
-            logger.error("rate_limiting_middleware_error", error=str(e), path=request.url.path, method=request.method)
+            logger.error(
+                "rate_limiting_middleware_error",
+                error=str(e),
+                path=request.url.path,
+                method=request.method,
+            )
             # Continue processing on middleware errors
             return await call_next(request)
 
@@ -104,11 +106,11 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         Returns:
             Endpoint type string or empty string if not matched
         """
-        for pattern, endpoint_type in self.endpoint_patterns.items():
+        for pattern, endpoint_type in self.endpoint_patterns:
             if re.match(pattern, path):
                 # For CRUD endpoints, adjust based on HTTP method
-                if endpoint_type.startswith("user_") and "/users/" in path:
-                    if method == "POST":
+                if endpoint_type == "user_crud":
+                    if method == "POST" and path.endswith("/users/"):
                         return "user_create"
                     elif method == "GET" and path.endswith("/users/"):
                         return "user_list"
@@ -118,7 +120,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                         return "user_update"
                     elif method == "DELETE":
                         return "user_delete"
-                elif endpoint_type.startswith("api_key_"):
+                elif endpoint_type == "api_key_crud":
                     if method == "POST":
                         return "api_key_create"
                     elif method == "GET":
@@ -148,7 +150,10 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         # For now, since we're in test environment with RATE_LIMIT_ENABLED=False,
         # we'll just log the rate limiting attempt and not actually enforce limits
         logger.debug(
-            "rate_limit_check", rate_limit_str=rate_limit_str, rate_limit_key=rate_limit_key, path=request.url.path
+            "rate_limit_check",
+            rate_limit_str=rate_limit_str,
+            rate_limit_key=rate_limit_key,
+            path=request.url.path,
         )
 
         # Skip actual rate limiting in test/development mode
@@ -194,7 +199,11 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         Returns:
             JSON response with rate limit exceeded message
         """
-        logger.warning("rate_limit_exceeded_middleware", endpoint_type=endpoint_type, detail=str(exc))
+        logger.warning(
+            "rate_limit_exceeded_middleware",
+            endpoint_type=endpoint_type,
+            detail=str(exc),
+        )
 
         return JSONResponse(
             status_code=429,
@@ -203,7 +212,11 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 "type": "rate_limit_exceeded",
                 "endpoint_type": endpoint_type,
             },
-            headers={"Retry-After": "60", "X-RateLimit-Limit": "varies", "X-RateLimit-Remaining": "0"},
+            headers={
+                "Retry-After": "60",
+                "X-RateLimit-Limit": "varies",
+                "X-RateLimit-Remaining": "0",
+            },
         )
 
     def _add_rate_limit_headers(self, response: Response, request: Request, endpoint_type: str) -> None:

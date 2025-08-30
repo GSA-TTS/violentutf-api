@@ -226,7 +226,12 @@ class SecurityScanFilter(BaseModel):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"scan_type": "pyrit", "status": "completed", "initiated_by": "security_team", "search": "api"}
+            "example": {
+                "scan_type": "pyrit",
+                "status": "completed",
+                "initiated_by": "security_team",
+                "search": "api",
+            }
         }
     )
 
@@ -259,7 +264,12 @@ class ScanComparisonRequest(BaseModel):
     organization_id: Optional[str] = Field(None, description="Organization ID")
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"baseline_scan_id": "baseline-scan-123", "organization_id": "org-123"}}
+        json_schema_extra={
+            "example": {
+                "baseline_scan_id": "baseline-scan-123",
+                "organization_id": "org-123",
+            }
+        }
     )
 
 
@@ -283,7 +293,11 @@ class ScanComparisonResponse(BaseModel):
                     "total_findings": 15,
                     "findings_by_severity": {"critical": 1, "high": 5},
                 },
-                "differences": {"total_change": 5, "trend": "worsened", "by_severity": {"critical": 2, "high": 2}},
+                "differences": {
+                    "total_change": 5,
+                    "trend": "worsened",
+                    "by_severity": {"critical": 2, "high": 2},
+                },
             }
         }
     )

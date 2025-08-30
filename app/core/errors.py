@@ -213,7 +213,10 @@ class ValidationError(APIError):
     """422 Validation Error using error dictionary."""
 
     def __init__(
-        self: "ValidationError", detail: Optional[str] = None, errors: Optional[list] = None, **kwargs: Any
+        self: "ValidationError",
+        detail: Optional[str] = None,
+        errors: Optional[list] = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize validation error."""
         from .error_dictionary import ErrorDictionary

@@ -116,7 +116,10 @@ class TestInputSanitizationMiddleware:
 
     def test_malicious_json_body(self, client):
         """Test sanitization of malicious JSON body."""
-        malicious_data = {"name": "<script>alert('xss')</script>", "message": "SELECT * FROM users WHERE id = 1"}
+        malicious_data = {
+            "name": "<script>alert('xss')</script>",
+            "message": "SELECT * FROM users WHERE id = 1",
+        }
 
         response = client.post("/test", json=malicious_data)
 
@@ -156,7 +159,9 @@ class TestInputSanitizationMiddleware:
         clean_form_data = {"name": "john", "message": "hello"}
 
         response = client.post(
-            "/form", data=clean_form_data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+            "/form",
+            data=clean_form_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -165,10 +170,15 @@ class TestInputSanitizationMiddleware:
 
     def test_malicious_form_data(self, client):
         """Test rejection of malicious form data."""
-        malicious_form_data = {"name": "<script>alert('xss')</script>", "comment": "'; DROP TABLE users; --"}
+        malicious_form_data = {
+            "name": "<script>alert('xss')</script>",
+            "comment": "'; DROP TABLE users; --",
+        }
 
         response = client.post(
-            "/form", data=malicious_form_data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+            "/form",
+            data=malicious_form_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Should sanitize rather than reject
@@ -234,7 +244,10 @@ class TestInputSanitizationMiddleware:
     def test_sanitization_error_handling(self, client):
         """Test error handling in sanitization process."""
         # Mock sanitization function to raise exception
-        with patch("app.middleware.input_sanitization.sanitize_string", side_effect=Exception("Test error")):
+        with patch(
+            "app.middleware.input_sanitization.sanitize_string",
+            side_effect=Exception("Test error"),
+        ):
             response = client.get("/test?param=value")
 
             # When sanitization fails, middleware logs error but continues processing
@@ -247,14 +260,26 @@ class TestInputSanitizationMiddleware:
     @pytest.mark.parametrize(
         "malicious_input,expected_check",
         [
-            ("<script>alert('xss')</script>", lambda x: "[FILTERED]" in x),  # Aggressive filtering
-            ("javascript:alert('xss')", lambda x: "[FILTERED]" in x),  # JavaScript protocol filtered
+            (
+                "<script>alert('xss')</script>",
+                lambda x: "[FILTERED]" in x,
+            ),  # Aggressive filtering
+            (
+                "javascript:alert('xss')",
+                lambda x: "[FILTERED]" in x,
+            ),  # JavaScript protocol filtered
             (
                 "<iframe src='evil.com'></iframe>",
                 lambda x: "[FILTERED]" in x or "iframe" not in x.lower(),
             ),  # HTML filtered
-            ("'; DROP TABLE users; --", lambda x: "users;" in x or "[FILTERED]" in x),  # SQL pattern removed
-            ("1' OR '1'='1", lambda x: "OR" not in x or "[FILTERED]" in x),  # SQL pattern filtered
+            (
+                "'; DROP TABLE users; --",
+                lambda x: "users;" in x or "[FILTERED]" in x,
+            ),  # SQL pattern removed
+            (
+                "1' OR '1'='1",
+                lambda x: "OR" not in x or "[FILTERED]" in x,
+            ),  # SQL pattern filtered
             (
                 "<img onerror='alert(1)' src='x'>",
                 lambda x: "[FILTERED]" in x or "onerror" not in x.lower(),

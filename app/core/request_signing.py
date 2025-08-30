@@ -82,6 +82,7 @@ def get_hash_function(algorithm: SignatureAlgorithm) -> Any:
         ValueError: If algorithm not supported
     """
     if algorithm == SignatureAlgorithm.HMAC_SHA256:
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for HMAC signature algorithms, not sensitive data storage
         return hashlib.sha256
     elif algorithm == SignatureAlgorithm.HMAC_SHA512:
         return hashlib.sha512
@@ -100,6 +101,7 @@ def compute_body_hash(body: bytes, algorithm: str = "sha256") -> str:
         Hex-encoded hash
     """
     if algorithm == "sha256":
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for request body integrity, not sensitive data storage
         return hashlib.sha256(body).hexdigest()
     elif algorithm == "sha512":
         return hashlib.sha512(body).hexdigest()
@@ -200,6 +202,7 @@ def sign_request(
 
     # Generate timestamp and nonce
     timestamp = int(time.time())
+    # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for nonce generation, not sensitive data storage
     nonce = hashlib.sha256(f"{timestamp}{path}".encode()).hexdigest()[:16]
 
     # Compute body hash if needed
@@ -381,7 +384,7 @@ def parse_authorization_header(auth_header: str) -> Optional[RequestSignature]:
             key_id=params.get("keyId"),
             algorithm=SignatureAlgorithm(params.get("algorithm", "HMAC-SHA256")),
             headers=params.get("headers", "").split() if params.get("headers") else [],
-            timestamp=int(params.get("timestamp", 0)) if params.get("timestamp") else int(time.time()),
+            timestamp=(int(params.get("timestamp", 0)) if params.get("timestamp") else int(time.time())),
             nonce=params.get("nonce"),
         )
 

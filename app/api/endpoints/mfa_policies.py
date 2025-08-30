@@ -1,11 +1,12 @@
 """MFA Policy management endpoints."""
 
+import uuid
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
+from app.api.deps import get_mfa_policy_service, get_user_service
 from app.core.auth import get_current_user
 from app.core.errors import NotFoundError, ValidationError
 from app.core.permissions import require_permission
@@ -19,8 +20,7 @@ from app.schemas.mfa_policy import (
     UserMFARequirement,
 )
 from app.services.mfa_policy_service import MFAPolicyService
-
-from ...db.session import get_db_dependency
+from app.services.user_service_impl import UserServiceImpl
 
 logger = get_logger(__name__)
 
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/mfa/policies", tags=["mfa-policies"])
 async def create_mfa_policy(
     policy_data: MFAPolicyCreate,
     current_user: User = Depends(require_permission("mfa.policy.create")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Create a new MFA policy.
@@ -39,8 +39,7 @@ async def create_mfa_policy(
     Requires permission: mfa.policy.create
     """
     try:
-        policy_service = MFAPolicyService(session)
-        policy = await policy_service.create_policy(
+        policy = await mfa_policy_service.create_policy(
             name=policy_data.name,
             description=policy_data.description,
             conditions=policy_data.conditions.dict(),
@@ -52,8 +51,6 @@ async def create_mfa_policy(
             priority=policy_data.priority,
             created_by=current_user.username,
         )
-
-        await session.commit()
 
         return BaseResponse(
             status="success",
@@ -75,10 +72,17 @@ async def create_mfa_policy(
             ),
         )
     except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA policy validation failed", error_type=type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid MFA policy parameters",
+        )
     except Exception as e:
         logger.error("Failed to create MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create MFA policy",
+        )
 
 
 @router.get("/", response_model=BaseResponse[MFAPolicyList])
@@ -87,7 +91,7 @@ async def list_mfa_policies(
     limit: int = 100,
     offset: int = 0,
     current_user: User = Depends(require_permission("mfa.policy.read")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
 ) -> BaseResponse[MFAPolicyList]:
     """
     List MFA policies.
@@ -95,8 +99,7 @@ async def list_mfa_policies(
     Requires permission: mfa.policy.read
     """
     try:
-        policy_service = MFAPolicyService(session)
-        policies = await policy_service.list_policies(active_only=active_only, limit=limit, offset=offset)
+        policies = await mfa_policy_service.list_policies(active_only=active_only, limit=limit, offset=offset)
 
         return BaseResponse(
             status="success",
@@ -105,14 +108,17 @@ async def list_mfa_policies(
         )
     except Exception as e:
         logger.error("Failed to list MFA policies", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list MFA policies")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list MFA policies",
+        )
 
 
 @router.get("/{policy_id}", response_model=BaseResponse[MFAPolicyResponse])
 async def get_mfa_policy(
     policy_id: str,
     current_user: User = Depends(require_permission("mfa.policy.read")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Get a specific MFA policy.
@@ -120,19 +126,26 @@ async def get_mfa_policy(
     Requires permission: mfa.policy.read
     """
     try:
-        policy_service = MFAPolicyService(session)
-        policies = await policy_service.list_policies(active_only=False)
+        policies = await mfa_policy_service.list_policies(active_only=False)
 
         policy = next((p for p in policies if p["id"] == policy_id), None)
         if not policy:
             raise NotFoundError("MFA policy not found")
 
-        return BaseResponse(status="success", message="MFA policy retrieved", data=MFAPolicyResponse(**policy))
+        return BaseResponse(
+            status="success",
+            message="MFA policy retrieved",
+            data=MFAPolicyResponse(**policy),
+        )
     except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.warning("MFA policy not found", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to get MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to get MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get MFA policy",
+        )
 
 
 @router.put("/{policy_id}", response_model=BaseResponse[MFAPolicyResponse])
@@ -140,7 +153,7 @@ async def update_mfa_policy(
     policy_id: str,
     policy_data: MFAPolicyUpdate,
     current_user: User = Depends(require_permission("mfa.policy.update")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
 ) -> BaseResponse[MFAPolicyResponse]:
     """
     Update an MFA policy.
@@ -148,8 +161,6 @@ async def update_mfa_policy(
     Requires permission: mfa.policy.update
     """
     try:
-        policy_service = MFAPolicyService(session)
-
         # Build update dict from provided fields
         update_data = {"updated_by": current_user.username}
 
@@ -174,29 +185,36 @@ async def update_mfa_policy(
         if policy_data.bypass_permissions is not None:
             update_data["bypass_permissions"] = policy_data.bypass_permissions
 
-        await policy_service.update_policy(policy_id, **update_data)
-
-        await session.commit()
+        await mfa_policy_service.update_policy(policy_id, **update_data)
 
         # Get updated policy details
-        policies = await policy_service.list_policies(active_only=False)
+        policies = await mfa_policy_service.list_policies(active_only=False)
         policy_dict = next((p for p in policies if p["id"] == policy_id), None)
 
         return BaseResponse(
-            status="success", message="MFA policy updated successfully", data=MFAPolicyResponse(**policy_dict)
+            status="success",
+            message="MFA policy updated successfully",
+            data=MFAPolicyResponse(**policy_dict),
         )
     except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("MFA policy validation failed", error_type=type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid MFA policy parameters",
+        )
     except Exception as e:
         logger.error("Failed to update MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update MFA policy",
+        )
 
 
 @router.delete("/{policy_id}", response_model=BaseResponse[Dict[str, bool]])
 async def delete_mfa_policy(
     policy_id: str,
     current_user: User = Depends(require_permission("mfa.policy.delete")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
 ) -> BaseResponse[Dict[str, bool]]:
     """
     Delete an MFA policy.
@@ -204,10 +222,7 @@ async def delete_mfa_policy(
     Requires permission: mfa.policy.delete
     """
     try:
-        policy_service = MFAPolicyService(session)
-        success = await policy_service.delete_policy(policy_id=policy_id, deleted_by=current_user.username)
-
-        await session.commit()
+        success = await mfa_policy_service.delete_policy(policy_id=policy_id, deleted_by=current_user.username)
 
         return BaseResponse(
             status="success",
@@ -216,14 +231,18 @@ async def delete_mfa_policy(
         )
     except Exception as e:
         logger.error("Failed to delete MFA policy", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete MFA policy")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete MFA policy",
+        )
 
 
 @router.get("/check/{user_id}", response_model=BaseResponse[UserMFARequirement])
 async def check_user_mfa_requirement(
     user_id: str,
     current_user: User = Depends(require_permission("mfa.policy.check")),
-    session: AsyncSession = Depends(get_db_dependency),
+    mfa_policy_service: MFAPolicyService = Depends(get_mfa_policy_service),
+    user_service: UserServiceImpl = Depends(get_user_service),
 ) -> BaseResponse[UserMFARequirement]:
     """
     Check MFA requirements for a specific user.
@@ -231,20 +250,26 @@ async def check_user_mfa_requirement(
     Requires permission: mfa.policy.check
     """
     try:
-        # Get user
-        from sqlalchemy import select
+        # Get user through service layer
+        user_data = await user_service.get_user_by_id(user_id)
 
-        from app.models.user import User as UserModel
-
-        query = select(UserModel).where(UserModel.id == user_id)
-        result = await session.execute(query)
-        user = result.scalar_one_or_none()
-
-        if not user:
+        if not user_data:
             raise NotFoundError("User not found")
 
-        policy_service = MFAPolicyService(session)
-        is_required, policy, details = await policy_service.check_mfa_requirement(user)
+        # Convert UserData to User model for MFA check
+        from app.models.user import User as UserModel
+
+        user = UserModel(
+            id=(uuid.UUID(user_data.id) if isinstance(user_data.id, str) else user_data.id),
+            username=user_data.username,
+            email=user_data.email,
+            is_active=user_data.is_active,
+            is_superuser=user_data.is_superuser,
+            created_at=user_data.created_at,
+            updated_at=user_data.updated_at,
+        )
+
+        is_required, policy, details = await mfa_policy_service.check_mfa_requirement(user)
 
         return BaseResponse(
             status="success",
@@ -262,7 +287,11 @@ async def check_user_mfa_requirement(
             ),
         )
     except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.warning("MFA policy not found", error_type=type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MFA policy not found")
     except Exception as e:
         logger.error("Failed to check MFA requirement", error=str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to check MFA requirement")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check MFA requirement",
+        )

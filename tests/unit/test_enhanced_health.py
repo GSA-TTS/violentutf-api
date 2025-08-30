@@ -43,11 +43,17 @@ class TestEnhancedHealthEndpoints:
         assert "version" in data
         assert "environment" in data
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_repository_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_all_healthy(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check when all dependencies are healthy."""
         # Mock all checks to return healthy
@@ -59,6 +65,11 @@ class TestEnhancedHealthEndpoints:
             },
             "metrics": {"cpu_percent": 25.0},
             "check_duration_seconds": 0.123,
+        }
+        mock_repository.return_value = {
+            "overall_status": "healthy",
+            "healthy_count": 5,
+            "total_count": 5,
         }
         mock_disk.return_value = True
         mock_memory.return_value = True
@@ -77,11 +88,17 @@ class TestEnhancedHealthEndpoints:
         assert "metrics" in data["details"]
         assert "check_duration" in data["details"]
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_repository_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_database_unhealthy(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check when database is unhealthy."""
         # Mock database as unhealthy
@@ -93,6 +110,11 @@ class TestEnhancedHealthEndpoints:
             },
             "metrics": {"cpu_percent": 25.0},
             "check_duration_seconds": 0.123,
+        }
+        mock_repository.return_value = {
+            "overall_status": "healthy",
+            "healthy_count": 5,
+            "total_count": 5,
         }
         mock_disk.return_value = True
         mock_memory.return_value = True
@@ -107,11 +129,17 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["cache"] is True
         assert data["details"]["failed_checks"] == ["database"]
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_repository_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_multiple_failures(
-        self, mock_memory: Any, mock_disk: Any, mock_dependency: Any, client: TestClient
+        self,
+        mock_memory: Any,
+        mock_disk: Any,
+        mock_dependency: Any,
+        mock_repository: Any,
+        client: TestClient,
     ) -> None:
         """Test readiness check with multiple failed dependencies."""
         # Mock multiple failures
@@ -123,6 +151,11 @@ class TestEnhancedHealthEndpoints:
             },
             "metrics": {"cpu_percent": 25.0},
             "check_duration_seconds": 0.123,
+        }
+        mock_repository.return_value = {
+            "overall_status": "healthy",
+            "healthy_count": 5,
+            "total_count": 5,
         }
         mock_disk.return_value = False
         mock_memory.return_value = True
@@ -137,9 +170,13 @@ class TestEnhancedHealthEndpoints:
         assert data["checks"]["cache"] is False
         assert data["checks"]["disk_space"] is False
         assert data["checks"]["memory"] is True
-        assert set(data["details"]["failed_checks"]) == {"database", "cache", "disk_space"}
+        assert set(data["details"]["failed_checks"]) == {
+            "database",
+            "cache",
+            "disk_space",
+        }
 
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_with_exceptions(
@@ -343,7 +380,8 @@ class TestHealthCheckTracking:
 
     @patch("app.utils.monitoring.health_check_total")
     @patch("app.utils.monitoring.health_check_duration")
-    @patch("app.api.endpoints.health.check_dependency_health")
+    @patch("app.services.health_service.HealthService.check_repository_health")
+    @patch("app.services.health_service.HealthService.check_dependency_health")
     @patch("app.api.endpoints.health.check_disk_space")
     @patch("app.api.endpoints.health.check_memory")
     def test_readiness_check_metrics_tracked(
@@ -351,6 +389,7 @@ class TestHealthCheckTracking:
         mock_memory: Any,
         mock_disk: Any,
         mock_dependency: Any,
+        mock_repository: Any,
         mock_duration: Any,
         mock_total: Any,
         client: "TestClient",
@@ -362,6 +401,11 @@ class TestHealthCheckTracking:
             "checks": {"database": True, "cache": True},
             "metrics": {},
             "check_duration_seconds": 0.1,
+        }
+        mock_repository.return_value = {
+            "overall_status": "healthy",
+            "healthy_count": 5,
+            "total_count": 5,
         }
         mock_disk.return_value = True
         mock_memory.return_value = True
@@ -399,7 +443,10 @@ class TestHealthEndpointIntegration:
 
         # Test readiness (might fail due to no real database/cache, but should be structured)
         ready_response = client.get("/api/v1/ready")
-        assert ready_response.status_code in [200, 503]  # Either all good or some services down
+        assert ready_response.status_code in [
+            200,
+            503,
+        ]  # Either all good or some services down
         ready_data = ready_response.json()
         assert "status" in ready_data
         assert "checks" in ready_data

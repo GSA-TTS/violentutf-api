@@ -214,7 +214,8 @@ class TestFinalAuditLogRepositoryCoverage:
             result = await audit_repo.update(audit_log.id, action="modified")
             assert result is None
             mock_warning.assert_called_once_with(
-                "Audit logs are immutable and cannot be updated", audit_log_id=audit_log.id
+                "Audit logs are immutable and cannot be updated",
+                audit_log_id=audit_log.id,
             )
 
     @pytest.mark.asyncio

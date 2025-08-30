@@ -68,7 +68,15 @@ class TestRFC7807Compliance:
         serialized = problem.model_dump(exclude_none=True)
 
         # Check all expected fields are present
-        expected_fields = {"type", "title", "status", "detail", "instance", "correlation_id", "error_code"}
+        expected_fields = {
+            "type",
+            "title",
+            "status",
+            "detail",
+            "instance",
+            "correlation_id",
+            "error_code",
+        }
         assert set(serialized.keys()) >= expected_fields
 
         # Verify values
@@ -82,7 +90,10 @@ class TestRFC7807Compliance:
             type="/errors/validation-error",
             title="Validation Error",
             status=422,
-            invalid_params=[{"field": "email", "reason": "invalid format"}, {"field": "name", "reason": "required"}],
+            invalid_params=[
+                {"field": "email", "reason": "invalid format"},
+                {"field": "name", "reason": "required"},
+            ],
         )
 
         serialized = problem.model_dump()
@@ -96,7 +107,12 @@ class TestAPIErrorExceptions:
 
     def test_api_error_basic_structure(self):
         """Test basic APIError structure."""
-        error = APIError(status_code=400, error_code="VUTF_400_TEST", title="Test Error", detail="This is a test error")
+        error = APIError(
+            status_code=400,
+            error_code="VUTF_400_TEST",
+            title="Test Error",
+            detail="This is a test error",
+        )
 
         assert error.status_code == 400
         assert error.error_code == "VUTF_400_TEST"
@@ -340,7 +356,11 @@ class TestErrorHandlers:
         # Create a mock RequestValidationError
         validation_error = RequestValidationError(
             [
-                {"loc": ("body", "email"), "msg": "field required", "type": "value_error.missing"},
+                {
+                    "loc": ("body", "email"),
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
                 {
                     "loc": ("body", "age"),
                     "msg": "ensure this value is greater than 0",

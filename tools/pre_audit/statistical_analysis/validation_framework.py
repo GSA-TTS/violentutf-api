@@ -72,7 +72,10 @@ class SyntheticDataGenerator:
         self.rng = np.random.RandomState(random_seed)
 
     def generate_file_metrics(
-        self, n_files: int = 100, with_violations: bool = True, violation_rate: float = 0.3
+        self,
+        n_files: int = 100,
+        with_violations: bool = True,
+        violation_rate: float = 0.3,
     ) -> pd.DataFrame:
         """Generate synthetic file metrics with known patterns."""
 
@@ -99,7 +102,10 @@ class SyntheticDataGenerator:
         return df
 
     def generate_temporal_violations(
-        self, n_violations: int = 50, time_span_days: int = 180, with_trends: bool = True
+        self,
+        n_violations: int = 50,
+        time_span_days: int = 180,
+        with_trends: bool = True,
     ) -> List[TemporalViolation]:
         """Generate synthetic temporal violations with configurable patterns."""
 

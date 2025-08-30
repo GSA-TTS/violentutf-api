@@ -54,7 +54,9 @@ class FieldFilter(BaseModel):
     @field_validator("value")
     @classmethod
     def validate_value(
-        cls: type["FieldFilter"], v: Union[str, int, float, bool, List[Union[str, int, float]], None], info: object
+        cls: type["FieldFilter"],
+        v: Union[str, int, float, bool, List[Union[str, int, float]], None],
+        info: object,
     ) -> Union[str, int, float, bool, List[Union[str, int, float]], None]:
         """Validate filter value based on operator."""
         if not hasattr(info, "data") or "operator" not in info.data:
@@ -130,7 +132,11 @@ class SortField(BaseModel):
 
     field: str = Field(..., description="Field name to sort by")
     direction: str = Field(default="asc", pattern="^(asc|desc)$", description="Sort direction")
-    nulls: str = Field(default="last", pattern="^(first|last)$", description="Where to place null values")
+    nulls: str = Field(
+        default="last",
+        pattern="^(first|last)$",
+        description="Where to place null values",
+    )
 
 
 class EnhancedFilter(BaseModel):
@@ -143,7 +149,9 @@ class EnhancedFilter(BaseModel):
     # Cursor-based pagination
     cursor: Optional[str] = Field(None, description="Cursor for pagination")
     cursor_direction: str = Field(
-        default="next", pattern="^(next|prev)$", description="Cursor direction for pagination"
+        default="next",
+        pattern="^(next|prev)$",
+        description="Cursor direction for pagination",
     )
 
     # Advanced filtering
@@ -159,7 +167,8 @@ class EnhancedFilter(BaseModel):
     # Full-text search
     search: Optional[str] = Field(None, min_length=1, max_length=255, description="Full-text search query")
     search_fields: List[str] = Field(
-        default_factory=list, description="Fields to search in (empty = search all searchable fields)"
+        default_factory=list,
+        description="Fields to search in (empty = search all searchable fields)",
     )
 
     # Date range filtering
@@ -248,12 +257,12 @@ class EnhancedFilter(BaseModel):
             "search": self.search,
             "search_fields": sorted(self.search_fields) if self.search_fields else [],
             "date_filters": {
-                "created_after": self.created_after.isoformat() if self.created_after else None,
-                "created_before": self.created_before.isoformat() if self.created_before else None,
-                "updated_after": self.updated_after.isoformat() if self.updated_after else None,
-                "updated_before": self.updated_before.isoformat() if self.updated_before else None,
+                "created_after": (self.created_after.isoformat() if self.created_after else None),
+                "created_before": (self.created_before.isoformat() if self.created_before else None),
+                "updated_after": (self.updated_after.isoformat() if self.updated_after else None),
+                "updated_before": (self.updated_before.isoformat() if self.updated_before else None),
             },
             "include_deleted": self.include_deleted,
             "fields": sorted(self.fields) if self.fields else None,
-            "exclude_fields": sorted(self.exclude_fields) if self.exclude_fields else None,
+            "exclude_fields": (sorted(self.exclude_fields) if self.exclude_fields else None),
         }

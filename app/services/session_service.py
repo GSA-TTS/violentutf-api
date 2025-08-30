@@ -14,6 +14,8 @@ from app.core.circuit_breaker import circuit_breaker
 from app.core.errors import AuthenticationError, NotFoundError
 from app.models.session import Session
 from app.models.user import User
+from app.repositories.session import SessionRepository
+from app.repositories.user import UserRepository
 
 logger = get_logger(__name__)
 
@@ -32,6 +34,8 @@ class SessionService:
     def __init__(self, db_session: AsyncSession):
         """Initialize session service."""
         self.db_session = db_session
+        self.session_repo = SessionRepository(db_session)
+        self.user_repo = UserRepository(db_session)
 
     async def create_session(
         self,
@@ -61,19 +65,14 @@ class SessionService:
         duration = self.DEFAULT_REMEMBER_ME_DURATION if remember_me else self.DEFAULT_SESSION_DURATION
         expires_at = datetime.now(timezone.utc) + duration
 
-        # Create session
-        session = Session(
-            user_id=user.id,
-            session_token=session_token,
-            expires_at=expires_at,
-            user_agent=user_agent,
+        # Create session using repository interface method
+        session = await self.session_repo.create_session(
+            user_id=str(user.id),
+            token=session_token,
+            expires_at=expires_at.isoformat(),
             ip_address=ip_address,
-            device_info=json.dumps(device_info) if device_info else None,
-            is_active=True,
+            user_agent=user_agent,  # This will be mapped to device_info in the repository
         )
-
-        self.db_session.add(session)
-        await self.db_session.flush()
 
         # Cache session data
         await self._cache_session(session, user)
@@ -129,35 +128,26 @@ class SessionService:
                 await self._remove_from_user_sessions(cached_data["user_id"], cached_data["session_id"])
                 return None
 
-        # Cache miss, check database
-        query = select(Session).where(
-            Session.session_token == session_token,
-            Session.is_active == True,
-            Session.is_deleted == False,
-        )
-        result = await self.db_session.execute(query)
-        session = result.scalar_one_or_none()
+        # Cache miss, check database using repository
+        session = await self.session_repo.get_by_token(session_token)
 
         if not session:
             return None
 
         # Check expiration
         if session.expires_at <= datetime.now(timezone.utc):
-            session.is_active = False
-            await self.db_session.flush()
+            await self.session_repo.update(session.id, is_active=False)
             return None
 
-        # Get user data
-        user = await self._get_user(session.user_id)
+        # Get user data using repository
+        user = await self.user_repo.get_by_id(session.user_id)
         if not user or not user.is_active:
-            session.is_active = False
-            await self.db_session.flush()
+            await self.session_repo.update(session.id, is_active=False)
             return None
 
-        # Update last activity
+        # Update last activity using repository
         if update_last_activity:
-            session.last_activity_at = datetime.now(timezone.utc)
-            await self.db_session.flush()
+            await self.session_repo.update(session.id, last_activity_at=datetime.now(timezone.utc))
 
         # Cache session data
         await self._cache_session(session, user)
@@ -183,18 +173,11 @@ class SessionService:
             await cache.delete(cache_key)
             await self._remove_from_user_sessions(cached_data["user_id"], cached_data["session_id"])
 
-        # Update database
-        query = select(Session).where(
-            Session.session_token == session_token,
-            Session.is_active == True,
-        )
-        result = await self.db_session.execute(query)
-        session = result.scalar_one_or_none()
+        # Update database using repository
+        session = await self.session_repo.get_by_token(session_token)
 
         if session:
-            session.is_active = False
-            session.invalidated_at = datetime.now(timezone.utc)
-            await self.db_session.flush()
+            await self.session_repo.update(session.id, is_active=False, revoked_at=datetime.now(timezone.utc))
 
             logger.info(
                 "Session invalidated",
@@ -229,10 +212,8 @@ class SessionService:
         count = 0
         for session_id in session_ids:
             if session_id != except_session_id:
-                # Get session token from database to clear cache
-                query = select(Session).where(Session.id == session_id)
-                result = await self.db_session.execute(query)
-                session = result.scalar_one_or_none()
+                # Get session using repository to clear cache
+                session = await self.session_repo.get_by_id(session_id)
 
                 if session:
                     cache_key = self._get_cache_key(session.session_token)
@@ -242,23 +223,14 @@ class SessionService:
         # Clear user sessions cache
         await cache.delete(sessions_key)
 
-        # Update database
-        query = select(Session).where(
-            Session.user_id == user_id,
-            Session.is_active == True,
-        )
+        # Update database using repository
+        sessions = await self.session_repo.get_user_sessions(user_id, include_inactive=False)
 
         if except_session_id:
-            query = query.where(Session.id != except_session_id)
-
-        result = await self.db_session.execute(query)
-        sessions = result.scalars().all()
+            sessions = [s for s in sessions if str(s.id) != except_session_id]
 
         for session in sessions:
-            session.is_active = False
-            session.invalidated_at = datetime.now(timezone.utc)
-
-        await self.db_session.flush()
+            await self.session_repo.update(session.id, is_active=False, revoked_at=datetime.now(timezone.utc))
 
         logger.info(
             "User sessions invalidated",
@@ -288,12 +260,9 @@ class SessionService:
             sessions = []
             for session_id in session_ids:
                 # Need to get session token to fetch from cache
-                query = select(Session).where(
-                    Session.id == session_id,
-                    Session.is_active == True,
-                )
-                result = await self.db_session.execute(query)
-                session = result.scalar_one_or_none()
+                session = await self.session_repo.get_by_id(session_id)
+                if session and not session.is_active:
+                    session = None
 
                 if session:
                     cache_key = self._get_cache_key(session.session_token)
@@ -304,23 +273,15 @@ class SessionService:
             if sessions:
                 return sessions
 
-        # Cache miss or incomplete, query database
-        query = (
-            select(Session)
-            .where(
-                Session.user_id == user_id,
-                Session.is_active == True,
-                Session.is_deleted == False,
-                Session.expires_at > datetime.now(timezone.utc),
-            )
-            .order_by(Session.created_at.desc())
-        )
+        # Cache miss or incomplete, query database using repository
+        sessions = await self.session_repo.get_user_sessions(user_id, include_inactive=False)
 
-        result = await self.db_session.execute(query)
-        sessions = result.scalars().all()
+        # Filter out expired sessions
+        now = datetime.now(timezone.utc)
+        sessions = [s for s in sessions if s.expires_at > now]
 
-        # Get user for building session data
-        user = await self._get_user(user_id)
+        # Get user for building session data using repository
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             return []
 
@@ -360,31 +321,31 @@ class SessionService:
         if duration is None:
             duration = self.DEFAULT_SESSION_DURATION
 
-        # Get session
-        query = select(Session).where(
-            Session.session_token == session_token,
-            Session.is_active == True,
-        )
-        result = await self.db_session.execute(query)
-        session = result.scalar_one_or_none()
+        # Get session using repository
+        session = await self.session_repo.get_by_token(session_token)
 
-        if not session:
+        if not session or not session.is_active:
             return False
 
-        # Extend expiration
-        session.expires_at = datetime.now(timezone.utc) + duration
-        session.last_activity_at = datetime.now(timezone.utc)
-        await self.db_session.flush()
+        # Extend expiration using repository
+        new_expires_at = datetime.now(timezone.utc) + duration
+        await self.session_repo.update(
+            session.id,
+            expires_at=new_expires_at,
+            last_activity_at=datetime.now(timezone.utc),
+        )
 
         # Update cache
-        user = await self._get_user(session.user_id)
+        user = await self.user_repo.get_by_id(session.user_id)
         if user:
+            # Refresh session object with updated data
+            session.expires_at = new_expires_at
             await self._cache_session(session, user)
 
         logger.info(
             "Session extended",
             session_id=str(session.id),
-            new_expiration=session.expires_at.isoformat(),
+            new_expiration=new_expires_at.isoformat(),
         )
 
         return True
@@ -396,30 +357,13 @@ class SessionService:
         Returns:
             Number of sessions cleaned up
         """
-        # Query expired sessions
-        query = select(Session).where(
-            Session.expires_at <= datetime.now(timezone.utc),
-            Session.is_active == True,
-        )
-        result = await self.db_session.execute(query)
-        sessions = result.scalars().all()
+        # Use repository method for cleanup
+        expired_count = await self.session_repo.cleanup_expired_sessions()
 
-        # Clean up cache
-        cache = await get_cache()
-        for session in sessions:
-            cache_key = self._get_cache_key(session.session_token)
-            await cache.delete(cache_key)
-            await self._remove_from_user_sessions(session.user_id, session.id)
+        if expired_count > 0:
+            logger.info("Expired sessions cleaned up", count=expired_count)
 
-            # Mark as inactive
-            session.is_active = False
-
-        await self.db_session.flush()
-
-        if sessions:
-            logger.info("Expired sessions cleaned up", count=len(sessions))
-
-        return len(sessions)
+        return expired_count
 
     # Private helper methods
 
@@ -436,12 +380,12 @@ class SessionService:
             "email": user.email,
             "roles": user.roles or [],
             "is_superuser": user.is_superuser,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": (str(user.organization_id) if user.organization_id else None),
             "expires_at": session.expires_at.isoformat(),
             "created_at": session.created_at.isoformat(),
-            "last_activity_at": session.last_activity_at.isoformat() if session.last_activity_at else None,
+            "last_activity_at": (session.last_activity_at.isoformat() if session.last_activity_at else None),
             "ip_address": session.ip_address,
-            "user_agent": session.user_agent,
+            "user_agent": session.device_info,
         }
 
     async def _cache_session(self, session: Session, user: User) -> None:
@@ -481,18 +425,10 @@ class SessionService:
     async def _update_last_activity(self, session_id: str) -> None:
         """Update session last activity timestamp."""
         try:
-            query = select(Session).where(Session.id == session_id)
-            result = await self.db_session.execute(query)
-            session = result.scalar_one_or_none()
-
-            if session:
-                session.last_activity_at = datetime.now(timezone.utc)
-                await self.db_session.flush()
+            await self.session_repo.update(session_id, last_activity_at=datetime.now(timezone.utc))
         except Exception as e:
             logger.error("Failed to update last activity", session_id=session_id, error=str(e))
 
     async def _get_user(self, user_id: str) -> Optional[User]:
-        """Get user by ID."""
-        query = select(User).where(User.id == user_id)
-        result = await self.db_session.execute(query)
-        return result.scalar_one_or_none()
+        """Get user by ID using repository."""
+        return await self.user_repo.get_by_id(user_id)

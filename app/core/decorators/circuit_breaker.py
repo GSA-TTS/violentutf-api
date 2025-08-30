@@ -1,5 +1,6 @@
 """Decorators for circuit breaker protection."""
 
+import asyncio
 import functools
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
@@ -13,7 +14,11 @@ else:
 
 from structlog.stdlib import get_logger
 
-from ...utils.circuit_breaker import CircuitBreakerConfig, CircuitBreakerException, get_circuit_breaker
+from ...utils.circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitBreakerException,
+    get_circuit_breaker,
+)
 
 logger = get_logger(__name__)
 
@@ -211,7 +216,12 @@ def database_operation(
             return await db.get(User, user_id)
         ```
     """
-    from sqlalchemy.exc import DBAPIError, DisconnectionError, OperationalError, TimeoutError
+    from sqlalchemy.exc import (
+        DBAPIError,
+        DisconnectionError,
+        OperationalError,
+        TimeoutError,
+    )
 
     config = CircuitBreakerConfig(
         failure_threshold=failure_threshold,
@@ -307,5 +317,4 @@ def message_queue(
     )
 
 
-# Import asyncio for type checking
-import asyncio
+# asyncio is now imported at the top of the file

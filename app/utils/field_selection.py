@@ -92,12 +92,17 @@ class FieldSelector:
         relationships = {}
 
         for rel in inspector.relationships:
-            relationships[rel.key] = {"type": "many" if rel.uselist else "one", "model": rel.mapper.class_.__name__}
+            relationships[rel.key] = {
+                "type": "many" if rel.uselist else "one",
+                "model": rel.mapper.class_.__name__,
+            }
 
         return relationships
 
     def validate_field_selection(
-        self, include_fields: Optional[List[str]] = None, exclude_fields: Optional[List[str]] = None
+        self,
+        include_fields: Optional[List[str]] = None,
+        exclude_fields: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Validate field selection parameters.
@@ -109,7 +114,12 @@ class FieldSelector:
         Returns:
             Validation result with effective fields and warnings
         """
-        result: Dict[str, Any] = {"valid": True, "effective_fields": None, "warnings": [], "errors": []}
+        result: Dict[str, Any] = {
+            "valid": True,
+            "effective_fields": None,
+            "warnings": [],
+            "errors": [],
+        }
 
         # Determine initial field set
         effective_fields = self._get_initial_fields(include_fields, result)
@@ -146,7 +156,10 @@ class FieldSelector:
         return effective_fields
 
     def _apply_exclusions(
-        self, effective_fields: Set[str], exclude_fields: Optional[List[str]], result: Dict[str, Any]
+        self,
+        effective_fields: Set[str],
+        exclude_fields: Optional[List[str]],
+        result: Dict[str, Any],
     ) -> Set[str]:
         """Apply field exclusions."""
         if not exclude_fields:
@@ -163,7 +176,10 @@ class FieldSelector:
         return effective_fields
 
     def _apply_security_checks(
-        self, effective_fields: Set[str], include_fields: Optional[List[str]], result: Dict[str, Any]
+        self,
+        effective_fields: Set[str],
+        include_fields: Optional[List[str]],
+        result: Dict[str, Any],
     ) -> Set[str]:
         """Apply security checks and required field rules."""
         # Check for protected fields in inclusion
@@ -183,7 +199,10 @@ class FieldSelector:
         return effective_fields
 
     def optimize_query_for_fields(
-        self, query: object, include_fields: Optional[List[str]] = None, exclude_fields: Optional[List[str]] = None
+        self,
+        query: object,
+        include_fields: Optional[List[str]] = None,
+        exclude_fields: Optional[List[str]] = None,
     ) -> object:
         """
         Optimize SQLAlchemy query based on field selection.
@@ -246,7 +265,10 @@ class FieldSelector:
         validation = self.validate_field_selection(include_fields, exclude_fields)
 
         if not validation["valid"]:
-            self.logger.warning("Invalid field selection for response transformation", errors=validation["errors"])
+            self.logger.warning(
+                "Invalid field selection for response transformation",
+                errors=validation["errors"],
+            )
             # Return original data if validation fails
             return self._ensure_dict(data)  # type: ignore[arg-type]
 
@@ -309,7 +331,9 @@ class FieldSelector:
         }
 
     def create_dynamic_schema(
-        self, include_fields: Optional[List[str]] = None, exclude_fields: Optional[List[str]] = None
+        self,
+        include_fields: Optional[List[str]] = None,
+        exclude_fields: Optional[List[str]] = None,
     ) -> Type[BaseModel]:
         """
         Create a dynamic Pydantic schema with only specified fields.

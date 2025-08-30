@@ -17,7 +17,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     """Add unique request ID to each request for tracing."""
 
     async def dispatch(
-        self: "RequestIDMiddleware", request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        self: "RequestIDMiddleware",
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         """Process request with unique ID."""
         # Generate or extract request ID

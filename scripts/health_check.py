@@ -9,7 +9,7 @@ import json
 import logging
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 # Configure logging
@@ -153,7 +153,11 @@ class RedisHealthChecker(HealthChecker):
                         "message": f"Connected to Redis@{self.host}:{self.port}",
                     }
 
-            return {"status": "unhealthy", "service": "redis", "message": "Redis ping failed"}
+            return {
+                "status": "unhealthy",
+                "service": "redis",
+                "message": "Redis ping failed",
+            }
 
         except Exception as e:
             return {"status": "unhealthy", "service": "redis", "message": str(e)}
@@ -287,7 +291,7 @@ class CompositeHealthChecker:
 
         return {
             "status": overall_status,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "services": results,
         }
 
@@ -316,7 +320,11 @@ class CompositeHealthChecker:
 def main() -> None:
     """Main entry point for health check script."""
     parser = argparse.ArgumentParser(description="Health check for Docker services")
-    parser.add_argument("service", choices=["postgresql", "redis", "api", "celery", "all"], help="Service to check")
+    parser.add_argument(
+        "service",
+        choices=["postgresql", "redis", "api", "celery", "all"],
+        help="Service to check",
+    )
     parser.add_argument("--host", default="localhost", help="Service host")
     parser.add_argument("--port", type=int, help="Service port")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout in seconds")

@@ -81,7 +81,9 @@ class BaseRepository(Generic[T]):
         self.logger = logger.bind(repository=self.__class__.__name__, model=self.model.__name__)
 
     async def get_by_id(
-        self, entity_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
     ) -> Optional[T]:
         """
         Get entity by ID with optional organization filtering for multi-tenant isolation.
@@ -164,7 +166,9 @@ class BaseRepository(Generic[T]):
                 # Get current version first (with organization filtering)
                 current_entity = await self.get_by_id(entity_id_str, organization_id)
                 if current_entity and hasattr(current_entity, "version"):
-                    kwargs["version"] = getattr(current_entity, "version") + 1
+                    current_version = getattr(current_entity, "version")
+                    # Handle None version by starting at 1
+                    kwargs["version"] = (current_version or 0) + 1
 
             # Build update filters
             update_filters = [self.model.id == entity_id_str]
@@ -185,7 +189,11 @@ class BaseRepository(Generic[T]):
             if result.rowcount > 0:
                 # Fetch updated entity (with organization filtering)
                 updated_entity = await self.get_by_id(entity_id_str, organization_id)
-                self.logger.info("Entity updated", entity_id=entity_id_str, updated_fields=list(kwargs.keys()))
+                self.logger.info(
+                    "Entity updated",
+                    entity_id=entity_id_str,
+                    updated_fields=list(kwargs.keys()),
+                )
                 return updated_entity
             else:
                 self.logger.warning("Entity not found for update", entity_id=entity_id_str)
@@ -233,7 +241,11 @@ class BaseRepository(Generic[T]):
             else:
                 # Soft delete - mark as deleted (only for models with soft delete support)
                 if hasattr(self.model, "is_deleted"):
-                    deleted_kwargs = {"is_deleted": True, "deleted_by": "system", "deleted_at": func.now()}
+                    deleted_kwargs = {
+                        "is_deleted": True,
+                        "deleted_by": "system",
+                        "deleted_at": func.now(),
+                    }
 
                     # Add soft delete filter to delete_filters
                     soft_delete_filters = delete_filters + [getattr(self.model, "is_deleted") == False]  # noqa: E712
@@ -316,7 +328,14 @@ class BaseRepository(Generic[T]):
             if eager_load:
                 for relationship in eager_load:
                     if hasattr(self.model, relationship):
-                        query = query.options(selectinload(getattr(self.model, relationship)))
+                        try:
+                            query = query.options(selectinload(getattr(self.model, relationship)))
+                        except Exception as e:
+                            self.logger.warning(
+                                "Failed to apply eager loading",
+                                relationship=relationship,
+                                error=str(e),
+                            )
 
             # Count total items before pagination
             count_query = select(func.count()).select_from(query.subquery())
@@ -421,7 +440,10 @@ class BaseRepository(Generic[T]):
             # Build query with soft delete filter if model has is_deleted field
             if hasattr(self.model, "is_deleted"):
                 query = select(func.count(self.model.id)).where(
-                    and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == False)  # noqa: E712
+                    and_(
+                        self.model.id == entity_id_str,
+                        getattr(self.model, "is_deleted") == False,
+                    )  # noqa: E712
                 )
             else:
                 query = select(func.count(self.model.id)).where(self.model.id == entity_id_str)
@@ -434,7 +456,11 @@ class BaseRepository(Generic[T]):
             return exists
 
         except Exception as e:
-            self.logger.error("Failed to check entity existence", entity_id=str(entity_id), error=str(e))
+            self.logger.error(
+                "Failed to check entity existence",
+                entity_id=str(entity_id),
+                error=str(e),
+            )
             raise
 
     async def restore(self, entity_id: Union[str, uuid.UUID], restored_by: str = "system") -> bool:
@@ -463,7 +489,10 @@ class BaseRepository(Generic[T]):
                 query = (
                     update(self.model)
                     .where(
-                        and_(self.model.id == entity_id_str, getattr(self.model, "is_deleted") == True)
+                        and_(
+                            self.model.id == entity_id_str,
+                            getattr(self.model, "is_deleted") == True,
+                        )
                     )  # noqa: E712
                     .values(**restore_kwargs)
                 )
@@ -472,13 +501,20 @@ class BaseRepository(Generic[T]):
                 restored = result.rowcount > 0
 
                 if restored:
-                    self.logger.info("Entity restored", entity_id=entity_id_str, restored_by=restored_by)
+                    self.logger.info(
+                        "Entity restored",
+                        entity_id=entity_id_str,
+                        restored_by=restored_by,
+                    )
                 else:
                     self.logger.warning("Entity not found for restoration", entity_id=entity_id_str)
 
                 return restored
             else:
-                self.logger.warning("Model does not support soft delete/restore", entity_id=entity_id_str)
+                self.logger.warning(
+                    "Model does not support soft delete/restore",
+                    entity_id=entity_id_str,
+                )
                 return False
 
         except Exception as e:
@@ -488,7 +524,9 @@ class BaseRepository(Generic[T]):
     # Enhanced methods for CRUD router compatibility
 
     async def get(
-        self, entity_id: Union[str, uuid.UUID], organization_id: Optional[Union[str, uuid.UUID]] = None
+        self,
+        entity_id: Union[str, uuid.UUID],
+        organization_id: Optional[Union[str, uuid.UUID]] = None,
     ) -> Optional[T]:
         """Alias for get_by_id for consistency with CRUD router."""
         return await self.get_by_id(entity_id, organization_id)
@@ -648,9 +686,12 @@ class BaseRepository(Generic[T]):
             if key == "search" and value and isinstance(value, str):
                 # Apply search across searchable fields
                 query = self._apply_search_filter(query, value)
-            elif key in ["created_after", "created_before", "updated_after", "updated_before"] and isinstance(
-                value, datetime
-            ):
+            elif key in [
+                "created_after",
+                "created_before",
+                "updated_after",
+                "updated_before",
+            ] and isinstance(value, datetime):
                 # Apply date range filters
                 query = self._apply_date_filter(query, key, value)
             elif key == "advanced_filters" and value and isinstance(value, list):
@@ -716,7 +757,10 @@ class BaseRepository(Generic[T]):
         return query
 
     def _apply_advanced_filters(
-        self, query: Select[Tuple[T]], filters: List[Dict[str, object]], logic: str = "and"
+        self,
+        query: Select[Tuple[T]],
+        filters: List[Dict[str, object]],
+        logic: str = "and",
     ) -> Select[Tuple[T]]:
         """Apply advanced operator-based filters."""
         conditions: List[ColumnElement[bool]] = []
@@ -756,7 +800,10 @@ class BaseRepository(Generic[T]):
         return query
 
     def _build_filter_condition(
-        self, field: ColumnElement[object], operator: str, value: Union[str, int, float, bool, List[object], None]
+        self,
+        field: ColumnElement[object],
+        operator: str,
+        value: Union[str, int, float, bool, List[object], None],
     ) -> Optional[ColumnElement[bool]]:
         """Build filter condition based on operator."""
         # Define operator mappings for better maintainability
@@ -777,7 +824,10 @@ class BaseRepository(Generic[T]):
         return self._build_special_filter_condition(field, operator, value)
 
     def _build_special_filter_condition(
-        self, field: ColumnElement[object], operator: str, value: Union[str, int, float, bool, List[object], None]
+        self,
+        field: ColumnElement[object],
+        operator: str,
+        value: Union[str, int, float, bool, List[object], None],
     ) -> Optional[ColumnElement[bool]]:
         """Build special filter conditions (list, string, null operations)."""
         if operator == "in" and isinstance(value, list):

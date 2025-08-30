@@ -206,7 +206,11 @@ Stream results as JSON objects for real-time consumption."""
         except Exception as e:
             logger.error(f"Streaming analysis error: {e}")
             await self.results_stream.put(
-                {"type": "analysis_error", "error": str(e), "timestamp": datetime.now(timezone.utc).isoformat()}
+                {
+                    "type": "analysis_error",
+                    "error": str(e),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
             )
 
         finally:

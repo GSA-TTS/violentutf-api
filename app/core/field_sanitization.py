@@ -291,7 +291,7 @@ def sanitize_field(
             logger.debug(
                 "field_sanitized",
                 field=rule.field_name,
-                original_length=len(str(result.original_value)) if result.original_value else 0,
+                original_length=(len(str(result.original_value)) if result.original_value else 0),
                 sanitized_length=len(value),
                 rules_applied=result.applied_rules,
             )

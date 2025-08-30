@@ -321,7 +321,10 @@ class TimeSeriesTrendAnalyzer:
 
             # Perform seasonal decomposition
             decomposition = seasonal_decompose(
-                time_series.values, model="additive", period=period, extrapolate_trend="freq"
+                time_series.values,
+                model="additive",
+                period=period,
+                extrapolate_trend="freq",
             )
 
             trend_component = decomposition.trend
@@ -590,7 +593,10 @@ class TimeSeriesTrendAnalyzer:
             return {"error": f"Autocorrelation analysis failed: {str(e)}"}
 
     def _calculate_trend_strength(
-        self, original_data: np.ndarray, trend_component: np.ndarray, seasonal_component: np.ndarray
+        self,
+        original_data: np.ndarray,
+        trend_component: np.ndarray,
+        seasonal_component: np.ndarray,
     ) -> float:
         """
         Calculate trend strength as proportion of variation explained by trend.

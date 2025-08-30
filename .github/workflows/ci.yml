@@ -40,15 +40,15 @@ jobs:
           pip install black isort flake8
 
       - name: Black format check
-        run: black --check --diff .
+        run: black --check --diff . --exclude "agent_orchestrator|test_env"
 
       - name: Import sort check
-        run: isort --check-only --diff .
+        run: isort --check-only --diff . --skip-glob="*/agent_orchestrator/*" --skip-glob="*/test_env/*"
 
       - name: Critical flake8 errors only
         run: |
           # Only critical errors that prevent execution
-          flake8 . --count --select=E9,F63,F7,F82,F841 --show-source --statistics
+          flake8 . --count --select=E9,F63,F7,F82,F841 --show-source --statistics --exclude=agent_orchestrator,test_env
 
   unit-tests:
     name: Core Unit Tests
@@ -70,6 +70,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+          pip install -e .
 
       - name: Run fast unit tests
         run: |

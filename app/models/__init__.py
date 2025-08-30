@@ -9,7 +9,12 @@ from .mfa import MFABackupCode, MFAChallenge, MFADevice, MFAEvent
 from .mixins import AuditMixin, BaseModelMixin, SecurityValidationMixin, SoftDeleteMixin
 
 # Import OAuth models
-from .oauth import OAuthAccessToken, OAuthApplication, OAuthAuthorizationCode, OAuthRefreshToken
+from .oauth import (
+    OAuthAccessToken,
+    OAuthApplication,
+    OAuthAuthorizationCode,
+    OAuthRefreshToken,
+)
 
 # Import orchestrator models (they reference Task)
 from .orchestrator import (

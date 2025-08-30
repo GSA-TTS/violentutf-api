@@ -113,6 +113,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+implement_issue_venv/
+agent_orchestrator/implement_issue_venv/
 
 # Spyder project settings
 .spyderproject
@@ -255,3 +257,11 @@ red_team_outputs/
 .api_credentials
 tools/agent_orchestrator/
 temp.md
+/.implement_checkpoints
+/agent_orchestrator
+/test_env
+bandit_results.json
+codeql-osx64.zip
+/codeql-database-updated
+/codeql-db
+codeql.zip

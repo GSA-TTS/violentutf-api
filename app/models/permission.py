@@ -90,7 +90,11 @@ class Permission(Base, BaseModelMixin):
         if len(parts) < 2 or len(parts) > 3:
             raise ValueError(f"Invalid permission format: {permission_str}")
 
-        return {"resource": parts[0], "action": parts[1], "scope": parts[2] if len(parts) == 3 else None}
+        return {
+            "resource": parts[0],
+            "action": parts[1],
+            "scope": parts[2] if len(parts) == 3 else None,
+        }
 
     @classmethod
     def create_system_permissions(cls: type["Permission"]) -> List["Permission"]:

@@ -38,7 +38,10 @@ class TestBaseRepository:
     async def test_create_with_auto_uuid(self, user_repo: BaseRepository[User], async_db_session: AsyncSession):
         """Test creating entity with auto-generated UUID."""
         user = await user_repo.create(
-            username="test_user", email="test@example.com", password_hash=get_test_password_hash(), created_by="test"
+            username="test_user",
+            email="test@example.com",
+            password_hash=get_test_password_hash(),
+            created_by="test",
         )
 
         assert user.id is not None
@@ -54,7 +57,10 @@ class TestBaseRepository:
         """Test creating entity with provided ID."""
         custom_id = str(uuid.uuid4())
         user = await user_repo.create(
-            id=custom_id, username="test_user2", email="test2@example.com", password_hash=get_test_password_hash()
+            id=custom_id,
+            username="test_user2",
+            email="test2@example.com",
+            password_hash=get_test_password_hash(),
         )
 
         assert user.id == custom_id
@@ -82,7 +88,9 @@ class TestBaseRepository:
         """Test create fails with constraint violation."""
         # Create first user
         await user_repo.create(
-            username="duplicate_user", email="dup@example.com", password_hash=get_test_password_hash()
+            username="duplicate_user",
+            email="dup@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -100,7 +108,9 @@ class TestBaseRepository:
         """Test getting existing entity by ID."""
         # Create user
         user = await user_repo.create(
-            username="test_get", email="get@example.com", password_hash=get_test_password_hash()
+            username="test_get",
+            email="get@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -122,7 +132,9 @@ class TestBaseRepository:
         """Test getting entity by UUID object."""
         # Create user
         user = await user_repo.create(
-            username="test_uuid", email="uuid@example.com", password_hash=get_test_password_hash()
+            username="test_uuid",
+            email="uuid@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -137,7 +149,9 @@ class TestBaseRepository:
         """Test getting soft-deleted entity returns None."""
         # Create and soft delete user
         user = await user_repo.create(
-            username="to_delete", email="delete@example.com", password_hash=get_test_password_hash()
+            username="to_delete",
+            email="delete@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -182,7 +196,9 @@ class TestBaseRepository:
         """Test updating soft-deleted entity returns None."""
         # Create and soft delete
         user = await user_repo.create(
-            username="soft_del_update", email="softdel@example.com", password_hash=get_test_password_hash()
+            username="soft_del_update",
+            email="softdel@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -198,7 +214,9 @@ class TestBaseRepository:
         """Test update removes id from kwargs."""
         # Create user
         user = await user_repo.create(
-            username="test_id_removal", email="idremoval@example.com", password_hash=get_test_password_hash()
+            username="test_id_removal",
+            email="idremoval@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -215,7 +233,9 @@ class TestBaseRepository:
         """Test soft delete functionality."""
         # Create user
         user = await user_repo.create(
-            username="to_soft_delete", email="softdelete@example.com", password_hash=get_test_password_hash()
+            username="to_soft_delete",
+            email="softdelete@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -240,7 +260,9 @@ class TestBaseRepository:
         """Test hard delete functionality."""
         # Create user
         user = await user_repo.create(
-            username="to_hard_delete", email="harddelete@example.com", password_hash=get_test_password_hash()
+            username="to_hard_delete",
+            email="harddelete@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -271,7 +293,9 @@ class TestBaseRepository:
         """Test deleting already soft-deleted entity."""
         # Create and soft delete
         user = await user_repo.create(
-            username="double_delete", email="double@example.com", password_hash=get_test_password_hash()
+            username="double_delete",
+            email="double@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -288,7 +312,9 @@ class TestBaseRepository:
         # Create multiple users
         for i in range(5):
             await user_repo.create(
-                username=f"user_{i}", email=f"user{i}@example.com", password_hash=get_test_password_hash()
+                username=f"user_{i}",
+                email=f"user{i}@example.com",
+                password_hash=get_test_password_hash(),
             )
         await async_db_session.commit()
 
@@ -320,7 +346,10 @@ class TestBaseRepository:
         """Test pagination with filters."""
         # Create users with specific attributes
         await user_repo.create(
-            username="active_user", email="active@example.com", password_hash=get_test_password_hash(), is_active=True
+            username="active_user",
+            email="active@example.com",
+            password_hash=get_test_password_hash(),
+            is_active=True,
         )
         await user_repo.create(
             username="inactive_user",
@@ -342,13 +371,19 @@ class TestBaseRepository:
         """Test pagination with list filters (IN clause)."""
         # Create users
         user1 = await user_repo.create(
-            username="filter_user1", email="filter1@example.com", password_hash=get_test_password_hash()
+            username="filter_user1",
+            email="filter1@example.com",
+            password_hash=get_test_password_hash(),
         )
         user2 = await user_repo.create(
-            username="filter_user2", email="filter2@example.com", password_hash=get_test_password_hash()
+            username="filter_user2",
+            email="filter2@example.com",
+            password_hash=get_test_password_hash(),
         )
         await user_repo.create(
-            username="filter_user3", email="filter3@example.com", password_hash=get_test_password_hash()
+            username="filter_user3",
+            email="filter3@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -374,7 +409,9 @@ class TestBaseRepository:
         """Test pagination excludes soft-deleted by default."""
         # Create and soft delete a user
         user = await user_repo.create(
-            username="deleted_user", email="deleted@example.com", password_hash=get_test_password_hash()
+            username="deleted_user",
+            email="deleted@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -394,7 +431,9 @@ class TestBaseRepository:
         """Test pagination includes soft-deleted when requested."""
         # Create and soft delete a user
         user = await user_repo.create(
-            username="include_deleted", email="includedel@example.com", password_hash=get_test_password_hash()
+            username="include_deleted",
+            email="includedel@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -413,7 +452,9 @@ class TestBaseRepository:
         """Test pagination ordering."""
         # Create users with different creation times
         user1 = await user_repo.create(
-            username="order_user1", email="order1@example.com", password_hash=get_test_password_hash()
+            username="order_user1",
+            email="order1@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -423,7 +464,9 @@ class TestBaseRepository:
         await asyncio.sleep(0.1)
 
         user2 = await user_repo.create(
-            username="order_user2", email="order2@example.com", password_hash=get_test_password_hash()
+            username="order_user2",
+            email="order2@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -490,7 +533,9 @@ class TestBaseRepository:
         # Create some users
         for i in range(3):
             await user_repo.create(
-                username=f"count_user_{i}", email=f"count{i}@example.com", password_hash=get_test_password_hash()
+                username=f"count_user_{i}",
+                email=f"count{i}@example.com",
+                password_hash=get_test_password_hash(),
             )
         await async_db_session.commit()
 
@@ -528,7 +573,9 @@ class TestBaseRepository:
         """Test count excludes soft-deleted by default."""
         # Create and soft delete a user
         user = await user_repo.create(
-            username="count_deleted", email="countdel@example.com", password_hash=get_test_password_hash()
+            username="count_deleted",
+            email="countdel@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -554,7 +601,9 @@ class TestBaseRepository:
     async def test_exists_true(self, user_repo: BaseRepository[User], async_db_session: AsyncSession):
         """Test exists returns True for existing entity."""
         user = await user_repo.create(
-            username="exists_user", email="exists@example.com", password_hash=get_test_password_hash()
+            username="exists_user",
+            email="exists@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -571,7 +620,9 @@ class TestBaseRepository:
     async def test_exists_soft_deleted(self, user_repo: BaseRepository[User], async_db_session: AsyncSession):
         """Test exists returns False for soft-deleted entity."""
         user = await user_repo.create(
-            username="exists_deleted", email="existsdel@example.com", password_hash=get_test_password_hash()
+            username="exists_deleted",
+            email="existsdel@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -590,7 +641,9 @@ class TestBaseRepository:
         """Test restoring soft-deleted entity."""
         # Create and soft delete
         user = await user_repo.create(
-            username="restore_user", email="restore@example.com", password_hash=get_test_password_hash()
+            username="restore_user",
+            email="restore@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 
@@ -615,7 +668,9 @@ class TestBaseRepository:
     async def test_restore_not_deleted(self, user_repo: BaseRepository[User], async_db_session: AsyncSession):
         """Test restoring non-deleted entity returns False."""
         user = await user_repo.create(
-            username="not_deleted", email="notdel@example.com", password_hash=get_test_password_hash()
+            username="not_deleted",
+            email="notdel@example.com",
+            password_hash=get_test_password_hash(),
         )
         await async_db_session.commit()
 

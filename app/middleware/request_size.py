@@ -91,7 +91,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                         "large_request_detected",
                         path=request.url.path,
                         content_length=content_length,
-                        percentage_of_limit=round((content_length / max_size) * 100, 2) if max_size else 0,
+                        percentage_of_limit=(round((content_length / max_size) * 100, 2) if max_size else 0),
                     )
 
             # For streaming requests without content-length, we need to validate during reading

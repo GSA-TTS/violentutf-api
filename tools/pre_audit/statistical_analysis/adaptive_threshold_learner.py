@@ -518,7 +518,11 @@ class AdaptiveThresholdLearner:
         from sklearn.model_selection import StratifiedKFold
 
         y = data[target_column].values
-        skf = StratifiedKFold(n_splits=self.cross_validation_folds, shuffle=True, random_state=self.random_state)
+        skf = StratifiedKFold(
+            n_splits=self.cross_validation_folds,
+            shuffle=True,
+            random_state=self.random_state,
+        )
 
         cv_results = {}
 

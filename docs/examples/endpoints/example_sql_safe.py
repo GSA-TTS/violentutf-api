@@ -2,7 +2,11 @@
 
 from typing import Any, Dict, List, Optional
 
-from appcore.decorators import prevent_sql_injection, use_safe_query, validate_sql_params
+from appcore.decorators import (
+    prevent_sql_injection,
+    use_safe_query,
+    validate_sql_params,
+)
 from appcore.rate_limiting import rate_limit
 from appcore.sql_injection_prevention import (
     QueryBuilder,
@@ -141,7 +145,7 @@ async def basic_safe_user_search(
                     "name": user.name,
                     "email": user.email,
                     "status": user.status,
-                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "created_at": (user.created_at.isoformat() if user.created_at else None),
                 }
                 for user in users
             ],
@@ -208,7 +212,7 @@ async def advanced_safe_user_search(
                     "name": user.name,
                     "email": user.email,
                     "status": user.status,
-                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "created_at": (user.created_at.isoformat() if user.created_at else None),
                 }
                 for user in users
             ],

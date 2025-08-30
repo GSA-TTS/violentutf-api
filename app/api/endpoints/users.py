@@ -4,20 +4,26 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.api.base import BaseCRUDRouter
+from app.api.deps import get_user_service
 from app.core.config import settings
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.core.rate_limiting import rate_limit
 from app.core.security import hash_password
 from app.models.user import User
-from app.repositories.user import UserRepository
+
+# Removed UserRepository import to comply with Clean Architecture
+# Repository access moved to service layer
 from app.schemas.base import AdvancedFilter, BaseResponse, OperationResult
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
-
-from ...db.session import get_db_dependency
+from app.services.user_service_impl import UserServiceImpl
 
 logger = get_logger(__name__)
 
@@ -40,7 +46,6 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         """Initialize user CRUD router."""
         super().__init__(
             model=User,
-            repository=UserRepository,
             create_schema=UserCreate,
             update_schema=UserUpdate,
             response_schema=UserResponse,
@@ -49,6 +54,7 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             tags=["Users"],
             require_auth=True,
             require_admin=False,  # Users can view their own profile
+            repository=None,  # Service layer handles data access
         )
 
     def _check_admin_permission(self, request: Request) -> None:
@@ -94,11 +100,11 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             trace_id=getattr(request.state, "trace_id", None),
         )
 
-    async def _validate_user_availability(self, repo: UserRepository, user_data: UserCreate) -> None:
+    async def _validate_user_availability(self, user_service: UserServiceImpl, user_data: UserCreate) -> None:
         """Validate username and email availability."""
-        if not await repo.is_username_available(user_data.username):
+        if not await user_service.is_username_available(user_data.username):
             raise ConflictError(message=f"Username '{user_data.username}' is already taken")
-        if not await repo.is_email_available(user_data.email):
+        if not await user_service.is_email_available(user_data.email):
             raise ConflictError(message=f"Email '{user_data.email}' is already registered")
 
     def _prepare_update_data(self, user_data: UserUpdate, request: Request) -> Dict[str, Any]:
@@ -145,11 +151,8 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         import uuid
 
         from fastapi import Depends
-        from sqlalchemy.ext.asyncio import AsyncSession
 
         from app.schemas.base import PaginatedResponse
-
-        from ...db.session import get_db_dependency
 
         # List endpoint (from base router)
         @self.router.get(
@@ -161,9 +164,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         async def list_items(
             request: Request,
             filters: UserFilter = Depends(UserFilter),
-            session: AsyncSession = Depends(get_db_dependency),
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> PaginatedResponse[UserResponse]:
-            return await self._list_items(request, filters, session)
+            return await self._list_items(request, filters, user_service)
 
         # Get by ID endpoint (from base router)
         @self.router.get(
@@ -176,9 +179,11 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
+            request: Request,
+            item_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[UserResponse]:
-            return await self._get_item(request, item_id, session)
+            return await self._get_item(request, item_id, user_service)
 
         # Skip create endpoint - using custom implementation
 
@@ -198,9 +203,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             request: Request,
             item_id: uuid.UUID,
             item_data: UserUpdate,
-            session: AsyncSession = Depends(get_db_dependency),
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[UserResponse]:
-            return await self._update_item(request, item_id, item_data, session)
+            return await self._update_item(request, item_id, item_data, user_service)
 
         # Patch endpoint (from base router)
         @self.router.patch(
@@ -218,9 +223,9 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             request: Request,
             item_id: uuid.UUID,
             item_data: UserUpdate,
-            session: AsyncSession = Depends(get_db_dependency),
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[UserResponse]:
-            return await self._patch_item(request, item_id, item_data, session)
+            return await self._patch_item(request, item_id, item_data, user_service)
 
         # Delete endpoint (custom implementation with admin requirement)
         @self.router.delete(
@@ -234,11 +239,13 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def delete_item(
-            request: Request, item_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)
+            request: Request,
+            item_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),
         ) -> BaseResponse[OperationResult]:
             # Check admin permission before proceeding
             self._check_admin_permission(request)
-            return await self._delete_item(request, item_id, False, session)
+            return await self._delete_item(request, item_id, False, user_service)
 
     def _add_custom_endpoints(self) -> None:
         """Add user-specific endpoints."""
@@ -266,50 +273,25 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def create_user_endpoint(
-            request: Request, user_data: UserCreate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_data: UserCreate,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Create a new user with enhanced validation."""
             try:
-                repo = UserRepository(session)
-
-                # Validate username and email availability
-                await self._validate_user_availability(repo, user_data)
-
                 # Get current user for audit trail
                 created_by = self._get_created_by(request)
 
-                # Create user using repository method
-                user = await repo.create_user(
-                    username=user_data.username,
-                    email=user_data.email,
-                    password=user_data.password,
-                    full_name=user_data.full_name,
-                    is_superuser=user_data.is_superuser,
-                    created_by=created_by,
-                )
-
-                await session.commit()
-
-                logger.info(
-                    "user_created",
-                    user_id=str(user.id),
-                    username=user.username,
-                    email=user.email,
-                    created_by=created_by,
-                )
+                # Create user using service layer (handles validation and transactions)
+                user = await user_service.create_user(user_data, created_by)
 
                 return self._build_user_response(user, "User created successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (ConflictError, ValidationError)):
-                    logger.error(
-                        "user_creation_error",
-                        error=str(e),
-                        username=user_data.username,
-                        email=user_data.email,
-                        exc_info=True,
-                    )
+            except (ConflictError, ValidationError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
     def _register_profile_endpoint(self) -> None:
@@ -322,16 +304,27 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Get the current authenticated user's profile.",
         )
         async def get_current_user(
-            request: Request, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get current user profile."""
             current_user_id = self._get_current_user_id(request)
 
-            repo = UserRepository(session)
-            user = await repo.get(current_user_id)
+            user_data = await user_service.get_user_by_id(current_user_id)
 
-            if not user:
+            if not user_data:
                 raise NotFoundError(message="User not found")
+
+            # Convert UserData to User model for response
+            user = User(
+                id=uuid.UUID(user_data.id),
+                username=user_data.username,
+                email=user_data.email,
+                is_active=user_data.is_active,
+                is_superuser=user_data.is_superuser,
+                created_at=user_data.created_at,
+                updated_at=user_data.updated_at,
+            )
 
             return self._build_user_response(user, "Success", request)
 
@@ -345,53 +338,32 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Update the current authenticated user's profile.",
         )
         async def update_current_user(
-            request: Request, user_data: UserUpdate, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_data: UserUpdate,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Update current user profile."""
             current_user_id = self._get_current_user_id(request)
 
             try:
-                repo = UserRepository(session)
-
-                # Get current user
-                user = await repo.get(current_user_id)
-                if not user:
-                    raise NotFoundError(message="User not found")
-
                 # Prepare update data with admin field restrictions
-                update_data = self._prepare_update_data(user_data, request)
+                update_data_dict = self._prepare_update_data(user_data, request)
 
-                # Check email availability if changing email
-                if "email" in update_data and update_data["email"] != user.email:
-                    if not await repo.is_email_available(update_data["email"], exclude_user_id=current_user_id):
-                        raise ConflictError(message=f"Email '{update_data['email']}' is already registered")
+                # Convert dict back to UserUpdate schema for service layer
+                filtered_user_data = UserUpdate.model_validate(update_data_dict)
 
-                # Update user
-                update_data["updated_by"] = current_user_id
-                updated_user = await repo.update(current_user_id, **update_data)
-
-                if not updated_user:
-                    raise NotFoundError(message="User not found")
-
-                await session.commit()
-
-                logger.info(
-                    "user_profile_updated",
-                    user_id=current_user_id,
-                    updated_fields=list(update_data.keys()),
+                # Update user using service layer (handles validation and transactions)
+                updated_user = await user_service.update_user_profile(
+                    current_user_id, filtered_user_data, current_user_id
                 )
 
                 return self._build_user_response(updated_user, "Profile updated successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (ConflictError, NotFoundError, ValidationError)):
-                    logger.error(
-                        "user_profile_update_error",
-                        user_id=current_user_id,
-                        error=str(e),
-                        exc_info=True,
-                    )
+            except (ConflictError, NotFoundError, ValidationError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
     def _register_change_password_endpoint(self) -> None:
@@ -406,43 +378,22 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
         async def change_password(
             request: Request,
             password_data: UserUpdatePassword,
-            session: AsyncSession = Depends(get_db_dependency),  # noqa: B008
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Change current user's password."""
             current_user_id = self._get_current_user_id(request)
 
             try:
-                repo = UserRepository(session)
-
-                # Update password using repository method
-                success = await repo.update_password(
-                    current_user_id,
-                    password_data.current_password,
-                    password_data.new_password,
-                    updated_by=current_user_id,
-                )
-
-                if not success:
-                    raise ValidationError(message="Current password is incorrect")
-
-                await session.commit()
-
-                logger.info(
-                    "user_password_changed",
-                    user_id=current_user_id,
-                )
+                # Change password using service layer (handles validation and transactions)
+                await user_service.change_user_password(current_user_id, password_data, current_user_id)
 
                 return self._build_operation_result("Password changed successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (ValidationError, NotFoundError)):
-                    logger.error(
-                        "password_change_error",
-                        user_id=current_user_id,
-                        error=str(e),
-                        exc_info=True,
-                    )
+            except (ValidationError, NotFoundError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
     def _register_username_lookup_endpoint(self) -> None:
@@ -458,11 +409,12 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             },
         )
         async def get_user_by_username(
-            request: Request, username: str, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            username: str,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[UserResponse]:
             """Get user by username."""
-            repo = UserRepository(session)
-            user = await repo.get_by_username(username)
+            user = await user_service.get_user_by_username(username)
 
             if not user:
                 raise NotFoundError(message=f"User with username '{username}' not found")
@@ -479,39 +431,26 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Verify a user's email address (admin only).",
         )
         async def verify_user_email(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Verify user email (admin only)."""
             self._check_admin_permission(request)
 
             try:
-                repo = UserRepository(session)
                 current_user_id = self._get_current_user_id(request)
 
-                success = await repo.verify_user(str(user_id), verified_by=current_user_id)
-
-                if not success:
-                    raise NotFoundError(message=f"User with ID {user_id} not found or already verified")
-
-                await session.commit()
-
-                logger.info(
-                    "user_email_verified",
-                    user_id=str(user_id),
-                    verified_by=current_user_id,
-                )
+                # Verify user email using service layer (handles validation and transactions)
+                await user_service.verify_user_email(str(user_id), current_user_id)
 
                 return self._build_operation_result("User email verified successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (NotFoundError, ValidationError)):
-                    logger.error(
-                        "user_verification_error",
-                        user_id=str(user_id),
-                        error=str(e),
-                        exc_info=True,
-                    )
+            except (NotFoundError, ValidationError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
     def _register_deactivate_endpoint(self) -> None:
@@ -524,39 +463,26 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Deactivate a user account (admin only).",
         )
         async def deactivate_user(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Deactivate user account (admin only)."""
             self._check_admin_permission(request)
 
             try:
-                repo = UserRepository(session)
                 current_user_id = self._get_current_user_id(request)
 
-                success = await repo.deactivate_user(str(user_id), deactivated_by=current_user_id)
-
-                if not success:
-                    raise NotFoundError(message=f"User with ID {user_id} not found or already inactive")
-
-                await session.commit()
-
-                logger.info(
-                    "user_deactivated",
-                    user_id=str(user_id),
-                    deactivated_by=current_user_id,
-                )
+                # Deactivate user using service layer (handles validation and transactions)
+                await user_service.deactivate_user(str(user_id), current_user_id)
 
                 return self._build_operation_result("User deactivated successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (NotFoundError, ValidationError)):
-                    logger.error(
-                        "user_deactivation_error",
-                        user_id=str(user_id),
-                        error=str(e),
-                        exc_info=True,
-                    )
+            except (NotFoundError, ValidationError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
     def _register_activate_endpoint(self) -> None:
@@ -569,39 +495,26 @@ class UserCRUDRouter(BaseCRUDRouter[User, UserCreate, UserUpdate, UserResponse, 
             description="Activate a user account (admin only).",
         )
         async def activate_user(
-            request: Request, user_id: uuid.UUID, session: AsyncSession = Depends(get_db_dependency)  # noqa: B008
+            request: Request,
+            user_id: uuid.UUID,
+            user_service: UserServiceImpl = Depends(get_user_service),  # noqa: B008
         ) -> BaseResponse[OperationResult]:
             """Activate user account (admin only)."""
             self._check_admin_permission(request)
 
             try:
-                repo = UserRepository(session)
                 current_user_id = self._get_current_user_id(request)
 
-                success = await repo.activate_user(str(user_id), activated_by=current_user_id)
-
-                if not success:
-                    raise NotFoundError(message=f"User with ID {user_id} not found or already active")
-
-                await session.commit()
-
-                logger.info(
-                    "user_activated",
-                    user_id=str(user_id),
-                    activated_by=current_user_id,
-                )
+                # Activate user using service layer (handles validation and transactions)
+                await user_service.activate_user(str(user_id), current_user_id)
 
                 return self._build_operation_result("User activated successfully", request)
 
-            except Exception as e:
-                await session.rollback()
-                if not isinstance(e, (NotFoundError, ValidationError)):
-                    logger.error(
-                        "user_activation_error",
-                        user_id=str(user_id),
-                        error=str(e),
-                        exc_info=True,
-                    )
+            except (NotFoundError, ValidationError):
+                # Service layer handles rollback automatically
+                raise
+            except Exception:
+                # Service layer handles rollback automatically
                 raise
 
 

@@ -495,7 +495,11 @@ def get_safe_query_template(template_name: str) -> SafeQuery:
 class QueryBuilder:
     """Safe query builder for dynamic queries."""
 
-    def __init__(self, base_table: str, validation_level: QueryValidationLevel = QueryValidationLevel.MODERATE):
+    def __init__(
+        self,
+        base_table: str,
+        validation_level: QueryValidationLevel = QueryValidationLevel.MODERATE,
+    ):
         """Initialize query builder.
 
         Args:

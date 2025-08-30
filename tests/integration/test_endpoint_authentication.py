@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Tuple
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from structlog.stdlib import get_logger
+
+logger = get_logger(__name__)
 
 from app.core.security import create_access_token
 
@@ -74,7 +77,11 @@ class TestSystematicEndpointAuthentication:
             ("PUT", "/api/v1/users/me", {"full_name": "My Updated Name"}),
             # API Key Management Endpoints
             ("GET", "/api/v1/api-keys", {}),
-            ("POST", "/api/v1/api-keys", {"name": "Test API Key", "permissions": {"read": True, "write": False}}),
+            (
+                "POST",
+                "/api/v1/api-keys",
+                {"name": "Test API Key", "permissions": {"read": True, "write": False}},
+            ),
             ("GET", "/api/v1/api-keys/12345", {}),
             ("PUT", "/api/v1/api-keys/12345", {"name": "Updated Key Name"}),
             ("DELETE", "/api/v1/api-keys/12345", {}),
@@ -87,7 +94,11 @@ class TestSystematicEndpointAuthentication:
             (
                 "POST",
                 "/api/v1/sessions",
-                {"user_id": "user-123", "session_token": f"token-{uuid.uuid4()}", "device_info": "Test Device"},
+                {
+                    "user_id": "user-123",
+                    "session_token": f"token-{uuid.uuid4()}",
+                    "device_info": "Test Device",
+                },
             ),
             ("GET", "/api/v1/sessions/12345", {}),
             ("PUT", "/api/v1/sessions/12345", {"device_info": "Updated Device"}),
@@ -102,29 +113,49 @@ class TestSystematicEndpointAuthentication:
             (
                 "POST",
                 "/api/v1/audit-logs",
-                {"action": "test.action", "resource_type": "test", "resource_id": "test-123"},
+                {
+                    "action": "test.action",
+                    "resource_type": "test",
+                    "resource_id": "test-123",
+                },
             ),
             ("GET", "/api/v1/audit-logs/12345", {}),
             ("GET", "/api/v1/audit-logs/resource/user/12345", {}),
             ("GET", "/api/v1/audit-logs/statistics", {}),
-            ("POST", "/api/v1/audit-logs/export", {"format": "json", "resource_type": "user"}),
+            (
+                "POST",
+                "/api/v1/audit-logs/export",
+                {"format": "json", "resource_type": "user"},
+            ),
             # LLM Configuration Endpoints
             ("GET", "/api/v1/llm-configs", {}),
-            ("POST", "/api/v1/llm-configs", {"name": "Test Config", "provider": "openai", "model": "gpt-4"}),
+            (
+                "POST",
+                "/api/v1/llm-configs",
+                {"name": "Test Config", "provider": "openai", "model": "gpt-4"},
+            ),
             ("GET", "/api/v1/llm-configs/12345", {}),
             ("PUT", "/api/v1/llm-configs/12345", {"name": "Updated Config"}),
             ("DELETE", "/api/v1/llm-configs/12345", {}),
             ("POST", "/api/v1/llm-configs/12345/test", {}),
             # Prompt Injection Endpoints
             ("GET", "/api/v1/prompt-injections", {}),
-            ("POST", "/api/v1/prompt-injections", {"name": "Test Injection", "prompt": "Test prompt content"}),
+            (
+                "POST",
+                "/api/v1/prompt-injections",
+                {"name": "Test Injection", "prompt": "Test prompt content"},
+            ),
             ("GET", "/api/v1/prompt-injections/12345", {}),
             ("PUT", "/api/v1/prompt-injections/12345", {"name": "Updated Injection"}),
             ("DELETE", "/api/v1/prompt-injections/12345", {}),
             ("POST", "/api/v1/prompt-injections/12345/execute", {}),
             # Jailbreak Endpoints
             ("GET", "/api/v1/jailbreaks", {}),
-            ("POST", "/api/v1/jailbreaks", {"name": "Test Jailbreak", "technique": "test_technique"}),
+            (
+                "POST",
+                "/api/v1/jailbreaks",
+                {"name": "Test Jailbreak", "technique": "test_technique"},
+            ),
             ("GET", "/api/v1/jailbreaks/12345", {}),
             ("PUT", "/api/v1/jailbreaks/12345", {"name": "Updated Jailbreak"}),
             ("DELETE", "/api/v1/jailbreaks/12345", {}),
@@ -140,11 +171,19 @@ class TestSystematicEndpointAuthentication:
         """
         return [
             # Authentication Endpoints
-            ("POST", "/api/v1/auth/login", {"username": "testuser", "password": "testpass"}),
+            (
+                "POST",
+                "/api/v1/auth/login",
+                {"username": "testuser", "password": "testpass"},
+            ),
             (
                 "POST",
                 "/api/v1/auth/register",
-                {"username": "newuser", "email": "new@example.com", "password": "NewPass123!"},
+                {
+                    "username": "newuser",
+                    "email": "new@example.com",
+                    "password": "NewPass123!",
+                },
             ),
             ("POST", "/api/v1/auth/refresh", {"refresh_token": "test_refresh_token"}),
             ("POST", "/api/v1/auth/logout", {}),
@@ -165,7 +204,9 @@ class TestSystematicEndpointAuthentication:
     # Systematic Authentication Requirement Tests
 
     def test_protected_endpoints_require_authentication(
-        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+        self,
+        client: TestClient,
+        protected_endpoints: List[Tuple[str, str, Dict[str, Any]]],
     ) -> None:
         """Test that all protected endpoints require authentication."""
         failures = []
@@ -199,13 +240,17 @@ class TestSystematicEndpointAuthentication:
                         failures.append(f"{method} {endpoint} missing error detail")
 
             except Exception as e:
-                failures.append(f"{method} {endpoint} raised exception: {str(e)}")
+                # Log the full exception for debugging but don't expose in test output
+                logger.error(f"{method} {endpoint} raised exception", error=str(e))
+                failures.append(f"{method} {endpoint} raised unexpected exception")
 
         if failures:
             pytest.fail(f"Authentication requirement failures:\n" + "\n".join(failures))
 
     def test_exempt_endpoints_allow_anonymous_access(
-        self, client: TestClient, exempt_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+        self,
+        client: TestClient,
+        exempt_endpoints: List[Tuple[str, str, Dict[str, Any]]],
     ) -> None:
         """Test that exempt endpoints allow anonymous access."""
         unexpected_auth_required = []
@@ -241,7 +286,9 @@ class TestSystematicEndpointAuthentication:
             pytest.fail(f"Endpoints unexpectedly requiring authentication:\n" + "\n".join(unexpected_auth_required))
 
     def test_protected_endpoints_accept_valid_authentication(
-        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+        self,
+        client: TestClient,
+        protected_endpoints: List[Tuple[str, str, Dict[str, Any]]],
     ) -> None:
         """Test that protected endpoints accept valid authentication tokens."""
         token = self.create_test_jwt_token()
@@ -281,7 +328,9 @@ class TestSystematicEndpointAuthentication:
             pytest.fail(f"Valid authentication failures:\n" + "\n".join(auth_failures))
 
     def test_protected_endpoints_reject_invalid_tokens(
-        self, client: TestClient, protected_endpoints: List[Tuple[str, str, Dict[str, Any]]]
+        self,
+        client: TestClient,
+        protected_endpoints: List[Tuple[str, str, Dict[str, Any]]],
     ) -> None:
         """Test that protected endpoints reject invalid authentication tokens."""
         invalid_headers = [

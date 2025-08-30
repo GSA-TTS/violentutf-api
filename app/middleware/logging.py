@@ -16,7 +16,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     """Log all requests and responses with timing."""
 
     async def dispatch(
-        self: "LoggingMiddleware", request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        self: "LoggingMiddleware",
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         """Log request details and response timing."""
         # Skip logging for health checks to reduce noise

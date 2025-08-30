@@ -212,7 +212,11 @@ class HTMLReportGenerator(ReportGenerator):
 
             charts["top_files_bar"] = {
                 "type": "bar",
-                "data": {"labels": [self._truncate_path(f) for f in files], "values": counts, "color": "#1976d2"},
+                "data": {
+                    "labels": [self._truncate_path(f) for f in files],
+                    "values": counts,
+                    "color": "#1976d2",
+                },
             }
 
         # Hotspot risk heatmap
@@ -234,7 +238,11 @@ class HTMLReportGenerator(ReportGenerator):
                 "type": "doughnut",
                 "data": {
                     "labels": ["Improving", "Stable", "Degrading"],
-                    "values": [trends.get("improving", 0), trends.get("stable", 0), trends.get("degrading", 0)],
+                    "values": [
+                        trends.get("improving", 0),
+                        trends.get("stable", 0),
+                        trends.get("degrading", 0),
+                    ],
                     "colors": ["#4caf50", "#ff9800", "#f44336"],
                 },
             }
@@ -243,8 +251,10 @@ class HTMLReportGenerator(ReportGenerator):
 
         # Encode chart data for safe embedding
         for chart_id, chart_data in charts.items():
-            # Store the raw data - we'll handle encoding in the template
-            charts[chart_id]["json"] = json.dumps(chart_data, ensure_ascii=True)
+            # Create a copy without the json field to avoid circular reference
+            clean_data = {k: v for k, v in chart_data.items() if k != "json"}
+            # Store the JSON serialization of the clean data
+            charts[chart_id]["json"] = json.dumps(clean_data, ensure_ascii=True)
 
         return charts
 

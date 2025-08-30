@@ -57,7 +57,12 @@ class BenchmarkResult:
     def get_statistics(self) -> Dict[str, Any]:
         """Calculate statistics for the benchmark."""
         if not self.timings:
-            return {"operation": self.operation_name, "samples": 0, "errors": len(self.errors), "error_rate": 1.0}
+            return {
+                "operation": self.operation_name,
+                "samples": 0,
+                "errors": len(self.errors),
+                "error_rate": 1.0,
+            }
 
         sorted_timings = sorted(self.timings)
 
@@ -80,7 +85,7 @@ class BenchmarkResult:
                 if len(sorted_timings) > 100
                 else sorted_timings[-1] * 1000
             ),
-            "stddev_ms": statistics.stdev(self.timings) * 1000 if len(self.timings) > 1 else 0,
+            "stddev_ms": (statistics.stdev(self.timings) * 1000 if len(self.timings) > 1 else 0),
             "ops_per_second": 1 / statistics.mean(self.timings) if self.timings else 0,
             "metadata": self.metadata,
         }
@@ -123,7 +128,7 @@ class BenchmarkSuite:
         """Generate a comprehensive benchmark report."""
         return {
             "suite": self.suite_name,
-            "duration_seconds": self.end_time - self.start_time if self.end_time else time.time() - self.start_time,
+            "duration_seconds": (self.end_time - self.start_time if self.end_time else time.time() - self.start_time),
             "benchmarks": {name: benchmark.get_statistics() for name, benchmark in self.benchmarks.items()},
         }
 
@@ -214,7 +219,12 @@ class TestPerformanceBenchmarks:
                 await suite.measure("Get User by ID", user_repo.get_by_id, user.id)
 
                 # Benchmark: Update User
-                await suite.measure("Update User", user_repo.update, user.id, full_name=f"Updated {username}")
+                await suite.measure(
+                    "Update User",
+                    user_repo.update,
+                    user.id,
+                    full_name=f"Updated {username}",
+                )
 
                 # Benchmark: Soft Delete
                 await suite.measure("Soft Delete User", user_repo.delete, user.id)
@@ -355,7 +365,9 @@ class TestPerformanceBenchmarks:
             # Create API keys
             for i in range(5):
                 await api_key_repo.create(
-                    user_id=test_user.id, name=f"benchmark_key_{i}", permissions=["read", "write"]
+                    user_id=test_user.id,
+                    name=f"benchmark_key_{i}",
+                    permissions=["read", "write"],
                 )
 
             # Create audit logs
@@ -378,7 +390,12 @@ class TestPerformanceBenchmarks:
             for i in range(10):
                 await suite.measure("Get Audit Statistics", audit_repo.get_statistics, group_by="action")
 
-                await suite.measure("Get Entity History", audit_repo.get_entity_history, "User", test_user.id)
+                await suite.measure(
+                    "Get Entity History",
+                    audit_repo.get_entity_history,
+                    "User",
+                    test_user.id,
+                )
 
         suite.finalize()
         suite.print_report()
@@ -400,7 +417,9 @@ class TestPerformanceBenchmarks:
             user_repo = UserRepository(session)
             username = f"concurrent_{index}_{generate_random_string()}"
             return await user_repo.create(
-                username=username, email=f"{username}@example.com", password_hash=hash_password("password123")
+                username=username,
+                email=f"{username}@example.com",
+                password_hash=hash_password("password123"),
             )
 
         # Create a test user for reads
@@ -491,7 +510,10 @@ class TestPerformanceBenchmarks:
 
                         # Log the creation
                         await audit_repo.create(
-                            action="user.create", resource_type="User", resource_id=user.id, actor_id=user.id
+                            action="user.create",
+                            resource_type="User",
+                            resource_id=user.id,
+                            actor_id=user.id,
                         )
 
                     # Commit all at once

@@ -40,7 +40,11 @@ class TestInputValidator:
                 }
             ],
             "architectural_hotspots": [
-                {"file_path": "src/api/auth.py", "risk_score": 0.85, "violation_history": ["ADR-001", "ADR-002"]}
+                {
+                    "file_path": "src/api/auth.py",
+                    "risk_score": 0.85,
+                    "violation_history": ["ADR-001", "ADR-002"],
+                }
             ],
             "audit_metadata": {
                 "total_files_analyzed": 100,
@@ -64,6 +68,11 @@ class TestInputValidator:
             "expression(alert('XSS'))",
             "vbscript:msgbox('XSS')",
             "data:text/html,<script>alert('XSS')</script>",
+            # Test malformed end tags that browsers accept (CodeQL py/bad-tag-filter fix)
+            "<script>alert('XSS')</script foo='bar'>",  # Malformed end tag with attributes
+            "<script>alert('XSS')</script\tfoo>",  # Malformed with tab and attribute
+            "<script>alert('XSS')</script\nbar>",  # Malformed with newline
+            "<style>body{background:url(evil.com)}</style attr='test'>",  # Malformed style end tag
         ]
 
         for pattern in xss_patterns:
@@ -104,7 +113,11 @@ class TestInputValidator:
 
     def test_lenient_mode_allows_sql_keywords(self, lenient_validator):
         """Test that lenient mode allows SQL keywords."""
-        sql_like_strings = ["Select the best option", "Update your profile", "Delete unnecessary files"]
+        sql_like_strings = [
+            "Select the best option",
+            "Update your profile",
+            "Delete unnecessary files",
+        ]
 
         for string in sql_like_strings:
             result = lenient_validator.validate_string(string, "test_field")
@@ -129,7 +142,12 @@ class TestInputValidator:
     def test_validate_file_path_allows_safe_paths(self, validator):
         """Test that safe relative paths are allowed."""
         with patch("pathlib.Path.cwd", return_value=Path("/project")):
-            safe_paths = ["src/main.py", "tests/test_app.py", "docs/README.md", "path/to/file.txt"]
+            safe_paths = [
+                "src/main.py",
+                "tests/test_app.py",
+                "docs/README.md",
+                "path/to/file.txt",
+            ]
 
             for path in safe_paths:
                 with patch("pathlib.Path.resolve") as mock_resolve:
@@ -140,7 +158,12 @@ class TestInputValidator:
     # Test Control Character Prevention
     def test_validate_string_blocks_control_characters(self, validator):
         """Test that control characters are blocked."""
-        strings_with_control = ["text\x00with\x01null", "bell\x07character", "escape\x1bsequence", "form\x0cfeed"]
+        strings_with_control = [
+            "text\x00with\x01null",
+            "bell\x07character",
+            "escape\x1bsequence",
+            "form\x0cfeed",
+        ]
 
         for string in strings_with_control:
             with pytest.raises(ValidationError) as exc_info:
@@ -149,7 +172,12 @@ class TestInputValidator:
 
     def test_validate_string_allows_normal_whitespace(self, validator):
         """Test that normal whitespace is allowed."""
-        strings_with_whitespace = ["Line 1\nLine 2", "Tab\tseparated", "Carriage\rreturn", "Multiple  spaces"]
+        strings_with_whitespace = [
+            "Line 1\nLine 2",
+            "Tab\tseparated",
+            "Carriage\rreturn",
+            "Multiple  spaces",
+        ]
 
         for string in strings_with_whitespace:
             result = validator.validate_string(string, "test_field")
@@ -187,7 +215,11 @@ class TestInputValidator:
         """Test that dangerous content in audit data is sanitized."""
         dangerous_data = {
             "all_violations": [
-                {"file_path": "../../../etc/passwd", "message": "<script>alert('XSS')</script>", "adr_id": "ADR-001"}
+                {
+                    "file_path": "../../../etc/passwd",
+                    "message": "<script>alert('XSS')</script>",
+                    "adr_id": "ADR-001",
+                }
             ],
             "audit_metadata": {"repository_path": "/etc/passwd"},
         }
@@ -266,7 +298,13 @@ class TestInputValidator:
     # Test Hotspot Validation
     def test_validate_hotspots_with_dict(self, validator):
         """Test hotspot validation with dictionary input."""
-        hotspots = [{"file_path": "src/hotspot.py", "risk_score": 0.85, "violation_history": ["ADR-001", "ADR-002"]}]
+        hotspots = [
+            {
+                "file_path": "src/hotspot.py",
+                "risk_score": 0.85,
+                "violation_history": ["ADR-001", "ADR-002"],
+            }
+        ]
 
         result = validator._validate_hotspots(hotspots)
 
@@ -290,7 +328,11 @@ class TestInputValidator:
         # Create data that exceeds 50MB when serialized
         large_data = {
             "all_violations": [
-                {"file_path": f"file_{i}.py", "message": "x" * 10000, "adr_id": "ADR-001"}  # 10KB per message
+                {
+                    "file_path": f"file_{i}.py",
+                    "message": "x" * 10000,
+                    "adr_id": "ADR-001",
+                }  # 10KB per message
                 for i in range(6000)  # 60MB total
             ]
         }
@@ -309,7 +351,11 @@ class TestInputValidator:
         # Create data that's just over 50MB
         large_data = {
             "all_violations": [
-                {"file_path": f"file_{i}.py", "message": "x" * 1000000, "adr_id": "ADR-001"}  # 1MB per message
+                {
+                    "file_path": f"file_{i}.py",
+                    "message": "x" * 1000000,
+                    "adr_id": "ADR-001",
+                }  # 1MB per message
                 for i in range(55)  # 55MB total
             ]
         }

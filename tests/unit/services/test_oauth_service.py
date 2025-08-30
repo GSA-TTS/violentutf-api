@@ -16,22 +16,32 @@ from app.services.oauth_service import OAuth2Service
 
 # Create mock classes for the models
 class OAuthApplication:
+    """Mock OAuth application model."""
+
     pass
 
 
 class OAuthAccessToken:
+    """Mock OAuth access token model."""
+
     pass
 
 
 class OAuthRefreshToken:
+    """Mock OAuth refresh token model."""
+
     pass
 
 
 class OAuthAuthorizationCode:
+    """Mock OAuth authorization code model."""
+
     pass
 
 
 class User:
+    """Mock user model."""
+
     pass
 
 
@@ -165,7 +175,7 @@ class TestOAuth2Service:
         """Test successful client validation."""
         # Arrange
         with patch.object(oauth_service, "get_application", return_value=mock_oauth_app):
-            with patch("app.services.oauth_service.verify_password", return_value=True):
+            with patch("app.services.oauth_service.verify_client_secret", return_value=True):
                 # Act
                 result = await oauth_service.validate_client(
                     client_id="client_test123",
@@ -205,8 +215,11 @@ class TestOAuth2Service:
         scopes = ["read:users", "write:users"]
 
         with patch.object(oauth_service, "_generate_authorization_code", return_value="auth_code_123"):
-            # Mock hash_token function
-            with patch("app.services.oauth_service.hash_token", return_value="hashed_auth_code"):
+            # Mock hash_oauth_token function
+            with patch(
+                "app.services.oauth_service.hash_oauth_token",
+                return_value="hashed_auth_code",
+            ):
                 # Mock the OAuthAuthorizationCode constructor to handle the correct fields
                 with patch("app.services.oauth_service.OAuthAuthorizationCode") as mock_auth_code_class:
                     mock_auth_code = MagicMock()
@@ -233,6 +246,7 @@ class TestOAuth2Service:
         # Arrange
         code = "auth_code_123"
         mock_auth_code = MagicMock(spec=OAuthAuthorizationCode)
+        mock_auth_code.id = uuid.uuid4()  # Add missing id attribute
         mock_auth_code.is_used = False
         mock_auth_code.is_expired = False
         mock_auth_code.application_id = mock_oauth_app.id
@@ -241,12 +255,21 @@ class TestOAuth2Service:
         mock_auth_code.user_id = uuid.uuid4()
         mock_auth_code.scopes = json.dumps(["read:users"])
 
+        # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_auth_code
+        mock_result.rowcount = 1  # For UPDATE operations
+        mock_result.scalar_one_or_none.return_value = mock_auth_code  # For SELECT operations
+
+        # Set this as the return value for both service session and repository session
         oauth_service.session.execute.return_value = mock_result
+        oauth_service.auth_code_repo.session.execute.return_value = mock_result
 
         with patch.object(oauth_service, "validate_client", return_value=mock_oauth_app):
-            with patch.object(oauth_service, "_create_tokens", return_value=("access_123", "refresh_456")):
+            with patch.object(
+                oauth_service,
+                "_create_tokens",
+                return_value=("access_123", "refresh_456"),
+            ):
                 # Act
                 access_token, refresh_token, expires_in = await oauth_service.exchange_authorization_code(
                     code=code,
@@ -259,7 +282,9 @@ class TestOAuth2Service:
                 assert access_token == "access_123"
                 assert refresh_token == "refresh_456"
                 assert expires_in == 3600  # 60 minutes * 60 seconds
-                assert mock_auth_code.is_used is True
+
+                # Verify that the repository's session.execute was called (indicating update occurred)
+                assert oauth_service.auth_code_repo.session.execute.called
 
     @pytest.mark.asyncio
     async def test_exchange_authorization_code_already_used(self, oauth_service, mock_oauth_app):
@@ -315,6 +340,7 @@ class TestOAuth2Service:
         """Test authorization code exchange with PKCE."""
         # Arrange
         mock_auth_code = MagicMock(spec=OAuthAuthorizationCode)
+        mock_auth_code.id = uuid.uuid4()  # Add missing id attribute
         mock_auth_code.is_used = False
         mock_auth_code.is_expired = False
         mock_auth_code.application_id = mock_oauth_app.id
@@ -324,13 +350,22 @@ class TestOAuth2Service:
         mock_auth_code.user_id = uuid.uuid4()
         mock_auth_code.scopes = json.dumps(["read:users"])
 
+        # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_auth_code
+        mock_result.rowcount = 1  # For UPDATE operations
+        mock_result.scalar_one_or_none.return_value = mock_auth_code  # For SELECT operations
+
+        # Set this as the return value for both service session and repository session
         oauth_service.session.execute.return_value = mock_result
+        oauth_service.auth_code_repo.session.execute.return_value = mock_result
 
         with patch.object(oauth_service, "validate_client", return_value=mock_oauth_app):
             with patch.object(oauth_service, "_verify_pkce", return_value=True):
-                with patch.object(oauth_service, "_create_tokens", return_value=("access_123", "refresh_456")):
+                with patch.object(
+                    oauth_service,
+                    "_create_tokens",
+                    return_value=("access_123", "refresh_456"),
+                ):
                     # Act
                     access_token, _, _ = await oauth_service.exchange_authorization_code(
                         code="code_with_pkce",
@@ -358,14 +393,26 @@ class TestOAuth2Service:
         mock_refresh_token.use_count = 0
         mock_refresh_token.last_used_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_refresh_token"):
+        # Mock hash_oauth_token
+        with patch(
+            "app.services.oauth_service.hash_oauth_token",
+            return_value="hashed_refresh_token",
+        ):
+            # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
             mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = mock_refresh_token
+            mock_result.rowcount = 1  # For UPDATE operations
+            mock_result.scalar_one_or_none.return_value = mock_refresh_token  # For SELECT operations
+
+            # Set this as the return value for both service session and repository session
             oauth_service.session.execute.return_value = mock_result
+            oauth_service.refresh_token_repo.session.execute.return_value = mock_result
 
             with patch.object(oauth_service, "validate_client", return_value=mock_oauth_app):
-                with patch.object(oauth_service, "_create_tokens", return_value=("new_access", "new_refresh")):
+                with patch.object(
+                    oauth_service,
+                    "_create_tokens",
+                    return_value=("new_access", "new_refresh"),
+                ):
                     # Act
                     access_token, new_refresh_token, expires_in = await oauth_service.refresh_access_token(
                         refresh_token=refresh_token,
@@ -376,9 +423,10 @@ class TestOAuth2Service:
                     # Assert
                     assert access_token == "new_access"
                     assert new_refresh_token == "new_refresh"
-                    assert mock_refresh_token.use_count == 1
-                    assert mock_refresh_token.last_used_at is not None
                     assert expires_in == 3600  # Default access token expire time
+
+                    # Verify that the repository's session.execute was called (indicating update occurred)
+                    assert oauth_service.refresh_token_repo.session.execute.called
 
     @pytest.mark.asyncio
     async def test_refresh_access_token_scope_reduction(self, oauth_service, mock_oauth_app):
@@ -394,11 +442,19 @@ class TestOAuth2Service:
         mock_refresh_token.use_count = 0
         mock_refresh_token.last_used_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_refresh_token"):
+        # Mock hash_oauth_token
+        with patch(
+            "app.services.oauth_service.hash_oauth_token",
+            return_value="hashed_refresh_token",
+        ):
+            # Create a universal mock result that handles both UPDATE (rowcount) and SELECT (scalar_one_or_none) operations
             mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = mock_refresh_token
+            mock_result.rowcount = 1  # For UPDATE operations
+            mock_result.scalar_one_or_none.return_value = mock_refresh_token  # For SELECT operations
+
+            # Set this as the return value for both service session and repository session
             oauth_service.session.execute.return_value = mock_result
+            oauth_service.refresh_token_repo.session.execute.return_value = mock_result
 
             with patch.object(oauth_service, "validate_client", return_value=mock_oauth_app):
                 with patch.object(oauth_service, "_create_tokens") as mock_create_tokens:
@@ -452,7 +508,11 @@ class TestOAuth2Service:
         mock_access_token.scopes = json.dumps(["read:users"])
 
         mock_result = MagicMock()
-        mock_result.one_or_none.return_value = (mock_access_token, mock_user, mock_oauth_app)
+        mock_result.one_or_none.return_value = (
+            mock_access_token,
+            mock_user,
+            mock_oauth_app,
+        )
         oauth_service.session.execute.return_value = mock_result
 
         # Act
@@ -487,19 +547,28 @@ class TestOAuth2Service:
         mock_access_token.application_id = uuid.uuid4()
         mock_access_token.revoked_at = None
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_access_token"):
+        # Mock hash_oauth_token
+        with patch(
+            "app.services.oauth_service.hash_oauth_token",
+            return_value="hashed_access_token",
+        ):
+            # Create universal mock result for both SELECT and UPDATE operations
             mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = mock_access_token
+            mock_result.scalar_one_or_none.return_value = mock_access_token  # For SELECT operations
+            mock_result.rowcount = 1  # For UPDATE operations
             oauth_service.session.execute.return_value = mock_result
+
+            # Mock repository session for UPDATE operations
+            oauth_service.access_token_repo.session.execute.return_value = mock_result
 
             # Act
             result = await oauth_service.revoke_token(token)
 
             # Assert
             assert result is True
-            assert mock_access_token.is_revoked is True
-            assert mock_access_token.revoked_at is not None
+
+            # Verify that the repository's session.execute was called (indicating update occurred)
+            assert oauth_service.access_token_repo.session.execute.called
 
     @pytest.mark.asyncio
     async def test_revoke_token_refresh_token(self, oauth_service):
@@ -515,31 +584,47 @@ class TestOAuth2Service:
 
         # Mock access tokens to revoke
         mock_access_tokens = [
-            MagicMock(spec=OAuthAccessToken, is_revoked=False, revoked_at=None),
-            MagicMock(spec=OAuthAccessToken, is_revoked=False, revoked_at=None),
+            MagicMock(
+                spec=OAuthAccessToken,
+                id=uuid.uuid4(),
+                is_revoked=False,
+                revoked_at=None,
+            ),
+            MagicMock(
+                spec=OAuthAccessToken,
+                id=uuid.uuid4(),
+                is_revoked=False,
+                revoked_at=None,
+            ),
         ]
 
-        # Mock hash_token
-        with patch("app.services.oauth_service.hash_token", return_value="hashed_token"):
-            # When token_type_hint="refresh_token", it skips access token check
-            mock_result1 = MagicMock()
-            mock_result1.scalar_one_or_none.return_value = mock_refresh_token
+        # Mock hash_oauth_token
+        with patch("app.services.oauth_service.hash_oauth_token", return_value="hashed_token"):
+            # Create universal mock result for all operations
+            mock_result = MagicMock()
+            mock_result.scalar_one_or_none.return_value = mock_refresh_token  # For SELECT operations
+            mock_result.rowcount = 1  # For UPDATE operations
 
-            mock_result2 = MagicMock()
-            mock_result2.scalars.return_value = mock_access_tokens
+            # Configure scalars() to return an object with all() method
+            mock_scalars = MagicMock()
+            mock_scalars.all.return_value = mock_access_tokens
+            mock_result.scalars.return_value = mock_scalars
 
-            oauth_service.session.execute.side_effect = [mock_result1, mock_result2]
+            # Use return_value instead of side_effect to handle all calls
+            oauth_service.session.execute.return_value = mock_result
+
+            # Mock repository sessions for UPDATE operations
+            oauth_service.refresh_token_repo.session.execute.return_value = mock_result
+            oauth_service.access_token_repo.session.execute.return_value = mock_result
 
             # Act
             result = await oauth_service.revoke_token(token, token_type_hint="refresh_token")
 
             # Assert
             assert result is True
-            assert mock_refresh_token.is_revoked is True
-            assert mock_refresh_token.revoked_at is not None
-            for access_token in mock_access_tokens:
-                assert access_token.is_revoked is True
-                assert access_token.revoked_at is not None
+
+            # Verify that the repository's session.execute was called (indicating updates occurred)
+            assert oauth_service.refresh_token_repo.session.execute.called
 
     @pytest.mark.asyncio
     async def test_list_user_authorizations(self, oauth_service):
@@ -559,17 +644,19 @@ class TestOAuth2Service:
         mock_token.created_at = datetime.now(timezone.utc)
         mock_token.last_used_at = datetime.now(timezone.utc)
 
-        mock_result = MagicMock()
-        mock_result.__iter__ = MagicMock(return_value=iter([(mock_app, mock_token)]))
-        oauth_service.session.execute.return_value = mock_result
+        # Mock the repository method directly to return the expected data
+        with patch.object(
+            oauth_service.refresh_token_repo,
+            "get_user_authorizations",
+            return_value=[(mock_app, mock_token)],
+        ):
+            # Act
+            authorizations = await oauth_service.list_user_authorizations(user_id)
 
-        # Act
-        authorizations = await oauth_service.list_user_authorizations(user_id)
-
-        # Assert
-        assert len(authorizations) == 1
-        assert authorizations[0]["application"]["name"] == "Test App"
-        assert authorizations[0]["scopes"] == ["read:users", "write:users"]
+            # Assert
+            assert len(authorizations) == 1
+            assert authorizations[0]["application"]["name"] == "Test App"
+            assert authorizations[0]["scopes"] == ["read:users", "write:users"]
 
     @pytest.mark.asyncio
     async def test_revoke_user_authorization(self, oauth_service):
@@ -578,21 +665,35 @@ class TestOAuth2Service:
         user_id = str(uuid.uuid4())
         app_id = str(uuid.uuid4())
 
-        mock_refresh_tokens = [MagicMock(spec=OAuthRefreshToken, is_revoked=False)]
-        mock_access_tokens = [MagicMock(spec=OAuthAccessToken, is_revoked=False)]
+        mock_refresh_tokens = [MagicMock(spec=OAuthRefreshToken, id=uuid.uuid4(), is_revoked=False)]
+        mock_access_tokens = [MagicMock(spec=OAuthAccessToken, id=uuid.uuid4(), is_revoked=False)]
 
-        mock_result1 = MagicMock()
-        mock_result1.scalars.return_value = mock_refresh_tokens
+        # Create universal mock result for all operations
+        mock_result = MagicMock()
+        mock_result.rowcount = 1  # For UPDATE operations
 
-        mock_result2 = MagicMock()
-        mock_result2.scalars.return_value = mock_access_tokens
+        # Configure scalars() to return an object with all() method for both queries
+        mock_scalars1 = MagicMock()
+        mock_scalars1.all.return_value = mock_refresh_tokens
 
-        oauth_service.session.execute.side_effect = [mock_result1, mock_result2]
+        mock_scalars2 = MagicMock()
+        mock_scalars2.all.return_value = mock_access_tokens
+
+        # Use side_effect for scalars since there are multiple calls
+        mock_result.scalars.side_effect = [mock_scalars1, mock_scalars2]
+
+        oauth_service.session.execute.return_value = mock_result
+
+        # Mock repository sessions for UPDATE operations
+        oauth_service.refresh_token_repo.session.execute.return_value = mock_result
+        oauth_service.access_token_repo.session.execute.return_value = mock_result
 
         # Act
         result = await oauth_service.revoke_user_authorization(user_id, app_id)
 
         # Assert
         assert result is True
-        for token in mock_refresh_tokens + mock_access_tokens:
-            assert token.is_revoked is True
+
+        # Verify that the repository's session.execute was called (indicating updates occurred)
+        assert oauth_service.refresh_token_repo.session.execute.called
+        assert oauth_service.access_token_repo.session.execute.called

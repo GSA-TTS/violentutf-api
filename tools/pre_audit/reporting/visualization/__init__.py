@@ -10,4 +10,10 @@ from .hotspot_heatmap import HotspotHeatmapGenerator
 from .risk_visualizer import RiskVisualizer
 from .trend_analyzer import TrendAnalyzer
 
-__all__ = ["ChartGenerator", "ChartType", "RiskVisualizer", "HotspotHeatmapGenerator", "TrendAnalyzer"]
+__all__ = [
+    "ChartGenerator",
+    "ChartType",
+    "RiskVisualizer",
+    "HotspotHeatmapGenerator",
+    "TrendAnalyzer",
+]

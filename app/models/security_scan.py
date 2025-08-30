@@ -112,7 +112,46 @@ class SecurityScan(Base, AuditMixin, SoftDeleteMixin):
         )
 
     def __repr__(self) -> str:
+        """Return string representation of SecurityScan."""
         return f"<SecurityScan(name='{self.name}', type='{self.scan_type}', status='{self.status}')>"
+
+    @property
+    def user_id(self) -> str:
+        """Get user ID (alias for initiated_by)."""
+        return self.initiated_by
+
+    @property
+    def parameters(self) -> Optional[Dict[str, Any]]:
+        """Get scan parameters (alias for configuration)."""
+        return self.configuration
+
+    @parameters.setter
+    def parameters(self, value: Optional[Dict[str, Any]]) -> None:
+        """Set scan parameters (alias for configuration)."""
+        self.configuration = value
+
+    @property
+    def results(self) -> Optional[Dict[str, Any]]:
+        """Get scan results (alias for artifacts)."""
+        return self.artifacts
+
+    @results.setter
+    def results(self, value: Optional[Dict[str, Any]]) -> None:
+        """Set scan results (alias for artifacts)."""
+        self.artifacts = value
+
+    @property
+    def cancelled_by(self) -> Optional[str]:
+        """Get who cancelled the scan (returns updated_by if status is cancelled)."""
+        if self.status == ScanStatus.CANCELLED:
+            return self.updated_by
+        return None
+
+    @cancelled_by.setter
+    def cancelled_by(self, value: Optional[str]) -> None:
+        """Set who cancelled the scan (sets updated_by)."""
+        if value:
+            self.updated_by = value
 
     @property
     def is_running(self) -> bool:
@@ -298,7 +337,10 @@ class SecurityScan(Base, AuditMixin, SoftDeleteMixin):
         since = datetime.now(timezone.utc) - timedelta(hours=hours)
         return (
             session.query(cls)
-            .filter(cls.status.in_([ScanStatus.FAILED, ScanStatus.TIMEOUT]), cls.completed_at >= since)
+            .filter(
+                cls.status.in_([ScanStatus.FAILED, ScanStatus.TIMEOUT]),
+                cls.completed_at >= since,
+            )
             .order_by(cls.completed_at.desc())
             .all()
         )

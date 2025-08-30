@@ -417,7 +417,10 @@ class TestRequestSigningMiddleware:
                     request.body = AsyncMock(return_value=body)
                     request.state = MagicMock()
 
-                    with patch("app.middleware.request_signing.has_cached_body", return_value=False):
+                    with patch(
+                        "app.middleware.request_signing.has_cached_body",
+                        return_value=False,
+                    ):
 
                         async def call_next(req):
                             # Verify state was set
@@ -624,7 +627,8 @@ class TestRequestSigningIntegration:
 
             # Mock the API secret lookup
             with patch(
-                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret", return_value=api_secret
+                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret",
+                return_value=api_secret,
             ):
                 response = client.post(
                     "/api/v1/admin/action",
@@ -694,7 +698,8 @@ class TestRequestSigningIntegration:
             }
 
             with patch(
-                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret", return_value="test_secret"
+                "app.middleware.request_signing.RequestSigningMiddleware._get_api_secret",
+                return_value="test_secret",
             ):
                 response = client.get("/api/v1/users/me", headers=all_headers)
                 assert response.status_code == 200
@@ -730,9 +735,21 @@ class TestRequestSigningConfiguration:
         assert NONCE_HEADER.startswith("X-")
 
         # Should not conflict with standard headers
-        standard_headers = ["Authorization", "Content-Type", "Accept", "User-Agent", "Host", "Content-Length"]
+        standard_headers = [
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "User-Agent",
+            "Host",
+            "Content-Length",
+        ]
 
-        custom_headers = [SIGNATURE_HEADER, TIMESTAMP_HEADER, API_KEY_HEADER, NONCE_HEADER]
+        custom_headers = [
+            SIGNATURE_HEADER,
+            TIMESTAMP_HEADER,
+            API_KEY_HEADER,
+            NONCE_HEADER,
+        ]
 
         for custom in custom_headers:
             assert custom not in standard_headers

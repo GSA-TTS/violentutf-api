@@ -29,8 +29,11 @@ class APIKeyService:
         return self.KEY_PREFIX + secrets.token_urlsafe(length)
 
     def _hash_key(self, key: str) -> str:
-        """Hash an API key."""
-        return hashlib.sha256(key.encode()).hexdigest()
+        """Hash an API key using secure Argon2 password hashing."""
+        from app.core.security import hash_api_key
+
+        # API keys are sensitive credentials like passwords and should use Argon2
+        return hash_api_key(key)
 
     async def create_api_key(
         self,
@@ -60,18 +63,17 @@ class APIKeyService:
         # Convert scopes list to permissions dict
         permissions = {scope: True for scope in scopes}
 
-        # Create API key
-        api_key = APIKey(
-            user_id=uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-            name=name,
-            key_hash=key_hash,
-            key_prefix=plain_key[:10],  # Use first 10 chars as prefix
-            permissions=permissions,
-            expires_at=expires_at,
-        )
+        # Create API key using repository
+        api_key_data = {
+            "user_id": uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+            "name": name,
+            "key_hash": key_hash,
+            "key_prefix": plain_key[:10],  # Use first 10 chars as prefix
+            "permissions": permissions,
+            "expires_at": expires_at,
+        }
 
-        self.session.add(api_key)
-        await self.session.flush()
+        api_key = await self.repository.create(api_key_data)
 
         return api_key, plain_key
 
@@ -92,9 +94,8 @@ class APIKeyService:
         if not api_key.user or not api_key.user.is_active:
             raise AuthenticationError("User account is not active")
 
-        # Update last used
-        api_key.last_used_at = datetime.now(timezone.utc)
-        await self.session.flush()
+        # Update last used using repository
+        await self.repository.update(api_key.id, last_used_at=datetime.now(timezone.utc))
 
         return api_key, api_key.user
 
@@ -104,8 +105,8 @@ class APIKeyService:
         if not api_key:
             raise NotFoundError("API key not found")
 
-        # Deactivate old key
-        api_key.is_deleted = True
+        # Deactivate old key using repository
+        await self.repository.update(api_key.id, is_deleted=True)
 
         # Convert permissions dict back to scopes list for compatibility
         scopes = [k for k, v in api_key.permissions.items() if v]
@@ -118,7 +119,6 @@ class APIKeyService:
             expires_in_days=30 if api_key.expires_at else None,
         )
 
-        await self.session.flush()
         return new_api_key, plain_key
 
     async def revoke_api_key(self, api_key_id: str) -> bool:
@@ -130,9 +130,7 @@ class APIKeyService:
         if not api_key.is_active():
             return False
 
-        api_key.is_deleted = True
-        api_key.revoked_at = datetime.now(timezone.utc)
-        await self.session.flush()
+        await self.repository.update(api_key.id, is_deleted=True, revoked_at=datetime.now(timezone.utc))
 
         return True
 
@@ -172,8 +170,7 @@ class APIKeyService:
         count = 0
         for key in expired_keys:
             if key.is_active():
-                key.is_deleted = True
+                await self.repository.update(key.id, is_deleted=True)
                 count += 1
 
-        await self.session.flush()
         return count

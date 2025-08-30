@@ -11,7 +11,12 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from tools.pre_audit.reporting.base import ReportConfig, ReportDataProcessor, ReportGenerator, SecurityLevel
+from tools.pre_audit.reporting.base import (
+    ReportConfig,
+    ReportDataProcessor,
+    ReportGenerator,
+    SecurityLevel,
+)
 
 
 class TestReportConfig:
@@ -142,7 +147,10 @@ class TestReportGenerator:
         test_cases = [
             ("report.pdf", "report.pdf"),
             ("my report.pdf", "my_report.pdf"),
-            ("../../../etc/passwd", "__________etc_passwd"),  # Path traversal properly sanitized
+            (
+                "../../../etc/passwd",
+                "__________etc_passwd",
+            ),  # Path traversal properly sanitized
             (".hidden", "hidden"),
             ("a" * 300 + ".pdf", "a" * 250),  # Check without extension
         ]
@@ -154,7 +162,11 @@ class TestReportGenerator:
 
     def test_sanitize_filename_prevents_traversal(self, generator):
         """Test that path traversal attempts are sanitized."""
-        dangerous_names = ["../../etc/passwd", "..\\windows\\system32", "file/with/slashes"]
+        dangerous_names = [
+            "../../etc/passwd",
+            "..\\windows\\system32",
+            "file/with/slashes",
+        ]
 
         for name in dangerous_names:
             result = generator._sanitize_filename(name)
@@ -224,9 +236,17 @@ class TestReportDataProcessor:
                 },
             ],
             "architectural_hotspots": [
-                {"file_path": "src/auth.py", "risk_score": 85, "churn_score": 45, "complexity_score": 78}
+                {
+                    "file_path": "src/auth.py",
+                    "risk_score": 85,
+                    "churn_score": 45,
+                    "complexity_score": 78,
+                }
             ],
-            "recommendations": ["Implement centralized authentication", "Add API versioning"],
+            "recommendations": [
+                "Implement centralized authentication",
+                "Add API versioning",
+            ],
         }
 
     def test_prepare_report_data(self, processor, sample_audit_results):
@@ -335,9 +355,27 @@ class TestReportDataProcessor:
         """Test overall risk assessment."""
         # Test different scenarios
         test_cases = [
-            ({"overall_compliance_score": 45, "all_violations": [{"risk_level": "critical"}] * 15}, "CRITICAL"),
-            ({"overall_compliance_score": 65, "all_violations": [{"risk_level": "critical"}] * 7}, "HIGH"),
-            ({"overall_compliance_score": 80, "all_violations": [{"risk_level": "critical"}] * 2}, "MEDIUM"),
+            (
+                {
+                    "overall_compliance_score": 45,
+                    "all_violations": [{"risk_level": "critical"}] * 15,
+                },
+                "CRITICAL",
+            ),
+            (
+                {
+                    "overall_compliance_score": 65,
+                    "all_violations": [{"risk_level": "critical"}] * 7,
+                },
+                "HIGH",
+            ),
+            (
+                {
+                    "overall_compliance_score": 80,
+                    "all_violations": [{"risk_level": "critical"}] * 2,
+                },
+                "MEDIUM",
+            ),
             ({"overall_compliance_score": 90, "all_violations": []}, "LOW"),
         ]
 
@@ -363,7 +401,11 @@ class TestReportDataProcessor:
 
     def test_empty_audit_results(self, processor):
         """Test handling of empty audit results."""
-        empty_results = {"all_violations": [], "architectural_hotspots": [], "recommendations": []}
+        empty_results = {
+            "all_violations": [],
+            "architectural_hotspots": [],
+            "recommendations": [],
+        }
 
         result = processor.prepare_report_data(empty_results)
 

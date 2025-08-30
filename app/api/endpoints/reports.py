@@ -1,16 +1,26 @@
 """Report generation and management API endpoints."""
 
 import logging
-from datetime import datetime
+import os
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response
+
+# TECHNICAL DEBT: Direct SQLAlchemy usage violates Clean Architecture
+# TODO: Move SQL queries to service layer
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_db, get_report_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
-from app.models.report import Report, ReportFormat, ReportStatus, ReportTemplate, TemplateType
+from app.models.report import (
+    Report,
+    ReportFormat,
+    ReportStatus,
+    ReportTemplate,
+    TemplateType,
+)
 from app.models.task import Task, TaskStatus
 from app.models.user import User
 from app.schemas.report import (
@@ -22,6 +32,7 @@ from app.schemas.report import (
     ReportStatsResponse,
     ReportUpdate,
 )
+from app.services.report_service import ReportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,8 +46,9 @@ async def list_reports(
     format: Optional[ReportFormat] = Query(None, description="Filter by format"),
     status: Optional[ReportStatus] = Query(None, description="Filter by status"),
     created_by: Optional[str] = Query(None, description="Filter by creator"),
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportListResponse:
     """List reports with filtering and pagination."""
     try:
@@ -80,12 +92,18 @@ async def list_reports(
         raise HTTPException(status_code=500, detail="Failed to list reports")
 
 
-@router.post("/", response_model=ReportGenerationResponse, summary="Create report", status_code=202)
+@router.post(
+    "/",
+    response_model=ReportGenerationResponse,
+    summary="Create report",
+    status_code=202,
+)
 async def create_report(
     report_data: ReportCreate,
     generate_immediately: bool = Query(True, description="Generate report immediately"),
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportGenerationResponse:
     """Create a new report and optionally generate it immediately."""
     try:
@@ -104,13 +122,13 @@ async def create_report(
             parameters=report_data.parameters or {},
             is_public=report_data.is_public or False,
             expires_at=report_data.expires_at,
-            status=ReportStatus.PENDING if generate_immediately else ReportStatus.PENDING,
+            status=(ReportStatus.PENDING if generate_immediately else ReportStatus.PENDING),
             created_by=current_user.username,
         )
 
         # Save report to database
         db.add(report)
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         # Create associated task for async generation
@@ -133,7 +151,7 @@ async def create_report(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             # Link report to task
@@ -148,7 +166,7 @@ async def create_report(
             task.status = TaskStatus.PENDING
 
             task_id = task.id
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(report)
 
         logger.info(f"User {current_user.username} created report: {report.name}")
@@ -160,20 +178,21 @@ async def create_report(
             status=report.status,
             started_at=report.created_at,
             status_url=f"/api/v1/reports/{report.id}",
-            download_url=f"/api/v1/reports/{report.id}/download" if report.status == ReportStatus.COMPLETED else None,
+            download_url=(f"/api/v1/reports/{report.id}/download" if report.status == ReportStatus.COMPLETED else None),
         )
 
     except Exception as e:
         logger.error(f"Error creating report: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to create report")
 
 
 @router.get("/{report_id}", response_model=ReportResponse, summary="Get report")
 async def get_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
     """Get a specific report by ID (ADR-007 status polling)."""
     try:
@@ -198,8 +217,9 @@ async def get_report(
 async def update_report(
     report_id: str,
     report_data: ReportUpdate,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
     """Update a report."""
     try:
@@ -213,7 +233,10 @@ async def update_report(
 
         # Check if report can be updated
         if report.status in [ReportStatus.GENERATING]:
-            raise HTTPException(status_code=400, detail="Cannot update report that is currently generating")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update report that is currently generating",
+            )
 
         # Update fields
         update_data = report_data.model_dump(exclude_unset=True)
@@ -222,7 +245,7 @@ async def update_report(
 
         report.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         logger.info(f"User {current_user.username} updated report: {report.name}")
@@ -233,15 +256,16 @@ async def update_report(
         raise
     except Exception as e:
         logger.error(f"Error updating report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update report")
 
 
 @router.delete("/{report_id}", summary="Delete report")
 async def delete_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Delete a report (soft delete)."""
     try:
@@ -255,12 +279,15 @@ async def delete_report(
 
         # Check if report can be deleted
         if report.status == ReportStatus.GENERATING:
-            raise HTTPException(status_code=400, detail="Cannot delete report that is currently generating")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete report that is currently generating",
+            )
 
         # Soft delete
         report.soft_delete(deleted_by=current_user.username)
 
-        await db.commit()
+        # Service layer handles commit
 
         logger.info(f"User {current_user.username} deleted report: {report.name}")
 
@@ -270,16 +297,21 @@ async def delete_report(
         raise
     except Exception as e:
         logger.error(f"Error deleting report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to delete report")
 
 
-@router.post("/{report_id}/generate", response_model=ReportGenerationResponse, summary="Generate report")
+@router.post(
+    "/{report_id}/generate",
+    response_model=ReportGenerationResponse,
+    summary="Generate report",
+)
 async def generate_report(
     report_id: str,
     generation_request: Optional[ReportGenerationRequest] = None,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportGenerationResponse:
     """Generate a report asynchronously."""
     try:
@@ -312,7 +344,7 @@ async def generate_report(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             report.task_id = task.id
@@ -330,7 +362,7 @@ async def generate_report(
         report.updated_by = current_user.username
 
         task.status = TaskStatus.PENDING
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.updated_by = current_user.username
 
         # Dispatch to Celery worker
@@ -340,7 +372,7 @@ async def generate_report(
         celery_task = generate_report_task.delay(report.id, config_override)
         task.celery_task_id = celery_task.id
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(report)
 
         logger.info(f"User {current_user.username} generated report: {report.name}")
@@ -349,7 +381,7 @@ async def generate_report(
             report_id=report.id,
             task_id=task.id,
             status=report.status,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             status_url=f"/api/v1/reports/{report.id}",
             download_url=None,  # Available after completion
         )
@@ -358,15 +390,16 @@ async def generate_report(
         raise
     except Exception as e:
         logger.error(f"Error generating report {report_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to generate report")
 
 
 @router.get("/{report_id}/download", summary="Download report")
 async def download_report(
     report_id: str,
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Download a generated report file."""
     try:
@@ -387,46 +420,84 @@ async def download_report(
 
         # Update download count
         report.download_count += 1
-        await db.commit()
+        # Service layer handles commit
 
         # Return content based on format
         if report.content:
             # For JSON/data formats, return content directly
             if report.format == ReportFormat.JSON:
+                import re
+
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=str(report.content),
                     media_type="application/json",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.json"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.json"'},
                 )
             elif report.format == ReportFormat.CSV:
                 # Convert content to CSV (simplified)
                 csv_content = "data\n" + str(report.content)
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=csv_content,
                     media_type="text/csv",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.csv"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.csv"'},
                 )
 
         # For file-based formats, serve the file
         if report.file_path:
             import os
+            from pathlib import Path
+
+            # Validate path to prevent directory traversal attacks
+            try:
+                # Convert to absolute path and resolve any .. sequences
+                file_path = Path(report.file_path).resolve()
+
+                # Define allowed base directories using configuration
+                # Use environment variable or safe default
+                reports_base_dir = os.environ.get("REPORTS_BASE_DIR", "./reports")
+                allowed_dirs = [
+                    Path(reports_base_dir).resolve(),
+                    Path("./reports").resolve(),  # Always allow local reports dir
+                ]
+
+                # Add additional allowed directories from environment if specified
+                if additional_dirs := os.environ.get("ADDITIONAL_REPORTS_DIRS"):
+                    for dir_path in additional_dirs.split(":"):
+                        if dir_path.strip():  # Skip empty paths
+                            allowed_dirs.append(Path(dir_path.strip()).resolve())
+
+                # Check if the resolved path is within allowed directories
+                path_is_safe = any(str(file_path).startswith(str(allowed_dir)) for allowed_dir in allowed_dirs)
+
+                if not path_is_safe:
+                    raise HTTPException(status_code=403, detail="Access to file path not allowed")
+
+            except (OSError, ValueError):
+                logger.warning(f"Invalid file path in report {report.id}: {report.file_path}")
+                raise HTTPException(status_code=400, detail="Invalid file path")
 
             # Check if file exists
-            if not os.path.exists(report.file_path):
+            if not file_path.exists():
                 raise HTTPException(status_code=404, detail="Report file not found on disk")
 
             # Read and serve the actual file
             try:
-                with open(report.file_path, "rb") as f:
+                with open(file_path, "rb") as f:
                     file_content = f.read()
 
+                # Sanitize filename to prevent header injection
+                safe_filename = re.sub(r"[^\w\-_\.]", "_", report.name)
                 return Response(
                     content=file_content,
                     media_type=report.mime_type or "application/octet-stream",
-                    headers={"Content-Disposition": f'attachment; filename="{report.name}.{report.format.value}"'},
+                    headers={"Content-Disposition": f'attachment; filename="{safe_filename}.{report.format.value}"'},
                 )
             except Exception as file_error:
-                logger.error(f"Error reading report file {report.file_path}: {file_error}")
+                logger.error(f"Error reading report file {file_path}: {file_error}")
                 raise HTTPException(status_code=500, detail="Failed to read report file")
 
         raise HTTPException(status_code=404, detail="Report content not available")
@@ -440,8 +511,9 @@ async def download_report(
 
 @router.get("/stats", response_model=ReportStatsResponse, summary="Get report statistics")
 async def get_report_stats(
-    db: AsyncSession = Depends(get_db),
+    report_service: ReportService = Depends(get_report_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ReportStatsResponse:
     """Get report generation statistics."""
     try:

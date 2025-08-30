@@ -118,7 +118,9 @@ def _sanitize_commit_message(self, message: str) -> str:
 
             # Update __init__ to validate path
             content = re.sub(
-                r"self\.repo_path = Path\(repo_path\)", "self.repo_path = self._validate_path_input(repo_path)", content
+                r"self\.repo_path = Path\(repo_path\)",
+                "self.repo_path = self._validate_path_input(repo_path)",
+                content,
             )
 
             parser_file.write_text(content)
@@ -230,8 +232,14 @@ def remove_mock_implementations() -> None:
 
     mock_patterns = [
         (r"# Placeholder implementation", "# TODO: Implement real functionality"),
-        (r"return mock_results", 'raise NotImplementedError("Real implementation needed")'),
-        (r"# For now, return mock.*", 'raise NotImplementedError("Real implementation needed")'),
+        (
+            r"return mock_results",
+            'raise NotImplementedError("Real implementation needed")',
+        ),
+        (
+            r"# For now, return mock.*",
+            'raise NotImplementedError("Real implementation needed")',
+        ),
     ]
 
     for file_name in files_to_check:

@@ -25,7 +25,9 @@ from tools.pre_audit.statistical_analysis.bayesian_risk_engine import BayesianRi
 from tools.pre_audit.statistical_analysis.statistical_hotspot_detector import (
     StatisticalHotspotDetector,
 )
-from tools.pre_audit.statistical_analysis.statistical_normalizer import StatisticalNormalizer
+from tools.pre_audit.statistical_analysis.statistical_normalizer import (
+    StatisticalNormalizer,
+)
 from tools.pre_audit.statistical_analysis.temporal_weighting_engine import (
     TemporalViolation,
     TemporalWeightingEngine,
@@ -299,7 +301,10 @@ class TestBayesianRiskEngineProperties:
         engine = BayesianRiskEngine(n_mcmc_samples=1000)  # Reduced for testing
 
         # Create minimal training data
-        training_data = {**features, "is_violation": [True, False] * 50}  # Balanced dataset
+        training_data = {
+            **features,
+            "is_violation": [True, False] * 50,
+        }  # Balanced dataset
 
         for key, value in features.items():
             if isinstance(value, (int, float)):
@@ -323,7 +328,13 @@ class TestBayesianRiskEngineProperties:
             assert 0.0 <= ci[0] <= ci[1] <= 1.0
 
             # Property: Evidence strength must be valid
-            valid_strengths = ["insufficient", "weak", "moderate", "strong", "very_strong"]
+            valid_strengths = [
+                "insufficient",
+                "weak",
+                "moderate",
+                "strong",
+                "very_strong",
+            ]
             assert risk_assessment.evidence_strength in valid_strengths
 
         except Exception as e:
@@ -427,8 +438,16 @@ class TestStatisticalNormalizerProperties:
                     assert correlation > 0.95, f"Order preservation failed: correlation = {correlation}"
 
     @given(
-        data1=st.lists(st.floats(min_value=0, max_value=100, allow_nan=False), min_size=20, max_size=50),
-        data2=st.lists(st.floats(min_value=0, max_value=100, allow_nan=False), min_size=20, max_size=50),
+        data1=st.lists(
+            st.floats(min_value=0, max_value=100, allow_nan=False),
+            min_size=20,
+            max_size=50,
+        ),
+        data2=st.lists(
+            st.floats(min_value=0, max_value=100, allow_nan=False),
+            min_size=20,
+            max_size=50,
+        ),
     )
     @settings(max_examples=30, deadline=5000)
     def test_normalization_consistency(self, data1, data2):

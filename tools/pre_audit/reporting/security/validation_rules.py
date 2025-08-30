@@ -156,7 +156,9 @@ class ValidationRules:
         if "technical_debt_hours" in violation:
             try:
                 validated["technical_debt_hours"] = ValidationRules.validate_numeric_range(
-                    violation["technical_debt_hours"], ValidationRules.TECHNICAL_DEBT_RANGE, "technical_debt_hours"
+                    violation["technical_debt_hours"],
+                    ValidationRules.TECHNICAL_DEBT_RANGE,
+                    "technical_debt_hours",
                 )
             except ValueError:
                 validated["technical_debt_hours"] = 0.0

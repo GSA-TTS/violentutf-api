@@ -28,16 +28,11 @@ import hashlib
 import json
 import logging
 import os
-import sys
-from pathlib import Path
-
-# Add the project root to Python path for imports
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 import pickle
 import random
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import traceback
@@ -54,12 +49,27 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
+# Add the project root to Python path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 # Import git history parser and pattern matcher
-from tools.pre_audit.git_history_parser import ArchitecturalFix, FileChangePattern, GitHistoryParser
-from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher, FixType
+from tools.pre_audit.git_history_parser import (  # noqa: E402
+    ArchitecturalFix,
+    FileChangePattern,
+    GitHistoryParser,
+)
+from tools.pre_audit.git_pattern_matcher import (  # noqa: E402
+    ArchitecturalFixPatternMatcher,
+    FixType,
+)
 
 # Import enhanced reporting module
-from tools.pre_audit.reporting import ExportManager, ReportConfig, SecurityLevel
+from tools.pre_audit.reporting import (  # noqa: E402
+    ExportManager,
+    ReportConfig,
+    SecurityLevel,
+)
 
 # Import statistical hotspot analysis components (GitHub Issue #43)
 try:
@@ -734,8 +744,6 @@ Output Format:
             return {"error": "No ADRs found"}
 
         # Step 2: Select random ADR
-        import random
-
         selected_adr = random.choice(adrs)
         adr_id = selected_adr["adr_id"]
 
@@ -1100,7 +1108,10 @@ Output Format:
                         "file_path": "pattern_" + "_".join(sorted(pattern.files)[:3]),  # Pattern identifier
                         "files_in_pattern": sorted(pattern.files),
                         "churn_score": pattern.frequency * 5,
-                        "complexity_indicators": ["tight_coupling", "co-change_pattern"],
+                        "complexity_indicators": [
+                            "tight_coupling",
+                            "co-change_pattern",
+                        ],
                         "risk_level": "medium",
                         "recommendations": [
                             "Consider decoupling these files",
@@ -1112,7 +1123,10 @@ Output Format:
                     hotspots.append(hotspot)
 
             # Sort by risk and churn
-            hotspots.sort(key=lambda h: (h["risk_level"] == "high", h["churn_score"]), reverse=True)
+            hotspots.sort(
+                key=lambda h: (h["risk_level"] == "high", h["churn_score"]),
+                reverse=True,
+            )
 
             logger.info(f"Found {len(hotspots)} architectural hotspots using git history analysis")
             return hotspots
@@ -1608,7 +1622,12 @@ Output Format:
 
     def _sarif_level_from_risk(self, risk_level: str) -> str:
         """Convert risk level to SARIF level."""
-        mapping = {"critical": "error", "high": "error", "medium": "warning", "low": "note"}
+        mapping = {
+            "critical": "error",
+            "high": "error",
+            "medium": "warning",
+            "low": "note",
+        }
         return mapping.get(risk_level.lower(), "warning")
 
     def _assess_hotspot_risk_level(self, churn_score: float, complexity_score: float) -> str:
@@ -1820,7 +1839,8 @@ class GitForensicsAnalyzer:
                         "lines_changed": fix.lines_added + fix.lines_deleted,
                         "description": f"{fix.pattern_matched} - {fix.fix_type.value}",
                         "risk_level": self._assess_pattern_risk(
-                            fix.commit_message, fix.files_changed[0] if fix.files_changed else ""
+                            fix.commit_message,
+                            fix.files_changed[0] if fix.files_changed else "",
                         ),
                     }
                     violation_patterns.append(pattern)
@@ -1835,8 +1855,8 @@ class GitForensicsAnalyzer:
                         hotspot = ArchitecturalHotspot(
                             file_path="_".join(sorted(file_pattern.files)[:3]),
                             churn_score=float(file_pattern.frequency * 5),
-                            complexity_score=0.7 if file_pattern.frequency >= 5 else 0.5,
-                            risk_level="high" if file_pattern.frequency >= 5 else "medium",
+                            complexity_score=(0.7 if file_pattern.frequency >= 5 else 0.5),
+                            risk_level=("high" if file_pattern.frequency >= 5 else "medium"),
                             violation_history=[f"Co-change pattern detected {file_pattern.frequency} times"],
                         )
                         hotspots.append(hotspot)
@@ -1850,7 +1870,7 @@ class GitForensicsAnalyzer:
                             "commit_hash": fix.commit_hash[:8],
                             "author": fix.author,
                             "description": f"Fixed {fix.fix_type.value}: {fix.commit_message[:100]}",
-                            "effectiveness": "high" if fix.confidence > 0.8 else "medium",
+                            "effectiveness": ("high" if fix.confidence > 0.8 else "medium"),
                             "files_affected": len(fix.files_changed),
                         }
                         remediation_history.append(remediation)
@@ -1901,9 +1921,7 @@ class GitForensicsAnalyzer:
         """Find patterns of violations and fixes related to the ADR using advanced pattern matching."""
         patterns = []
 
-        # Import the pattern matcher
-        from tools.pre_audit.git_pattern_matcher import ArchitecturalFixPatternMatcher
-
+        # Create pattern matcher instance
         pattern_matcher = ArchitecturalFixPatternMatcher()
 
         # Search for commits that mention the ADR or related fixes
@@ -1946,8 +1964,8 @@ class GitForensicsAnalyzer:
                                 "changes": commit.stats.files[file_path],
                                 "description": f"{best_match.pattern_name if best_match else 'Related change'} in {file_path}",
                                 "risk_level": self._assess_pattern_risk(commit.message, file_path),
-                                "fix_type": best_match.fix_type.value if best_match else "unknown",
-                                "confidence": best_match.confidence if best_match else 0.5,
+                                "fix_type": (best_match.fix_type.value if best_match else "unknown"),
+                                "confidence": (best_match.confidence if best_match else 0.5),
                                 "adr_references": list(set(m.adr_references for m in matches if m.adr_references)),
                             }
                             patterns.append(pattern)
@@ -2027,7 +2045,6 @@ class GitForensicsAnalyzer:
             # Create hotspots for high-churn files
             for file_path, churn_score in file_churn.items():
                 if churn_score > 100:  # Threshold for high churn
-
                     # Calculate additional metrics
                     file_full_path = self.repo_path / file_path
                     complexity_score = await self._calculate_file_complexity(file_full_path)
@@ -2120,7 +2137,9 @@ class GitForensicsAnalyzer:
         return file_metrics, violation_history
 
     def _prepare_training_data(
-        self, file_metrics: Dict[str, Dict[str, Any]], violation_history: List[Dict[str, Any]]
+        self,
+        file_metrics: Dict[str, Dict[str, Any]],
+        violation_history: List[Dict[str, Any]],
     ) -> "pd.DataFrame":
         """Prepare training data for statistical models."""
         import pandas as pd
@@ -2246,7 +2265,10 @@ class GitForensicsAnalyzer:
             complexity_keywords = content.count("if ") + content.count("for ") + content.count("while ")
 
             # Normalize to 0-100 scale
-            complexity_score = min((lines / 10) + (functions * 2) + (classes * 3) + complexity_keywords, 100)
+            complexity_score = min(
+                (lines / 10) + (functions * 2) + (classes * 3) + complexity_keywords,
+                100,
+            )
             return complexity_score
 
         except Exception as e:
@@ -2667,7 +2689,11 @@ class EnterpriseMonitoringSystem:
 
             # Record performance metrics
             await self._record_performance_metrics(
-                analysis_name, execution_time, initial_resources, final_resources, success=True
+                analysis_name,
+                execution_time,
+                initial_resources,
+                final_resources,
+                success=True,
             )
 
             self.logger.info(f"Analysis {analysis_name} completed successfully in {execution_time:.2f}s")
@@ -2897,7 +2923,11 @@ class InteractiveDeveloperCoach:
 
         # Add developer input to conversation history
         session["messages"].append(
-            {"role": "user", "content": developer_input, "timestamp": datetime.now().isoformat()}
+            {
+                "role": "user",
+                "content": developer_input,
+                "timestamp": datetime.now().isoformat(),
+            }
         )
 
         # Create context-aware coaching prompt

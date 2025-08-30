@@ -71,7 +71,12 @@ class TestServiceHealthChecks:
         Validates Redis connectivity and PING response.
         """
         # Test connection for test Redis
-        test_redis_params = {"host": "localhost", "port": 6380, "db": 1, "decode_responses": True}
+        test_redis_params = {
+            "host": "localhost",
+            "port": 6380,
+            "db": 1,
+            "decode_responses": True,
+        }
 
         # Skip if Docker isn't running
         try:
@@ -228,7 +233,11 @@ class TestServiceHealthChecks:
             elif service == "redis":
                 # Check Redis
                 try:
-                    r = redis.Redis(host="localhost", port=6380, socket_connect_timeout=config["max_time"])
+                    r = redis.Redis(
+                        host="localhost",
+                        port=6380,
+                        socket_connect_timeout=config["max_time"],
+                    )
                     r.ping()
                     elapsed = time.time() - start_time
 

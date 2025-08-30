@@ -2,11 +2,12 @@
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from structlog.stdlib import get_logger
 
 from ...core.config import settings
-from ...utils.request_size import format_bytes, validate_request_size
+from ...services.request_validation_service import RequestValidationService
+from ..deps import get_request_validation_service
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -16,6 +17,7 @@ router = APIRouter()
 async def upload_file(
     request: Request,
     file: UploadFile = File(...),
+    validation_service: RequestValidationService = Depends(get_request_validation_service),
 ) -> Dict[str, str]:
     """Upload a file with size validation.
 
@@ -33,7 +35,7 @@ async def upload_file(
     # This is just an example of manual validation if needed
 
     # Validate file size from content-length if available
-    await validate_request_size(request, max_size=settings.MAX_UPLOAD_SIZE)
+    await validation_service.validate_request_size(request, max_size=settings.MAX_UPLOAD_SIZE)
 
     # Additional file-specific validation
     if not file.filename:
@@ -49,7 +51,7 @@ async def upload_file(
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type {file_ext} not allowed. Allowed types: {', '.join(allowed_extensions)}",
+            detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}",
         )
 
     # Read file with size tracking (middleware already enforces limits)
@@ -61,13 +63,13 @@ async def upload_file(
         filename=file.filename,
         size=file_size,
         content_type=file.content_type,
-        formatted_size=format_bytes(file_size),
+        formatted_size=validation_service.format_bytes(file_size),
     )
 
     return {
         "filename": file.filename,
         "size": str(file_size),
-        "size_formatted": format_bytes(file_size),
+        "size_formatted": validation_service.format_bytes(file_size),
         "content_type": file.content_type or "application/octet-stream",
         "message": "File uploaded successfully",
     }
@@ -77,6 +79,7 @@ async def upload_file(
 async def upload_multiple_files(
     request: Request,
     files: list[UploadFile] = File(...),
+    validation_service: RequestValidationService = Depends(get_request_validation_service),
 ) -> Dict[str, Any]:
     """Upload multiple files with total size validation.
 
@@ -117,14 +120,14 @@ async def upload_multiple_files(
         if total_size > settings.MAX_UPLOAD_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"Total size {format_bytes(total_size)} exceeds maximum {format_bytes(settings.MAX_UPLOAD_SIZE)}",
+                detail=f"Total size {validation_service.format_bytes(total_size)} exceeds maximum {validation_service.format_bytes(settings.MAX_UPLOAD_SIZE)}",
             )
 
         uploaded_files.append(
             {
                 "filename": file.filename,
                 "size": file_size,
-                "size_formatted": format_bytes(file_size),
+                "size_formatted": validation_service.format_bytes(file_size),
             }
         )
 
@@ -132,13 +135,13 @@ async def upload_multiple_files(
         "multiple_files_uploaded",
         count=len(uploaded_files),
         total_size=total_size,
-        total_size_formatted=format_bytes(total_size),
+        total_size_formatted=validation_service.format_bytes(total_size),
     )
 
     return {
         "files": uploaded_files,
         "total_files": len(uploaded_files),
         "total_size": total_size,
-        "total_size_formatted": format_bytes(total_size),
+        "total_size_formatted": validation_service.format_bytes(total_size),
         "message": f"Successfully uploaded {len(uploaded_files)} files",
     }

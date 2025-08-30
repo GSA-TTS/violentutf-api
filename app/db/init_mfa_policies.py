@@ -79,7 +79,10 @@ async def create_default_policies(session: AsyncSession) -> List[str]:
         policy = await policy_service.create_policy(
             name="Enterprise Organization MFA Policy",
             description="Recommend MFA for enterprise organization users",
-            conditions={"organization_ids": [], "min_account_age_days": 1},  # To be filled with actual org IDs
+            conditions={
+                "organization_ids": [],
+                "min_account_age_days": 1,
+            },  # To be filled with actual org IDs
             required_methods=["totp", "sms", "webauthn"],
             min_methods=1,
             grace_period_days=30,
@@ -112,7 +115,7 @@ async def create_default_policies(session: AsyncSession) -> List[str]:
     return created_policies
 
 
-async def main():
+async def main() -> None:
     """Main function to create default policies."""
     async with AsyncSessionLocal() as session:
         print("Creating default MFA policies...")

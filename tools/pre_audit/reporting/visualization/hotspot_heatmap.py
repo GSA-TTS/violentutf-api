@@ -61,7 +61,10 @@ class HotspotHeatmapGenerator:
                     "labels": ["Low Risk", "High Risk"],
                 },
                 "grid": {"show": True, "color": "#e0e0e0"},
-                "tooltip": {"enabled": True, "formatter": self._get_tooltip_formatter()},
+                "tooltip": {
+                    "enabled": True,
+                    "formatter": self._get_tooltip_formatter(),
+                },
                 "legend": {"show": True, "position": "right", "title": "Risk Score"},
             },
         }
@@ -94,7 +97,11 @@ class HotspotHeatmapGenerator:
             "data": treemap_data,
             "options": {
                 "title": "Code Complexity Distribution",
-                "colorScale": {"type": "sequential", "scheme": "Blues", "domain": [0, 100]},
+                "colorScale": {
+                    "type": "sequential",
+                    "scheme": "Blues",
+                    "domain": [0, 100],
+                },
                 "labels": {"show": True, "formatter": "{name}\n{value:.1f}"},
                 "tooltip": {"formatter": "Complexity: {value:.1f}<br>Files: {fileCount}"},
             },
@@ -140,13 +147,20 @@ class HotspotHeatmapGenerator:
             "type": "custom-timeline-heatmap",
             "data": {
                 "items": temporal_data,
-                "timeRange": {"start": 0, "end": max(item["age_days"] for item in temporal_data)},
+                "timeRange": {
+                    "start": 0,
+                    "end": max(item["age_days"] for item in temporal_data),
+                },
             },
             "options": {
                 "title": "Temporal Risk Patterns",
                 "xAxis": {"title": "Days Ago", "type": "time"},
                 "yAxis": {"title": "Files", "type": "category"},
-                "colorScale": {"field": "weight", "scheme": "Viridis", "domain": [0, 1]},
+                "colorScale": {
+                    "field": "weight",
+                    "scheme": "Viridis",
+                    "domain": [0, 1],
+                },
                 "markers": {
                     "show": True,
                     "size": "weight",
@@ -176,10 +190,18 @@ class HotspotHeatmapGenerator:
         hotspots = hotspot_data.get("hotspots", [])
 
         if len(hotspots) < 3:
-            return {"type": "empty", "message": "Insufficient data for correlation analysis"}
+            return {
+                "type": "empty",
+                "message": "Insufficient data for correlation analysis",
+            }
 
         # Extract metrics for correlation
-        metrics = {"risk_score": [], "complexity_score": [], "churn_score": [], "violation_count": []}
+        metrics = {
+            "risk_score": [],
+            "complexity_score": [],
+            "churn_score": [],
+            "violation_count": [],
+        }
 
         for hotspot in hotspots:
             for metric in metrics:
@@ -194,12 +216,25 @@ class HotspotHeatmapGenerator:
 
         config = {
             "type": "heatmap",
-            "data": {"rows": list(metrics.keys()), "columns": list(metrics.keys()), "values": correlation_matrix},
+            "data": {
+                "rows": list(metrics.keys()),
+                "columns": list(metrics.keys()),
+                "values": correlation_matrix,
+            },
             "options": {
                 "title": "Risk Factor Correlations",
-                "colorScale": {"type": "diverging", "scheme": "RdBu", "domain": [-1, 1], "midpoint": 0},
+                "colorScale": {
+                    "type": "diverging",
+                    "scheme": "RdBu",
+                    "domain": [-1, 1],
+                    "midpoint": 0,
+                },
                 "cells": {"show": True, "format": ".2f"},
-                "annotations": {"show": True, "threshold": 0.5, "text": "Strong correlation"},
+                "annotations": {
+                    "show": True,
+                    "threshold": 0.5,
+                    "text": "Strong correlation",
+                },
             },
         }
 
@@ -329,7 +364,11 @@ class HotspotHeatmapGenerator:
         # Convert to list format
         def dict_to_list(node):
             if not node["children"]:
-                return {"name": node["name"], "value": node.get("value", 0), "fileCount": node.get("fileCount", 1)}
+                return {
+                    "name": node["name"],
+                    "value": node.get("value", 0),
+                    "fileCount": node.get("fileCount", 1),
+                }
 
             children = [dict_to_list(child) for child in node["children"].values()]
             return {"name": node["name"], "children": children}

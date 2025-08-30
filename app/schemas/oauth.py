@@ -1,10 +1,13 @@
 """OAuth2 schemas for request/response validation."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+if TYPE_CHECKING:
+    from app.models.oauth import OAuthApplication
 
 
 class OAuthApplicationCreate(BaseModel):
@@ -21,14 +24,16 @@ class OAuthApplicationCreate(BaseModel):
     privacy_policy_url: Optional[HttpUrl] = Field(None, description="Privacy policy URL")
     terms_of_service_url: Optional[HttpUrl] = Field(None, description="Terms of service URL")
 
-    @validator("application_type")
+    @field_validator("application_type")
+    @classmethod
     def validate_application_type(cls, v: str) -> str:
         """Validate application type."""
         if v not in ["web", "mobile", "spa"]:
             raise ValueError("Invalid application type")
         return v
 
-    @validator("redirect_uris")
+    @field_validator("redirect_uris")
+    @classmethod
     def validate_redirect_uris(cls, v: List[str]) -> List[str]:
         """Validate redirect URIs list with proper URL parsing."""
         if not v or len(v) == 0:
@@ -63,7 +68,8 @@ class OAuthApplicationCreate(BaseModel):
 
         return v
 
-    @validator("allowed_scopes")
+    @field_validator("allowed_scopes")
+    @classmethod
     def validate_allowed_scopes(cls, v: List[str]) -> List[str]:
         """Validate allowed scopes list."""
         if not v or len(v) == 0:
@@ -113,33 +119,30 @@ class OAuthApplicationResponse(BaseModel):
         """Pydantic config."""
 
         from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
 
     @classmethod
-    def from_orm(cls, obj: Any) -> "OAuthApplicationResponse":
+    def from_orm(cls, obj: "OAuthApplication") -> "OAuthApplicationResponse":
         """Create from ORM object."""
         import json
 
         return cls(
             id=str(obj.id),
-            name=obj.name,
-            description=obj.description,
-            client_id=obj.client_id,
-            redirect_uris=json.loads(obj.redirect_uris),
-            allowed_scopes=json.loads(obj.allowed_scopes),
-            grant_types=json.loads(obj.grant_types),
-            response_types=json.loads(obj.response_types),
-            application_type=obj.application_type,
-            is_confidential=obj.is_confidential,
-            is_active=obj.is_active,
-            is_trusted=obj.is_trusted,
+            name=str(obj.name),
+            description=str(obj.description) if obj.description else None,
+            client_id=str(obj.client_id),
+            redirect_uris=json.loads(str(obj.redirect_uris)),
+            allowed_scopes=json.loads(str(obj.allowed_scopes)),
+            grant_types=json.loads(str(obj.grant_types)),
+            response_types=json.loads(str(obj.response_types)),
+            application_type=str(obj.application_type),
+            is_confidential=bool(obj.is_confidential),
+            is_active=bool(obj.is_active),
+            is_trusted=bool(obj.is_trusted),
             owner_id=str(obj.owner_id),
-            logo_url=obj.logo_url,
-            homepage_url=obj.homepage_url,
-            privacy_policy_url=obj.privacy_policy_url,
-            terms_of_service_url=obj.terms_of_service_url,
+            logo_url=str(obj.logo_url) if obj.logo_url else None,
+            homepage_url=str(obj.homepage_url) if obj.homepage_url else None,
+            privacy_policy_url=(str(obj.privacy_policy_url) if obj.privacy_policy_url else None),
+            terms_of_service_url=(str(obj.terms_of_service_url) if obj.terms_of_service_url else None),
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )
@@ -157,14 +160,16 @@ class OAuthAuthorizeRequest(BaseModel):
     code_challenge_method: Optional[str] = Field(None, description="PKCE method (S256 or plain)")
     nonce: Optional[str] = Field(None, description="OpenID Connect nonce")
 
-    @validator("response_type")
+    @field_validator("response_type")
+    @classmethod
     def validate_response_type(cls, v: str) -> str:
         """Validate response type."""
         if v not in ["code", "token"]:
             raise ValueError("Invalid response type")
         return v
 
-    @validator("code_challenge_method")
+    @field_validator("code_challenge_method")
+    @classmethod
     def validate_code_challenge_method(cls, v: Optional[str]) -> Optional[str]:
         """Validate PKCE method."""
         if v and v not in ["S256", "plain"]:
@@ -184,7 +189,8 @@ class OAuthTokenRequest(BaseModel):
     scope: Optional[str] = Field(None, description="Requested scopes")
     code_verifier: Optional[str] = Field(None, description="PKCE code verifier")
 
-    @validator("grant_type")
+    @field_validator("grant_type")
+    @classmethod
     def validate_grant_type(cls, v: str) -> str:
         """Validate grant type."""
         if v not in ["authorization_code", "refresh_token", "client_credentials"]:
@@ -210,7 +216,8 @@ class OAuthTokenRevoke(BaseModel):
     client_id: Optional[str] = Field(None, description="Client ID")
     client_secret: Optional[str] = Field(None, description="Client secret")
 
-    @validator("token_type_hint")
+    @field_validator("token_type_hint")
+    @classmethod
     def validate_token_type_hint(cls, v: Optional[str]) -> Optional[str]:
         """Validate token type hint."""
         if v and v not in ["access_token", "refresh_token"]:
@@ -238,10 +245,3 @@ class UserAuthorizationResponse(BaseModel):
     scopes: List[str] = Field(..., description="Granted scopes")
     authorized_at: datetime = Field(..., description="Authorization timestamp")
     last_used_at: Optional[datetime] = Field(None, description="Last usage timestamp")
-
-    class Config:
-        """Pydantic config."""
-
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }

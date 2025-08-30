@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_token, hash_token
+from app.core.security import create_token, hash_oauth_token
 from app.models.api_key import APIKey
 from app.models.oauth import OAuthApplication
 from app.models.permission import Permission
@@ -189,14 +189,14 @@ class TestAuthIntegration:
         admin_role = Role(
             name="admin",
             display_name="Administrator",
-            hierarchy_level=100,
+            role_metadata={"level": 100},
         )
         admin_role.permissions = permissions[:2]  # All permissions except own
 
         user_role = Role(
             name="user",
             display_name="Regular User",
-            hierarchy_level=10,
+            role_metadata={"level": 10},
         )
         user_role.permissions = [permissions[2]]  # Only own permission
 
@@ -474,14 +474,14 @@ class TestAuthIntegration:
         reader_role = Role(
             name="reader",
             display_name="Reader",
-            hierarchy_level=20,
+            role_metadata={"level": 20},
         )
         reader_role.permissions = [read_perm]
 
         writer_role = Role(
             name="writer",
             display_name="Writer",
-            hierarchy_level=50,
+            role_metadata={"level": 50},
         )
         writer_role.permissions = [read_perm, write_perm]
 

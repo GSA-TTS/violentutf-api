@@ -78,7 +78,11 @@ class TestUrlSanitization:
 
     def test_safe_urls(self) -> None:
         """Test safe URLs."""
-        safe_urls = ["http://example.com", "https://test.org/path", "mailto:test@example.com"]
+        safe_urls = [
+            "http://example.com",
+            "https://test.org/path",
+            "mailto:test@example.com",
+        ]
 
         for url in safe_urls:
             result = sanitize_url(url)
@@ -86,7 +90,11 @@ class TestUrlSanitization:
 
     def test_dangerous_javascript_urls(self) -> None:
         """Test dangerous JavaScript URLs."""
-        dangerous_urls = ["javascript:alert(1)", "vbscript:msgbox(1)", "data:text/html,<script>alert(1)</script>"]
+        dangerous_urls = [
+            "javascript:alert(1)",
+            "vbscript:msgbox(1)",
+            "data:text/html,<script>alert(1)</script>",
+        ]
 
         for url in dangerous_urls:
             result = sanitize_url(url)
@@ -180,7 +188,12 @@ class TestSqlInputSanitization:
 
     def test_sql_injection_patterns(self) -> None:
         """Test SQL injection patterns."""
-        dangerous_inputs = ["'; DROP TABLE users; --", "1 OR 1=1", "UNION SELECT * FROM passwords", "admin'--"]
+        dangerous_inputs = [
+            "'; DROP TABLE users; --",
+            "1 OR 1=1",
+            "UNION SELECT * FROM passwords",
+            "admin'--",
+        ]
 
         for dangerous_input in dangerous_inputs:
             result = sanitize_sql_input(dangerous_input)
@@ -259,7 +272,11 @@ class TestJsonKeySanitization:
 
     def test_allowed_keys(self) -> None:
         """Test with allowed keys."""
-        data = {"name": "test", "value": 123, "secret": "hidden"}  # pragma: allowlist secret
+        data = {
+            "name": "test",
+            "value": 123,
+            "secret": "hidden",
+        }  # pragma: allowlist secret
         allowed = {"name", "value"}
         result = sanitize_json_keys(data, allowed)
 

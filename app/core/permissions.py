@@ -14,9 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.abac import check_abac_permission
-from app.core.authority import AuthorityLevel, evaluate_user_authority, is_deprecated_superuser
+from app.core.authority import (
+    AuthorityLevel,
+    evaluate_user_authority,
+    is_deprecated_superuser,
+)
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.db.session import get_db
+from app.repositories.role import RoleRepository
 from app.repositories.user import UserRepository
 from app.services.rbac_service import RBACService
 
@@ -59,7 +64,7 @@ def require_permissions(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from function arguments
             request = None
             session = None
@@ -131,12 +136,16 @@ def require_permissions(
                             subject_id=user_id,
                             resource_type=resource_type,
                             action=action,
-                            session=session,
                             organization_id=organization_id,
                         )
 
                         if not is_allowed:
-                            logger.info("ABAC permission denied", user_id=user_id, permission=perm, reason=reason)
+                            logger.info(
+                                "ABAC permission denied",
+                                user_id=user_id,
+                                permission=perm,
+                                reason=reason,
+                            )
                             permission_desc = " AND ".join(permission_list)
                             raise ForbiddenError(
                                 message=f"Access denied: {reason}. Required permissions: {permission_desc}"
@@ -157,7 +166,6 @@ def require_permissions(
                             subject_id=user_id,
                             resource_type=resource_type,
                             action=action,
-                            session=session,
                             organization_id=organization_id,
                         )
 
@@ -223,7 +231,7 @@ def require_owner_or_admin(resource_param: str = "user_id") -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request from arguments
             request = None
             for arg in args:
@@ -311,7 +319,7 @@ def require_organization_access(allow_superuser: bool = True) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request from arguments
             request = None
             for arg in args:
@@ -384,7 +392,7 @@ def require_organization_owner_or_admin(resource_param: str = "user_id", allow_s
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from arguments
             request = None
             session = None
@@ -503,7 +511,9 @@ async def get_current_user_permissions(
         raise UnauthorizedError(message="Authentication required")
 
     try:
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         permissions = await rbac_service.get_user_permissions(user_id)
         return sorted(list(permissions))
 
@@ -578,7 +588,9 @@ async def check_permission(
                     return True
 
         # Check specific permission
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         return await rbac_service.check_user_permission(user_id, permission)
 
     except Exception as e:
@@ -690,7 +702,9 @@ async def _has_admin_permissions(request: Request) -> bool:
         if not user_id:
             return False
 
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
         return await rbac_service.check_user_permission(user_id, "*")
 
     except Exception as e:
@@ -716,7 +730,9 @@ async def _check_permissions(
         True if user has required permissions
     """
     try:
-        rbac_service = RBACService(session)
+        role_repo = RoleRepository(session)
+        user_repo = UserRepository(session)
+        rbac_service = RBACService(role_repo, user_repo)
 
         # Check user permissions directly without storing result
 

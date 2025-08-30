@@ -127,7 +127,10 @@ class TestHealthCheckCaching:
             "metrics": {},
             "check_duration_seconds": 0.01,
         }
-        health_check_cache["dependency_health"] = (time.time() - 20, old_result)  # 20 seconds ago
+        health_check_cache["dependency_health"] = (
+            time.time() - 20,
+            old_result,
+        )  # 20 seconds ago
 
         # Mock the actual health checks
         with (

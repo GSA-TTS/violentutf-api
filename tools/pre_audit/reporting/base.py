@@ -307,7 +307,7 @@ class ReportDataProcessor:
             enriched = (
                 hotspot.copy()
                 if isinstance(hotspot, dict)
-                else {"file_path": str(hotspot) if hasattr(hotspot, "__str__") else "unknown"}
+                else {"file_path": (str(hotspot) if hasattr(hotspot, "__str__") else "unknown")}
             )
 
             # Add risk categorization

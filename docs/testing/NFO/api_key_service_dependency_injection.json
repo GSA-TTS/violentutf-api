@@ -1,0 +1,36 @@
+{
+  "status": "not_fixed",
+  "tool_name": "pytest",
+  "exit_code": 1,
+  "test_file_name": "test_api_keys.py",
+  "failure_type": "DEPENDENCY_INJECTION_ERROR",
+  "failure_subtype": "AttributeError",
+  "file_path": "tests/unit/api/test_api_keys.py",
+  "file_path_log": [],
+  "issue": "Tests patching APIKeyRepository but endpoints use APIKeyService dependency injection",
+  "issue_log": [],
+  "line_range": "368,392",
+  "severity": "HIGH",
+  "message": "<module 'app.api.endpoints.api_keys' from '/path'> does not have the attribute 'APIKeyRepository'",
+  "offending_code_snippet": "with patch(\"app.api.endpoints.api_keys.APIKeyRepository\", return_value=mock_api_key_repo):",
+  "structured_details": {
+    "endpoint_dependency": "get_api_key_service",
+    "actual_service": "APIKeyService",
+    "test_pattern": "repository_patching",
+    "required_pattern": "service_dependency_injection",
+    "failing_tests": [
+      "test_revoke_api_key",
+      "test_validate_api_key",
+      "test_get_usage_statistics_admin_only",
+      "test_api_key_expiration",
+      "test_api_key_ownership_check"
+    ]
+  },
+  "solution": [
+    "Replace repository patching with service dependency injection",
+    "Use app.dependency_overrides[get_api_key_service] = lambda: mock_service",
+    "Create mock_api_key_service instead of mock_api_key_repo",
+    "Update all test methods to use service mocking pattern",
+    "Ensure mock service methods match APIKeyService interface"
+  ]
+}

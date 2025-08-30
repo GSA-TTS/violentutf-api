@@ -7,10 +7,22 @@ from typing import AsyncGenerator, Optional
 from uuid import uuid4
 
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.db.session import get_engine, get_session_maker, reset_engine
-from app.models.scan import Scan, ScanFinding, ScanReport, ScanSeverity, ScanStatus, ScanType
+from app.models.scan import (
+    Scan,
+    ScanFinding,
+    ScanReport,
+    ScanSeverity,
+    ScanStatus,
+    ScanType,
+)
 from app.models.task import Task, TaskPriority, TaskResult, TaskStatus
 from app.models.user import User
 
@@ -79,7 +91,10 @@ def reset_test_database():
 
 
 async def create_test_user(
-    db_session: AsyncSession, username: str = "testuser", email: str = "test@example.com", **kwargs
+    db_session: AsyncSession,
+    username: str = "testuser",
+    email: str = "test@example.com",
+    **kwargs,
 ) -> User:
     """Create a test user."""
     user_data = {
@@ -116,7 +131,11 @@ async def create_test_task(
         "config": kwargs.get("config", {"timeout": 300}),
         "progress": kwargs.get("progress", 0),
         "created_by": created_by,
-        **{k: v for k, v in kwargs.items() if k not in ["description", "priority", "input_data", "config", "progress"]},
+        **{
+            k: v
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
+            if k not in ["description", "priority", "input_data", "config", "progress"]
+        },
     }
     task = Task(**task_data)
     db_session.add(task)
@@ -155,7 +174,7 @@ async def create_test_scan(
         "created_by": created_by,
         **{
             k: v
-            for k, v in kwargs.items()
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
             if k
             not in [
                 "description",
@@ -197,8 +216,15 @@ async def create_test_scan_finding(
         "created_by": created_by,
         **{
             k: v
-            for k, v in kwargs.items()
-            if k not in ["description", "category", "vulnerability_type", "confidence_score", "evidence"]
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
+            if k
+            not in [
+                "description",
+                "category",
+                "vulnerability_type",
+                "confidence_score",
+                "evidence",
+            ]
         },
     }
     finding = ScanFinding(**finding_data)
@@ -227,7 +253,11 @@ async def create_test_scan_report(
         "summary": kwargs.get("summary", {"findings": 0, "severity": "low"}),
         "generated_at": kwargs.get("generated_at", datetime.utcnow()),
         "created_by": created_by,
-        **{k: v for k, v in kwargs.items() if k not in ["content", "summary", "generated_at"]},
+        **{
+            k: v
+            for k, v in (kwargs.items() if hasattr(kwargs, "items") and not callable(kwargs) else [])
+            if k not in ["content", "summary", "generated_at"]
+        },
     }
     report = ScanReport(**report_data)
     db_session.add(report)

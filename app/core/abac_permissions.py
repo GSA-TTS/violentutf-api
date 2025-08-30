@@ -50,7 +50,7 @@ def require_abac_permission(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract request and session from function arguments
             request = None
             session = None
@@ -133,7 +133,6 @@ def require_abac_permission(
                     subject_id=subject_id,
                     resource_type=resource_type,
                     action=action,
-                    session=session,
                     organization_id=organization_id,
                     resource_id=resource_id,
                     resource_owner_id=resource_owner_id,
@@ -141,7 +140,7 @@ def require_abac_permission(
                 )
 
                 if not is_allowed:
-                    error_detail = f"Access denied: {reason}"
+                    error_detail = "Access denied"
 
                     if explain_on_deny:
                         try:
@@ -149,13 +148,16 @@ def require_abac_permission(
                                 subject_id=subject_id,
                                 resource_type=resource_type,
                                 action=action,
-                                session=session,
                                 organization_id=organization_id,
                                 resource_id=resource_id,
                                 resource_owner_id=resource_owner_id,
                                 environment=env_context,
                             )
-                            logger.info("ABAC decision explanation", subject_id=subject_id, explanation=explanation)
+                            logger.info(
+                                "ABAC decision explanation",
+                                subject_id=subject_id,
+                                explanation=explanation,
+                            )
                         except Exception as e:
                             logger.error("Failed to generate explanation", error=str(e))
 
@@ -208,7 +210,7 @@ def require_abac_permission(
                     action=action,
                     error=str(e),
                 )
-                raise ForbiddenError(detail=f"Permission evaluation error: {str(e)}")
+                raise ForbiddenError(detail="Permission evaluation failed")
 
         return wrapper
 
@@ -363,7 +365,6 @@ class ABACPermissionChecker:
             subject_id=subject_id,
             resource_type=self.resource_type,
             action=self.action,
-            session=session,
             organization_id=organization_id,
             resource_id=resource_id,
             resource_owner_id=resource_owner_id,
@@ -378,7 +379,7 @@ class ABACPermissionChecker:
                 action=self.action,
                 reason=reason,
             )
-            raise ForbiddenError(detail=f"Access denied: {reason}")
+            raise ForbiddenError(detail="Access denied")
 
         return {
             "subject_id": subject_id,

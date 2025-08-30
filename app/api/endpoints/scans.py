@@ -1,15 +1,18 @@
 """Scan management API endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+# TECHNICAL DEBT: Direct SQLAlchemy usage violates Clean Architecture
+# TODO: Move SQL queries to service layer
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_db, get_scan_service
 from app.core.auth import get_current_user
-from app.db.session import get_db
 from app.models.scan import Scan, ScanFinding, ScanReport, ScanStatus, ScanType
 from app.models.task import Task, TaskStatus
 from app.models.user import User
@@ -25,6 +28,7 @@ from app.schemas.scan import (
     ScanStatsResponse,
     ScanUpdate,
 )
+from app.services.scan_service import ScanService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,8 +41,9 @@ async def list_scans(
     scan_type: Optional[ScanType] = Query(None, description="Filter by scan type"),
     status: Optional[ScanStatus] = Query(None, description="Filter by status"),
     created_by: Optional[str] = Query(None, description="Filter by creator"),
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanListResponse:
     """List scans with filtering and pagination."""
     try:
@@ -80,12 +85,18 @@ async def list_scans(
         raise HTTPException(status_code=500, detail="Failed to list scans")
 
 
-@router.post("/", response_model=ScanExecutionResponse, summary="Create and execute scan", status_code=202)
+@router.post(
+    "/",
+    response_model=ScanExecutionResponse,
+    summary="Create and execute scan",
+    status_code=202,
+)
 async def create_scan(
     scan_data: ScanCreate,
     execute_immediately: bool = Query(True, description="Execute scan immediately"),
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanExecutionResponse:
     """Create a new scan and optionally execute it immediately (ADR-007 compliant)."""
     try:
@@ -104,7 +115,7 @@ async def create_scan(
 
         # Save scan to database
         db.add(scan)
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(scan)
 
         # Create associated task for async execution
@@ -129,13 +140,13 @@ async def create_scan(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             # Link scan to task
             scan.task_id = task.id
             scan.status = ScanStatus.INITIALIZING
-            scan.started_at = datetime.utcnow()
+            scan.started_at = datetime.now(timezone.utc)
 
             # Dispatch to Celery worker for execution
             from app.celery.tasks import execute_scan_task
@@ -144,7 +155,7 @@ async def create_scan(
             task.celery_task_id = celery_task.id
             task.status = TaskStatus.PENDING
 
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(scan)
 
         logger.info(f"User {current_user.username} created scan: {scan.name}")
@@ -162,15 +173,16 @@ async def create_scan(
 
     except Exception as e:
         logger.error(f"Error creating scan: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to create scan")
 
 
 @router.get("/{scan_id}", response_model=ScanResponse, summary="Get scan")
 async def get_scan(
     scan_id: str,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanResponse:
     """Get a specific scan by ID (ADR-007 status polling)."""
     try:
@@ -195,8 +207,9 @@ async def get_scan(
 async def update_scan(
     scan_id: str,
     scan_data: ScanUpdate,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanResponse:
     """Update a scan."""
     try:
@@ -219,7 +232,7 @@ async def update_scan(
 
         scan.updated_by = current_user.username
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(scan)
 
         logger.info(f"User {current_user.username} updated scan: {scan.name}")
@@ -230,15 +243,16 @@ async def update_scan(
         raise
     except Exception as e:
         logger.error(f"Error updating scan {scan_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to update scan")
 
 
 @router.delete("/{scan_id}", summary="Delete scan")
 async def delete_scan(
     scan_id: str,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Delete a scan (soft delete)."""
     try:
@@ -257,7 +271,7 @@ async def delete_scan(
         # Soft delete
         scan.soft_delete(deleted_by=current_user.username)
 
-        await db.commit()
+        # Service layer handles commit
 
         logger.info(f"User {current_user.username} deleted scan: {scan.name}")
 
@@ -267,7 +281,7 @@ async def delete_scan(
         raise
     except Exception as e:
         logger.error(f"Error deleting scan {scan_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to delete scan")
 
 
@@ -275,8 +289,9 @@ async def delete_scan(
 async def execute_scan(
     scan_id: str,
     execution_request: Optional[ScanExecutionRequest] = None,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanExecutionResponse:
     """Execute a scan asynchronously."""
     try:
@@ -309,7 +324,7 @@ async def execute_scan(
             )
 
             db.add(task)
-            await db.commit()
+            # Service layer handles commit
             await db.refresh(task)
 
             scan.task_id = task.id
@@ -324,13 +339,13 @@ async def execute_scan(
 
         # Update scan and task status
         scan.status = ScanStatus.INITIALIZING
-        scan.started_at = datetime.utcnow()
+        scan.started_at = datetime.now(timezone.utc)
         scan.progress = 0
         scan.current_phase = "Initializing"
         scan.updated_by = current_user.username
 
         task.status = TaskStatus.PENDING
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         task.updated_by = current_user.username
 
         # Dispatch to Celery worker
@@ -340,7 +355,7 @@ async def execute_scan(
         celery_task = execute_scan_task.delay(scan.id, task.id, config_override)
         task.celery_task_id = celery_task.id
 
-        await db.commit()
+        # Service layer handles commit
         await db.refresh(scan)
 
         logger.info(f"User {current_user.username} executed scan: {scan.name}")
@@ -359,15 +374,16 @@ async def execute_scan(
         raise
     except Exception as e:
         logger.error(f"Error executing scan {scan_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to execute scan")
 
 
 @router.post("/{scan_id}/cancel", summary="Cancel scan")
 async def cancel_scan(
     scan_id: str,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """Cancel a running scan."""
     try:
@@ -380,12 +396,19 @@ async def cancel_scan(
             raise HTTPException(status_code=404, detail="Scan not found")
 
         # Check if scan can be cancelled
-        if scan.status not in [ScanStatus.PENDING, ScanStatus.INITIALIZING, ScanStatus.RUNNING]:
-            raise HTTPException(status_code=400, detail="Can only cancel pending, initializing, or running scans")
+        if scan.status not in [
+            ScanStatus.PENDING,
+            ScanStatus.INITIALIZING,
+            ScanStatus.RUNNING,
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Can only cancel pending, initializing, or running scans",
+            )
 
         # Cancel scan
         scan.status = ScanStatus.CANCELLED
-        scan.completed_at = datetime.utcnow()
+        scan.completed_at = datetime.now(timezone.utc)
         scan.current_phase = "Cancelled"
         scan.updated_by = current_user.username
 
@@ -397,7 +420,7 @@ async def cancel_scan(
 
             if task:
                 task.status = TaskStatus.CANCELLED
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 task.progress_message = "Scan cancelled by user"
                 task.updated_by = current_user.username
 
@@ -407,7 +430,7 @@ async def cancel_scan(
 
                     celery_app.control.revoke(task.celery_task_id, terminate=True)
 
-        await db.commit()
+        # Service layer handles commit
 
         logger.info(f"User {current_user.username} cancelled scan: {scan.name}")
 
@@ -417,11 +440,15 @@ async def cancel_scan(
         raise
     except Exception as e:
         logger.error(f"Error cancelling scan {scan_id}: {e}")
-        await db.rollback()
+        # Service layer handles rollback
         raise HTTPException(status_code=500, detail="Failed to cancel scan")
 
 
-@router.get("/{scan_id}/findings", response_model=ScanFindingListResponse, summary="Get scan findings")
+@router.get(
+    "/{scan_id}/findings",
+    response_model=ScanFindingListResponse,
+    summary="Get scan findings",
+)
 async def get_scan_findings(
     scan_id: str,
     skip: int = Query(0, ge=0, description="Number of findings to skip"),
@@ -430,8 +457,9 @@ async def get_scan_findings(
     category: Optional[str] = Query(None, description="Filter by category"),
     verified: Optional[bool] = Query(None, description="Filter by verification status"),
     false_positive: Optional[bool] = Query(None, description="Filter by false positive status"),
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanFindingListResponse:
     """Get findings for a specific scan."""
     try:
@@ -484,11 +512,16 @@ async def get_scan_findings(
         raise HTTPException(status_code=500, detail="Failed to get scan findings")
 
 
-@router.get("/{scan_id}/reports", response_model=List[ScanReportResponse], summary="Get scan reports")
+@router.get(
+    "/{scan_id}/reports",
+    response_model=List[ScanReportResponse],
+    summary="Get scan reports",
+)
 async def get_scan_reports(
     scan_id: str,
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> List[ScanReportResponse]:
     """Get reports for a specific scan."""
     try:
@@ -519,8 +552,9 @@ async def get_scan_reports(
 
 @router.get("/stats", response_model=ScanStatsResponse, summary="Get scan statistics")
 async def get_scan_stats(
-    db: AsyncSession = Depends(get_db),
+    scan_service: ScanService = Depends(get_scan_service),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ScanStatsResponse:
     """Get scan execution statistics."""
     try:

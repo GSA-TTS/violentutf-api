@@ -34,13 +34,19 @@ except ImportError:
 
 import yaml
 
-from .adaptive_threshold_learner import AdaptiveThresholdLearner, ThresholdOptimizationResult
+from .adaptive_threshold_learner import (
+    AdaptiveThresholdLearner,
+    ThresholdOptimizationResult,
+)
 from .advanced_feature_engineer import AdvancedFeatureEngineer, FeatureEngineeringResult
 from .bayesian_risk_engine import BayesianRiskAssessment, BayesianRiskEngine
 from .git_temporal_integration import GitTemporalAnalysisResult, GitTemporalIntegrator
 
 # Import all statistical components
-from .statistical_hotspot_detector import StatisticalHotspotDetector, StatisticalHotspotResult
+from .statistical_hotspot_detector import (
+    StatisticalHotspotDetector,
+    StatisticalHotspotResult,
+)
 from .statistical_normalizer import NormalizationParams, StatisticalNormalizer
 from .temporal_weighting_engine import (
     TemporalViolation,
@@ -366,7 +372,11 @@ class StatisticalHotspotOrchestrator:
 
         except Exception as e:
             logger.error(f"Statistical model training failed: {str(e)}")
-            return {"success": False, "error": str(e), "training_results": training_results}
+            return {
+                "success": False,
+                "error": str(e),
+                "training_results": training_results,
+            }
 
     def analyze_architectural_hotspots(
         self,
@@ -462,7 +472,10 @@ class StatisticalHotspotOrchestrator:
         return temporal_violations
 
     def _analyze_single_file_comprehensive(
-        self, file_path: str, metrics: Dict[str, Any], file_violations: List[TemporalViolation]
+        self,
+        file_path: str,
+        metrics: Dict[str, Any],
+        file_violations: List[TemporalViolation],
     ) -> EnhancedArchitecturalHotspot:
         """
         Comprehensive statistical analysis for a single file.
@@ -546,7 +559,10 @@ class StatisticalHotspotOrchestrator:
 
         # 6. Integrate all assessments into final risk probability
         integrated_risk_probability = self._integrate_risk_assessments(
-            statistical_result, temporal_assessment, bayesian_assessment, git_temporal_analysis
+            statistical_result,
+            temporal_assessment,
+            bayesian_assessment,
+            git_temporal_analysis,
         )
 
         # 7. Determine risk confidence interval
@@ -657,7 +673,9 @@ class StatisticalHotspotOrchestrator:
         return max(0.0, min(1.0, integrated_probability))
 
     def _calculate_integrated_confidence_interval(
-        self, statistical_result: StatisticalHotspotResult, bayesian_result: BayesianRiskAssessment
+        self,
+        statistical_result: StatisticalHotspotResult,
+        bayesian_result: BayesianRiskAssessment,
     ) -> Tuple[float, float]:
         """Calculate integrated confidence interval from multiple sources."""
         # Use the more conservative (wider) interval
@@ -671,7 +689,9 @@ class StatisticalHotspotOrchestrator:
         return (lower_bound, upper_bound)
 
     def _assess_integrated_evidence_strength(
-        self, statistical_result: StatisticalHotspotResult, bayesian_result: BayesianRiskAssessment
+        self,
+        statistical_result: StatisticalHotspotResult,
+        bayesian_result: BayesianRiskAssessment,
     ) -> str:
         """Assess overall evidence strength from multiple analyses."""
         # Map evidence strengths to numerical values
@@ -714,7 +734,9 @@ class StatisticalHotspotOrchestrator:
         }
 
     def _prepare_training_data(
-        self, file_metrics: Dict[str, Dict[str, Any]], violation_history: List[Dict[str, Any]]
+        self,
+        file_metrics: Dict[str, Dict[str, Any]],
+        violation_history: List[Dict[str, Any]],
     ) -> pd.DataFrame:
         """
         Prepare training data from file metrics and violation history.
@@ -859,13 +881,37 @@ class StatisticalHotspotOrchestrator:
         ]
 
         # Medium criticality - supporting components (check first for specificity)
-        medium_patterns = ["utils/", "helpers/", "common/", "shared/", "lib/", "tools/", "scripts/"]
+        medium_patterns = [
+            "utils/",
+            "helpers/",
+            "common/",
+            "shared/",
+            "lib/",
+            "tools/",
+            "scripts/",
+        ]
 
         # High criticality - important application components
-        high_patterns = ["api/", "endpoints/", "services/", "models/", "middleware/", "app/"]
+        high_patterns = [
+            "api/",
+            "endpoints/",
+            "services/",
+            "models/",
+            "middleware/",
+            "app/",
+        ]
 
         # Low criticality - tests, docs, examples
-        low_patterns = ["test", "spec", "doc", "example", "sample", "demo", "fixture", "mock"]
+        low_patterns = [
+            "test",
+            "spec",
+            "doc",
+            "example",
+            "sample",
+            "demo",
+            "fixture",
+            "mock",
+        ]
 
         # Check patterns in order of criticality (most specific first)
         for pattern in critical_patterns:

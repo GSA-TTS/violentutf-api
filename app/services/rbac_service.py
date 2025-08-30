@@ -2,12 +2,17 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user_role import UserRole
@@ -20,11 +25,28 @@ logger = get_logger(__name__)
 class RBACService:
     """Service for Role-Based Access Control operations."""
 
-    def __init__(self, session: AsyncSession) -> None:
-        """Initialize RBAC service."""
-        self.session = session
-        self.role_repository = RoleRepository(session)
-        self.user_repository = UserRepository(session)
+    def __init__(
+        self,
+        session_or_role_repo: Union[AsyncSession, RoleRepository],
+        user_repository: Optional[UserRepository] = None,
+    ) -> None:
+        """Initialize RBAC service.
+
+        Args:
+            session_or_role_repo: Either an AsyncSession for new pattern or RoleRepository for legacy pattern
+            user_repository: UserRepository instance (only required for legacy pattern)
+        """
+        if isinstance(session_or_role_repo, AsyncSession):
+            # New pattern: create repositories from session
+            self.session = session_or_role_repo
+            self.role_repository = RoleRepository(session_or_role_repo)
+            self.user_repository = UserRepository(session_or_role_repo)
+        else:
+            # Legacy pattern: use provided repositories
+            self.role_repository = session_or_role_repo
+            self.user_repository = user_repository
+            # For backward compatibility, we don't have session in legacy mode
+            self.session = None
 
     async def initialize_system_roles(self) -> List[Role]:
         """Initialize default system roles and permissions.
@@ -39,13 +61,11 @@ class RBACService:
             # TODO: Create system permissions when Permission repository is implemented
 
             if created_roles:
-                await self.session.commit()
                 logger.info("System roles initialized", count=len(created_roles))
 
             return created_roles
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("Failed to initialize system roles", error=str(e))
             raise
 
@@ -94,7 +114,7 @@ class RBACService:
                 "is_active": True,
                 "role_metadata": {
                     "permissions": permissions or [],
-                    "level": (parent_role.role_metadata.get("level", 0) + 1) if parent_role else 5,
+                    "level": ((parent_role.role_metadata.get("level", 0) + 1) if parent_role else 5),
                     "immutable": False,
                 },
                 "created_by": created_by,
@@ -107,6 +127,8 @@ class RBACService:
             # Save role
             created_role = await self.role_repository.create(role_data)
 
+            # Transaction management handled by repository layer
+
             logger.info(
                 "Role created",
                 role_id=str(created_role.id),
@@ -118,6 +140,8 @@ class RBACService:
 
             return created_role
 
+        except (ConflictError, ValidationError):
+            raise
         except Exception as e:
             logger.error("Failed to create role", name=name, error=str(e))
             raise
@@ -170,15 +194,27 @@ class RBACService:
                 temp_role = Role(name="temp", display_name="temp", role_metadata=temp_metadata)
                 temp_role.validate_role_data()
 
-                update_data["role_metadata"] = {**role.role_metadata, "permissions": permissions}
+                update_data["role_metadata"] = {
+                    **role.role_metadata,
+                    "permissions": permissions,
+                }
 
             # Update role
             updated_role = await self.role_repository.update(role_id, update_data)
 
-            logger.info("Role updated", role_id=role_id, updated_by=updated_by, changes=list(update_data.keys()))
+            # Transaction management handled by repository layer
+
+            logger.info(
+                "Role updated",
+                role_id=role_id,
+                updated_by=updated_by,
+                changes=list(update_data.keys()),
+            )
 
             return updated_role
 
+        except (NotFoundError, ForbiddenError, ValidationError):
+            raise
         except Exception as e:
             logger.error("Failed to update role", role_id=role_id, error=str(e))
             raise
@@ -212,11 +248,20 @@ class RBACService:
             # Soft delete the role
             success = await self.role_repository.delete(role_id, deleted_by)
 
+            # Transaction management handled by repository layer
+
             if success:
-                logger.info("Role deleted", role_id=role_id, name=role.name, deleted_by=deleted_by)
+                logger.info(
+                    "Role deleted",
+                    role_id=role_id,
+                    name=role.name,
+                    deleted_by=deleted_by,
+                )
 
             return success
 
+        except (NotFoundError, ForbiddenError, ValidationError):
+            raise
         except Exception as e:
             logger.error("Failed to delete role", role_id=role_id, error=str(e))
             raise
@@ -264,10 +309,19 @@ class RBACService:
                 context=context,
             )
 
+            # Transaction management handled by repository layer
+
             return assignment
 
+        except (NotFoundError, ValidationError):
+            raise
         except Exception as e:
-            logger.error("Failed to assign role to user", user_id=user_id, role_id=role_id, error=str(e))
+            logger.error(
+                "Failed to assign role to user",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
             raise
 
     async def revoke_role_from_user(
@@ -289,10 +343,17 @@ class RBACService:
                 user_id=user_id, role_id=role_id, revoked_by=revoked_by, reason=reason
             )
 
+            # Transaction management handled by repository layer
+
             return success
 
         except Exception as e:
-            logger.error("Failed to revoke role from user", user_id=user_id, role_id=role_id, error=str(e))
+            logger.error(
+                "Failed to revoke role from user",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
             raise
 
     async def get_user_roles(self, user_id: str, include_expired: bool = False) -> List[Role]:
@@ -378,11 +439,21 @@ class RBACService:
                     if base_permission in user_permissions:
                         return True
 
-            logger.debug("User permission checked", user_id=user_id, permission=permission, has_permission=False)
+            logger.debug(
+                "User permission checked",
+                user_id=user_id,
+                permission=permission,
+                has_permission=False,
+            )
             return False
 
         except Exception as e:
-            logger.error("Failed to check user permission", user_id=user_id, permission=permission, error=str(e))
+            logger.error(
+                "Failed to check user permission",
+                user_id=user_id,
+                permission=permission,
+                error=str(e),
+            )
             # Default to deny on error
             return False
 
@@ -396,22 +467,7 @@ class RBACService:
             List of UserRole assignment records
         """
         try:
-            user_uuid = uuid.UUID(user_id)
-
-            # Get all assignments for the user
-            from sqlalchemy import and_, select
-
-            query = (
-                select(UserRole)
-                .where(and_(UserRole.user_id == user_uuid, UserRole.is_active == True))  # noqa: E712
-                .order_by(UserRole.assigned_at.desc())
-            )
-
-            result = await self.session.execute(query)
-            assignments = list(result.scalars().all())
-
-            logger.debug("User role assignments retrieved", user_id=user_id, assignment_count=len(assignments))
-
+            assignments = await self.role_repository.get_role_assignments_for_user(user_id)
             return assignments
 
         except Exception as e:
@@ -474,7 +530,10 @@ class RBACService:
                     assignments.append(assignment)
                 except Exception as e:
                     logger.warning(
-                        "Failed to assign role in bulk operation", user_id=user_id, role_id=role_id, error=str(e)
+                        "Failed to assign role in bulk operation",
+                        user_id=user_id,
+                        role_id=role_id,
+                        error=str(e),
                     )
                     # Continue with other assignments
 
@@ -588,8 +647,13 @@ class RBACService:
             return True, "Assignment is valid"
 
         except Exception as e:
-            logger.error("Failed to validate role assignment", user_id=user_id, role_id=role_id, error=str(e))
-            return False, f"Validation error: {str(e)}"
+            logger.error(
+                "Failed to validate role assignment",
+                user_id=user_id,
+                role_id=role_id,
+                error=str(e),
+            )
+            return False, "Validation failed"
 
     async def cleanup_expired_assignments(self) -> int:
         """Clean up expired role assignments.
@@ -598,28 +662,13 @@ class RBACService:
             Number of assignments cleaned up
         """
         try:
-            from sqlalchemy import and_, update
+            cleaned_count = await self.role_repository.cleanup_expired_assignments()
 
-            # Mark expired assignments as inactive
-            update_query = (
-                update(UserRole)
-                .where(
-                    and_(UserRole.expires_at <= datetime.now(timezone.utc), UserRole.is_active == True)
-                )  # noqa: E712
-                .values(is_active=False, updated_at=datetime.now(timezone.utc), updated_by="system_cleanup")
-            )
-
-            result = await self.session.execute(update_query)
-            cleaned_count = result.rowcount
-
-            if cleaned_count > 0:
-                await self.session.commit()
-                logger.info("Expired role assignments cleaned up", count=cleaned_count)
+            # Transaction management handled by repository layer
 
             return cleaned_count
 
         except Exception as e:
-            await self.session.rollback()
             logger.error("Failed to cleanup expired assignments", error=str(e))
             raise
 

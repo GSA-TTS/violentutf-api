@@ -41,6 +41,7 @@ class CacheEntry:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Initialize last_accessed if not provided."""
         if not self.last_accessed:
             self.last_accessed = datetime.now().isoformat()
 
@@ -114,7 +115,11 @@ class SafeMemoryCacheTier(ABC):
 
                 # Add/update entry
                 entry = CacheEntry(
-                    key=key, data=value, timestamp=datetime.now().isoformat(), size_bytes=size, metadata=metadata or {}
+                    key=key,
+                    data=value,
+                    timestamp=datetime.now().isoformat(),
+                    size_bytes=size,
+                    metadata=metadata or {},
                 )
 
                 # Remove old entry if exists
@@ -145,7 +150,12 @@ class SafeMemoryCacheTier(ABC):
 class SafeDiskCacheTier(ABC):
     """Disk-based cache using JSON serialization"""
 
-    def __init__(self, cache_dir: str = ".cache/analysis", max_size_mb: int = 1024, ttl_hours: int = 72):
+    def __init__(
+        self,
+        cache_dir: str = ".cache/analysis",
+        max_size_mb: int = 1024,
+        ttl_hours: int = 72,
+    ):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.max_size_bytes = max_size_mb * 1024 * 1024
@@ -162,8 +172,8 @@ class SafeDiskCacheTier(ABC):
                 with open(self.index_file, "r") as f:
                     data = json.load(f)
                     return data if isinstance(data, dict) else {}
-            except:
-                self.logger.warning("Failed to load cache index, starting fresh")
+            except Exception as e:
+                self.logger.warning(f"Failed to load cache index, starting fresh: {e}")
         return {}
 
     def _save_index(self) -> None:
@@ -276,8 +286,8 @@ class SafeDiskCacheTier(ABC):
             try:
                 if cache_path.exists():
                     cache_path.unlink()
-            except:
-                pass
+            except Exception:
+                pass  # File deletion failures are non-critical
 
             # Update index
             del self.index[key]
@@ -298,7 +308,8 @@ class SafeMultiTierCacheManager:
         # Memory tier (always enabled)
         memory_config = self.config.get("memory", {})
         self.memory_tier = SafeMemoryCacheTier(
-            max_size_mb=memory_config.get("max_size_mb", 100), ttl_hours=memory_config.get("ttl_hours", 24)
+            max_size_mb=memory_config.get("max_size_mb", 100),
+            ttl_hours=memory_config.get("ttl_hours", 24),
         )
         self.tiers.append(self.memory_tier)
 

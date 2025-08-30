@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
+from passlib.hash import argon2
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_key import APIKey
@@ -33,10 +34,9 @@ async def create_test_user(
         "id": uuid.uuid4(),
         "email": email,
         "username": username,
-        "hashed_password": "hashed_password_test",
+        "password_hash": argon2.hash("test_password"),  # Use proper Argon2 hash for test user
         "is_active": is_active,
         "is_superuser": False,
-        "email_verified": True,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -80,7 +80,8 @@ async def create_test_api_key(
     key_base = secrets.token_urlsafe(32)
     full_key = f"vutf_{key_base}"
     key_prefix = full_key[:12]
-    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    # Use Argon2 for secure hashing (same as production service)
+    key_hash = argon2.hash(full_key)
 
     api_key_data = {
         "id": uuid.uuid4(),
@@ -119,12 +120,12 @@ def generate_test_api_key_string() -> str:
 
 
 def get_api_key_hash(key_string: str) -> str:
-    """Get hash for an API key string.
+    """Get hash for an API key string using secure Argon2 hashing.
 
     Args:
         key_string: API key string
 
     Returns:
-        SHA256 hash of the key
+        Argon2 hash of the key
     """
-    return hashlib.sha256(key_string.encode()).hexdigest()
+    return argon2.hash(key_string)

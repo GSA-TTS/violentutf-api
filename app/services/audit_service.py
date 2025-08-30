@@ -6,13 +6,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, Union
 
 from fastapi import Request
-from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.stdlib import get_logger
 
 from app.core.errors import NotFoundError, ValidationError
 from app.models.audit_log import AuditLog
-from app.repositories.base import BaseRepository
+from app.repositories.audit_log_extensions import ExtendedAuditLogRepository
 
 logger = get_logger(__name__)
 
@@ -73,14 +72,18 @@ class AuditService:
         "privilege_escalation": "Privilege escalation attempt",
     }
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, repository_or_session: Union[ExtendedAuditLogRepository, AsyncSession]):
         """Initialize audit service.
 
         Args:
-            session: Database session
+            repository_or_session: Audit log repository or AsyncSession
         """
-        self.session = session
-        self.repository: BaseRepository[AuditLog] = BaseRepository(session, AuditLog)
+        if isinstance(repository_or_session, AsyncSession):
+            self.repository = ExtendedAuditLogRepository(repository_or_session)
+            self.session = repository_or_session
+        else:
+            self.repository = repository_or_session
+            self.session = None
 
     async def log_event(
         self,
@@ -156,31 +159,26 @@ class AuditService:
                         logger.debug(f"Invalid user_id format: {user_id}")
                         converted_user_id = None
 
-            audit_data = {
-                "action": action,
-                "resource_type": resource_type,
-                "resource_id": resource_id,
-                "user_id": converted_user_id,
-                "user_email": user_email,
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "changes": changes,
-                "action_metadata": metadata,
-                "status": status,
-                "error_message": error_message,
-                "duration_ms": duration_ms,
-            }
-
-            # Add request correlation
+            # Add request correlation to metadata
             if request_id:
-                if not audit_data["action_metadata"]:
-                    audit_data["action_metadata"] = {}
-                audit_data["action_metadata"]["request_id"] = request_id
+                if not metadata:
+                    metadata = {}
+                metadata["request_id"] = request_id
 
-            audit_log = AuditLog(**audit_data)
-            self.session.add(audit_log)
-
-            # Commit is handled by the caller
+            audit_log = await self.repository.log_action(
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                user_id=converted_user_id,
+                user_email=user_email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                changes=changes,
+                metadata=metadata,
+                status=status,
+                error_message=error_message,
+                duration_ms=duration_ms,
+            )
 
             logger.info(
                 "Audit event logged",
@@ -430,17 +428,14 @@ class AuditService:
         Returns:
             List of audit logs
         """
-        query = select(AuditLog).where(AuditLog.user_id == uuid.UUID(user_id))
-
-        if start_date:
-            query = query.where(AuditLog.created_at >= start_date)
-        if end_date:
-            query = query.where(AuditLog.created_at <= end_date)
-
-        query = query.order_by(AuditLog.created_at.desc()).limit(limit)
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        page_result = await self.repository.get_by_user(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            page=1,
+            size=limit,
+        )
+        return page_result.items
 
     async def get_resource_history(
         self,
@@ -458,20 +453,10 @@ class AuditService:
         Returns:
             List of audit logs
         """
-        query = (
-            select(AuditLog)
-            .where(
-                and_(
-                    AuditLog.resource_type == resource_type,
-                    AuditLog.resource_id == resource_id,
-                )
-            )
-            .order_by(AuditLog.created_at.desc())
-            .limit(limit)
+        page_result = await self.repository.get_by_resource(
+            resource_type=resource_type, resource_id=resource_id, page=1, size=limit
         )
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        return page_result.items
 
     async def get_failed_auth_attempts(
         self,
@@ -489,23 +474,9 @@ class AuditService:
         Returns:
             Number of failed attempts
         """
-        since = datetime.now(timezone.utc) - time_window
-
-        conditions = [
-            AuditLog.action.in_(["auth.login_failed", "auth.mfa_failed"]),
-            AuditLog.status == "failure",
-            AuditLog.created_at >= since,
-        ]
-
-        if user_email:
-            conditions.append(AuditLog.user_email == user_email)
-        if ip_address:
-            conditions.append(AuditLog.ip_address == ip_address)
-
-        query = select(func.count(AuditLog.id)).where(and_(*conditions))
-
-        result = await self.session.execute(query)
-        return result.scalar() or 0
+        return await self.repository.count_failed_attempts(
+            user_email=user_email, ip_address=ip_address, time_window=time_window
+        )
 
     async def get_security_events(
         self,
@@ -525,21 +496,12 @@ class AuditService:
         Returns:
             List of security audit logs
         """
-        query = select(AuditLog).where(AuditLog.action.like("security.%"))
-
-        if risk_levels:
-            # Filter by risk level in metadata
-            query = query.where(AuditLog.action_metadata["risk_level"].in_(risk_levels))
-
-        if start_date:
-            query = query.where(AuditLog.created_at >= start_date)
-        if end_date:
-            query = query.where(AuditLog.created_at <= end_date)
-
-        query = query.order_by(AuditLog.created_at.desc()).limit(limit)
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        return await self.repository.get_security_events(
+            risk_levels=risk_levels,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+        )
 
     async def get_audit_statistics(
         self,
@@ -555,62 +517,15 @@ class AuditService:
         Returns:
             Dictionary with statistics
         """
-        # Base conditions
-        conditions = []
-        if start_date:
-            conditions.append(AuditLog.created_at >= start_date)
-        if end_date:
-            conditions.append(AuditLog.created_at <= end_date)
+        report_data = await self.repository.get_compliance_report_data(start_date=start_date, end_date=end_date)
 
-        # Total events
-        total_query = select(func.count(AuditLog.id))
-        if conditions:
-            total_query = total_query.where(and_(*conditions))
-        total_result = await self.session.execute(total_query)
-        total_events = total_result.scalar() or 0
-
-        # Events by type
-        type_query = select(AuditLog.resource_type, func.count(AuditLog.id).label("count")).group_by(
-            AuditLog.resource_type
-        )
-        if conditions:
-            type_query = type_query.where(and_(*conditions))
-        type_result = await self.session.execute(type_query)
-        events_by_type = {row[0]: row[1] for row in type_result}
-
-        # Events by status
-        status_query = select(AuditLog.status, func.count(AuditLog.id).label("count")).group_by(AuditLog.status)
-        if conditions:
-            status_query = status_query.where(and_(*conditions))
-        status_result = await self.session.execute(status_query)
-        events_by_status = {row[0]: row[1] for row in status_result}
-
-        # Failed auth attempts
-        auth_conditions = conditions + [
-            AuditLog.action.in_(["auth.login_failed", "auth.mfa_failed"]),
-            AuditLog.status == "failure",
-        ]
-        auth_query = select(func.count(AuditLog.id)).where(and_(*auth_conditions))
-        auth_result = await self.session.execute(auth_query)
-        failed_auth_attempts = auth_result.scalar() or 0
-
-        # Security events
-        security_conditions = conditions + [AuditLog.action.like("security.%")]
-        security_query = select(func.count(AuditLog.id)).where(and_(*security_conditions))
-        security_result = await self.session.execute(security_query)
-        security_events = security_result.scalar() or 0
-
-        return {
-            "total_events": total_events,
-            "events_by_type": events_by_type,
-            "events_by_status": events_by_status,
-            "failed_auth_attempts": failed_auth_attempts,
-            "security_events": security_events,
-            "time_range": {
-                "start": start_date.isoformat() if start_date else None,
-                "end": end_date.isoformat() if end_date else None,
-            },
+        # Add time range info
+        report_data["time_range"] = {
+            "start": start_date.isoformat() if start_date else None,
+            "end": end_date.isoformat() if end_date else None,
         }
+
+        return report_data
 
     async def search_audit_logs(
         self,
@@ -638,29 +553,21 @@ class AuditService:
         Returns:
             List of matching audit logs
         """
-        query = select(AuditLog)
-        conditions = []
-
+        # Convert action_pattern to action for repository method
+        action = None
         if action_pattern:
-            conditions.append(AuditLog.action.like(f"%{action_pattern}%"))
-        if resource_type:
-            conditions.append(AuditLog.resource_type == resource_type)
-        if user_id:
-            conditions.append(AuditLog.user_id == uuid.UUID(user_id))
-        if status:
-            conditions.append(AuditLog.status == status)
-        if start_date:
-            conditions.append(AuditLog.created_at >= start_date)
-        if end_date:
-            conditions.append(AuditLog.created_at <= end_date)
+            action = action_pattern
 
-        if conditions:
-            query = query.where(and_(*conditions))
-
-        query = query.order_by(AuditLog.created_at.desc()).limit(limit).offset(offset)
-
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+        return await self.repository.search(
+            action=action,
+            user_id=user_id,
+            resource_type=resource_type,
+            status=status,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            offset=offset,
+        )
 
     def _sanitize_sensitive_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Remove sensitive information from data.
@@ -759,23 +666,13 @@ class AuditService:
         Returns:
             Number of logs deleted
         """
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
-
-        # Count logs to be deleted
-        count_query = select(func.count(AuditLog.id)).where(AuditLog.created_at < cutoff_date)
-        count_result = await self.session.execute(count_query)
-        count = count_result.scalar() or 0
+        count = await self.repository.cleanup_old_logs(retention_days)
 
         if count > 0:
-            # Delete old logs
-            delete_query = AuditLog.__table__.delete().where(AuditLog.created_at < cutoff_date)
-            await self.session.execute(delete_query)
-
             logger.info(
                 "Cleaned up old audit logs",
                 count=count,
                 retention_days=retention_days,
-                cutoff_date=cutoff_date.isoformat(),
             )
 
         return count

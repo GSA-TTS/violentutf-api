@@ -22,7 +22,12 @@ from fastapi.responses import JSONResponse
 # TestClient imported via TYPE_CHECKING for type hints only
 from starlette.datastructures import Headers, MutableHeaders
 
-from app.middleware.csrf import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRF_TOKEN_LENGTH, CSRFProtectionMiddleware
+from app.middleware.csrf import (
+    CSRF_COOKIE_NAME,
+    CSRF_HEADER_NAME,
+    CSRF_TOKEN_LENGTH,
+    CSRFProtectionMiddleware,
+)
 from tests.utils.testclient import SafeTestClient
 
 if TYPE_CHECKING:
@@ -80,7 +85,9 @@ class TestConcurrentRequestHandling:
         results = []
         for _ in range(10):
             response = client.post(
-                "/protected", headers={CSRF_HEADER_NAME: csrf_token}, cookies={CSRF_COOKIE_NAME: csrf_token}
+                "/protected",
+                headers={CSRF_HEADER_NAME: csrf_token},
+                cookies={CSRF_COOKIE_NAME: csrf_token},
             )
             results.append(response.status_code)
 
@@ -97,14 +104,20 @@ class TestConcurrentRequestHandling:
         # Simulate rapid token switching (potential race condition)
         for i, token in enumerate(tokens):
             # Use each token immediately after generation
-            response = client.post("/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token})
+            response = client.post(
+                "/protected",
+                headers={CSRF_HEADER_NAME: token},
+                cookies={CSRF_COOKIE_NAME: token},
+            )
             assert response.status_code == 200
 
             # Try to reuse a previous token (should still work)
             if i > 0:
                 old_token = tokens[i - 1]
                 response = client.post(
-                    "/protected", headers={CSRF_HEADER_NAME: old_token}, cookies={CSRF_COOKIE_NAME: old_token}
+                    "/protected",
+                    headers={CSRF_HEADER_NAME: old_token},
+                    cookies={CSRF_COOKIE_NAME: old_token},
                 )
                 assert response.status_code == 200
 
@@ -143,7 +156,11 @@ class TestTokenLifecycleManagement:
             mock_time.return_value = time.time()
 
             # Valid token should work
-            response = client.post("/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token})
+            response = client.post(
+                "/protected",
+                headers={CSRF_HEADER_NAME: token},
+                cookies={CSRF_COOKIE_NAME: token},
+            )
             assert response.status_code == 200
 
             # Simulate token expiration (1 hour later)
@@ -151,7 +168,11 @@ class TestTokenLifecycleManagement:
 
             # Note: Current implementation doesn't have expiration,
             # but this test documents expected behavior if added
-            response = client.post("/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token})
+            response = client.post(
+                "/protected",
+                headers={CSRF_HEADER_NAME: token},
+                cookies={CSRF_COOKIE_NAME: token},
+            )
             # Currently passes, but should fail with expiration
             assert response.status_code == 200
 
@@ -164,7 +185,9 @@ class TestTokenLifecycleManagement:
         if initial_token:
             # Use the token
             response2 = client.post(
-                "/protected", headers={CSRF_HEADER_NAME: initial_token}, cookies={CSRF_COOKIE_NAME: initial_token}
+                "/protected",
+                headers={CSRF_HEADER_NAME: initial_token},
+                cookies={CSRF_COOKIE_NAME: initial_token},
             )
             assert response2.status_code == 200
 
@@ -178,14 +201,22 @@ class TestTokenLifecycleManagement:
         token = middleware._generate_csrf_token()
 
         # Use token successfully
-        response = client.post("/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token})
+        response = client.post(
+            "/protected",
+            headers={CSRF_HEADER_NAME: token},
+            cookies={CSRF_COOKIE_NAME: token},
+        )
         assert response.status_code == 200
 
         # Simulate logout (clear session)
         # In a real app, this would invalidate the token
         # Note: Current implementation doesn't track invalidated tokens
         # This test documents expected behavior for future implementation
-        response = client.post("/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token})
+        response = client.post(
+            "/protected",
+            headers={CSRF_HEADER_NAME: token},
+            cookies={CSRF_COOKIE_NAME: token},
+        )
         # Currently passes but should fail with invalidated token tracking
         assert response.status_code == 200
 
@@ -215,7 +246,11 @@ class TestCrossOriginAttackVectors:
         # Simulate cross-origin request
         response = client.post(
             "/protected",
-            headers={CSRF_HEADER_NAME: token, "Origin": "https://evil.com", "Referer": "https://evil.com/attack"},
+            headers={
+                CSRF_HEADER_NAME: token,
+                "Origin": "https://evil.com",
+                "Referer": "https://evil.com/attack",
+            },
             cookies={CSRF_COOKIE_NAME: token},
         )
 
@@ -230,7 +265,11 @@ class TestCrossOriginAttackVectors:
         # Simulate request from subdomain
         response = client.post(
             "/protected",
-            headers={CSRF_HEADER_NAME: token, "Host": "sub.example.com", "Origin": "https://sub.example.com"},
+            headers={
+                CSRF_HEADER_NAME: token,
+                "Host": "sub.example.com",
+                "Origin": "https://sub.example.com",
+            },
             cookies={CSRF_COOKIE_NAME: token},
         )
 
@@ -274,7 +313,9 @@ class TestCrossOriginAttackVectors:
 
         for origin in origin_tests:
             response = client.post(
-                "/protected", headers={CSRF_HEADER_NAME: token, "Origin": origin}, cookies={CSRF_COOKIE_NAME: token}
+                "/protected",
+                headers={CSRF_HEADER_NAME: token, "Origin": origin},
+                cookies={CSRF_COOKIE_NAME: token},
             )
             # Document current behavior (all pass)
             assert response.status_code == 200
@@ -351,7 +392,9 @@ class TestAdvancedAttackScenarios:
 
         # Try to use attacker's token
         response = client.post(
-            "/protected", headers={CSRF_HEADER_NAME: attacker_token}, cookies={CSRF_COOKIE_NAME: attacker_token}
+            "/protected",
+            headers={CSRF_HEADER_NAME: attacker_token},
+            cookies={CSRF_COOKIE_NAME: attacker_token},
         )
 
         # Should fail validation
@@ -409,7 +452,11 @@ class TestAdvancedAttackScenarios:
         token2 = middleware._generate_csrf_token()
 
         # Header and cookie mismatch
-        response = client.post("/protected", headers={CSRF_HEADER_NAME: token1}, cookies={CSRF_COOKIE_NAME: token2})
+        response = client.post(
+            "/protected",
+            headers={CSRF_HEADER_NAME: token1},
+            cookies={CSRF_COOKIE_NAME: token2},
+        )
         assert response.status_code == 403
 
         # Missing cookie
@@ -441,7 +488,9 @@ class TestEdgeCasesAndErrorHandling:
         for token in malformed_tokens:
             if token is not None:
                 response = client.post(
-                    "/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token}
+                    "/protected",
+                    headers={CSRF_HEADER_NAME: token},
+                    cookies={CSRF_COOKIE_NAME: token},
                 )
                 assert response.status_code == 403
 
@@ -470,7 +519,9 @@ class TestEdgeCasesAndErrorHandling:
 
                 # Try to use token with safe text
                 response = client.post(
-                    "/protected", headers={CSRF_HEADER_NAME: token}, cookies={CSRF_COOKIE_NAME: token}
+                    "/protected",
+                    headers={CSRF_HEADER_NAME: token},
+                    cookies={CSRF_COOKIE_NAME: token},
                 )
                 assert response.status_code == 200
             except Exception:

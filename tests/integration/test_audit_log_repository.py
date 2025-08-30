@@ -38,7 +38,10 @@ class TestAuditLogRepository:
     async def test_log_action_basic(self, audit_repo: AuditLogRepository, async_db_session: AsyncSession):
         """Test basic action logging."""
         audit_log = await audit_repo.log_action(
-            action="user.login", resource_type="user", resource_id="12345", status="success"
+            action="user.login",
+            resource_type="user",
+            resource_id="12345",
+            status="success",
         )
         await async_db_session.commit()
 
@@ -50,7 +53,10 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_log_action_with_user(
-        self, audit_repo: AuditLogRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        audit_repo: AuditLogRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test action logging with user information."""
         audit_log = await audit_repo.log_action(
@@ -80,7 +86,11 @@ class TestAuditLogRepository:
         }
 
         audit_log = await audit_repo.log_action(
-            action="user.update", resource_type="user", resource_id="user123", changes=changes, status="success"
+            action="user.update",
+            resource_type="user",
+            resource_id="user123",
+            changes=changes,
+            status="success",
         )
         await async_db_session.commit()
 
@@ -127,13 +137,19 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_log_action_with_uuid_user_id(
-        self, audit_repo: AuditLogRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        audit_repo: AuditLogRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test action logging with UUID object as user_id."""
         user_uuid = uuid.UUID(test_user.id)
 
         audit_log = await audit_repo.log_action(
-            action="test.uuid", resource_type="test", user_id=user_uuid, status="success"  # Pass UUID object
+            action="test.uuid",
+            resource_type="test",
+            user_id=user_uuid,
+            status="success",  # Pass UUID object
         )
         await async_db_session.commit()
 
@@ -148,11 +164,19 @@ class TestAuditLogRepository:
         # Create multiple audit logs for the resource
         for i in range(3):
             await audit_repo.log_action(
-                action=f"api_key.action{i}", resource_type=resource_type, resource_id=resource_id, status="success"
+                action=f"api_key.action{i}",
+                resource_type=resource_type,
+                resource_id=resource_id,
+                status="success",
             )
 
         # Create logs for different resource
-        await audit_repo.log_action(action="user.login", resource_type="user", resource_id="user123", status="success")
+        await audit_repo.log_action(
+            action="user.login",
+            resource_type="user",
+            resource_id="user123",
+            status="success",
+        )
         await async_db_session.commit()
 
         # Get logs for specific resource
@@ -174,7 +198,10 @@ class TestAuditLogRepository:
         # Create multiple logs
         for i in range(5):
             await audit_repo.log_action(
-                action=f"test.action{i}", resource_type=resource_type, resource_id=resource_id, status="success"
+                action=f"test.action{i}",
+                resource_type=resource_type,
+                resource_id=resource_id,
+                status="success",
             )
         await async_db_session.commit()
 
@@ -185,17 +212,28 @@ class TestAuditLogRepository:
         assert page.has_prev is False
 
     @pytest.mark.asyncio
-    async def test_get_by_user(self, audit_repo: AuditLogRepository, test_user: User, async_db_session: AsyncSession):
+    async def test_get_by_user(
+        self,
+        audit_repo: AuditLogRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
+    ):
         """Test getting audit logs by user."""
         # Create logs for user
         for i in range(3):
             await audit_repo.log_action(
-                action=f"user.action{i}", resource_type="test", user_id=test_user.id, status="success"
+                action=f"user.action{i}",
+                resource_type="test",
+                user_id=test_user.id,
+                status="success",
             )
 
         # Create logs for different user
         await audit_repo.log_action(
-            action="other.action", resource_type="test", user_id=str(uuid.uuid4()), status="success"
+            action="other.action",
+            resource_type="test",
+            user_id=str(uuid.uuid4()),
+            status="success",
         )
         await async_db_session.commit()
 
@@ -207,14 +245,30 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_user_with_action_pattern(
-        self, audit_repo: AuditLogRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        audit_repo: AuditLogRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting user logs filtered by action pattern."""
         # Create logs with different actions
-        await audit_repo.log_action(action="user.login", resource_type="user", user_id=test_user.id, status="success")
-        await audit_repo.log_action(action="user.logout", resource_type="user", user_id=test_user.id, status="success")
         await audit_repo.log_action(
-            action="api_key.create", resource_type="api_key", user_id=test_user.id, status="success"
+            action="user.login",
+            resource_type="user",
+            user_id=test_user.id,
+            status="success",
+        )
+        await audit_repo.log_action(
+            action="user.logout",
+            resource_type="user",
+            user_id=test_user.id,
+            status="success",
+        )
+        await audit_repo.log_action(
+            action="api_key.create",
+            resource_type="api_key",
+            user_id=test_user.id,
+            status="success",
         )
         await async_db_session.commit()
 
@@ -229,19 +283,30 @@ class TestAuditLogRepository:
 
     @pytest.mark.asyncio
     async def test_get_by_user_with_date_range(
-        self, audit_repo: AuditLogRepository, test_user: User, async_db_session: AsyncSession
+        self,
+        audit_repo: AuditLogRepository,
+        test_user: User,
+        async_db_session: AsyncSession,
     ):
         """Test getting user logs within date range."""
         now = datetime.now(timezone.utc)
 
         # Create log from yesterday
         yesterday_log = await audit_repo.log_action(
-            action="old.action", resource_type="test", user_id=test_user.id, status="success"
+            action="old.action",
+            resource_type="test",
+            user_id=test_user.id,
+            status="success",
         )
         yesterday_log.created_at = now - timedelta(days=1)
 
         # Create log from today
-        await audit_repo.log_action(action="new.action", resource_type="test", user_id=test_user.id, status="success")
+        await audit_repo.log_action(
+            action="new.action",
+            resource_type="test",
+            user_id=test_user.id,
+            status="success",
+        )
         await async_db_session.commit()
 
         # Get logs from last 12 hours
@@ -428,7 +493,10 @@ class TestAuditLogRepository:
             status="error",
         )
         await audit_repo.log_action(
-            action="api_key.create", resource_type="api_key", user_email="other@example.com", status="success"
+            action="api_key.create",
+            resource_type="api_key",
+            user_email="other@example.com",
+            status="success",
         )
         await async_db_session.commit()
 
@@ -447,10 +515,16 @@ class TestAuditLogRepository:
         """Test searching specific fields."""
         # Create logs
         await audit_repo.log_action(
-            action="test.action", resource_type="user", user_email="specific@example.com", status="success"
+            action="test.action",
+            resource_type="user",
+            user_email="specific@example.com",
+            status="success",
         )
         await audit_repo.log_action(
-            action="specific.action", resource_type="test", user_email="other@example.com", status="success"
+            action="specific.action",
+            resource_type="test",
+            user_email="other@example.com",
+            status="success",
         )
         await async_db_session.commit()
 

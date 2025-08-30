@@ -53,7 +53,12 @@ class TestJWTOrganizationExtraction:
     @pytest.fixture
     def jwt_payload_without_org(self):
         """Create JWT payload missing organization_id."""
-        return {"sub": "550e8400-e29b-41d4-a716-446655440000", "roles": ["user"], "type": "access", "exp": 9999999999}
+        return {
+            "sub": "550e8400-e29b-41d4-a716-446655440000",
+            "roles": ["user"],
+            "type": "access",
+            "exp": 9999999999,
+        }
 
     async def test_organization_id_extracted_from_valid_jwt(self, middleware, mock_request, valid_jwt_payload):
         """Test that organization_id is properly extracted from JWT payload."""
@@ -76,7 +81,10 @@ class TestJWTOrganizationExtraction:
         mock_request.headers["Authorization"] = "Bearer valid.jwt.token"
         mock_call_next = AsyncMock(return_value=Response())
 
-        with patch("app.middleware.authentication.decode_token", return_value=jwt_payload_without_org):
+        with patch(
+            "app.middleware.authentication.decode_token",
+            return_value=jwt_payload_without_org,
+        ):
             # Execute
             await middleware.dispatch(mock_request, mock_call_next)
 

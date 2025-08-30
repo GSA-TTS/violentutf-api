@@ -156,7 +156,10 @@ def rate_limit(endpoint_type: str) -> Callable[..., Any]:
                 except Exception as e:
                     # Log rate limiting events for monitoring
                     logger.warning(
-                        "rate_limit_exceeded", endpoint_type=endpoint_type, rate_limit=rate_limit_str, error=str(e)
+                        "rate_limit_exceeded",
+                        endpoint_type=endpoint_type,
+                        rate_limit=rate_limit_str,
+                        error=str(e),
                     )
                     raise
 
@@ -164,7 +167,11 @@ def rate_limit(endpoint_type: str) -> Callable[..., Any]:
         else:
             # For endpoints without request parameter, return original function
             # Rate limiting will be handled at middleware level
-            logger.info("rate_limit_skipped_no_request_param", endpoint_type=endpoint_type, function_name=func.__name__)
+            logger.info(
+                "rate_limit_skipped_no_request_param",
+                endpoint_type=endpoint_type,
+                function_name=func.__name__,
+            )
             return func
 
     return decorator
@@ -223,14 +230,24 @@ def get_rate_limit_status(request: Request, endpoint_type: str) -> Dict[str, Any
         Dictionary with rate limit status information
     """
     if not settings.RATE_LIMIT_ENABLED:
-        return {"enabled": False, "limit": "unlimited", "remaining": "unlimited", "reset_time": None}
+        return {
+            "enabled": False,
+            "limit": "unlimited",
+            "remaining": "unlimited",
+            "reset_time": None,
+        }
 
     # This would require integration with SlowAPI's internal state
     # For now, return basic information
     rate_limit_str = get_rate_limit(endpoint_type)
     key = get_rate_limit_key(request)
 
-    return {"enabled": True, "limit": rate_limit_str, "key": key, "endpoint_type": endpoint_type}
+    return {
+        "enabled": True,
+        "limit": rate_limit_str,
+        "key": key,
+        "endpoint_type": endpoint_type,
+    }
 
 
 class RateLimitExceeded(HTTPException):

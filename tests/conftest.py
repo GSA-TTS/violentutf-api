@@ -16,19 +16,44 @@ for module_name in list(sys.modules.keys()):
 for module_name in modules_to_remove:
     del sys.modules[module_name]
 
-import pytest
-import pytest_asyncio
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+    from fastapi.testclient import TestClient  # noqa: E402
 
-from app.core.config import Settings, get_settings
-from app.main import create_application
+from app.core.config import Settings, get_settings  # noqa: E402
+from app.main import create_application  # noqa: E402
+
+# Import our new fixtures for repository testing
+from tests.fixtures.repository_fixtures import (  # noqa
+    async_context_factory,
+    database_error_factory,
+    mock_session,
+    mock_validation_factory,
+    pagination_result_factory,
+    performance_monitor,
+    query_result_factory,
+    transaction_mock_factory,
+)
+from tests.fixtures.simple_factories import (  # noqa
+    api_key_factory,
+    audit_log_factory,
+    role_factory,
+    security_scan_factory,
+    session_factory,
+    user_factory,
+)
 
 # Import test fixtures - this makes them available to all tests
-from tests.test_database import DatabaseTestManager, clean_db_session, db_session, test_db_manager  # noqa
+from tests.test_database import (  # noqa
+    DatabaseTestManager,
+    clean_db_session,
+    db_session,
+    test_db_manager,
+)
 from tests.test_fixtures import (  # noqa
     admin_token,
     admin_user,
@@ -41,7 +66,7 @@ from tests.test_fixtures import (  # noqa
 )
 
 # Import our safe TestClient
-from tests.utils.testclient import SafeTestClient
+from tests.utils.testclient import SafeTestClient  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -49,15 +74,21 @@ def non_mocked_hosts():
     """Configure pytest-httpx to not intercept TestClient requests."""
     # This is critical - it tells pytest-httpx to NOT mock these hosts
     # TestClient uses "testserver" as its default host
-    return ["test", "testserver", "localhost", "127.0.0.1", "app", "http://test", "http://testserver"]
+    return [
+        "test",
+        "testserver",
+        "localhost",
+        "127.0.0.1",
+        "app",
+        "http://test",
+        "http://testserver",
+    ]
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> asyncio.AbstractEventLoop:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Removed custom event_loop fixture - using pytest-asyncio's built-in management
+# The pytest.ini configuration handles event loop management with:
+# asyncio_mode = auto
+# asyncio_default_fixture_loop_scope = function
 
 
 @pytest.fixture(scope="session")
@@ -69,7 +100,9 @@ def test_settings() -> Settings:
     get_settings.cache_clear()
 
     # Use separate test database to avoid conflicts
-    test_db_url = "sqlite+aiosqlite:///./test_violentutf.db"
+    from tests.helpers.windows_compat import get_test_db_path
+
+    test_db_url = get_test_db_path()
 
     # Set environment variable for test database
     os.environ["DATABASE_URL"] = test_db_url
@@ -166,7 +199,7 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture(autouse=True)
-def reset_dependency_overrides(app: FastAPI) -> None:
+def reset_dependency_overrides(app: FastAPI) -> Generator[None, None, None]:
     """Reset dependency overrides after each test, but preserve core test dependencies."""
     from app.core.config import get_settings
     from app.db.session import get_db, get_db_dependency
@@ -178,13 +211,18 @@ def reset_dependency_overrides(app: FastAPI) -> None:
         get_db_dependency: app.dependency_overrides.get(get_db_dependency),
     }
 
-    yield
+    yield  # Run the test
 
     # Clear all overrides, then restore the preserved ones
     app.dependency_overrides.clear()
     for dependency, override in preserved_overrides.items():
         if override is not None:
             app.dependency_overrides[dependency] = override
+
+    # Windows-specific cleanup
+    from tests.helpers.windows_compat import force_close_sqlite_connections
+
+    force_close_sqlite_connections()
 
 
 @pytest_asyncio.fixture

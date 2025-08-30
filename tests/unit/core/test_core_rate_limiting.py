@@ -6,9 +6,17 @@ import pytest
 from fastapi import HTTPException, Request
 from slowapi.errors import RateLimitExceeded
 
-from app.core.rate_limiting import RATE_LIMITS
+from app.core.rate_limiting import (
+    RATE_LIMITS,
+)
 from app.core.rate_limiting import RateLimitExceeded as CustomRateLimitExceeded
-from app.core.rate_limiting import get_rate_limit, get_rate_limit_key, get_rate_limit_status, ip_rate_limit, rate_limit
+from app.core.rate_limiting import (
+    get_rate_limit,
+    get_rate_limit_key,
+    get_rate_limit_status,
+    ip_rate_limit,
+    rate_limit,
+)
 
 
 class TestRateLimitKey:

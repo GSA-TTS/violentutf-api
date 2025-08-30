@@ -113,7 +113,11 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
 
         # Check nonce replay
         if await self._is_nonce_replayed(nonce, api_key):
-            logger.warning("nonce_replay_detected", nonce=nonce[:16] + "...", api_key=api_key[:8] + "...")
+            logger.warning(
+                "nonce_replay_detected",
+                nonce=nonce[:16] + "...",
+                api_key=api_key[:8] + "...",
+            )
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Nonce replay detected"},
@@ -225,10 +229,11 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
             )
 
             # Create expected signature
+            # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signature verification, not sensitive data storage
             expected_signature = hmac.new(
                 api_secret.encode(),
                 canonical_string.encode(),
-                hashlib.sha256,
+                hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
             ).hexdigest()
 
             # Constant-time comparison
@@ -280,6 +285,7 @@ class RequestSigningMiddleware(BaseHTTPMiddleware):
         canonical_headers_str = "\n".join(canonical_headers)
 
         # Body hash
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for request body integrity, not sensitive data storage
         body_hash = hashlib.sha256(body).hexdigest()
 
         # Combine all parts
@@ -384,10 +390,11 @@ class RequestSigner:
         canonical_string = self._create_canonical_request(method, path, query_params, headers, body, timestamp, nonce)
 
         # Create signature
+        # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signature generation, not sensitive data storage
         signature = hmac.new(
             self.api_secret.encode(),
             canonical_string.encode(),
-            hashlib.sha256,
+            hashlib.sha256,  # CodeQL [py/weak-sensitive-data-hashing] HMAC-SHA256 appropriate for request signatures
         ).hexdigest()
 
         return {
@@ -423,6 +430,7 @@ class RequestSigner:
             canonical_headers.append(f"{header}:{value.strip()}")
         canonical_headers_str = "\n".join(canonical_headers)
 
+        # CodeQL [py/weak-sensitive-data-hashing] SHA256 appropriate for request body integrity, not sensitive data storage
         body_hash = hashlib.sha256(body).hexdigest()
 
         canonical_request = "\n".join(

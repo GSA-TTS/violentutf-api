@@ -29,8 +29,16 @@ class AuthorityLevel(Enum):
     """Hierarchical authority levels (replacing is_superuser boolean)."""
 
     # System-level authorities (highest privilege)
-    GLOBAL_ADMIN = ("global_admin", 0, "Global system administrator with all permissions")
-    SUPER_ADMIN = ("super_admin", 0, "Super administrator (deprecated, use global_admin)")
+    GLOBAL_ADMIN = (
+        "global_admin",
+        0,
+        "Global system administrator with all permissions",
+    )
+    SUPER_ADMIN = (
+        "super_admin",
+        0,
+        "Super administrator (deprecated, use global_admin)",
+    )
 
     # Administrative authorities
     ADMIN = ("admin", 10, "Organization administrator")
@@ -140,7 +148,9 @@ class AuthorityEvaluator:
             # Check for global administrative permissions
             if "*" in permissions:
                 logger.debug(
-                    "User has global admin authority", user_id=str(user.id), reason="global_wildcard_permission"
+                    "User has global admin authority",
+                    user_id=str(user.id),
+                    reason="global_wildcard_permission",
                 )
                 return AuthorityLevel.GLOBAL_ADMIN
 
@@ -213,8 +223,19 @@ class AuthorityEvaluator:
             return AuthorityLevel.GLOBAL_ADMIN
 
         # Count permission scopes to determine authority
-        admin_permissions = {"users:*", "api_keys:*", "sessions:*", "roles:*", "permissions:*"}
-        management_permissions = {"users:write", "users:delete", "api_keys:write", "api_keys:delete"}
+        admin_permissions = {
+            "users:*",
+            "api_keys:*",
+            "sessions:*",
+            "roles:*",
+            "permissions:*",
+        }
+        management_permissions = {
+            "users:write",
+            "users:delete",
+            "api_keys:write",
+            "api_keys:delete",
+        }
 
         # Check for administrative permission patterns
         if any(perm in permissions for perm in admin_permissions):
@@ -224,7 +245,12 @@ class AuthorityEvaluator:
             return AuthorityLevel.USER_MANAGER
 
         # Check for read permissions (viewer level)
-        read_permissions = {"users:read", "api_keys:read", "sessions:read", "audit_logs:read"}
+        read_permissions = {
+            "users:read",
+            "api_keys:read",
+            "sessions:read",
+            "audit_logs:read",
+        }
         if any(perm in permissions for perm in read_permissions):
             return AuthorityLevel.VIEWER
 
@@ -262,13 +288,22 @@ class AuthorityEvaluator:
             if manager_authority == AuthorityLevel.GLOBAL_ADMIN:
                 if target_authority == AuthorityLevel.GLOBAL_ADMIN:
                     return False, "Cannot manage other global administrators"
-                return True, f"{manager_authority.level_name} can manage {target_authority.level_name}"
+                return (
+                    True,
+                    f"{manager_authority.level_name} can manage {target_authority.level_name}",
+                )
 
             # Authority hierarchy check
             if manager_authority.can_manage(target_authority):
-                return True, f"{manager_authority.level_name} can manage {target_authority.level_name}"
+                return (
+                    True,
+                    f"{manager_authority.level_name} can manage {target_authority.level_name}",
+                )
             else:
-                return False, f"{manager_authority.level_name} cannot manage {target_authority.level_name}"
+                return (
+                    False,
+                    f"{manager_authority.level_name} cannot manage {target_authority.level_name}",
+                )
 
         except Exception as e:
             logger.error(
@@ -277,7 +312,7 @@ class AuthorityEvaluator:
                 target_id=str(target_user.id),
                 error=str(e),
             )
-            return False, f"Authority evaluation error: {str(e)}"
+            return False, "Authority evaluation failed"
 
     def get_authority_capabilities(self, authority_level: AuthorityLevel) -> Dict[str, Any]:
         """Get capabilities associated with an authority level.
@@ -428,7 +463,9 @@ class AuthorityContext:
 _authority_evaluator: Optional[AuthorityEvaluator] = None
 
 
-def get_authority_evaluator(session: Optional[AsyncSession] = None) -> AuthorityEvaluator:
+def get_authority_evaluator(
+    session: Optional[AsyncSession] = None,
+) -> AuthorityEvaluator:
     """Get the global authority evaluator instance."""
     global _authority_evaluator
     if _authority_evaluator is None or session is not None:

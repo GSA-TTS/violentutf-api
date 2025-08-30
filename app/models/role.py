@@ -42,6 +42,16 @@ class Role(Base, BaseModelMixin):
     # Timestamps and audit fields (inherited from BaseModel)
     # created_at, updated_at, created_by, updated_by, version, is_deleted
 
+    @property
+    def permissions(self) -> List[str]:
+        """Get permissions from role metadata."""
+        return self.role_metadata.get("permissions", [])
+
+    @permissions.setter
+    def permissions(self, value: List[str]) -> None:
+        """Set permissions in role metadata."""
+        self.role_metadata["permissions"] = value
+
     def __repr__(self) -> str:
         """Return string representation of the role."""
         return f"<Role(id={self.id}, name='{self.name}', display_name='{self.display_name}')>"
@@ -107,7 +117,13 @@ class Role(Base, BaseModelMixin):
                 description="Manage users and their basic permissions",
                 is_system_role=True,
                 role_metadata={
-                    "permissions": ["users:read", "users:write", "users:delete", "sessions:read", "audit_logs:read"],
+                    "permissions": [
+                        "users:read",
+                        "users:write",
+                        "users:delete",
+                        "sessions:read",
+                        "audit_logs:read",
+                    ],
                     "level": 2,
                     "immutable": False,
                 },
@@ -147,7 +163,11 @@ class Role(Base, BaseModelMixin):
                 description="Basic user access to own resources",
                 is_system_role=True,
                 role_metadata={
-                    "permissions": ["users:read:own", "api_keys:*:own", "sessions:read:own"],
+                    "permissions": [
+                        "users:read:own",
+                        "api_keys:*:own",
+                        "sessions:read:own",
+                    ],
                     "level": 4,
                     "immutable": False,
                 },

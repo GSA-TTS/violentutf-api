@@ -3,7 +3,17 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Optional, Set, Union, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Optional,
+    Set,
+    Union,
+    cast,
+)
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -35,7 +45,14 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
     PROTECTED_METHODS: Set[str] = {"POST", "PUT", "PATCH", "DELETE"}
 
     # Paths that should be excluded from idempotency checking
-    EXCLUDED_PATHS: Set[str] = {"/health", "/ready", "/metrics", "/docs", "/redoc", "/openapi.json"}
+    EXCLUDED_PATHS: Set[str] = {
+        "/health",
+        "/ready",
+        "/metrics",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }
 
     def __init__(
         self,
@@ -139,7 +156,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         except ValueError:
             # Not a UUID, but that's okay - log a warning
             logger.debug(
-                "idempotency_key_not_uuid", key=key, message="Idempotency key is not a UUID (recommended format)"
+                "idempotency_key_not_uuid",
+                key=key,
+                message="Idempotency key is not a UUID (recommended format)",
             )
 
         return None

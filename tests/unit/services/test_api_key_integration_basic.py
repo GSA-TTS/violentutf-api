@@ -32,6 +32,9 @@ def api_key_service(mock_session, mock_secrets_manager):
 class TestBasicIntegration:
     """Basic integration tests."""
 
+    # Mark all test methods in this class as async
+    pytestmark = pytest.mark.asyncio
+
     async def test_hash_storage_and_retrieval(self, api_key_service, mock_secrets_manager):
         """Test basic hash storage and retrieval functionality."""
         key_id = "test-key-123"
@@ -64,9 +67,9 @@ class TestBasicIntegration:
         result = await api_key_service._verify_key_hash(test_key, argon2_hash)
         assert result is True
 
-        # Test SHA256 (legacy)
+        # Test SHA256 (legacy) - should be rejected for security
         import hashlib
 
         sha256_hash = hashlib.sha256(test_key.encode()).hexdigest()
         result = await api_key_service._verify_key_hash(test_key, sha256_hash)
-        assert result is True
+        assert result is False  # SHA256 hashes are rejected for security

@@ -34,7 +34,11 @@ class HotspotSanitizer:
         self.security_level = security_level
         self.validator = InputValidator(strict_mode=(security_level == "public"))
         self.encoder = OutputEncoder()
-        self._sanitization_stats = {"total_sanitized": 0, "paths_redacted": 0, "sensitive_removed": 0}
+        self._sanitization_stats = {
+            "total_sanitized": 0,
+            "paths_redacted": 0,
+            "sensitive_removed": 0,
+        }
 
     def sanitize_hotspot(self, hotspot: Any) -> Dict[str, Any]:
         """

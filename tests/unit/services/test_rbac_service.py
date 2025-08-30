@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
@@ -137,7 +142,11 @@ class TestRBACService:
             mock_user_role.role_id = uuid.UUID(role_id)
             mock_user_role.is_active = True
 
-            with patch.object(rbac_service.role_repository, "assign_role_to_user", return_value=mock_user_role):
+            with patch.object(
+                rbac_service.role_repository,
+                "assign_role_to_user",
+                return_value=mock_user_role,
+            ):
                 # Act
                 user_role = await rbac_service.assign_role_to_user(user_id, role_id, assigned_by=assigned_by)
 
@@ -228,10 +237,16 @@ class TestRBACService:
 
         # Create mock roles with permissions
         role1 = MagicMock(spec=Role)
-        role1.get_effective_permissions.return_value = {"users:read:all", "users:write:own"}
+        role1.get_effective_permissions.return_value = {
+            "users:read:all",
+            "users:write:own",
+        }
 
         role2 = MagicMock(spec=Role)
-        role2.get_effective_permissions.return_value = {"users:delete:own", "users:read:all"}  # Duplicate
+        role2.get_effective_permissions.return_value = {
+            "users:delete:own",
+            "users:read:all",
+        }  # Duplicate
 
         with patch.object(rbac_service, "get_user_roles", return_value=[role1, role2]):
             # Act
@@ -346,7 +361,11 @@ class TestRBACService:
             "descendants": [],
         }
 
-        with patch.object(rbac_service.role_repository, "get_role_hierarchy", return_value=expected_hierarchy):
+        with patch.object(
+            rbac_service.role_repository,
+            "get_role_hierarchy",
+            return_value=expected_hierarchy,
+        ):
             # Act
             hierarchy = await rbac_service.get_role_hierarchy(role_id)
 
