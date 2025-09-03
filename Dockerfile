@@ -2,7 +2,7 @@
 
 # Build stage - uses full image with gcc pre-installed
 
-FROM python:3.12 AS builder
+FROM python:3.13 AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Runtime base stage - uses slim image for security
 
-FROM python:3.12-slim AS base
+FROM python:3.13-slim AS base
 
 WORKDIR /app
 
