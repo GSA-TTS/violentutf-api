@@ -9,6 +9,7 @@ from structlog.stdlib import get_logger
 from ..db.session import check_database_health
 from ..utils.cache import check_cache_health
 from ..utils.monitoring import check_dependency_health
+from .backup_monitoring_service import get_backup_health
 
 logger = get_logger(__name__)
 
@@ -106,6 +107,20 @@ class HealthService:
                 "error": "Repository health check failed",  # Generic error message
             }
 
+    async def check_backup_health(self) -> Dict[str, Any]:
+        """Check backup health through proper service layer."""
+        try:
+            return await get_backup_health()
+        except Exception as e:
+            # Log detailed error information internally
+            logger.error("Backup health check failed", error=str(e), exc_info=True)
+            # Return sanitized error information to prevent information disclosure
+            return {
+                "status": "unhealthy",
+                "error": "Backup monitoring unavailable",  # Generic error message
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
     async def get_comprehensive_health(self) -> Dict[str, Any]:
         """Get comprehensive health status for all components."""
         try:
@@ -114,9 +129,10 @@ class HealthService:
                 self.check_database_health(),
                 self.check_cache_health(),
                 self.check_dependency_health(),
+                self.check_backup_health(),
                 return_exceptions=True,
             )
-            db_health, cache_health, dep_health = results
+            db_health, cache_health, dep_health, backup_health = results
 
             # Process results
             health_status = {
@@ -137,6 +153,11 @@ class HealthService:
                         dep_health
                         if not isinstance(dep_health, Exception)
                         else {"status": "error", "error": "Dependencies check failed"}
+                    ),
+                    "backups": (
+                        backup_health
+                        if not isinstance(backup_health, Exception)
+                        else {"status": "error", "error": "Backup check failed"}
                     ),
                 },
             }
