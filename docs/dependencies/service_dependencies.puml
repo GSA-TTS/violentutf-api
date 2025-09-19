@@ -1,0 +1,23 @@
+@startuml
+!define RECTANGLE class
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor<<critical>> LightPink
+  BackgroundColor<<important>> LightOrange
+  BackgroundColor<<medium>> LightBlue
+  BackgroundColor<<low>> LightGreen
+}
+rectangle api as "api" <<critical>>
+rectangle db as "db" <<critical>>
+rectangle redis as "redis" <<important>>
+rectangle celery_worker as "celery-worker" <<important>>
+rectangle flower as "flower" <<medium>>
+rectangle nginx as "nginx" <<medium>>
+db --> api : service_dependency
+redis --> api : service_dependency
+db --> celery_worker : service_dependency
+redis --> celery_worker : service_dependency
+redis --> flower : service_dependency
+celery_worker --> flower : service_dependency
+api --> nginx : service_dependency
+@enduml

@@ -1,0 +1,97 @@
+graph LR
+    classDef critical fill:#ff6b6b,stroke:#d63031,stroke-width:3px
+    classDef important fill:#ffa726,stroke:#ef6c00,stroke-width:2px
+    classDef medium fill:#42a5f5,stroke:#1565c0,stroke-width:2px
+    classDef low fill:#66bb6a,stroke:#2e7d32,stroke-width:1px
+    repo_UserRepository(UserRepository)
+    class repo_UserRepository medium
+    repo_TaskRepository(TaskRepository)
+    class repo_TaskRepository medium
+    repo_MFAPolicyRepository(MFAPolicyRepository)
+    class repo_MFAPolicyRepository medium
+    repo_OAuthRefreshTokenRepository(OAuthRefreshTokenRepository)
+    class repo_OAuthRefreshTokenRepository medium
+    repo_VulnerabilityTaxonomyRepository(VulnerabilityTaxonomyRepository)
+    class repo_VulnerabilityTaxonomyRepository medium
+    repo_MFAChallengeRepository(MFAChallengeRepository)
+    class repo_MFAChallengeRepository medium
+    repo_MFADeviceRepository(MFADeviceRepository)
+    class repo_MFADeviceRepository medium
+    repo_VulnerabilityFindingRepository(VulnerabilityFindingRepository)
+    class repo_VulnerabilityFindingRepository medium
+    repo_HealthRepository(HealthRepository)
+    class repo_HealthRepository medium
+    repo_OAuthScopeRepository(OAuthScopeRepository)
+    class repo_OAuthScopeRepository medium
+    repo_SessionRepository(SessionRepository)
+    class repo_SessionRepository medium
+    repo_RoleRepository(RoleRepository)
+    class repo_RoleRepository medium
+    repo_APIKeyRepository(APIKeyRepository)
+    class repo_APIKeyRepository medium
+    repo_OAuthAccessTokenRepository(OAuthAccessTokenRepository)
+    class repo_OAuthAccessTokenRepository medium
+    repo_ExtendedAuditLogRepository(ExtendedAuditLogRepository)
+    class repo_ExtendedAuditLogRepository medium
+    repo_AuditLogRepository(AuditLogRepository)
+    class repo_AuditLogRepository medium
+    repo_MFAEventRepository(MFAEventRepository)
+    class repo_MFAEventRepository medium
+    repo_OAuthAuthorizationCodeRepository(OAuthAuthorizationCodeRepository)
+    class repo_OAuthAuthorizationCodeRepository medium
+    repo_PluginRepository(PluginRepository)
+    class repo_PluginRepository medium
+    repo_TemplateRepository(TemplateRepository)
+    class repo_TemplateRepository medium
+    repo_ScanRepository(ScanRepository)
+    class repo_ScanRepository medium
+    repo_MFABackupCodeRepository(MFABackupCodeRepository)
+    class repo_MFABackupCodeRepository medium
+    repo_EnhancedRepository(EnhancedRepository)
+    class repo_EnhancedRepository medium
+    repo_OAuthApplicationRepository(OAuthApplicationRepository)
+    class repo_OAuthApplicationRepository medium
+    repo_BaseRepository(BaseRepository)
+    class repo_BaseRepository medium
+    repo_AuditLogRepository(AuditLogRepository)
+    class repo_AuditLogRepository medium
+    repo_ReportRepository(ReportRepository)
+    class repo_ReportRepository medium
+    repo_SecurityScanRepository(SecurityScanRepository)
+    class repo_SecurityScanRepository medium
+    endpoint_endpoint_0{/endpoint_0/}
+    class endpoint_endpoint_0 medium
+    endpoint_endpoint_1{/endpoint_1/}
+    class endpoint_endpoint_1 medium
+    endpoint_endpoint_2{/endpoint_2/}
+    class endpoint_endpoint_2 medium
+    endpoint_endpoint_3{/endpoint_3/}
+    class endpoint_endpoint_3 medium
+    endpoint_endpoint_4{/endpoint_4/}
+    class endpoint_endpoint_4 medium
+    middleware_auth(auth)
+    class middleware_auth critical
+    middleware_logging(logging)
+    class middleware_logging medium
+    middleware_rate_limiting(rate_limiting)
+    class middleware_rate_limiting important
+    endpoint_endpoint_0 -->|uses| repo_UserRepository
+    endpoint_endpoint_0 -->|uses| repo_TaskRepository
+    endpoint_endpoint_1 -->|uses| repo_UserRepository
+    endpoint_endpoint_1 -->|uses| repo_TaskRepository
+    endpoint_endpoint_2 -->|uses| repo_UserRepository
+    endpoint_endpoint_2 -->|uses| repo_TaskRepository
+    endpoint_endpoint_3 -->|uses| repo_UserRepository
+    endpoint_endpoint_3 -->|uses| repo_TaskRepository
+    endpoint_endpoint_4 -->|uses| repo_UserRepository
+    endpoint_endpoint_4 -->|uses| repo_TaskRepository
+    middleware_auth --> endpoint_endpoint_0
+    middleware_logging --> endpoint_endpoint_0
+    middleware_auth --> endpoint_endpoint_1
+    middleware_logging --> endpoint_endpoint_1
+    middleware_auth --> endpoint_endpoint_2
+    middleware_logging --> endpoint_endpoint_2
+    middleware_auth --> endpoint_endpoint_3
+    middleware_logging --> endpoint_endpoint_3
+    middleware_auth --> endpoint_endpoint_4
+    middleware_logging --> endpoint_endpoint_4

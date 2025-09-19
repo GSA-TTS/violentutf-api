@@ -1,0 +1,623 @@
+{
+  "metadata": {
+    "graph_type": "application_dependencies",
+    "generated_at": "2025-09-19T14:47:18.525049",
+    "total_components": 36,
+    "total_dependencies": 20
+  },
+  "nodes": [
+    {
+      "id": "repo_UserRepository",
+      "label": "UserRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "User"
+        ],
+        "tables": [],
+        "operations": [
+          "db"
+        ]
+      }
+    },
+    {
+      "id": "repo_TaskRepository",
+      "label": "TaskRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Task"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_MFAPolicyRepository",
+      "label": "MFAPolicyRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "MFAPolicy"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_OAuthRefreshTokenRepository",
+      "label": "OAuthRefreshTokenRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "OAuthRefreshToken"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_VulnerabilityTaxonomyRepository",
+      "label": "VulnerabilityTaxonomyRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "VulnerabilityTaxonomy"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_MFAChallengeRepository",
+      "label": "MFAChallengeRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "MFAChallenge"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_MFADeviceRepository",
+      "label": "MFADeviceRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "MFADevice"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_VulnerabilityFindingRepository",
+      "label": "VulnerabilityFindingRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "VulnerabilityFinding"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_HealthRepository",
+      "label": "HealthRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Health"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_OAuthScopeRepository",
+      "label": "OAuthScopeRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "OAuthScope"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_SessionRepository",
+      "label": "SessionRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Session"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_RoleRepository",
+      "label": "RoleRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Role"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_APIKeyRepository",
+      "label": "APIKeyRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "APIKey"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_OAuthAccessTokenRepository",
+      "label": "OAuthAccessTokenRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "OAuthAccessToken"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_ExtendedAuditLogRepository",
+      "label": "ExtendedAuditLogRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "ExtendedAuditLog"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_AuditLogRepository",
+      "label": "AuditLogRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "AuditLog"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_MFAEventRepository",
+      "label": "MFAEventRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "MFAEvent"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_OAuthAuthorizationCodeRepository",
+      "label": "OAuthAuthorizationCodeRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "OAuthAuthorizationCode"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_PluginRepository",
+      "label": "PluginRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Plugin"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_TemplateRepository",
+      "label": "TemplateRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Template"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_ScanRepository",
+      "label": "ScanRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Scan"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_MFABackupCodeRepository",
+      "label": "MFABackupCodeRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "MFABackupCode"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_EnhancedRepository",
+      "label": "EnhancedRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Enhanced"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_OAuthApplicationRepository",
+      "label": "OAuthApplicationRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "OAuthApplication"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_BaseRepository",
+      "label": "BaseRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Base"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_AuditLogRepository",
+      "label": "AuditLogRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "AuditLog"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_ReportRepository",
+      "label": "ReportRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "Report"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "repo_SecurityScanRepository",
+      "label": "SecurityScanRepository",
+      "type": "repository",
+      "criticality": "medium",
+      "properties": {
+        "models": [
+          "SecurityScan"
+        ],
+        "tables": [],
+        "operations": []
+      }
+    },
+    {
+      "id": "endpoint_endpoint_0",
+      "label": "endpoint_0",
+      "type": "endpoint",
+      "criticality": "medium",
+      "properties": {
+        "methods": [],
+        "auth_required": false,
+        "rate_limited": false
+      }
+    },
+    {
+      "id": "endpoint_endpoint_1",
+      "label": "endpoint_1",
+      "type": "endpoint",
+      "criticality": "medium",
+      "properties": {
+        "methods": [],
+        "auth_required": false,
+        "rate_limited": false
+      }
+    },
+    {
+      "id": "endpoint_endpoint_2",
+      "label": "endpoint_2",
+      "type": "endpoint",
+      "criticality": "medium",
+      "properties": {
+        "methods": [],
+        "auth_required": false,
+        "rate_limited": false
+      }
+    },
+    {
+      "id": "endpoint_endpoint_3",
+      "label": "endpoint_3",
+      "type": "endpoint",
+      "criticality": "medium",
+      "properties": {
+        "methods": [],
+        "auth_required": false,
+        "rate_limited": false
+      }
+    },
+    {
+      "id": "endpoint_endpoint_4",
+      "label": "endpoint_4",
+      "type": "endpoint",
+      "criticality": "medium",
+      "properties": {
+        "methods": [],
+        "auth_required": false,
+        "rate_limited": false
+      }
+    },
+    {
+      "id": "middleware_auth",
+      "label": "auth",
+      "type": "middleware",
+      "criticality": "critical",
+      "properties": {
+        "execution_order": 1,
+        "applies_to": []
+      }
+    },
+    {
+      "id": "middleware_logging",
+      "label": "logging",
+      "type": "middleware",
+      "criticality": "medium",
+      "properties": {
+        "execution_order": 2,
+        "applies_to": []
+      }
+    },
+    {
+      "id": "middleware_rate_limiting",
+      "label": "rate_limiting",
+      "type": "middleware",
+      "criticality": "important",
+      "properties": {
+        "execution_order": 3,
+        "applies_to": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "endpoint_endpoint_0",
+      "target": "repo_UserRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_0",
+      "target": "repo_TaskRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_1",
+      "target": "repo_UserRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_1",
+      "target": "repo_TaskRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_2",
+      "target": "repo_UserRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_2",
+      "target": "repo_TaskRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_3",
+      "target": "repo_UserRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_3",
+      "target": "repo_TaskRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_4",
+      "target": "repo_UserRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "endpoint_endpoint_4",
+      "target": "repo_TaskRepository",
+      "type": "uses_repository",
+      "properties": {
+        "usage_type": "data_access"
+      }
+    },
+    {
+      "source": "middleware_auth",
+      "target": "endpoint_endpoint_0",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_logging",
+      "target": "endpoint_endpoint_0",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_auth",
+      "target": "endpoint_endpoint_1",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_logging",
+      "target": "endpoint_endpoint_1",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_auth",
+      "target": "endpoint_endpoint_2",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_logging",
+      "target": "endpoint_endpoint_2",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_auth",
+      "target": "endpoint_endpoint_3",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_logging",
+      "target": "endpoint_endpoint_3",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_auth",
+      "target": "endpoint_endpoint_4",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    },
+    {
+      "source": "middleware_logging",
+      "target": "endpoint_endpoint_4",
+      "type": "processes_request",
+      "properties": {
+        "processing_type": "middleware"
+      }
+    }
+  ]
+}

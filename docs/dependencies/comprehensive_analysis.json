@@ -1,0 +1,3514 @@
+{
+  "metadata": {
+    "analysis_date": "2025-09-19T14:47:18.371749",
+    "analysis_duration_seconds": 0.155909,
+    "project_root": "/Users/tamnguyen/Documents/GitHub/violentutf-api",
+    "analyzer_version": "1.0.0",
+    "phases_completed": 4,
+    "total_services": 6,
+    "total_repositories": 28,
+    "total_configurations": 80
+  },
+  "static_analysis": {
+    "metadata": {
+      "analysis_date": "2025-09-19T14:47:18.384002",
+      "project_root": "/Users/tamnguyen/Documents/GitHub/violentutf-api",
+      "analyzer_version": "1.0.0",
+      "total_services": 6,
+      "total_configurations": 80
+    },
+    "service_dependencies": [
+      {
+        "name": "api",
+        "service_type": "application",
+        "depends_on": [
+          "db",
+          "redis"
+        ],
+        "dependents": [
+          "nginx"
+        ],
+        "health_check": "CMD curl -f http://localhost:8000/api/v1/health",
+        "condition": "service_healthy",
+        "criticality": "critical",
+        "volumes": [
+          "./app:/app/app:ro",
+          "./logs:/app/logs"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [
+          "${API_PORT:-8000}:8000"
+        ],
+        "environment_variables": [
+          "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://violentutf:violentutf@db:5432/violentutf}",
+          "REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0",
+          "SECRET_KEY=${SECRET_KEY:-your-secret-key-min-32-chars-change-in-production}",
+          "ENVIRONMENT=${ENVIRONMENT:-development}",
+          "DEBUG=${DEBUG:-false}",
+          "LOG_LEVEL=${LOG_LEVEL:-INFO}",
+          "SERVER_HOST=0.0.0.0",
+          "SERVER_PORT=8000"
+        ]
+      },
+      {
+        "name": "db",
+        "service_type": "database",
+        "depends_on": [],
+        "dependents": [
+          "api",
+          "celery-worker"
+        ],
+        "health_check": "CMD-SHELL pg_isready -U ${DB_USER:-violentutf}",
+        "condition": null,
+        "criticality": "critical",
+        "volumes": [
+          "postgres_data:/var/lib/postgresql/data",
+          "./backups/postgres:/backups"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [],
+        "environment_variables": [
+          "POSTGRES_USER=${DB_USER:-violentutf}",
+          "POSTGRES_PASSWORD=${DB_PASSWORD:-violentutf}",
+          "POSTGRES_DB=${DB_NAME:-violentutf}",
+          "POSTGRES_INITDB_ARGS=--encoding=UTF-8"
+        ]
+      },
+      {
+        "name": "redis",
+        "service_type": "cache",
+        "depends_on": [],
+        "dependents": [
+          "api",
+          "celery-worker",
+          "flower"
+        ],
+        "health_check": "CMD redis-cli ping",
+        "condition": null,
+        "criticality": "important",
+        "volumes": [
+          "redis_data:/data"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [],
+        "environment_variables": []
+      },
+      {
+        "name": "celery-worker",
+        "service_type": "worker",
+        "depends_on": [
+          "db",
+          "redis"
+        ],
+        "dependents": [
+          "flower"
+        ],
+        "health_check": null,
+        "condition": "service_healthy",
+        "criticality": "important",
+        "volumes": [
+          "./app:/app/app:ro",
+          "./logs:/app/logs"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [],
+        "environment_variables": [
+          "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://violentutf:violentutf@db:5432/violentutf}",
+          "REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0",
+          "SECRET_KEY=${SECRET_KEY:-your-secret-key-min-32-chars-change-in-production}",
+          "ENVIRONMENT=${ENVIRONMENT:-development}",
+          "LOG_LEVEL=${LOG_LEVEL:-INFO}",
+          "CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/1",
+          "CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-}@redis:6379/2"
+        ]
+      },
+      {
+        "name": "flower",
+        "service_type": "monitoring",
+        "depends_on": [
+          "redis",
+          "celery-worker"
+        ],
+        "dependents": [],
+        "health_check": null,
+        "condition": null,
+        "criticality": "medium",
+        "volumes": [
+          "./app:/app/app:ro"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [
+          "${FLOWER_PORT:-5555}:5555"
+        ],
+        "environment_variables": [
+          "CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/1",
+          "CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-}@redis:6379/2",
+          "FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}"
+        ]
+      },
+      {
+        "name": "nginx",
+        "service_type": "reverse_proxy",
+        "depends_on": [
+          "api"
+        ],
+        "dependents": [],
+        "health_check": null,
+        "condition": null,
+        "criticality": "medium",
+        "volumes": [
+          "./nginx.conf:/etc/nginx/nginx.conf:ro"
+        ],
+        "networks": [
+          "violentutf-network"
+        ],
+        "ports": [
+          "${NGINX_PORT:-80}:80"
+        ],
+        "environment_variables": []
+      }
+    ],
+    "configuration_dependencies": [
+      {
+        "name": "PROJECT_NAME",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "ViolentUTF API",
+        "required": false,
+        "environment_variable": "PROJECT_NAME",
+        "description": ""
+      },
+      {
+        "name": "VERSION",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "1.0.0",
+        "required": false,
+        "environment_variable": "VERSION",
+        "description": ""
+      },
+      {
+        "name": "API_V1_STR",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "/api/v1",
+        "required": false,
+        "environment_variable": "API_V1_STR",
+        "description": ""
+      },
+      {
+        "name": "DESCRIPTION",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "Standalone AI red-teaming API service",
+        "required": false,
+        "environment_variable": "DESCRIPTION",
+        "description": ""
+      },
+      {
+        "name": "ENVIRONMENT",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [
+          "pattern:^(development|staging|production)$"
+        ],
+        "default_value": "development",
+        "required": false,
+        "environment_variable": "ENVIRONMENT",
+        "description": ""
+      },
+      {
+        "name": "DEBUG",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "False",
+        "required": false,
+        "environment_variable": "DEBUG",
+        "description": ""
+      },
+      {
+        "name": "SECRET_KEY",
+        "config_type": "SecretStr",
+        "depends_on": [],
+        "validation_rules": [
+          "min_length:32"
+        ],
+        "default_value": "...",
+        "required": true,
+        "environment_variable": "SECRET_KEY",
+        "description": ""
+      },
+      {
+        "name": "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:5",
+          "le:1440"
+        ],
+        "default_value": "30",
+        "required": false,
+        "environment_variable": "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "description": ""
+      },
+      {
+        "name": "REFRESH_TOKEN_EXPIRE_DAYS",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:30"
+        ],
+        "default_value": "7",
+        "required": false,
+        "environment_variable": "REFRESH_TOKEN_EXPIRE_DAYS",
+        "description": ""
+      },
+      {
+        "name": "ALGORITHM",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "HS256",
+        "required": false,
+        "environment_variable": "ALGORITHM",
+        "description": ""
+      },
+      {
+        "name": "BCRYPT_ROUNDS",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:15"
+        ],
+        "default_value": "12",
+        "required": false,
+        "environment_variable": "BCRYPT_ROUNDS",
+        "description": ""
+      },
+      {
+        "name": "SECRETS_MANAGER_PROVIDER",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [
+          "pattern:^(file|vault|aws)$"
+        ],
+        "default_value": "file",
+        "required": false,
+        "environment_variable": "SECRETS_MANAGER_PROVIDER",
+        "description": ""
+      },
+      {
+        "name": "SECRETS_MANAGER_DIR",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "./data/secrets",
+        "required": false,
+        "environment_variable": "SECRETS_MANAGER_DIR",
+        "description": ""
+      },
+      {
+        "name": "VAULT_URL",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "VAULT_URL",
+        "description": ""
+      },
+      {
+        "name": "VAULT_TOKEN",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "VAULT_TOKEN",
+        "description": ""
+      },
+      {
+        "name": "VAULT_MOUNT_PATH",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "secret",
+        "required": false,
+        "environment_variable": "VAULT_MOUNT_PATH",
+        "description": ""
+      },
+      {
+        "name": "AWS_REGION",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "AWS_REGION",
+        "description": ""
+      },
+      {
+        "name": "AWS_ACCESS_KEY_ID",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "AWS_ACCESS_KEY_ID",
+        "description": ""
+      },
+      {
+        "name": "AWS_SECRET_ACCESS_KEY",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "AWS_SECRET_ACCESS_KEY",
+        "description": ""
+      },
+      {
+        "name": "ALLOWED_ORIGINS",
+        "config_type": "List",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": null,
+        "required": false,
+        "environment_variable": "ALLOWED_ORIGINS",
+        "description": ""
+      },
+      {
+        "name": "ALLOWED_METHODS",
+        "config_type": "List",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": null,
+        "required": false,
+        "environment_variable": "ALLOWED_METHODS",
+        "description": ""
+      },
+      {
+        "name": "ALLOWED_HEADERS",
+        "config_type": "List",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": null,
+        "required": false,
+        "environment_variable": "ALLOWED_HEADERS",
+        "description": ""
+      },
+      {
+        "name": "ALLOW_CREDENTIALS",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "ALLOW_CREDENTIALS",
+        "description": ""
+      },
+      {
+        "name": "SECURE_COOKIES",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "SECURE_COOKIES",
+        "description": ""
+      },
+      {
+        "name": "CSRF_PROTECTION",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "CSRF_PROTECTION",
+        "description": ""
+      },
+      {
+        "name": "REQUEST_SIGNING_ENABLED",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REQUEST_SIGNING_ENABLED",
+        "description": ""
+      },
+      {
+        "name": "HSTS_MAX_AGE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "31536000",
+        "required": false,
+        "environment_variable": "HSTS_MAX_AGE",
+        "description": ""
+      },
+      {
+        "name": "CSP_POLICY",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "default-src 'self'",
+        "required": false,
+        "environment_variable": "CSP_POLICY",
+        "description": ""
+      },
+      {
+        "name": "DATABASE_URL",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "DATABASE_URL",
+        "description": ""
+      },
+      {
+        "name": "DATABASE_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "5",
+        "required": false,
+        "environment_variable": "DATABASE_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "DATABASE_MAX_OVERFLOW",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:0",
+          "le:20"
+        ],
+        "default_value": "10",
+        "required": false,
+        "environment_variable": "DATABASE_MAX_OVERFLOW",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_CONNECTION_TIMEOUT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:5",
+          "le:300"
+        ],
+        "default_value": "30",
+        "required": false,
+        "environment_variable": "REPOSITORY_CONNECTION_TIMEOUT",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_QUERY_TIMEOUT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:600"
+        ],
+        "default_value": "60",
+        "required": false,
+        "environment_variable": "REPOSITORY_QUERY_TIMEOUT",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_TIMEOUT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:3",
+          "le:60"
+        ],
+        "default_value": "10",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_TIMEOUT",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_MAX_RETRIES",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:0",
+          "le:10"
+        ],
+        "default_value": "3",
+        "required": false,
+        "environment_variable": "REPOSITORY_MAX_RETRIES",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_RETRY_DELAY_BASE",
+        "config_type": "float",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:0.1",
+          "le:10.0"
+        ],
+        "default_value": "1.0",
+        "required": false,
+        "environment_variable": "REPOSITORY_RETRY_DELAY_BASE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_RETRY_DELAY_MAX",
+        "config_type": "float",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1.0",
+          "le:300.0"
+        ],
+        "default_value": "30.0",
+        "required": false,
+        "environment_variable": "REPOSITORY_RETRY_DELAY_MAX",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_RETRY_EXPONENTIAL_BACKOFF",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_RETRY_EXPONENTIAL_BACKOFF",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_USER_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "5",
+        "required": false,
+        "environment_variable": "REPOSITORY_USER_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_API_KEY_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "3",
+        "required": false,
+        "environment_variable": "REPOSITORY_API_KEY_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_SESSION_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:30"
+        ],
+        "default_value": "10",
+        "required": false,
+        "environment_variable": "REPOSITORY_SESSION_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_AUDIT_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:30"
+        ],
+        "default_value": "8",
+        "required": false,
+        "environment_variable": "REPOSITORY_AUDIT_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_SECURITY_SCAN_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "5",
+        "required": false,
+        "environment_variable": "REPOSITORY_SECURITY_SCAN_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_VULNERABILITY_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "3",
+        "required": false,
+        "environment_variable": "REPOSITORY_VULNERABILITY_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_ROLE_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "2",
+        "required": false,
+        "environment_variable": "REPOSITORY_ROLE_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_POOL_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:20"
+        ],
+        "default_value": "2",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_POOL_SIZE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_SESSION_CLEANUP_ENABLED",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_SESSION_CLEANUP_ENABLED",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_SESSION_CLEANUP_INTERVAL",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:60",
+          "le:3600"
+        ],
+        "default_value": "300",
+        "required": false,
+        "environment_variable": "REPOSITORY_SESSION_CLEANUP_INTERVAL",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_SESSION_MAX_IDLE_TIME",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:300",
+          "le:7200"
+        ],
+        "default_value": "1800",
+        "required": false,
+        "environment_variable": "REPOSITORY_SESSION_MAX_IDLE_TIME",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_METRICS_ENABLED",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_METRICS_ENABLED",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_RESPONSE_TIME_TRACKING",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_RESPONSE_TIME_TRACKING",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_ERROR_TRACKING",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_ERROR_TRACKING",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_PERFORMANCE_LOGGING",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "False",
+        "required": false,
+        "environment_variable": "REPOSITORY_PERFORMANCE_LOGGING",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_ENABLED",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_ENABLED",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_INTERVAL",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:300"
+        ],
+        "default_value": "30",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_INTERVAL",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_CACHE_TTL",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:600"
+        ],
+        "default_value": "60",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_CACHE_TTL",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_FAILURE_THRESHOLD",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:10"
+        ],
+        "default_value": "3",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_FAILURE_THRESHOLD",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_HEALTH_CHECK_RECOVERY_THRESHOLD",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:10"
+        ],
+        "default_value": "2",
+        "required": false,
+        "environment_variable": "REPOSITORY_HEALTH_CHECK_RECOVERY_THRESHOLD",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_PRODUCTION_STRICT_MODE",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "False",
+        "required": false,
+        "environment_variable": "REPOSITORY_PRODUCTION_STRICT_MODE",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_DEBUG_SQL_LOGGING",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "False",
+        "required": false,
+        "environment_variable": "REPOSITORY_DEBUG_SQL_LOGGING",
+        "description": ""
+      },
+      {
+        "name": "REPOSITORY_ENABLE_QUERY_PROFILING",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "False",
+        "required": false,
+        "environment_variable": "REPOSITORY_ENABLE_QUERY_PROFILING",
+        "description": ""
+      },
+      {
+        "name": "REDIS_URL",
+        "config_type": "Optional",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "None",
+        "required": false,
+        "environment_variable": "REDIS_URL",
+        "description": ""
+      },
+      {
+        "name": "CACHE_TTL",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:60",
+          "le:3600"
+        ],
+        "default_value": "300",
+        "required": false,
+        "environment_variable": "CACHE_TTL",
+        "description": ""
+      },
+      {
+        "name": "WORKERS_PER_CORE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:4"
+        ],
+        "default_value": "1",
+        "required": false,
+        "environment_variable": "WORKERS_PER_CORE",
+        "description": ""
+      },
+      {
+        "name": "MAX_WORKERS",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1",
+          "le:100"
+        ],
+        "default_value": "10",
+        "required": false,
+        "environment_variable": "MAX_WORKERS",
+        "description": ""
+      },
+      {
+        "name": "KEEPALIVE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:0",
+          "le:300"
+        ],
+        "default_value": "5",
+        "required": false,
+        "environment_variable": "KEEPALIVE",
+        "description": ""
+      },
+      {
+        "name": "RATE_LIMIT_ENABLED",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "RATE_LIMIT_ENABLED",
+        "description": ""
+      },
+      {
+        "name": "RATE_LIMIT_PER_MINUTE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:1000"
+        ],
+        "default_value": "60",
+        "required": false,
+        "environment_variable": "RATE_LIMIT_PER_MINUTE",
+        "description": ""
+      },
+      {
+        "name": "MAX_REQUEST_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": null,
+        "required": false,
+        "environment_variable": "MAX_REQUEST_SIZE",
+        "description": "Maximum request size in bytes (10MB)"
+      },
+      {
+        "name": "MAX_UPLOAD_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": null,
+        "required": false,
+        "environment_variable": "MAX_UPLOAD_SIZE",
+        "description": "Maximum upload size in bytes (50MB)"
+      },
+      {
+        "name": "MAX_REQUEST_LINE_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "8190",
+        "required": false,
+        "environment_variable": "MAX_REQUEST_LINE_SIZE",
+        "description": "Maximum request line size"
+      },
+      {
+        "name": "MAX_REQUEST_FIELD_SIZE",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "8190",
+        "required": false,
+        "environment_variable": "MAX_REQUEST_FIELD_SIZE",
+        "description": "Maximum request header field size"
+      },
+      {
+        "name": "LOG_LEVEL",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [
+          "pattern:^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
+        ],
+        "default_value": "INFO",
+        "required": false,
+        "environment_variable": "LOG_LEVEL",
+        "description": ""
+      },
+      {
+        "name": "LOG_FORMAT",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "json",
+        "required": false,
+        "environment_variable": "LOG_FORMAT",
+        "description": ""
+      },
+      {
+        "name": "ENABLE_ACCESS_LOGS",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "ENABLE_ACCESS_LOGS",
+        "description": ""
+      },
+      {
+        "name": "ENABLE_METRICS",
+        "config_type": "bool",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "True",
+        "required": false,
+        "environment_variable": "ENABLE_METRICS",
+        "description": ""
+      },
+      {
+        "name": "METRICS_PORT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1024",
+          "le:65535"
+        ],
+        "default_value": "9090",
+        "required": false,
+        "environment_variable": "METRICS_PORT",
+        "description": ""
+      },
+      {
+        "name": "REQUEST_TIMEOUT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:10",
+          "le:300"
+        ],
+        "default_value": "60",
+        "required": false,
+        "environment_variable": "REQUEST_TIMEOUT",
+        "description": ""
+      },
+      {
+        "name": "SERVER_HOST",
+        "config_type": "str",
+        "depends_on": [],
+        "validation_rules": [],
+        "default_value": "127.0.0.1",
+        "required": false,
+        "environment_variable": "SERVER_HOST",
+        "description": ""
+      },
+      {
+        "name": "SERVER_PORT",
+        "config_type": "int",
+        "depends_on": [],
+        "validation_rules": [
+          "ge:1024",
+          "le:65535"
+        ],
+        "default_value": "8000",
+        "required": false,
+        "environment_variable": "SERVER_PORT",
+        "description": ""
+      }
+    ],
+    "network_dependencies": {
+      "api": [
+        "violentutf-network"
+      ],
+      "db": [
+        "violentutf-network"
+      ],
+      "redis": [
+        "violentutf-network"
+      ],
+      "celery-worker": [
+        "violentutf-network"
+      ],
+      "flower": [
+        "violentutf-network"
+      ],
+      "nginx": [
+        "violentutf-network"
+      ]
+    },
+    "volume_dependencies": {
+      "api": [
+        "bind_mount:./app",
+        "bind_mount:./logs"
+      ],
+      "db": [
+        "postgres_data",
+        "bind_mount:./backups/postgres"
+      ],
+      "redis": [
+        "redis_data"
+      ],
+      "celery-worker": [
+        "bind_mount:./app",
+        "bind_mount:./logs"
+      ],
+      "flower": [
+        "bind_mount:./app"
+      ],
+      "nginx": [
+        "bind_mount:./nginx.conf"
+      ]
+    },
+    "analysis_summary": {
+      "service_analysis": {
+        "total_services": 6,
+        "service_types": {
+          "application": 1,
+          "database": 1,
+          "cache": 1,
+          "worker": 1,
+          "monitoring": 1,
+          "reverse_proxy": 1
+        },
+        "criticality_distribution": {
+          "critical": 2,
+          "important": 2,
+          "medium": 2
+        },
+        "average_dependencies_per_service": 1.17
+      },
+      "configuration_analysis": {
+        "total_configurations": 80,
+        "configuration_types": {
+          "str": 12,
+          "bool": 18,
+          "SecretStr": 1,
+          "int": 36,
+          "Optional": 8,
+          "List": 3,
+          "float": 2
+        },
+        "required_configurations": 1
+      },
+      "infrastructure_analysis": {
+        "total_networks": 1,
+        "total_volumes": 6,
+        "services_with_volumes": 6,
+        "services_with_networks": 6
+      }
+    }
+  },
+  "repository_analysis": {
+    "metadata": {
+      "analysis_date": "2025-09-19T14:47:18.523957",
+      "project_root": "/Users/tamnguyen/Documents/GitHub/violentutf-api",
+      "total_repositories": 28,
+      "total_models": 27,
+      "total_relationships": 155,
+      "analyzer_version": "1.0.0"
+    },
+    "repositories": [
+      {
+        "name": "UserRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/user.py",
+        "base_class": "object",
+        "model_class": "User",
+        "methods": [
+          "db"
+        ],
+        "dependencies": [
+          "interfaces.user.IUserRepository",
+          "base.BaseRepository"
+        ],
+        "specializations": [
+          "db"
+        ],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "core.security.hash_password",
+          "core.security.verify_password",
+          "models.user.User",
+          "base.BaseRepository",
+          "base.Page",
+          "interfaces.user.IUserRepository",
+          "datetime.datetime",
+          "datetime.timezone"
+        ],
+        "complexity_score": 53
+      },
+      {
+        "name": "TaskRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/task.py",
+        "base_class": "object",
+        "model_class": "Task",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.models.task.Task",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "MFAPolicyRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/mfa_policy.py",
+        "base_class": "object",
+        "model_class": "MFAPolicy",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "json",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.desc",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.mfa.MFAPolicy",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 6
+      },
+      {
+        "name": "OAuthRefreshTokenRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/oauth_refresh_token.py",
+        "base_class": "object",
+        "model_class": "OAuthRefreshToken",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.List",
+          "typing.Optional",
+          "typing.Tuple",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.oauth.OAuthApplication",
+          "models.oauth.OAuthRefreshToken",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 7
+      },
+      {
+        "name": "VulnerabilityTaxonomyRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/vulnerability_taxonomy.py",
+        "base_class": "object",
+        "model_class": "VulnerabilityTaxonomy",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.core.enums.AttackVector",
+          "app.core.enums.MITREATLASTactic",
+          "app.core.enums.OWASPLLMCategory",
+          "app.core.enums.Severity",
+          "app.core.enums.VulnerabilityCategory",
+          "app.models.vulnerability_taxonomy.VulnerabilityTaxonomy",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 6
+      },
+      {
+        "name": "MFAChallengeRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/mfa_challenge.py",
+        "base_class": "object",
+        "model_class": "MFAChallenge",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.mfa.MFAChallenge",
+          "models.mfa.MFAMethod",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 7
+      },
+      {
+        "name": "MFADeviceRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/mfa_device.py",
+        "base_class": "object",
+        "model_class": "MFADevice",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.mfa.MFADevice",
+          "models.mfa.MFAMethod",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "VulnerabilityFindingRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/vulnerability_finding.py",
+        "base_class": "object",
+        "model_class": "VulnerabilityFinding",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "typing.Tuple",
+          "sqlalchemy.and_",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.core.enums.RiskRating",
+          "app.core.enums.Severity",
+          "app.core.enums.VulnerabilityCategory",
+          "app.core.enums.VulnerabilityStatus",
+          "app.models.security_scan.SecurityScan",
+          "app.models.vulnerability_finding.VulnerabilityFinding",
+          "app.models.vulnerability_taxonomy.VulnerabilityTaxonomy",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 27
+      },
+      {
+        "name": "HealthRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/health.py",
+        "base_class": "IHealthRepository",
+        "model_class": "Health",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository",
+          "app.repositories.interfaces.health.IHealthRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.func",
+          "sqlalchemy.text",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "app.repositories.base.BaseRepository",
+          "app.repositories.interfaces.health.IHealthRepository",
+          "psutil",
+          "time"
+        ],
+        "complexity_score": 30
+      },
+      {
+        "name": "OAuthScopeRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/oauth_scope.py",
+        "base_class": "object",
+        "model_class": "OAuthScope",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.oauth.OAuthScope",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "SessionRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/session.py",
+        "base_class": "object",
+        "model_class": "Session",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository",
+          "interfaces.session.ISessionRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "models.session.Session",
+          "base.BaseRepository",
+          "interfaces.session.ISessionRepository"
+        ],
+        "complexity_score": 33
+      },
+      {
+        "name": "RoleRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/role.py",
+        "base_class": "object",
+        "model_class": "Role",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.delete",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "app.models.role.Role",
+          "app.models.user_role.UserRole",
+          "app.repositories.base.BaseRepository",
+          "sqlalchemy.update",
+          "hashlib",
+          "hashlib",
+          "hashlib",
+          "hashlib",
+          "hashlib",
+          "hashlib",
+          "hashlib"
+        ],
+        "complexity_score": 76
+      },
+      {
+        "name": "APIKeyRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/api_key.py",
+        "base_class": "object",
+        "model_class": "APIKey",
+        "methods": [],
+        "dependencies": [
+          "interfaces.api_key.IApiKeyRepository",
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "models.api_key.APIKey",
+          "base.BaseRepository",
+          "interfaces.api_key.IApiKeyRepository",
+          "datetime.datetime",
+          "datetime.timezone",
+          "uuid"
+        ],
+        "complexity_score": 54
+      },
+      {
+        "name": "OAuthAccessTokenRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/oauth_access_token.py",
+        "base_class": "object",
+        "model_class": "OAuthAccessToken",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.List",
+          "typing.Optional",
+          "typing.Tuple",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.oauth.OAuthAccessToken",
+          "models.oauth.OAuthApplication",
+          "models.user.User",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 11
+      },
+      {
+        "name": "ExtendedAuditLogRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/audit_log_extensions.py",
+        "base_class": "AuditLogRepository",
+        "model_class": "ExtendedAuditLog",
+        "methods": [],
+        "dependencies": [
+          "audit_log.AuditLogRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.delete",
+          "sqlalchemy.func",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.audit_log.AuditLog",
+          "audit_log.AuditLogRepository"
+        ],
+        "complexity_score": 15
+      },
+      {
+        "name": "AuditLogRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/audit_log_impl.py",
+        "base_class": "object",
+        "model_class": "AuditLog",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository",
+          "interfaces.audit.IAuditRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.date",
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.and_",
+          "sqlalchemy.func",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "structlog.stdlib.get_logger",
+          "models.audit_log.AuditLog",
+          "base.BaseRepository",
+          "interfaces.audit.IAuditRepository"
+        ],
+        "complexity_score": 18
+      },
+      {
+        "name": "MFAEventRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/mfa_event.py",
+        "base_class": "object",
+        "model_class": "MFAEvent",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.mfa.MFAEvent",
+          "models.mfa.MFAMethod",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "OAuthAuthorizationCodeRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/oauth_authorization_code.py",
+        "base_class": "object",
+        "model_class": "OAuthAuthorizationCode",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.oauth.OAuthAuthorizationCode",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "PluginRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/plugin.py",
+        "base_class": "object",
+        "model_class": "Plugin",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.models.plugin.Plugin",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 3
+      },
+      {
+        "name": "TemplateRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/template.py",
+        "base_class": "object",
+        "model_class": "Template",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository",
+          "app.models.report.ReportTemplate"
+        ],
+        "specializations": [],
+        "imports": [
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.models.report.ReportTemplate",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "ScanRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/scan.py",
+        "base_class": "object",
+        "model_class": "Scan",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.models.scan.Scan",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 3
+      },
+      {
+        "name": "MFABackupCodeRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/mfa_backup_code.py",
+        "base_class": "object",
+        "model_class": "MFABackupCode",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.mfa.MFABackupCode",
+          "base.BaseRepository",
+          "datetime.datetime",
+          "datetime.timezone"
+        ],
+        "complexity_score": 6
+      },
+      {
+        "name": "EnhancedRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/enhanced.py",
+        "base_class": "object",
+        "model_class": "Enhanced",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "base64",
+          "hashlib",
+          "json",
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.Generic",
+          "typing.List",
+          "typing.Optional",
+          "typing.Tuple",
+          "typing.Type",
+          "typing.TypeVar",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.asc",
+          "sqlalchemy.desc",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.text",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "sqlalchemy.orm.joinedload",
+          "sqlalchemy.orm.selectinload",
+          "sqlalchemy.sql.Select",
+          "sqlalchemy.sql.elements.ColumnElement",
+          "structlog.stdlib.get_logger",
+          "db.base_class.Base",
+          "models.mixins.BaseModelMixin",
+          "schemas.filtering.EnhancedFilter",
+          "schemas.filtering.FieldFilter",
+          "schemas.filtering.FilterOperator",
+          "schemas.filtering.SortField",
+          "utils.cache.delete_cached_value",
+          "utils.cache.get_cached_value",
+          "utils.cache.set_cached_value",
+          "base.BaseRepository",
+          "base.Page"
+        ],
+        "complexity_score": 143
+      },
+      {
+        "name": "OAuthApplicationRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/oauth_application.py",
+        "base_class": "object",
+        "model_class": "OAuthApplication",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "models.oauth.OAuthApplication",
+          "base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "BaseRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/base.py",
+        "base_class": "object",
+        "model_class": "Base",
+        "methods": [],
+        "dependencies": [],
+        "specializations": [],
+        "imports": [
+          "uuid",
+          "datetime.datetime",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Callable",
+          "typing.Dict",
+          "typing.Generic",
+          "typing.Iterator",
+          "typing.List",
+          "typing.Optional",
+          "typing.Tuple",
+          "typing.Type",
+          "typing.TypeVar",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.delete",
+          "sqlalchemy.desc",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.text",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "sqlalchemy.orm.selectinload",
+          "sqlalchemy.sql.Select",
+          "sqlalchemy.sql.elements.ColumnElement",
+          "structlog.stdlib.get_logger",
+          "db.base_class.Base",
+          "models.mixins.BaseModelMixin"
+        ],
+        "complexity_score": 124
+      },
+      {
+        "name": "AuditLogRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/audit_log.py",
+        "base_class": "object",
+        "model_class": "AuditLog",
+        "methods": [],
+        "dependencies": [
+          "base.BaseRepository",
+          "interfaces.audit.IAuditRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "json",
+          "uuid",
+          "datetime.date",
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "typing.Union",
+          "sqlalchemy.and_",
+          "sqlalchemy.desc",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "sqlalchemy.sql.Select",
+          "sqlalchemy.sql.elements.ColumnElement",
+          "structlog.stdlib.get_logger",
+          "models.audit_log.AuditLog",
+          "base.BaseRepository",
+          "base.Page",
+          "interfaces.audit.IAuditRepository",
+          "datetime.datetime",
+          "datetime.timezone",
+          "datetime.datetime",
+          "datetime.timezone",
+          "datetime.datetime",
+          "datetime.timezone",
+          "inspect",
+          "datetime.date",
+          "inspect",
+          "datetime.datetime",
+          "datetime.timezone",
+          "sqlalchemy.delete",
+          "sqlalchemy.func",
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "csv",
+          "io",
+          "datetime.datetime",
+          "datetime.timezone",
+          "datetime.datetime",
+          "datetime.timezone"
+        ],
+        "complexity_score": 92
+      },
+      {
+        "name": "ReportRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/report.py",
+        "base_class": "object",
+        "model_class": "Report",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository",
+          "app.models.report.Report"
+        ],
+        "specializations": [],
+        "imports": [
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.models.report.Report",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 5
+      },
+      {
+        "name": "SecurityScanRepository",
+        "file_path": "/Users/tamnguyen/Documents/GitHub/violentutf-api/app/repositories/security_scan.py",
+        "base_class": "object",
+        "model_class": "SecurityScan",
+        "methods": [],
+        "dependencies": [
+          "app.repositories.base.BaseRepository"
+        ],
+        "specializations": [],
+        "imports": [
+          "datetime.datetime",
+          "datetime.timedelta",
+          "datetime.timezone",
+          "typing.Any",
+          "typing.Dict",
+          "typing.List",
+          "typing.Optional",
+          "sqlalchemy.String",
+          "sqlalchemy.and_",
+          "sqlalchemy.case",
+          "sqlalchemy.func",
+          "sqlalchemy.or_",
+          "sqlalchemy.select",
+          "sqlalchemy.update",
+          "sqlalchemy.ext.asyncio.AsyncSession",
+          "app.core.enums.ScanStatus",
+          "app.core.enums.ScanType",
+          "app.core.enums.Severity",
+          "app.models.security_scan.SecurityScan",
+          "app.models.vulnerability_finding.VulnerabilityFinding",
+          "app.repositories.base.BaseRepository"
+        ],
+        "complexity_score": 64
+      }
+    ],
+    "model_relationships": [
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFADevice",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFABackupCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "MFADevice",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAChallenge",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAPolicy",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "MFADevice",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "MFAEvent",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "UserRole",
+        "target_model": "Role",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Permission",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "Role",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "OAuthAccessToken",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": "all, delete-orphan",
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "OAuthRefreshToken",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": "all, delete-orphan",
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "OAuthAuthorizationCode",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": "all, delete-orphan",
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthApplication",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "OAuthApplication",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "OAuthRefreshToken",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAccessToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "OAuthApplication",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "OAuthAccessToken",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthRefreshToken",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "OAuthApplication",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "User",
+        "relationship_type": "relationship",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthAuthorizationCode",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": false,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      },
+      {
+        "source_model": "OAuthScope",
+        "target_model": "Unknown",
+        "relationship_type": "column",
+        "foreign_key": null,
+        "cascade": null,
+        "nullable": true,
+        "backref": null
+      }
+    ],
+    "repository_dependencies": [],
+    "complexity_analysis": {
+      "average_complexity": 29.214285714285715,
+      "max_complexity": 143,
+      "min_complexity": 3,
+      "average_methods_per_repo": 0.03571428571428571,
+      "average_dependencies_per_repo": 1.25,
+      "most_complex_repository": "EnhancedRepository",
+      "total_specializations": 1
+    },
+    "inheritance_hierarchy": {
+      "IHealthRepository": [
+        "HealthRepository"
+      ],
+      "AuditLogRepository": [
+        "ExtendedAuditLogRepository"
+      ]
+    },
+    "pattern_analysis": {
+      "common_methods": {
+        "db": 1
+      },
+      "common_specializations": {
+        "db": 1
+      },
+      "common_base_classes": {
+        "object": 26,
+        "IHealthRepository": 1,
+        "AuditLogRepository": 1
+      },
+      "naming_patterns": {
+        "ends_with_repository": 28
+      }
+    }
+  },
+  "runtime_analysis": null,
+  "dependency_graphs": {
+    "service": "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/dependencies/service_dependencies.mmd",
+    "application": "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/dependencies/application_dependencies.mmd",
+    "database": "/Users/tamnguyen/Documents/GitHub/violentutf-api/docs/dependencies/database_dependencies.mmd"
+  },
+  "summary_report": {
+    "services": {
+      "total_services": 6,
+      "critical_services": 2,
+      "service_types": {
+        "application": 1,
+        "database": 1,
+        "cache": 1,
+        "worker": 1,
+        "monitoring": 1,
+        "reverse_proxy": 1
+      },
+      "average_dependencies": 1.17
+    },
+    "repositories": {
+      "total_repositories": 28,
+      "total_models": 27,
+      "total_relationships": 155,
+      "average_complexity": 29.214285714285715,
+      "most_complex_repository": "EnhancedRepository"
+    },
+    "configurations": {
+      "total_configurations": 80,
+      "required_configurations": 1,
+      "configuration_types": {
+        "str": 12,
+        "bool": 18,
+        "SecretStr": 1,
+        "int": 36,
+        "Optional": 8,
+        "List": 3,
+        "float": 2
+      }
+    },
+    "runtime": {},
+    "risk_assessment": {
+      "high_risk_services": [
+        "api",
+        "db"
+      ],
+      "complex_repositories": [
+        "UserRepository",
+        "RoleRepository",
+        "APIKeyRepository",
+        "EnhancedRepository",
+        "BaseRepository",
+        "AuditLogRepository",
+        "SecurityScanRepository"
+      ],
+      "single_points_of_failure": [
+        "Service: db (depended on by 2 services)",
+        "Service: redis (depended on by 3 services)",
+        "Critical database: db"
+      ]
+    },
+    "analysis_completeness": {
+      "static_analysis": true,
+      "repository_analysis": true,
+      "runtime_analysis": false,
+      "graph_generation": true
+    }
+  },
+  "recommendations": [
+    "Refactor high-complexity repositories: RoleRepository, EnhancedRepository, BaseRepository, AuditLogRepository, SecurityScanRepository",
+    "Implement dependency health monitoring with automated alerts",
+    "Create dependency change impact assessment procedures",
+    "Establish regular dependency review and optimization cycles",
+    "Document dependency failure scenarios and recovery procedures"
+  ]
+}
