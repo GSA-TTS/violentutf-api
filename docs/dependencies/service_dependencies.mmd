@@ -1,0 +1,24 @@
+graph TD
+    classDef critical fill:#ff6b6b,stroke:#d63031,stroke-width:3px
+    classDef important fill:#ffa726,stroke:#ef6c00,stroke-width:2px
+    classDef medium fill:#42a5f5,stroke:#1565c0,stroke-width:2px
+    classDef low fill:#66bb6a,stroke:#2e7d32,stroke-width:1px
+    api[api]
+    class api critical
+    db[db]
+    class db critical
+    redis[redis]
+    class redis important
+    celery_worker[celery-worker]
+    class celery_worker important
+    flower[flower]
+    class flower medium
+    nginx[nginx]
+    class nginx medium
+    db -->|depends on| api
+    redis -->|depends on| api
+    db -->|depends on| celery_worker
+    redis -->|depends on| celery_worker
+    redis -->|depends on| flower
+    celery_worker -->|depends on| flower
+    api -->|depends on| nginx

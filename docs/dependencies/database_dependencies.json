@@ -1,0 +1,1871 @@
+{
+  "metadata": {
+    "graph_type": "database_dependencies",
+    "generated_at": "2025-09-19T14:47:18.526136",
+    "total_models": 155,
+    "total_relationships": 0
+  },
+  "nodes": [
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFADevice",
+      "label": "MFADevice",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfadevice",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFABackupCode",
+      "label": "MFABackupCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfabackupcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAChallenge",
+      "label": "MFAChallenge",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfachallenge",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAPolicy",
+      "label": "MFAPolicy",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfapolicy",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_MFAEvent",
+      "label": "MFAEvent",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "mfaevent",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_UserRole",
+      "label": "UserRole",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "userrole",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Permission",
+      "label": "Permission",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "permission",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_Role",
+      "label": "Role",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "role",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthApplication",
+      "label": "OAuthApplication",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthapplication",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAccessToken",
+      "label": "OAuthAccessToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthaccesstoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthRefreshToken",
+      "label": "OAuthRefreshToken",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthrefreshtoken",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthAuthorizationCode",
+      "label": "OAuthAuthorizationCode",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthauthorizationcode",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    },
+    {
+      "id": "model_OAuthScope",
+      "label": "OAuthScope",
+      "type": "model",
+      "criticality": "medium",
+      "properties": {
+        "table_name": "oauthscope",
+        "primary_key": "id",
+        "indexes": [],
+        "constraints": []
+      }
+    }
+  ],
+  "edges": []
+}

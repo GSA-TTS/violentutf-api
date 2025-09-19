@@ -1,0 +1,17 @@
+digraph service_dependencies {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+  api [label="api", color=red, shape=box];
+  db [label="db", color=red, shape=box];
+  redis [label="redis", color=orange, shape=box];
+  celery_worker [label="celery-worker", color=orange, shape=box];
+  flower [label="flower", color=blue, shape=box];
+  nginx [label="nginx", color=blue, shape=box];
+  db -> api [style=solid, label="service_dependency"];
+  redis -> api [style=solid, label="service_dependency"];
+  db -> celery_worker [style=solid, label="service_dependency"];
+  redis -> celery_worker [style=solid, label="service_dependency"];
+  redis -> flower [style=solid, label="service_dependency"];
+  celery_worker -> flower [style=solid, label="service_dependency"];
+  api -> nginx [style=solid, label="service_dependency"];
+}

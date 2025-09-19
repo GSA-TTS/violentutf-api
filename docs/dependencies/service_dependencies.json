@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "graph_type": "service_dependencies",
+    "generated_at": "2025-09-19T14:47:18.524085",
+    "total_services": 6,
+    "total_dependencies": 7
+  },
+  "nodes": [
+    {
+      "id": "api",
+      "label": "api",
+      "type": "service",
+      "criticality": "critical",
+      "properties": {
+        "service_type": "application",
+        "health_check": "CMD curl -f http://localhost:8000/api/v1/health",
+        "ports": [
+          "${API_PORT:-8000}:8000"
+        ],
+        "volumes": [
+          "./app:/app/app:ro",
+          "./logs:/app/logs"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    },
+    {
+      "id": "db",
+      "label": "db",
+      "type": "service",
+      "criticality": "critical",
+      "properties": {
+        "service_type": "database",
+        "health_check": "CMD-SHELL pg_isready -U ${DB_USER:-violentutf}",
+        "ports": [],
+        "volumes": [
+          "postgres_data:/var/lib/postgresql/data",
+          "./backups/postgres:/backups"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    },
+    {
+      "id": "redis",
+      "label": "redis",
+      "type": "service",
+      "criticality": "important",
+      "properties": {
+        "service_type": "cache",
+        "health_check": "CMD redis-cli ping",
+        "ports": [],
+        "volumes": [
+          "redis_data:/data"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    },
+    {
+      "id": "celery-worker",
+      "label": "celery-worker",
+      "type": "service",
+      "criticality": "important",
+      "properties": {
+        "service_type": "worker",
+        "health_check": null,
+        "ports": [],
+        "volumes": [
+          "./app:/app/app:ro",
+          "./logs:/app/logs"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    },
+    {
+      "id": "flower",
+      "label": "flower",
+      "type": "service",
+      "criticality": "medium",
+      "properties": {
+        "service_type": "monitoring",
+        "health_check": null,
+        "ports": [
+          "${FLOWER_PORT:-5555}:5555"
+        ],
+        "volumes": [
+          "./app:/app/app:ro"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    },
+    {
+      "id": "nginx",
+      "label": "nginx",
+      "type": "service",
+      "criticality": "medium",
+      "properties": {
+        "service_type": "reverse_proxy",
+        "health_check": null,
+        "ports": [
+          "${NGINX_PORT:-80}:80"
+        ],
+        "volumes": [
+          "./nginx.conf:/etc/nginx/nginx.conf:ro"
+        ],
+        "networks": [
+          "violentutf-network"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "db",
+      "target": "api",
+      "type": "service_dependency",
+      "properties": {
+        "condition": "service_healthy",
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "redis",
+      "target": "api",
+      "type": "service_dependency",
+      "properties": {
+        "condition": "service_healthy",
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "db",
+      "target": "celery-worker",
+      "type": "service_dependency",
+      "properties": {
+        "condition": "service_healthy",
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "redis",
+      "target": "celery-worker",
+      "type": "service_dependency",
+      "properties": {
+        "condition": "service_healthy",
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "redis",
+      "target": "flower",
+      "type": "service_dependency",
+      "properties": {
+        "condition": null,
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "celery-worker",
+      "target": "flower",
+      "type": "service_dependency",
+      "properties": {
+        "condition": null,
+        "dependency_type": "runtime"
+      }
+    },
+    {
+      "source": "api",
+      "target": "nginx",
+      "type": "service_dependency",
+      "properties": {
+        "condition": null,
+        "dependency_type": "runtime"
+      }
+    }
+  ]
+}

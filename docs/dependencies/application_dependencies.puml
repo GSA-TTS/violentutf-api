@@ -1,0 +1,66 @@
+@startuml
+!define RECTANGLE class
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor<<critical>> LightPink
+  BackgroundColor<<important>> LightOrange
+  BackgroundColor<<medium>> LightBlue
+  BackgroundColor<<low>> LightGreen
+}
+class repo_UserRepository as "UserRepository" <<medium>>
+class repo_TaskRepository as "TaskRepository" <<medium>>
+class repo_MFAPolicyRepository as "MFAPolicyRepository" <<medium>>
+class repo_OAuthRefreshTokenRepository as "OAuthRefreshTokenRepository" <<medium>>
+class repo_VulnerabilityTaxonomyRepository as "VulnerabilityTaxonomyRepository" <<medium>>
+class repo_MFAChallengeRepository as "MFAChallengeRepository" <<medium>>
+class repo_MFADeviceRepository as "MFADeviceRepository" <<medium>>
+class repo_VulnerabilityFindingRepository as "VulnerabilityFindingRepository" <<medium>>
+class repo_HealthRepository as "HealthRepository" <<medium>>
+class repo_OAuthScopeRepository as "OAuthScopeRepository" <<medium>>
+class repo_SessionRepository as "SessionRepository" <<medium>>
+class repo_RoleRepository as "RoleRepository" <<medium>>
+class repo_APIKeyRepository as "APIKeyRepository" <<medium>>
+class repo_OAuthAccessTokenRepository as "OAuthAccessTokenRepository" <<medium>>
+class repo_ExtendedAuditLogRepository as "ExtendedAuditLogRepository" <<medium>>
+class repo_AuditLogRepository as "AuditLogRepository" <<medium>>
+class repo_MFAEventRepository as "MFAEventRepository" <<medium>>
+class repo_OAuthAuthorizationCodeRepository as "OAuthAuthorizationCodeRepository" <<medium>>
+class repo_PluginRepository as "PluginRepository" <<medium>>
+class repo_TemplateRepository as "TemplateRepository" <<medium>>
+class repo_ScanRepository as "ScanRepository" <<medium>>
+class repo_MFABackupCodeRepository as "MFABackupCodeRepository" <<medium>>
+class repo_EnhancedRepository as "EnhancedRepository" <<medium>>
+class repo_OAuthApplicationRepository as "OAuthApplicationRepository" <<medium>>
+class repo_BaseRepository as "BaseRepository" <<medium>>
+class repo_AuditLogRepository as "AuditLogRepository" <<medium>>
+class repo_ReportRepository as "ReportRepository" <<medium>>
+class repo_SecurityScanRepository as "SecurityScanRepository" <<medium>>
+class endpoint_endpoint_0 as "endpoint_0" <<medium>>
+class endpoint_endpoint_1 as "endpoint_1" <<medium>>
+class endpoint_endpoint_2 as "endpoint_2" <<medium>>
+class endpoint_endpoint_3 as "endpoint_3" <<medium>>
+class endpoint_endpoint_4 as "endpoint_4" <<medium>>
+class middleware_auth as "auth" <<critical>>
+class middleware_logging as "logging" <<medium>>
+class middleware_rate_limiting as "rate_limiting" <<important>>
+endpoint_endpoint_0 ..> repo_UserRepository : uses_repository
+endpoint_endpoint_0 ..> repo_TaskRepository : uses_repository
+endpoint_endpoint_1 ..> repo_UserRepository : uses_repository
+endpoint_endpoint_1 ..> repo_TaskRepository : uses_repository
+endpoint_endpoint_2 ..> repo_UserRepository : uses_repository
+endpoint_endpoint_2 ..> repo_TaskRepository : uses_repository
+endpoint_endpoint_3 ..> repo_UserRepository : uses_repository
+endpoint_endpoint_3 ..> repo_TaskRepository : uses_repository
+endpoint_endpoint_4 ..> repo_UserRepository : uses_repository
+endpoint_endpoint_4 ..> repo_TaskRepository : uses_repository
+middleware_auth --> endpoint_endpoint_0 : processes_request
+middleware_logging --> endpoint_endpoint_0 : processes_request
+middleware_auth --> endpoint_endpoint_1 : processes_request
+middleware_logging --> endpoint_endpoint_1 : processes_request
+middleware_auth --> endpoint_endpoint_2 : processes_request
+middleware_logging --> endpoint_endpoint_2 : processes_request
+middleware_auth --> endpoint_endpoint_3 : processes_request
+middleware_logging --> endpoint_endpoint_3 : processes_request
+middleware_auth --> endpoint_endpoint_4 : processes_request
+middleware_logging --> endpoint_endpoint_4 : processes_request
+@enduml
