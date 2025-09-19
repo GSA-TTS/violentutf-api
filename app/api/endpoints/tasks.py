@@ -51,7 +51,7 @@ async def list_tasks(
     """List tasks with filtering and pagination."""
     try:
         # Build query with filters
-        query = select(Task).where(Task.is_deleted is False)
+        query = select(Task).where(Task.is_deleted == False)
 
         if status:
             query = query.where(Task.status == status)
@@ -138,7 +138,7 @@ async def get_task(
     """Get a specific task by ID."""
     try:
         # Query task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -165,7 +165,7 @@ async def update_task(
     """Update a task."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -211,7 +211,7 @@ async def delete_task(
     """Delete a task (soft delete)."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -250,7 +250,7 @@ async def execute_task(
     """Execute a task asynchronously."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -308,7 +308,7 @@ async def cancel_task(
     """Cancel a running task."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -356,7 +356,7 @@ async def retry_task(
     """Retry a failed task."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -438,7 +438,7 @@ async def update_task_status(  # noqa: C901
     """Update task status (primarily for worker processes)."""
     try:
         # Get task
-        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         result = await db.execute(query)
         task = result.scalar_one_or_none()
 
@@ -500,7 +500,7 @@ async def get_task_results(
     """Get results for a specific task."""
     try:
         # Verify task exists
-        task_query = select(Task).where(and_(Task.id == task_id, Task.is_deleted is False))
+        task_query = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
         task_result = await db.execute(task_query)
         task = task_result.scalar_one_or_none()
 
@@ -544,7 +544,7 @@ async def get_task_stats(
         # Get counts by status
         status_counts = {}
         for status in TaskStatus:
-            count_query = select(func.count()).where(and_(Task.status == status, Task.is_deleted is False))
+            count_query = select(func.count()).where(and_(Task.status == status, Task.is_deleted == False))
             result = await db.execute(count_query)
             status_counts[status.value] = result.scalar() or 0
 
@@ -583,7 +583,7 @@ async def bulk_task_action(
     """Perform bulk actions on multiple tasks."""
     try:
         # Get tasks
-        query = select(Task).where(and_(Task.id.in_(action_request.task_ids), Task.is_deleted is False))
+        query = select(Task).where(and_(Task.id.in_(action_request.task_ids), Task.is_deleted == False))
         result = await db.execute(query)
         tasks = result.scalars().all()
 

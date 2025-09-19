@@ -144,7 +144,7 @@ async def health_check(
     try:
         db_health = await health_service.check_database_health()
         # Ensure db_health is sanitized - convert to safe boolean
-        safe_db_status = bool(db_health) if not isinstance(db_health, Exception) else False
+        safe_db_status = db_health.get("status") == "healthy" if db_health else False
     except Exception:
         safe_db_status = False
 
