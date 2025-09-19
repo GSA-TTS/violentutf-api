@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Generic, Iterator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
 from sqlalchemy import and_, delete, desc, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -807,7 +807,7 @@ class BaseRepository(Generic[T]):
     ) -> Optional[ColumnElement[bool]]:
         """Build filter condition based on operator."""
         # Define operator mappings for better maintainability
-        simple_operators = {
+        simple_operators: Dict[str, Callable[[Any, Any], Any]] = {
             "eq": lambda f, v: f == v,
             "ne": lambda f, v: f != v,
             "gt": lambda f, v: f > v,
@@ -818,7 +818,7 @@ class BaseRepository(Generic[T]):
 
         # Handle simple comparison operators
         if operator in simple_operators:
-            return simple_operators[operator](field, value)  # type: ignore[no-untyped-call]
+            return simple_operators[operator](field, value)
 
         # Handle special operators with type checking
         return self._build_special_filter_condition(field, operator, value)

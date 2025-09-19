@@ -48,7 +48,7 @@ async def list_scans(
     """List scans with filtering and pagination."""
     try:
         # Build query with filters
-        query = select(Scan).where(Scan.is_deleted is False)
+        query = select(Scan).where(Scan.is_deleted == False)
 
         if scan_type:
             query = query.where(Scan.scan_type == scan_type)
@@ -187,7 +187,7 @@ async def get_scan(
     """Get a specific scan by ID (ADR-007 status polling)."""
     try:
         # Query scan
-        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         result = await db.execute(query)
         scan = result.scalar_one_or_none()
 
@@ -214,7 +214,7 @@ async def update_scan(
     """Update a scan."""
     try:
         # Get scan
-        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         result = await db.execute(query)
         scan = result.scalar_one_or_none()
 
@@ -257,7 +257,7 @@ async def delete_scan(
     """Delete a scan (soft delete)."""
     try:
         # Get scan
-        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         result = await db.execute(query)
         scan = result.scalar_one_or_none()
 
@@ -296,7 +296,7 @@ async def execute_scan(
     """Execute a scan asynchronously."""
     try:
         # Get scan
-        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         result = await db.execute(query)
         scan = result.scalar_one_or_none()
 
@@ -388,7 +388,7 @@ async def cancel_scan(
     """Cancel a running scan."""
     try:
         # Get scan
-        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         result = await db.execute(query)
         scan = result.scalar_one_or_none()
 
@@ -464,7 +464,7 @@ async def get_scan_findings(
     """Get findings for a specific scan."""
     try:
         # Verify scan exists
-        scan_query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        scan_query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         scan_result = await db.execute(scan_query)
         scan = scan_result.scalar_one_or_none()
 
@@ -526,7 +526,7 @@ async def get_scan_reports(
     """Get reports for a specific scan."""
     try:
         # Verify scan exists
-        scan_query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted is False))
+        scan_query = select(Scan).where(and_(Scan.id == scan_id, Scan.is_deleted == False))
         scan_result = await db.execute(scan_query)
         scan = scan_result.scalar_one_or_none()
 
@@ -561,7 +561,7 @@ async def get_scan_stats(
         # Get counts by status
         status_counts = {}
         for status in ScanStatus:
-            count_query = select(func.count()).where(and_(Scan.status == status, Scan.is_deleted is False))
+            count_query = select(func.count()).where(and_(Scan.status == status, Scan.is_deleted == False))
             result = await db.execute(count_query)
             status_counts[status.value] = result.scalar() or 0
 
@@ -573,7 +573,7 @@ async def get_scan_stats(
                 func.sum(Scan.medium_findings),
                 func.sum(Scan.low_findings),
                 func.sum(Scan.findings_count),
-            ).where(Scan.is_deleted is False)
+            ).where(Scan.is_deleted == False)
         )
         finding_result = finding_counts.first()
         if finding_result:

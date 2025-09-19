@@ -412,7 +412,9 @@ No architectural violations detected in the changed files.
 
 *Note: This is pattern-based analysis. For deeper semantic analysis, run locally with Claude Code.*
 """.format(
-                **results
+                files_analyzed=results.get("files_analyzed", 0),
+                compliance_score=results.get("compliance_score", 100.0),
+                execution_time=results.get("execution_time", 0.0),
             )
 
         # Group violations by file

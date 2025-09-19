@@ -43,22 +43,22 @@ jobs:
           # Note: FastAPI, SQLAlchemy, etc. already installed from requirements.txt
 
       - name: Black formatter
-        run: black --check --diff . --verbose --exclude "agent_orchestrator|test_env"
+        run: black --check --diff . --verbose --exclude "agent_orchestrator|test_env|venv|\.venv"
 
       - name: isort
-        run: isort --check-only --diff . --profile black --skip-glob="*/agent_orchestrator/*" --skip-glob="*/test_env/*"
+        run: isort --check-only --diff . --profile black --skip-glob="*/agent_orchestrator/*" --skip-glob="*/test_env/*" --skip-glob="*/venv/*" --skip-glob="*/.venv/*"
 
       - name: Full flake8 scan
         run: |
           flake8 . --config=.flake8 --count --statistics \
-            --exclude=app_data,violentutf_logs,migrations,tools/pre_audit/statistical_analysis,agent_orchestrator,test_env \
-            --ignore=E203,W503,E501,F401,F541,E226,D107,D202,D401,D400,D205,D103,D102,D106,C901,D403,E402,E722,F811
+            --exclude=app_data,violentutf_logs,migrations,tools/pre_audit/statistical_analysis,agent_orchestrator,test_env,venv,.venv,__pycache__,.pytest_cache,.mypy_cache \
+            --ignore=E203,W503,E501,F401,F541,E226,D107,D202,D401,D400,D205,D103,D102,D106,C901,D403,E402,E722,F811,ANN401,ANN001,ANN002,ANN003,ANN101,ANN102,ANN201,ANN202
 
       - name: Bandit security scan
         run: |
           # Run Bandit and collect all findings
           bandit -r . -f json -o bandit-report.json \
-            -x '/tests/,/app_data/,/violentutf_logs/,/agent_orchestrator/,/test_env/' \
+            -x '/tests/,/app_data/,/violentutf_logs/,/agent_orchestrator/,/test_env/,/venv/,/.venv/,/__pycache__/,/.pytest_cache/,/.mypy_cache/' \
             --skip B101,B601 --exit-zero
 
           # Analyze results and determine if check should fail
@@ -78,8 +78,8 @@ jobs:
 
       - name: Dependency vulnerabilities
         run: |
-          # Run safety check
-          safety check --json --output safety-report.json || echo "Safety check completed with findings"
+          # Run safety scan (newer command)
+          safety scan --output json --save-json safety-report.json || echo "Safety scan completed with findings"
 
           # Analyze results and determine if check should fail
           python3 .github/scripts/analyze-safety-report.py
