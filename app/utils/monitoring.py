@@ -28,11 +28,58 @@ request_duration = Histogram(
     ["method", "endpoint", "status"],
 )
 
+# Enhanced database query tracking metrics
+database_query_total = Counter(
+    "database_query_total",
+    "Total number of database queries executed",
+    ["query_type", "repository", "model", "status"],
+)
+
+database_query_duration_histogram = Histogram(
+    "database_query_duration_histogram",
+    "Distribution of database query execution times",
+    ["query_type", "repository", "model"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+
+database_slow_query_total = Counter(
+    "database_slow_query_total",
+    "Total number of slow database queries (>500ms)",
+    ["repository", "model", "operation"],
+)
+
+database_connection_pool_current = Histogram(
+    "database_connection_pool_current",
+    "Current database connection pool usage",
+    ["pool_name"],
+)
+
+database_transaction_duration = Histogram(
+    "database_transaction_duration_seconds",
+    "Time spent in database transactions",
+    ["repository", "operation_type"],
+)
+
+database_deadlock_total = Counter(
+    "database_deadlock_total",
+    "Total number of database deadlocks detected",
+    ["repository", "model"],
+)
+
+database_cache_hit_rate = Histogram(
+    "database_cache_hit_rate",
+    "Database query cache hit rate",
+    ["cache_type", "repository"],
+)
+
 # Resource usage tracking
 resource_usage = {
     "database_connections": 0,
     "cache_connections": 0,
     "active_requests": 0,
+    "database_pool_size": 0,
+    "database_pool_checkedout": 0,
+    "database_pool_overflow": 0,
 }
 
 # Health check cache: key -> (timestamp, result)
@@ -339,3 +386,195 @@ def clear_health_check_cache() -> None:
     """Clear all cached health check results."""
     health_check_cache.clear()
     logger.info("Health check cache cleared")
+
+
+def track_database_query(
+    query_type: str,
+    repository: str,
+    model: str,
+    duration: float,
+    success: bool = True,
+    operation: str = "unknown",
+) -> None:
+    """
+    Track database query performance metrics.
+
+    Args:
+        query_type: Type of query (read, write, delete)
+        repository: Repository name
+        model: Model name
+        duration: Query execution duration in seconds
+        success: Whether the query was successful
+        operation: Specific operation name
+    """
+    status = "success" if success else "error"
+
+    # Record query execution
+    database_query_total.labels(
+        query_type=query_type,
+        repository=repository,
+        model=model,
+        status=status,
+    ).inc()
+
+    # Record query duration
+    database_query_duration_histogram.labels(
+        query_type=query_type,
+        repository=repository,
+        model=model,
+    ).observe(duration)
+
+    # Track slow queries (>500ms)
+    if duration > 0.5:
+        database_slow_query_total.labels(
+            repository=repository,
+            model=model,
+            operation=operation,
+        ).inc()
+
+        logger.warning(
+            "Slow database query detected",
+            query_type=query_type,
+            repository=repository,
+            model=model,
+            duration=duration,
+            operation=operation,
+        )
+
+
+def update_database_connection_pool_metrics(
+    pool_name: str,
+    pool_size: int,
+    checked_out: int,
+    overflow: int,
+) -> None:
+    """
+    Update database connection pool metrics.
+
+    Args:
+        pool_name: Name of the connection pool
+        pool_size: Current pool size
+        checked_out: Number of checked out connections
+        overflow: Number of overflow connections
+    """
+    database_connection_pool_current.labels(pool_name=pool_name).observe(checked_out)
+
+    # Update resource usage tracking
+    resource_usage["database_pool_size"] = pool_size
+    resource_usage["database_pool_checkedout"] = checked_out
+    resource_usage["database_pool_overflow"] = overflow
+
+
+def track_database_transaction(
+    repository: str,
+    operation_type: str,
+    duration: float,
+) -> None:
+    """
+    Track database transaction performance.
+
+    Args:
+        repository: Repository name
+        operation_type: Type of transaction operation
+        duration: Transaction duration in seconds
+    """
+    database_transaction_duration.labels(
+        repository=repository,
+        operation_type=operation_type,
+    ).observe(duration)
+
+
+def track_database_deadlock(repository: str, model: str) -> None:
+    """
+    Track database deadlock occurrences.
+
+    Args:
+        repository: Repository name where deadlock occurred
+        model: Model involved in deadlock
+    """
+    database_deadlock_total.labels(
+        repository=repository,
+        model=model,
+    ).inc()
+
+    logger.error(
+        "Database deadlock detected",
+        repository=repository,
+        model=model,
+    )
+
+
+def track_database_cache_performance(
+    cache_type: str,
+    repository: str,
+    hit_rate: float,
+) -> None:
+    """
+    Track database cache performance metrics.
+
+    Args:
+        cache_type: Type of cache (query, entity, etc.)
+        repository: Repository name
+        hit_rate: Cache hit rate (0.0 to 1.0)
+    """
+    database_cache_hit_rate.labels(
+        cache_type=cache_type,
+        repository=repository,
+    ).observe(hit_rate)
+
+
+async def get_enhanced_system_metrics() -> Dict[str, Any]:
+    """
+    Get enhanced system performance metrics including database-specific metrics.
+
+    Returns:
+        Dictionary with comprehensive system and database metrics
+    """
+    try:
+        import psutil
+
+        # Get basic system metrics
+        base_metrics = await get_system_metrics()
+
+        # Add database-specific metrics
+        database_metrics = {
+            "database_pool_size": resource_usage.get("database_pool_size", 0),
+            "database_pool_checkedout": resource_usage.get("database_pool_checkedout", 0),
+            "database_pool_overflow": resource_usage.get("database_pool_overflow", 0),
+            "database_pool_utilization": (
+                resource_usage.get("database_pool_checkedout", 0) / max(resource_usage.get("database_pool_size", 1), 1)
+            ),
+        }
+
+        # Combine metrics
+        enhanced_metrics = {
+            **base_metrics,
+            "database": database_metrics,
+        }
+
+        return enhanced_metrics
+
+    except Exception as e:
+        logger.error("Failed to get enhanced system metrics", error=str(e), exception_type=type(e).__name__)
+        return await get_system_metrics()  # Fallback to basic metrics
+
+
+def get_database_performance_summary() -> Dict[str, Any]:
+    """
+    Get summary of database performance metrics.
+
+    Returns:
+        Dictionary with database performance summary
+    """
+    return {
+        "connection_pool": {
+            "size": resource_usage.get("database_pool_size", 0),
+            "checked_out": resource_usage.get("database_pool_checkedout", 0),
+            "overflow": resource_usage.get("database_pool_overflow", 0),
+            "utilization": (
+                resource_usage.get("database_pool_checkedout", 0) / max(resource_usage.get("database_pool_size", 1), 1)
+            ),
+        },
+        "active_connections": resource_usage.get("database_connections", 0),
+        "cache_connections": resource_usage.get("cache_connections", 0),
+    }
