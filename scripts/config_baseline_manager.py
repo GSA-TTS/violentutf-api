@@ -7,10 +7,12 @@ configuration baselines for the ViolentUTF API system.
 import asyncio
 import concurrent.futures
 import hashlib
+import hmac
 import json
 import logging
 import mmap
 import os
+import secrets
 import time
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -18,6 +20,9 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 import aiofiles
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hmac as crypto_hmac
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.config import Settings
@@ -35,6 +40,107 @@ class BaselineValidationError(Exception):
     """Exception raised when baseline validation fails."""
 
     pass
+
+
+class SecurityValidationError(BaselineValidationError):
+    """Exception raised when security validation fails."""
+
+    pass
+
+
+class ChecksumValidationError(SecurityValidationError):
+    """Exception raised when checksum validation fails."""
+
+    pass
+
+
+class SecureChecksumManager:
+    """Manages secure HMAC-based checksums for configuration baselines."""
+
+    def __init__(self, master_key: Optional[bytes] = None):
+        """Initialize secure checksum manager.
+
+        Args:
+            master_key: Master key for HMAC operations. If None, generates a new key.
+        """
+        self.master_key = master_key or secrets.token_bytes(32)
+
+    def generate_secure_checksum(self, data: Dict[str, Any]) -> tuple[str, bytes]:
+        """Generate secure HMAC-based checksum.
+
+        Args:
+            data: Data to generate checksum for
+
+        Returns:
+            Tuple of (checksum_hex, salt) for verification
+        """
+        try:
+            # Generate random salt for this checksum
+            salt = secrets.token_bytes(32)
+
+            # Create key derivation function
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,  # NIST recommended minimum
+            )
+            derived_key = kdf.derive(self.master_key)
+
+            # Create deterministic string representation
+            json_str = json.dumps(data, sort_keys=True, default=str)
+            data_bytes = json_str.encode("utf-8")
+
+            # Generate HMAC
+            h = crypto_hmac.HMAC(derived_key, hashes.SHA256())
+            h.update(data_bytes)
+            checksum = h.finalize()
+
+            return checksum.hex(), salt
+
+        except Exception as e:
+            logger.error("Failed to generate secure checksum", exc_info=True)
+            raise ChecksumValidationError(f"Checksum generation failed: {type(e).__name__}") from e
+
+    def verify_secure_checksum(self, data: Dict[str, Any], checksum_hex: str, salt: bytes) -> bool:
+        """Verify secure HMAC-based checksum.
+
+        Args:
+            data: Data to verify
+            checksum_hex: Expected checksum in hex format
+            salt: Salt used for key derivation
+
+        Returns:
+            True if checksum is valid, False otherwise
+        """
+        try:
+            # Derive the same key used for generation
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,
+            )
+            derived_key = kdf.derive(self.master_key)
+
+            # Generate checksum for provided data
+            json_str = json.dumps(data, sort_keys=True, default=str)
+            data_bytes = json_str.encode("utf-8")
+
+            h = crypto_hmac.HMAC(derived_key, hashes.SHA256())
+            h.update(data_bytes)
+            expected_checksum = h.finalize()
+
+            # Use constant-time comparison to prevent timing attacks
+            provided_checksum = bytes.fromhex(checksum_hex)
+            return hmac.compare_digest(expected_checksum, provided_checksum)
+
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid checksum format: {type(e).__name__}")
+            return False
+        except Exception:
+            logger.error("Failed to verify secure checksum", exc_info=True)
+            return False
 
 
 class ConfigurationBaseline(BaseModel):
@@ -159,11 +265,29 @@ class ConfigurationBaselineManager:
     """Manages configuration baselines."""
 
     def __init__(self, baseline_dir: str = "./baselines"):
-        """Initialize baseline manager."""
+        """Initialize baseline manager with security enhancements."""
         self.baseline_dir = Path(baseline_dir)
         self.baseline_dir.mkdir(exist_ok=True)
         self.extractor = ConfigurationExtractor()
         self._metadata_cache: Dict[str, Dict[str, Any]] = {}
+        # Initialize secure checksum manager
+        self.checksum_manager = SecureChecksumManager()
+
+        # Security validation settings
+        self.max_path_length = 260  # Windows MAX_PATH limit
+        self.allowed_extensions = {".json", ".yaml", ".yml"}
+        self.forbidden_path_patterns = [
+            "../",
+            "..\\\\",
+            "/etc/",
+            "C:\\\\",
+            "/root/",
+            "/home/",
+            "system32",
+            "windows",
+            "passwd",
+            "shadow",
+        ]
 
     def generate_baseline(
         self,
@@ -226,20 +350,234 @@ class ConfigurationBaselineManager:
             raise BaselineGenerationError(f"Failed to save baseline: {e}")
 
     def load_baseline(self, file_path: Path) -> ConfigurationBaseline:
-        """Load baseline from file."""
+        """Load baseline from file with security validation."""
+        # Validate file path to prevent path traversal attacks
+        try:
+            self.validate_file_path(str(file_path))
+        except (ValueError, SecurityValidationError) as e:
+            logger.warning(f"Invalid file path rejected: {type(e).__name__}")
+            raise BaselineValidationError(f"Invalid file path: security violation") from e
+
         if not file_path.exists():
-            raise FileNotFoundError(f"Baseline file not found: {file_path}")
+            logger.warning(f"Baseline file not found: {file_path.name}")  # Don't log full path
+            raise BaselineValidationError(f"Baseline file not found")
 
         try:
             with open(file_path) as f:
                 data = json.load(f)
 
+            # Validate configuration schema
+            self.validate_configuration_schema(data)
+
             return ConfigurationBaseline.from_dict(data)
 
         except json.JSONDecodeError as e:
-            raise BaselineValidationError(f"Invalid JSON in baseline file: {e}")
-        except Exception as e:
-            raise BaselineValidationError(f"Failed to load baseline: {e}")
+            logger.error(f"Invalid JSON format in baseline file: {type(e).__name__}")
+            raise BaselineValidationError(f"Invalid JSON format") from e
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error(f"Invalid baseline structure: {type(e).__name__}")
+            raise BaselineValidationError(f"Invalid baseline structure") from e
+        except (OSError, IOError, PermissionError) as e:
+            logger.error(f"File access error: {type(e).__name__}")
+            raise BaselineValidationError(f"Unable to read baseline file") from e
+
+    def validate_file_path(self, file_path: str) -> None:
+        """Validate file path for security issues.
+
+        Args:
+            file_path: File path to validate
+
+        Raises:
+            SecurityValidationError: If path fails security validation
+        """
+        if not file_path or not isinstance(file_path, str):
+            raise SecurityValidationError("Invalid file path: empty or not string")
+
+        if len(file_path) > self.max_path_length:
+            raise SecurityValidationError("Invalid file path: too long")
+
+        # Check for path traversal attempts
+        normalized_path = os.path.normpath(file_path).lower()
+        for pattern in self.forbidden_path_patterns:
+            if pattern.lower() in normalized_path:
+                raise SecurityValidationError("Invalid file path: security violation detected")
+
+        # Validate file extension
+        path_obj = Path(file_path)
+        if path_obj.suffix.lower() not in self.allowed_extensions:
+            raise SecurityValidationError("Invalid file path: unsupported file extension")
+
+        # Additional checks for absolute paths outside baseline directory
+        try:
+            resolved_path = path_obj.resolve()
+            baseline_resolved = self.baseline_dir.resolve()
+
+            # Check if path is within baseline directory
+            try:
+                resolved_path.relative_to(baseline_resolved)
+            except ValueError:
+                # Path is outside baseline directory, which might be suspicious
+                logger.warning(f"File path outside baseline directory: {path_obj.name}")
+                # Don't raise error here - might be legitimate for imports
+        except (OSError, RuntimeError) as e:
+            logger.warning(f"Could not resolve path for security check: {type(e).__name__}")
+
+    def validate_configuration_schema(self, data: Dict[str, Any]) -> None:
+        """Validate configuration data schema.
+
+        Args:
+            data: Configuration data to validate
+
+        Raises:
+            SecurityValidationError: If data fails validation
+        """
+        required_fields = {"environment", "version", "configurations", "timestamp"}
+
+        if not isinstance(data, dict):
+            raise SecurityValidationError("Configuration must be a dictionary")
+
+        # Check required fields
+        missing_fields = required_fields - set(data.keys())
+        if missing_fields:
+            raise SecurityValidationError(f"Missing required fields: {missing_fields}")
+
+        # Validate environment
+        valid_environments = {"development", "staging", "production"}
+        if data.get("environment") not in valid_environments:
+            raise SecurityValidationError("Invalid environment value")
+
+        # Validate configurations is a dict
+        if not isinstance(data.get("configurations"), dict):
+            raise SecurityValidationError("Configurations must be a dictionary")
+
+        # Check for potentially dangerous keys in configurations
+        dangerous_keys = {
+            "password",
+            "secret",
+            "key",
+            "token",
+            "api_key",
+            "private_key",
+            "credential",
+            "auth",
+            "__class__",
+        }
+        config_keys = set(str(k).lower() for k in data.get("configurations", {}).keys())
+
+        suspicious_keys = dangerous_keys.intersection(config_keys)
+        if suspicious_keys:
+            logger.warning(f"Configuration contains potentially sensitive keys: {suspicious_keys}")
+            # Don't fail validation, but log for security monitoring
+
+    def validate_numeric_bounds(
+        self,
+        param_name: str,
+        value: Union[int, float],
+        min_val: Optional[Union[int, float]] = None,
+        max_val: Optional[Union[int, float]] = None,
+    ) -> None:
+        """Validate numeric parameter bounds.
+
+        Args:
+            param_name: Parameter name for error reporting
+            value: Value to validate
+            min_val: Minimum allowed value
+            max_val: Maximum allowed value
+
+        Raises:
+            SecurityValidationError: If value is outside bounds
+        """
+        if not isinstance(value, (int, float)):
+            raise SecurityValidationError(f"Parameter {param_name} must be numeric")
+
+        # Check for problematic float values
+        if isinstance(value, float):
+            import math
+
+            if math.isinf(value):
+                raise SecurityValidationError(f"Parameter {param_name} cannot be infinite")
+            if math.isnan(value):
+                raise SecurityValidationError(f"Parameter {param_name} cannot be NaN")
+
+        if min_val is not None and value < min_val:
+            raise SecurityValidationError(f"Parameter {param_name} below minimum: {min_val}")
+
+        if max_val is not None and value > max_val:
+            raise SecurityValidationError(f"Parameter {param_name} above maximum: {max_val}")
+
+    def generate_secure_checksum(self, data: Dict[str, Any], key: bytes) -> tuple[str, bytes]:
+        """Generate secure checksum using HMAC.
+
+        Args:
+            data: Data to generate checksum for
+            key: Secret key for HMAC
+
+        Returns:
+            Tuple of (checksum_hex, salt)
+        """
+        return self.checksum_manager.generate_secure_checksum(data)
+
+    def verify_secure_checksum(self, data: Dict[str, Any], checksum_hex: str, salt: bytes) -> bool:
+        """Verify secure checksum.
+
+        Args:
+            data: Data to verify
+            checksum_hex: Expected checksum
+            salt: Salt used for key derivation
+
+        Returns:
+            True if checksum is valid
+        """
+        return self.checksum_manager.verify_secure_checksum(data, checksum_hex, salt)
+
+    def log_security_event(self, event_type: str, event_data: Dict[str, Any]) -> None:
+        """Log security events for audit trail.
+
+        Args:
+            event_type: Type of security event
+            event_data: Event details (sensitive data will be redacted)
+        """
+        # Redact sensitive information from event data
+        safe_event_data = self._redact_sensitive_data(event_data.copy())
+
+        logger.info(
+            f"Security event: {event_type}",
+            extra={
+                "event_type": event_type,
+                "event_data": safe_event_data,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+
+    def _redact_sensitive_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Redact sensitive information from data for logging.
+
+        Args:
+            data: Data dictionary to redact
+
+        Returns:
+            Dictionary with sensitive values redacted
+        """
+        sensitive_keys = {
+            "password",
+            "secret",
+            "key",
+            "token",
+            "api_key",
+            "private_key",
+            "credential",
+            "auth",
+            "checksum",
+        }
+
+        for key in data:
+            if any(sensitive_key in str(key).lower() for sensitive_key in sensitive_keys):
+                data[key] = "[REDACTED]"
+            elif isinstance(data[key], str) and len(data[key]) > 50:
+                # Redact long strings that might contain sensitive data
+                data[key] = data[key][:20] + "[TRUNCATED]"
+
+        return data
 
     def list_baselines(self) -> List[ConfigurationBaseline]:
         """List all available baselines."""
@@ -249,8 +587,13 @@ class ConfigurationBaselineManager:
             try:
                 baseline = self.load_baseline(file_path)
                 baselines.append(baseline)
-            except Exception:
-                # Skip invalid baseline files
+            except (BaselineValidationError, SecurityValidationError, json.JSONDecodeError) as e:
+                # Skip invalid baseline files but log the issue
+                logger.warning(f"Skipping invalid baseline file {file_path.name}: {type(e).__name__}")
+                continue
+            except (OSError, IOError, PermissionError) as e:
+                # Skip files with access issues but log
+                logger.warning(f"Cannot access baseline file {file_path.name}: {type(e).__name__}")
                 continue
 
         # Sort by timestamp (newest first)
@@ -318,7 +661,8 @@ class ConfigurationBaselineManager:
 
             return True
 
-        except Exception:
+        except (AttributeError, ValueError, TypeError) as e:
+            logger.warning(f"Schema validation error: {type(e).__name__}")
             return False
 
     def export_baseline(self, baseline: ConfigurationBaseline, export_path: Path, format: str = "json") -> None:
@@ -467,7 +811,14 @@ class ConfigurationBaselineManager:
             }
             return baseline
 
-        except Exception:
+        except (BaselineValidationError, SecurityValidationError) as e:
+            logger.warning(f"Security validation failed for {filename}: {type(e).__name__}")
+            return None
+        except (OSError, IOError, PermissionError) as e:
+            logger.warning(f"File access error for {filename}: {type(e).__name__}")
+            return None
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning(f"Data format error for {filename}: {type(e).__name__}")
             return None
 
     def list_baselines_lazy(self) -> Generator[Dict[str, Any], None, None]:
@@ -510,7 +861,14 @@ class ConfigurationBaselineManager:
                         "metadata_only": False,
                     }
 
-            except Exception:
+            except (BaselineValidationError, SecurityValidationError) as e:
+                logger.warning(f"Security validation failed for {file_path.name}: {type(e).__name__}")
+                continue
+            except (OSError, IOError, PermissionError) as e:
+                logger.warning(f"File access error for {file_path.name}: {type(e).__name__}")
+                continue
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.warning(f"Data format error for {file_path.name}: {type(e).__name__}")
                 continue
 
     def clear_cache(self) -> None:
@@ -547,7 +905,11 @@ class ConfigurationBaselineManager:
                         content = await f.read()
                         data = json.loads(content)
                         return ConfigurationBaseline.from_dict(data)
-                except Exception:
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    logger.warning(f"Data format error in async processing: {type(e).__name__}")
+                    return None
+                except (OSError, IOError, PermissionError) as e:
+                    logger.warning(f"File access error in async processing: {type(e).__name__}")
                     return None
 
         # Process all files concurrently
@@ -580,7 +942,11 @@ class ConfigurationBaselineManager:
                 baseline = ConfigurationBaseline.from_dict(data)
                 baselines.append(baseline)
 
-            except Exception:
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.warning(f"Data format error in memory-mapped processing: {type(e).__name__}")
+                continue
+            except (OSError, IOError, PermissionError) as e:
+                logger.warning(f"File access error in memory-mapped processing: {type(e).__name__}")
                 continue
 
         # Use faster sorting with key optimization
@@ -603,7 +969,11 @@ class ConfigurationBaselineManager:
                 with open(file_path, "r", buffering=8192) as f:
                     data = json.load(f)
                 return ConfigurationBaseline.from_dict(data)
-            except Exception:
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.warning(f"Data format error in thread processing: {type(e).__name__}")
+                return None
+            except (OSError, IOError, PermissionError) as e:
+                logger.warning(f"File access error in thread processing: {type(e).__name__}")
                 return None
 
         # Use optimal thread count (usually CPU cores but limited for I/O bound tasks)
@@ -644,7 +1014,11 @@ class ConfigurationBaselineManager:
                         data = json.load(f)
                     baseline = ConfigurationBaseline.from_dict(data)
                     batch_baselines.append(baseline)
-                except Exception:
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    logger.warning(f"Data format error in batch processing: {type(e).__name__}")
+                    continue
+                except (OSError, IOError, PermissionError) as e:
+                    logger.warning(f"File access error in batch processing: {type(e).__name__}")
                     continue
 
             all_baselines.extend(batch_baselines)
