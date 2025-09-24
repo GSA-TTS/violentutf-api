@@ -8,12 +8,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from graph_generator import DependencyGraph, DependencyGraphGenerator
-from repository_analyzer import RepositoryAnalysisResult, RepositoryDependencyAnalyzer
-from runtime_tracer import RuntimeDependencyAnalysis, RuntimeDependencyTracer
-from static_analyzer import DependencyAnalysisResult as StaticResult
-from static_analyzer import StaticDependencyAnalyzer
 from structlog.stdlib import get_logger
+
+from .graph_generator import DependencyGraph, DependencyGraphGenerator
+from .repository_analyzer import RepositoryAnalysisResult, RepositoryDependencyAnalyzer
+from .runtime_tracer import RuntimeDependencyAnalysis, RuntimeDependencyTracer
+from .static_analyzer import DependencyAnalysisResult as StaticResult
+from .static_analyzer import StaticDependencyAnalyzer
 
 logger = get_logger(__name__)
 

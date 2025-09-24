@@ -123,6 +123,153 @@ class DataAssetInventoryTool:
 
         return master_inventory
 
+    async def perform_full_inventory_parallel(self) -> Dict[str, Any]:
+        """
+        Perform comprehensive data asset inventory with parallel execution optimization.
+
+        This method groups independent phases for parallel execution to achieve
+        60-70% performance improvement as specified in Issue #137.
+
+        Returns:
+            Dict containing complete asset inventory
+        """
+        self.discovery_time = datetime.now().isoformat() + "Z"
+
+        master_inventory = {
+            "metadata": self._get_metadata(),
+            "physical_stores": {},
+            "logical_assets": {},
+            "access_patterns": {},
+            "security_assets": {},
+            "configuration_assets": {},
+            "repository_analysis": {},
+            "gap_analysis": {},
+            "risk_assessment": {},
+            "usage_statistics": {},
+        }
+
+        try:
+            logger.info("Starting comprehensive data asset inventory (parallel execution)...")
+
+            # Phase Group A: Independent phases that can run in parallel
+            logger.info("Phase Group A: Running independent phases in parallel...")
+            schema_task = self.schema_tool.discover_schema()
+            physical_task = self._discover_physical_stores()
+            config_task = self._discover_configuration_assets()
+
+            # Execute independent phases in parallel
+            schema_inventory, physical_inventory, config_inventory = await asyncio.gather(
+                schema_task, physical_task, config_task, return_exceptions=True
+            )
+
+            # Handle exceptions from parallel execution
+            if isinstance(schema_inventory, Exception):
+                logger.error(f"Schema discovery failed: {schema_inventory}")
+                schema_inventory = {}
+            if isinstance(physical_inventory, Exception):
+                logger.error(f"Physical stores discovery failed: {physical_inventory}")
+                physical_inventory = {}
+            if isinstance(config_inventory, Exception):
+                logger.error(f"Configuration discovery failed: {config_inventory}")
+                config_inventory = {}
+
+            master_inventory["logical_assets"]["database_schema"] = schema_inventory
+            master_inventory["physical_stores"] = physical_inventory
+            master_inventory["configuration_assets"] = config_inventory
+
+            # Phase Group B: Repository analysis (depends on schema being available)
+            logger.info("Phase Group B: Repository analysis...")
+            repository_inventory = await self.repository_analyzer.analyze_repositories()
+            master_inventory["repository_analysis"] = repository_inventory
+
+            # Phase Group C: Analysis phases that depend on both schema and repository data
+            logger.info("Phase Group C: Running dependent analysis phases in parallel...")
+            access_pattern_task = asyncio.create_task(
+                self._async_analyze_access_patterns(repository_inventory, schema_inventory)
+            )
+            security_assets_task = asyncio.create_task(
+                self._async_inventory_security_assets(schema_inventory, repository_inventory)
+            )
+
+            access_patterns, security_assets = await asyncio.gather(
+                access_pattern_task, security_assets_task, return_exceptions=True
+            )
+
+            # Handle exceptions
+            if isinstance(access_patterns, Exception):
+                logger.error(f"Access pattern analysis failed: {access_patterns}")
+                access_patterns = {}
+            if isinstance(security_assets, Exception):
+                logger.error(f"Security assets inventory failed: {security_assets}")
+                security_assets = {}
+
+            master_inventory["access_patterns"] = access_patterns
+            master_inventory["security_assets"] = security_assets
+
+            # Phase Group D: Final analysis phases that depend on all previous data
+            logger.info("Phase Group D: Final analysis phases...")
+            gap_analysis_task = asyncio.create_task(self._async_perform_gap_analysis(master_inventory))
+            risk_assessment_task = asyncio.create_task(self._async_conduct_risk_assessment(master_inventory))
+
+            gap_analysis, risk_assessment = await asyncio.gather(
+                gap_analysis_task, risk_assessment_task, return_exceptions=True
+            )
+
+            # Handle exceptions
+            if isinstance(gap_analysis, Exception):
+                logger.error(f"Gap analysis failed: {gap_analysis}")
+                gap_analysis = {}
+            if isinstance(risk_assessment, Exception):
+                logger.error(f"Risk assessment failed: {risk_assessment}")
+                risk_assessment = {}
+
+            master_inventory["gap_analysis"] = gap_analysis
+            master_inventory["risk_assessment"] = risk_assessment
+
+            # Phase 8.5: Security Classification Framework (sequential - modifies master_inventory)
+            logger.info("Phase 8.5: Applying security classification framework...")
+            master_inventory = classify_data_assets(master_inventory)
+            logger.info(
+                "Security classification completed",
+                total_assets=master_inventory.get("security_classification_summary", {}).get("total_assets", 0),
+                critical_assets=master_inventory.get("security_classification_summary", {})
+                .get("classifications", {})
+                .get("critical", 0),
+            )
+
+            # Phase 9: Usage Statistics (sequential - needs all data)
+            logger.info("Phase 9: Generating usage statistics...")
+            usage_stats = self._generate_usage_statistics(master_inventory)
+            master_inventory["usage_statistics"] = usage_stats
+
+            logger.info("Comprehensive data asset inventory completed successfully (parallel execution)")
+
+        except Exception as e:
+            logger.error(f"Error during parallel comprehensive inventory: {e}")
+            master_inventory["error"] = str(e)
+
+        return master_inventory
+
+    async def _async_analyze_access_patterns(
+        self, repository_data: Dict[str, Any], schema_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Async wrapper for access pattern analysis with thread pool optimization."""
+        return await asyncio.to_thread(self._analyze_access_patterns, repository_data, schema_data)
+
+    async def _async_inventory_security_assets(
+        self, schema_data: Dict[str, Any], repository_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Async wrapper for security assets inventory with thread pool optimization."""
+        return await asyncio.to_thread(self._inventory_security_assets, schema_data, repository_data)
+
+    async def _async_perform_gap_analysis(self, inventory: Dict[str, Any]) -> Dict[str, Any]:
+        """Async wrapper for gap analysis with thread pool optimization."""
+        return await asyncio.to_thread(self._perform_gap_analysis, inventory)
+
+    async def _async_conduct_risk_assessment(self, inventory: Dict[str, Any]) -> Dict[str, Any]:
+        """Async wrapper for risk assessment with thread pool optimization."""
+        return await asyncio.to_thread(self._conduct_risk_assessment, inventory)
+
     async def _discover_physical_stores(self) -> Dict[str, Any]:
         """Discover physical data store information."""
         physical_stores = {
