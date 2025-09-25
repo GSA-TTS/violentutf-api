@@ -14,10 +14,14 @@ from typing import Any, Callable, Dict, List, Optional
 from pydantic import BaseModel, SecretStr
 
 from app.core.config import Settings
+from audit_utils.exceptions import ConfigurationError, ValidationError, audit_error_handler
+from audit_utils.logging import log_audit_event, setup_audit_logger
 from scripts.config_baseline_manager import ConfigurationBaseline, ConfigurationBaselineManager
 
+logger = setup_audit_logger(__name__)
 
-class DriftDetectionError(Exception):
+
+class DriftDetectionError(ConfigurationError):
     """Exception raised when drift detection fails."""
 
     pass
@@ -240,9 +244,14 @@ class ConfigurationDriftDetector:
         self.ignore_minor_changes = ignore_minor_changes
         self.excluded_parameters = excluded_parameters or []
 
+    @audit_error_handler
     def detect_drift(self, current_settings: Settings, baseline: ConfigurationBaseline) -> DriftReport:
         """Detect configuration drift against baseline."""
         try:
+            log_audit_event(
+                "drift_detection_started", environment=baseline.environment, baseline_version=baseline.version
+            )
+
             # Extract current configuration
             current_config = current_settings.to_dict(mask_secrets=True)
             baseline_config = baseline.configurations
@@ -469,6 +478,7 @@ class DriftMonitor:
         self.is_running = False
         self._stop_event = asyncio.Event()
 
+    @audit_error_handler
     async def start_monitoring(self) -> None:
         """Start continuous monitoring."""
         self.is_running = True

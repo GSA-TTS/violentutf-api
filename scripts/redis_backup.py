@@ -2,8 +2,6 @@
 
 import asyncio
 import gzip
-import json
-import logging
 import os
 import shutil
 import subprocess
@@ -17,18 +15,21 @@ from typing import Any, Callable, Dict, List, Optional
 
 import redis
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from audit_utils.exceptions import AuditError, audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import setup_audit_logger
+
+# Setup audit logger
+logger = setup_audit_logger(__name__)
 
 
-class RedisConnectionError(Exception):
+class RedisConnectionError(AuditError):
     """Raised when Redis connection fails."""
 
     pass
 
 
-class RedisBackupError(Exception):
+class RedisBackupError(AuditError):
     """Raised when Redis backup operations fail."""
 
     pass
@@ -133,6 +134,7 @@ class RedisBackupManager:
             logger.error(f"Failed to initialize Redis client: {e}")
             raise RedisConnectionError(str(e))
 
+    @audit_error_handler
     async def create_snapshot_backup(
         self, progress_callback: Optional[Callable[..., None]] = None
     ) -> RedisBackupResult:
@@ -231,6 +233,7 @@ class RedisBackupManager:
         finally:
             self._backup_in_progress = False
 
+    @audit_error_handler
     async def create_aof_backup(self) -> RedisBackupResult:
         """Create AOF (Append Only File) backup."""
         if not self.aof_enabled:
@@ -284,6 +287,7 @@ class RedisBackupManager:
             logger.error(f"AOF backup failed: {e}")
             return RedisBackupResult(success=False, error_message=str(e))
 
+    @audit_error_handler
     def validate_rdb_backup(self, backup_file: str) -> bool:
         """Validate RDB backup file using redis-check-rdb."""
         try:
@@ -315,6 +319,7 @@ class RedisBackupManager:
             logger.error(f"RDB validation error: {e}")
             raise RedisBackupError(str(e))
 
+    @audit_error_handler
     def apply_retention_policy(self) -> List[str]:
         """Apply retention policy and remove old backups."""
         removed_files = []
@@ -357,6 +362,7 @@ class RedisBackupManager:
             logger.error(f"Error applying retention policy: {e}")
             return removed_files
 
+    @audit_error_handler
     async def compress_backup_file(self, backup_file: str) -> str:
         """Compress backup file using gzip."""
         try:
@@ -372,6 +378,7 @@ class RedisBackupManager:
             logger.error(f"Compression error: {e}")
             raise RedisBackupError(str(e))
 
+    @audit_error_handler
     async def check_redis_health(self) -> bool:
         """Check Redis connection health."""
         try:
@@ -433,17 +440,13 @@ class RedisBackupManager:
 
         return True
 
+    @audit_error_handler
     def store_backup_metadata(self, backup_file: str, metadata: Dict[str, Any]) -> None:
-        """Store backup metadata in separate file."""
-        try:
-            metadata_file = f"{backup_file}.metadata"
+        """Store backup metadata in separate file using safe JSON operations."""
+        metadata_file = Path(f"{backup_file}.metadata")
+        safe_write_json(metadata_file, metadata)
 
-            with open(metadata_file, "w") as f:
-                json.dump(metadata, f, indent=2)
-
-        except Exception as e:
-            logger.error(f"Failed to store backup metadata: {e}")
-
+    @audit_error_handler
     async def backup_multiple_databases(self, databases: List[int]) -> List[RedisBackupResult]:
         """Backup multiple Redis databases."""
         results = []

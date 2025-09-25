@@ -15,15 +15,17 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog.stdlib import get_logger
 
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.services.security_audit_service import SecurityAuditService
 from app.services.security_monitoring_service import SecurityMonitoringService
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import log_audit_event, setup_audit_logger
 from scripts.access_audit import AccessControlAuditor
 
-logger = get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class SecurityGapAnalyzer:

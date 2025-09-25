@@ -11,14 +11,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import structlog
 import yaml
+
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.file_operations import safe_read_json, safe_write_json
+from audit_utils.logging import log_audit_event, setup_audit_logger
 
 from .repository_analyzer import RepositoryAnalyzer
 from .schema_discovery import SchemaDiscoveryTool
 from .security_classification import classify_data_assets
 
-logger = structlog.get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class DataAssetInventoryTool:
@@ -34,6 +37,7 @@ class DataAssetInventoryTool:
         self.schema_tool = SchemaDiscoveryTool()
         self.repository_analyzer = RepositoryAnalyzer(str(self.project_root))
 
+    @audit_error_handler
     async def perform_full_inventory(self) -> Dict[str, Any]:
         """
         Perform comprehensive data asset inventory.
@@ -370,54 +374,72 @@ class DataAssetInventoryTool:
 
         return config_assets
 
+    @audit_error_handler
     def _analyze_access_patterns(self, repository_data: Dict[str, Any], schema_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze data access patterns."""
-        access_patterns = {
-            "repository_to_table_mapping": {},
-            "api_endpoint_patterns": {},
-            "crud_operation_patterns": {},
-            "transaction_patterns": {},
+        """Analyze data access patterns using decomposed approach."""
+        return {
+            "repository_to_table_mapping": self._extract_repository_patterns(repository_data),
+            "api_endpoint_patterns": self._analyze_api_patterns(repository_data),
+            "crud_operation_patterns": self._analyze_crud_patterns(repository_data),
+            "transaction_patterns": {},  # Placeholder for future implementation
         }
 
-        # Map repositories to database tables
+    def _extract_repository_patterns(self, repository_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract repository to table mapping patterns."""
+        repository_patterns = {}
         repositories = repository_data.get("repositories", [])
+
         for repo in repositories:
             repo_name = repo.get("repository_name", "")
             crud_ops = repo.get("crud_operations", {})
 
             # Infer table name from repository name
-            table_name = repo_name.lower().replace("repository", "")
-            if table_name.endswith("s"):
-                table_name = table_name[:-1]  # Remove plural 's'
+            table_name = self._infer_table_name_from_repository(repo_name)
 
-            access_patterns["repository_to_table_mapping"][repo_name] = {
+            repository_patterns[repo_name] = {
                 "inferred_table": table_name,
                 "crud_operations": crud_ops,
                 "method_count": len(repo.get("methods", [])),
             }
 
-        # Analyze CRUD patterns
+        return repository_patterns
+
+    def _infer_table_name_from_repository(self, repo_name: str) -> str:
+        """Infer table name from repository name following naming conventions."""
+        table_name = repo_name.lower().replace("repository", "")
+        if table_name.endswith("s"):
+            table_name = table_name[:-1]  # Remove plural 's'
+        return table_name
+
+    def _analyze_crud_patterns(self, repository_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze CRUD operation patterns across repositories."""
         crud_stats = repository_data.get("crud_patterns", {})
-        access_patterns["crud_operation_patterns"] = {
-            "repositories_with_create": crud_stats.get("repositories_with_crud", {}).get("create", 0),
-            "repositories_with_read": crud_stats.get("repositories_with_crud", {}).get("read", 0),
-            "repositories_with_update": crud_stats.get("repositories_with_crud", {}).get("update", 0),
-            "repositories_with_delete": crud_stats.get("repositories_with_crud", {}).get("delete", 0),
-            "async_repositories": crud_stats.get("async_vs_sync", {}).get("async_repositories", 0),
-            "sync_repositories": crud_stats.get("async_vs_sync", {}).get("sync_repositories", 0),
+        repositories_with_crud = crud_stats.get("repositories_with_crud", {})
+        async_vs_sync = crud_stats.get("async_vs_sync", {})
+
+        return {
+            "repositories_with_create": repositories_with_crud.get("create", 0),
+            "repositories_with_read": repositories_with_crud.get("read", 0),
+            "repositories_with_update": repositories_with_crud.get("update", 0),
+            "repositories_with_delete": repositories_with_crud.get("delete", 0),
+            "async_repositories": async_vs_sync.get("async_repositories", 0),
+            "sync_repositories": async_vs_sync.get("sync_repositories", 0),
         }
 
-        # API endpoint patterns
+    def _analyze_api_patterns(self, repository_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze API endpoint to repository mapping patterns."""
         api_mappings = repository_data.get("api_endpoint_mappings", [])
-        access_patterns["api_endpoint_patterns"] = {
-            "total_endpoints_with_repository_usage": len(api_mappings),
-            "endpoint_to_repository_map": {
-                mapping.get("endpoint_name", ""): len(mapping.get("repository_dependencies", []))
-                for mapping in api_mappings
-            },
-        }
 
-        return access_patterns
+        endpoint_to_repository_map = {}
+        for mapping in api_mappings:
+            endpoint_name = mapping.get("endpoint_name", "")
+            repository_dependencies = mapping.get("repository_dependencies", [])
+            endpoint_to_repository_map[endpoint_name] = len(repository_dependencies)
+
+        return {
+            "total_endpoints_with_repository_usage": len(api_mappings),
+            "endpoint_to_repository_map": endpoint_to_repository_map,
+        }
 
     def _inventory_security_assets(
         self, schema_data: Dict[str, Any], repository_data: Dict[str, Any]
@@ -681,6 +703,7 @@ class DataAssetInventoryTool:
         else:
             return obj
 
+    @audit_error_handler
     async def save_inventory(self, inventory: Dict[str, Any], output_format: str = "yaml") -> str:
         """Save comprehensive inventory to file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

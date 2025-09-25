@@ -29,12 +29,14 @@ import argparse
 
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog.stdlib import get_logger
 
 from app.db.base_class import Base
 from app.db.session import get_db
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import log_audit_event, setup_audit_logger
 
-logger = get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 @dataclass

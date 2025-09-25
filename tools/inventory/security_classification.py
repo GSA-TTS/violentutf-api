@@ -13,9 +13,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import structlog
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.logging import setup_audit_logger
 
-logger = structlog.get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class SecurityClassification(Enum):
@@ -421,6 +422,7 @@ class SecurityClassificationEngine:
             ],
         }
 
+    @audit_error_handler
     def classify_asset(
         self, asset_id: str, asset_type: str, asset_data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
     ) -> ClassificationResult:
@@ -477,6 +479,7 @@ class SecurityClassificationEngine:
             compliance_tags=compliance_tags,
         )
 
+    @audit_error_handler
     def classify_inventory(self, inventory_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Classify all assets in a comprehensive inventory.
@@ -593,6 +596,7 @@ class SecurityClassificationEngine:
 
         return classified_inventory
 
+    @audit_error_handler
     def _extract_text_content(self, asset_data: Dict[str, Any]) -> str:
         """Extract all text content from asset data for pattern matching."""
         text_parts = []
@@ -614,6 +618,7 @@ class SecurityClassificationEngine:
         extract_text_recursive(asset_data)
         return " ".join(text_parts)
 
+    @audit_error_handler
     def _evaluate_rule(
         self, rule: ClassificationRule, text_content: str, asset_data: Dict[str, Any], context: Dict[str, Any]
     ) -> Tuple[bool, float]:
@@ -689,6 +694,7 @@ class SecurityClassificationEngine:
         compliance_patterns = ["audit", "compliance", "regulation", "policy", "gdpr", "hipaa"]
         return any(pattern in text_content for pattern in compliance_patterns)
 
+    @audit_error_handler
     def _generate_recommendations(
         self, classification: SecurityClassification, matched_rules: List[str], risk_factors: List[str]
     ) -> List[str]:
@@ -762,6 +768,7 @@ class SecurityClassificationEngine:
 
         return unique_recommendations[:8]  # Limit to top 8 recommendations
 
+    @audit_error_handler
     def _map_compliance_requirements(self, text_content: str, risk_factors: List[str]) -> List[str]:
         """Map asset to applicable compliance frameworks."""
         compliance_tags = []
@@ -801,6 +808,7 @@ class SecurityClassificationEngine:
         return list(set(compliance_tags))  # Remove duplicates
 
 
+@audit_error_handler
 def classify_data_assets(inventory_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Convenience function to classify all data assets in an inventory.
