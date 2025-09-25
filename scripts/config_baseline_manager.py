@@ -9,7 +9,6 @@ import concurrent.futures
 import hashlib
 import hmac
 import json
-import logging
 import mmap
 import os
 import secrets
@@ -26,17 +25,20 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.config import Settings
+from audit_utils.exceptions import ConfigurationError, ValidationError, audit_error_handler
+from audit_utils.file_operations import safe_read_json, safe_write_json
+from audit_utils.logging import log_audit_event, setup_audit_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_audit_logger(__name__)
 
 
-class BaselineGenerationError(Exception):
+class BaselineGenerationError(ConfigurationError):
     """Exception raised when baseline generation fails."""
 
     pass
 
 
-class BaselineValidationError(Exception):
+class BaselineValidationError(ValidationError):
     """Exception raised when baseline validation fails."""
 
     pass
@@ -289,6 +291,7 @@ class ConfigurationBaselineManager:
             "shadow",
         ]
 
+    @audit_error_handler
     def generate_baseline(
         self,
         settings: Settings,
@@ -334,6 +337,7 @@ class ConfigurationBaselineManager:
         except Exception as e:
             raise BaselineGenerationError(f"Failed to generate baseline: {e}")
 
+    @audit_error_handler
     def save_baseline(self, baseline: ConfigurationBaseline, compress: bool = False) -> Path:
         """Save baseline to file."""
         timestamp_str = baseline.timestamp.strftime("%Y%m%d_%H%M%S")
@@ -341,14 +345,14 @@ class ConfigurationBaselineManager:
         file_path = self.baseline_dir / filename
 
         try:
-            with open(file_path, "w") as f:
-                json.dump(baseline.to_dict(), f, indent=2, default=str)
-
+            safe_write_json(file_path, baseline.to_dict())
+            log_audit_event("baseline_saved", file_path=str(file_path), environment=baseline.environment)
             return file_path
 
         except Exception as e:
             raise BaselineGenerationError(f"Failed to save baseline: {e}")
 
+    @audit_error_handler
     def load_baseline(self, file_path: Path) -> ConfigurationBaseline:
         """Load baseline from file with security validation."""
         # Validate file path to prevent path traversal attacks
@@ -363,12 +367,12 @@ class ConfigurationBaselineManager:
             raise BaselineValidationError(f"Baseline file not found")
 
         try:
-            with open(file_path) as f:
-                data = json.load(f)
+            data = safe_read_json(file_path)
 
             # Validate configuration schema
             self.validate_configuration_schema(data)
 
+            log_audit_event("baseline_loaded", file_path=str(file_path))
             return ConfigurationBaseline.from_dict(data)
 
         except json.JSONDecodeError as e:
@@ -668,8 +672,8 @@ class ConfigurationBaselineManager:
     def export_baseline(self, baseline: ConfigurationBaseline, export_path: Path, format: str = "json") -> None:
         """Export baseline to different formats."""
         if format == "json":
-            with open(export_path, "w") as f:
-                json.dump(baseline.to_dict(), f, indent=2, default=str)
+            safe_write_json(export_path, baseline.to_dict())
+            log_audit_event("baseline_exported", file_path=str(export_path), format=format)
         else:
             raise ValueError(f"Unsupported export format: {format}")
 

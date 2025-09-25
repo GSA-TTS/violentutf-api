@@ -9,12 +9,10 @@ This tool discovers and inventories database schema information including:
 """
 
 import asyncio
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import structlog
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -22,8 +20,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db.base import Base
 from app.db.session import get_db
 from app.models import *
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import setup_audit_logger
 
-logger = structlog.get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class SchemaDiscoveryTool:
@@ -35,6 +36,7 @@ class SchemaDiscoveryTool:
         self.discovery_time = None
         self.fallback_used = False
 
+    @audit_error_handler
     async def discover_schema(self) -> Dict[str, Any]:
         """
         Discover complete database schema information.
@@ -51,6 +53,7 @@ class SchemaDiscoveryTool:
             self.fallback_used = True
             return await self._discover_from_static_analysis()
 
+    @audit_error_handler
     async def _discover_from_live_database(self) -> Dict[str, Any]:
         """Discover schema from live database connection."""
         schema_inventory = {
@@ -129,6 +132,7 @@ class SchemaDiscoveryTool:
 
         return schema_inventory
 
+    @audit_error_handler
     async def _discover_from_static_analysis(self) -> Dict[str, Any]:
         """Fallback: discover schema from SQLAlchemy models when DB unavailable."""
         schema_inventory = {
@@ -176,6 +180,7 @@ class SchemaDiscoveryTool:
 
         return schema_inventory
 
+    @audit_error_handler
     async def _analyze_table(self, inspector, table_name: str) -> Dict[str, Any]:
         """Analyze a single table and return its information."""
         columns = inspector.get_columns(table_name)
@@ -212,6 +217,7 @@ class SchemaDiscoveryTool:
         """Get constraints for a table (synchronous version)."""
         return self._get_table_constraints(inspector, table_name)
 
+    @audit_error_handler
     def _get_table_relationships(self, inspector, table_name: str) -> List[Dict[str, Any]]:
         """Get foreign key relationships for a table."""
         relationships = []
@@ -236,6 +242,7 @@ class SchemaDiscoveryTool:
 
         return relationships
 
+    @audit_error_handler
     def _get_table_indexes(self, inspector, table_name: str) -> List[Dict[str, Any]]:
         """Get indexes for a table."""
         indexes = []
@@ -258,6 +265,7 @@ class SchemaDiscoveryTool:
 
         return indexes
 
+    @audit_error_handler
     def _get_table_constraints(self, inspector, table_name: str) -> List[Dict[str, Any]]:
         """Get constraints for a table."""
         constraints = []
@@ -294,6 +302,7 @@ class SchemaDiscoveryTool:
 
         return constraints
 
+    @audit_error_handler
     async def _get_table_row_count(self, table_name: str) -> Optional[int]:
         """Get approximate row count for a table."""
         try:
@@ -352,16 +361,14 @@ class SchemaDiscoveryTool:
             "fallback_used": self.fallback_used,
         }
 
+    @audit_error_handler
     async def save_inventory(self, inventory: Dict[str, Any], output_path: Optional[str] = None) -> str:
-        """Save inventory to file."""
+        """Save inventory to file using safe JSON operations."""
         if not output_path:
             output_path = f"docs/inventory/schema_inventory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
-        # Ensure directory exists
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-
-        with open(output_path, "w") as f:
-            json.dump(inventory, f, indent=2, default=str)
+        output_file = Path(output_path)
+        safe_write_json(output_file, inventory)
 
         logger.info(f"Schema inventory saved to {output_path}")
         return output_path

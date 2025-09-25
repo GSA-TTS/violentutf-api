@@ -8,14 +8,15 @@ This tool analyzes repository patterns and usage across the codebase including:
 """
 
 import ast
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-import structlog
+from audit_utils.exceptions import audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import setup_audit_logger
 
-logger = structlog.get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class RepositoryAnalyzer:
@@ -29,6 +30,7 @@ class RepositoryAnalyzer:
         self.repositories_path = self.project_root / "app" / "repositories"
         self.api_endpoints_path = self.project_root / "app" / "api" / "endpoints"
 
+    @audit_error_handler
     async def analyze_repositories(self) -> Dict[str, Any]:
         """
         Analyze complete repository usage patterns.
@@ -78,6 +80,7 @@ class RepositoryAnalyzer:
 
         return repository_inventory
 
+    @audit_error_handler
     def _discover_repository_files(self) -> List[Path]:
         """Discover all repository Python files."""
         repository_files = []
@@ -96,6 +99,7 @@ class RepositoryAnalyzer:
 
         return sorted(repository_files)
 
+    @audit_error_handler
     async def _analyze_repository_file(self, file_path: Path) -> Dict[str, Any]:
         """Analyze a single repository file."""
         repo_analysis = {
@@ -228,6 +232,7 @@ class RepositoryAnalyzer:
                     crud_operations[operation].append(method["name"])
                     break
 
+    @audit_error_handler
     def _analyze_inheritance_patterns(self, repositories: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze repository inheritance patterns."""
         inheritance_info = {
@@ -251,6 +256,7 @@ class RepositoryAnalyzer:
 
         return inheritance_info
 
+    @audit_error_handler
     async def _analyze_api_endpoint_mappings(self) -> List[Dict[str, Any]]:
         """Analyze API endpoint to repository mappings."""
         mappings = []
@@ -273,6 +279,7 @@ class RepositoryAnalyzer:
 
         return mappings
 
+    @audit_error_handler
     async def _analyze_endpoint_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
         """Analyze a single API endpoint file for repository usage."""
         endpoint_mapping = {
@@ -308,6 +315,7 @@ class RepositoryAnalyzer:
 
         return endpoint_mapping if endpoint_mapping["repository_dependencies"] else None
 
+    @audit_error_handler
     def _analyze_crud_patterns(self, repositories: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze CRUD patterns across all repositories."""
         crud_analysis = {
@@ -369,16 +377,14 @@ class RepositoryAnalyzer:
             "analyzer_type": "repository_usage",
         }
 
+    @audit_error_handler
     async def save_inventory(self, inventory: Dict[str, Any], output_path: Optional[str] = None) -> str:
-        """Save inventory to file."""
+        """Save inventory to file using safe JSON operations."""
         if not output_path:
             output_path = f"docs/inventory/repository_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
-        # Ensure directory exists
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-
-        with open(output_path, "w") as f:
-            json.dump(inventory, f, indent=2, default=str)
+        output_file = Path(output_path)
+        safe_write_json(output_file, inventory)
 
         logger.info(f"Repository analysis saved to {output_path}")
         return output_path

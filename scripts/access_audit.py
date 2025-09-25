@@ -18,7 +18,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import asyncpg
 from sqlalchemy import and_, desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from structlog.stdlib import get_logger
 
 from app.core.config import get_settings
 from app.db.session import get_db
@@ -28,8 +27,9 @@ from app.models.mfa import MFADevice
 from app.models.oauth import OAuthAccessToken, OAuthApplication, OAuthRefreshToken
 from app.models.user import User
 from app.models.user_role import UserRole
+from audit_utils.logging import log_audit_event, setup_audit_logger
 
-logger = get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
 class AccessControlAuditor:
@@ -47,7 +47,7 @@ class AccessControlAuditor:
         Returns:
             Dictionary containing complete RBAC analysis
         """
-        logger.info("Starting RBAC system analysis")
+        log_audit_event("rbac_analysis_start", module="access_audit", analysis_type="rbac")
 
         try:
             # Get all users with their roles
@@ -107,7 +107,13 @@ class AccessControlAuditor:
                 "recommendations": self._generate_rbac_recommendations(role_distribution, list(users)),
             }
 
-            logger.info("RBAC analysis completed", total_users=total_users, role_count=len(role_distribution))
+            log_audit_event(
+                "rbac_analysis_completed",
+                module="access_audit",
+                total_users=total_users,
+                role_count=len(role_distribution),
+                analysis_type="rbac",
+            )
 
             return analysis_result
 

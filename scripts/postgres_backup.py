@@ -2,8 +2,6 @@
 
 import asyncio
 import gzip
-import json
-import logging
 import os
 import shutil
 import subprocess
@@ -15,18 +13,21 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from audit_utils.exceptions import AuditError, audit_error_handler
+from audit_utils.file_operations import safe_write_json
+from audit_utils.logging import setup_audit_logger
+
+# Setup audit logger
+logger = setup_audit_logger(__name__)
 
 
-class BackupValidationError(Exception):
+class BackupValidationError(AuditError):
     """Raised when backup validation fails."""
 
     pass
 
 
-class BackupStorageError(Exception):
+class BackupStorageError(AuditError):
     """Raised when backup storage operations fail."""
 
     pass
@@ -107,6 +108,7 @@ class PostgresBackupManager:
         self.db_user = parsed.username or "postgres"
         self.db_password = parsed.password
 
+    @audit_error_handler
     async def create_full_backup(self, progress_callback: Optional[Callable[..., None]] = None) -> BackupResult:
         """Create a full database backup."""
         if self._backup_in_progress:
@@ -183,6 +185,7 @@ class PostgresBackupManager:
         finally:
             self._backup_in_progress = False
 
+    @audit_error_handler
     async def create_incremental_backup(self) -> BackupResult:
         """Create an incremental backup using WAL archiving."""
         if not self.config.wal_archiving_enabled:
@@ -258,6 +261,7 @@ class PostgresBackupManager:
 
         return cmd
 
+    @audit_error_handler
     def validate_backup_integrity(self, backup_file: str) -> bool:
         """Validate backup file integrity using pg_restore."""
         try:
@@ -278,6 +282,7 @@ class PostgresBackupManager:
             logger.error(f"Backup validation error: {e}")
             raise BackupValidationError(str(e))
 
+    @audit_error_handler
     def apply_retention_policy(self) -> List[str]:
         """Apply retention policy and remove old backups."""
         removed_files = []
@@ -325,6 +330,7 @@ class PostgresBackupManager:
             logger.error(f"Error applying retention policy: {e}")
             return removed_files
 
+    @audit_error_handler
     async def encrypt_backup_file(self, backup_file: str) -> str:
         """Encrypt backup file using GPG."""
         try:
@@ -392,20 +398,15 @@ class PostgresBackupManager:
 
         return True
 
+    @audit_error_handler
     def store_backup_metadata(self, backup_file: str, metadata: Dict[str, Any]) -> None:
-        """Store backup metadata in separate file."""
-        try:
-            # Ensure we use the full path in backup directory
-            if not os.path.isabs(backup_file):
-                backup_file = os.path.join(self.backup_directory, backup_file)
+        """Store backup metadata in separate file using safe JSON operations."""
+        # Ensure we use the full path in backup directory
+        if not os.path.isabs(backup_file):
+            backup_file = os.path.join(self.backup_directory, backup_file)
 
-            metadata_file = f"{backup_file}.metadata"
-
-            with open(metadata_file, "w") as f:
-                json.dump(metadata, f, indent=2)
-
-        except Exception as e:
-            logger.error(f"Failed to store backup metadata: {e}")
+        metadata_file = Path(f"{backup_file}.metadata")
+        safe_write_json(metadata_file, metadata)
 
     def _handle_backup_error(self, error_message: str) -> None:
         """Handle and classify backup errors."""

@@ -3,7 +3,6 @@
 import csv
 import io
 import json
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
@@ -12,9 +11,11 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from audit_utils.exceptions import ConfigurationError, ValidationError, audit_error_handler
+from audit_utils.file_operations import safe_read_json, safe_write_json
+from audit_utils.logging import log_audit_event, setup_audit_logger
+
+logger = setup_audit_logger(__name__)
 
 
 class CriticalityLevel(Enum):
@@ -142,67 +143,80 @@ class BackupCoverageAuditor:
             },
         }
 
+    @audit_error_handler
     def discover_repositories(self) -> List[RepositoryInfo]:
-        """Discover all repositories from the service container."""
-        repositories = []
+        """Discover all repositories using strategy pattern approach."""
+        log_audit_event("repository_discovery_started")
 
         try:
-            # Import here to avoid circular dependencies
-            from app.core.container import (
-                get_api_key_repository,
-                get_audit_repository,
-                get_container,
-                get_health_repository,
-                get_role_repository,
-                get_security_scan_repository,
-                get_session_repository,
-                get_user_repository,
-                get_vulnerability_repository,
-            )
-
-            # Get all repository instances
-            registered_repos = {
-                "user": get_user_repository(),
-                "session": get_session_repository(),
-                "api_key": get_api_key_repository(),
-                "audit": get_audit_repository(),
-                "security_scan": get_security_scan_repository(),
-                "health": get_health_repository(),
-                "vulnerability": get_vulnerability_repository(),
-                "role": get_role_repository(),
-            }
-
-            for repo_name, repo_instance in registered_repos.items():
-                if repo_instance is None:
-                    continue
-                # Classify repository criticality
-                criticality = self.classify_repository_criticality(repo_name)
-
-                # Get table information if available
-                table_name = getattr(repo_instance, "table_name", repo_name)
-
-                # Estimate data size (would need actual implementation)
-                data_size = self._estimate_repository_size(repo_name)
-
-                repo_info = RepositoryInfo(
-                    name=repo_name,
-                    table_name=table_name,
-                    criticality=criticality,
-                    data_size_mb=data_size,
-                    last_backup=self._get_last_backup_time(repo_name),
-                    backup_frequency=self._get_backup_frequency(criticality),
-                    retention_required_days=self._get_retention_days(criticality),
-                )
-
-                repositories.append(repo_info)
-
+            repositories = self._discover_from_container()
+            log_audit_event("repository_discovery_success", method="container", count=len(repositories))
         except Exception as e:
-            logger.error(f"Failed to discover repositories: {e}")
-            # Fallback to known repository list
-            repositories = self._get_fallback_repositories()
+            logger.error(f"Container-based discovery failed: {e}")
+            repositories = self._discover_from_fallback()
+            log_audit_event("repository_discovery_fallback", count=len(repositories))
 
         self.repositories = repositories
         return repositories
+
+    def _discover_from_container(self) -> List[RepositoryInfo]:
+        """Discover repositories from the service container."""
+        registered_repos = self._get_registered_repositories()
+        repositories = []
+
+        for repo_name, repo_instance in registered_repos.items():
+            if repo_instance is None:
+                continue
+
+            repo_info = self._create_repository_info(repo_name, repo_instance)
+            repositories.append(repo_info)
+
+        return repositories
+
+    def _get_registered_repositories(self) -> Dict[str, Any]:
+        """Get all registered repository instances from container."""
+        # Import here to avoid circular dependencies
+        from app.core.container import (
+            get_api_key_repository,
+            get_audit_repository,
+            get_health_repository,
+            get_role_repository,
+            get_security_scan_repository,
+            get_session_repository,
+            get_user_repository,
+            get_vulnerability_repository,
+        )
+
+        return {
+            "user": get_user_repository(),
+            "session": get_session_repository(),
+            "api_key": get_api_key_repository(),
+            "audit": get_audit_repository(),
+            "security_scan": get_security_scan_repository(),
+            "health": get_health_repository(),
+            "vulnerability": get_vulnerability_repository(),
+            "role": get_role_repository(),
+        }
+
+    def _create_repository_info(self, repo_name: str, repo_instance: Any) -> RepositoryInfo:
+        """Create RepositoryInfo from repository name and instance."""
+        criticality = self.classify_repository_criticality(repo_name)
+        table_name = getattr(repo_instance, "table_name", repo_name)
+        data_size = self._estimate_repository_size(repo_name)
+
+        return RepositoryInfo(
+            name=repo_name,
+            table_name=table_name,
+            criticality=criticality,
+            data_size_mb=data_size,
+            last_backup=self._get_last_backup_time(repo_name),
+            backup_frequency=self._get_backup_frequency(criticality),
+            retention_required_days=self._get_retention_days(criticality),
+        )
+
+    def _discover_from_fallback(self) -> List[RepositoryInfo]:
+        """Fallback repository discovery when container-based discovery fails."""
+        return self._get_fallback_repositories()
 
     def classify_repository_criticality(self, repo_name: str) -> CriticalityLevel:
         """Classify repository criticality based on name and function."""
@@ -293,6 +307,7 @@ class BackupCoverageAuditor:
         """Get backup frequency requirements for criticality level."""
         return self.backup_policies.get(criticality, self.backup_policies[CriticalityLevel.STANDARD])
 
+    @audit_error_handler
     def generate_coverage_report(self, repositories: List[RepositoryInfo]) -> BackupCoverageReport:
         """Generate comprehensive backup coverage report."""
         gaps = self.analyze_backup_gaps(repositories)
@@ -574,6 +589,7 @@ class BackupCoverageAuditor:
         # Use heap-based selection for better performance
         return heapq.nlargest(n, gaps, key=gap_priority_score)
 
+    @audit_error_handler
     def validate_retention_compliance(self, repositories: List[RepositoryInfo]) -> List[Dict[str, Any]]:
         """Validate backup retention compliance."""
         compliance_results = []
