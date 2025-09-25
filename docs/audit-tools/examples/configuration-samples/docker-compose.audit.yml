@@ -1,0 +1,35 @@
+# Docker Compose configuration for audit tools
+version: '3.8'
+
+services:
+  audit-tools:
+    build: .
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUDIT_OUTPUT_DIR=/app/reports
+    volumes:
+      - ./audit-reports:/app/reports
+      - ./audit-baselines:/app/baselines
+    depends_on:
+      - postgres
+      - redis
+    command: python3 tools/inventory/data_asset_inventory.py
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: audit_db
+      POSTGRES_USER: audit_user
+      POSTGRES_PASSWORD: audit_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
