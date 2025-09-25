@@ -526,7 +526,7 @@ class DriftMonitor:
         self.is_running = False
 
     def stop_monitoring(self) -> None:
-        """Stop monitoring."""
+        """Stop continuous configuration drift monitoring and clean up resources."""
         self._stop_event.set()
         self.is_running = False
 

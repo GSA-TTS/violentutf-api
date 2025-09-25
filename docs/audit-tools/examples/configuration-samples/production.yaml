@@ -1,0 +1,30 @@
+# Production environment configuration
+database:
+  primary:
+    url: "${PRODUCTION_DATABASE_URL}"
+    pool_size: 25
+    max_overflow: 50
+    timeout: 60
+
+redis:
+  url: "${PRODUCTION_REDIS_URL}"
+  db: 0
+
+audit:
+  inventory:
+    include_schemas: ["public", "audit", "reporting"]
+    exclude_tables: ["temp_*", "cache_*", "session_*"]
+    classify_sensitive_data: true
+
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+
+  monitoring:
+    enabled: true
+    alert_threshold: 0.02  # 2%
+
+logging:
+  level: INFO
+  handlers: ["file", "console"]
