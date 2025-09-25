@@ -3,7 +3,7 @@
 import logging
 import re
 import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import structlog
 
@@ -218,3 +218,52 @@ def _contains_sensitive_pattern(text: str) -> bool:
             return True
 
     return False
+
+
+def configure_standard_logging(
+    service_name: str, environment: str = "development", json_logs: bool = True
+) -> structlog.BoundLogger:
+    """
+    Standard logging configuration for all audit automation scripts.
+
+    Provides consistent structured logging with security-safe formatting.
+
+    Args:
+        service_name: Name of the service/script for logging context
+        environment: Environment (development, staging, production)
+        json_logs: Whether to use JSON output format
+
+    Returns:
+        Configured structlog logger instance
+    """
+    processors = [
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+    ]
+
+    if json_logs:
+        processors.append(structlog.processors.JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer(colors=True))
+
+    # Configure structlog with enhanced settings
+    structlog.configure(
+        processors=processors,
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+    # Set logging level based on environment
+    level = "DEBUG" if environment == "development" else "INFO"
+    logging.getLogger(service_name).setLevel(getattr(logging, level))
+
+    # Get bound logger with service context
+    logger = structlog.get_logger(service_name)
+    return logger.bind(service=service_name, environment=environment)

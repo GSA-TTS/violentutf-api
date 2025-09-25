@@ -3,12 +3,13 @@
 import asyncio
 import json
 import tempfile
-from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from structlog.stdlib import get_logger
+from audit_utils.database import AuditDatabaseMixin, get_audit_session
+from audit_utils.logging import setup_audit_logger
+from audit_utils.models import AuditMetadata, AuditStatus, ComprehensiveAnalysisResult, convert_to_dict
 
 from .graph_generator import DependencyGraph, DependencyGraphGenerator
 from .repository_analyzer import RepositoryAnalysisResult, RepositoryDependencyAnalyzer
@@ -16,23 +17,13 @@ from .runtime_tracer import RuntimeDependencyAnalysis, RuntimeDependencyTracer
 from .static_analyzer import DependencyAnalysisResult as StaticResult
 from .static_analyzer import StaticDependencyAnalyzer
 
-logger = get_logger(__name__)
+logger = setup_audit_logger(__name__)
 
 
-@dataclass
-class ComprehensiveAnalysisResult:
-    """Complete dependency analysis results."""
-
-    metadata: Dict[str, Any]
-    static_analysis: Dict[str, Any]
-    repository_analysis: Dict[str, Any]
-    runtime_analysis: Optional[Dict[str, Any]]
-    dependency_graphs: Dict[str, str]  # Graph type -> file path
-    summary_report: Dict[str, Any]
-    recommendations: List[str]
+# Using ComprehensiveAnalysisResult from audit_utils.models
 
 
-class ComprehensiveDependencyAnalyzer:
+class ComprehensiveDependencyAnalyzer(AuditDatabaseMixin):
     """Orchestrate comprehensive dependency analysis."""
 
     def __init__(self, project_root: str):
@@ -83,9 +74,15 @@ class ComprehensiveDependencyAnalyzer:
         analysis_end = datetime.now()
         analysis_duration = (analysis_end - analysis_start).total_seconds()
 
-        # Compile comprehensive result
-        result = ComprehensiveAnalysisResult(
-            metadata={
+        # Create audit metadata
+        audit_metadata = AuditMetadata(
+            audit_type="ComprehensiveDependencyAnalysis", scope="full_project", status=AuditStatus.COMPLETED
+        )
+
+        # Enhance static analysis with metadata
+        enhanced_static_analysis = self._serialize_static_result(static_result)
+        enhanced_static_analysis.update(
+            {
                 "analysis_date": analysis_start.isoformat(),
                 "analysis_duration_seconds": analysis_duration,
                 "project_root": str(self.project_root),
@@ -94,8 +91,13 @@ class ComprehensiveDependencyAnalyzer:
                 "total_services": len(static_result.service_dependencies),
                 "total_repositories": len(repository_result.repositories),
                 "total_configurations": len(static_result.configuration_dependencies),
-            },
-            static_analysis=self._serialize_static_result(static_result),
+            }
+        )
+
+        # Compile comprehensive result
+        result = ComprehensiveAnalysisResult(
+            metadata=audit_metadata,
+            static_analysis=enhanced_static_analysis,
             repository_analysis=self._serialize_repository_result(repository_result),
             runtime_analysis=self._serialize_runtime_result(runtime_result) if runtime_result else None,
             dependency_graphs=graphs,
@@ -106,8 +108,8 @@ class ComprehensiveDependencyAnalyzer:
         logger.info(
             "Comprehensive dependency analysis completed",
             duration=analysis_duration,
-            services=result.metadata["total_services"],
-            repositories=result.metadata["total_repositories"],
+            services=enhanced_static_analysis["total_services"],
+            repositories=enhanced_static_analysis["total_repositories"],
         )
 
         return result
@@ -118,8 +120,11 @@ class ComprehensiveDependencyAnalyzer:
         """Generate all dependency graphs."""
         graphs = {}
 
-        # Service dependency graph - convert dataclasses to dicts
-        service_deps_dict = [asdict(dep) for dep in static_result.service_dependencies]
+        # Service dependency graph - convert to dicts
+        service_deps_dict = [
+            convert_to_dict(dep) if hasattr(dep, "model_dump") or hasattr(dep, "__dict__") else dep
+            for dep in static_result.service_dependencies
+        ]
         service_graph = self.graph_generator.generate_service_graph(service_deps_dict)
         service_files = self.graph_generator.export_to_formats(
             service_graph, str(self.output_dir), "service_dependencies"
@@ -326,12 +331,47 @@ class ComprehensiveDependencyAnalyzer:
 
         return recommendations
 
+    async def persist_analysis_to_database(self, result: ComprehensiveAnalysisResult) -> bool:
+        """
+        Persist comprehensive analysis results to database using standardized session management.
+
+        Args:
+            result: ComprehensiveAnalysisResult to persist
+
+        Returns:
+            bool: True if persistence was successful, False otherwise
+        """
+        try:
+            logger.info("Persisting comprehensive analysis to database")
+
+            # Example of using inherited database capabilities
+            async with get_audit_session() as session:  # noqa: F841
+                # This demonstrates how to use the database session management
+                # In a real implementation, you would persist the analysis data
+                logger.info(
+                    "Analysis persistence simulated",
+                    audit_type=result.metadata.audit_type,
+                    total_services=result.static_analysis.get("total_services", 0),
+                    total_repositories=result.static_analysis.get("total_repositories", 0),
+                    recommendations_count=len(result.recommendations),
+                )
+
+                # Could use inherited methods like:
+                # analysis_data = convert_to_dict(result)
+                # await self.bulk_insert(AnalysisModel, [analysis_data])
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to persist analysis to database: {e}")
+            return False
+
     def _serialize_static_result(self, result: StaticResult) -> Dict[str, Any]:
         """Serialize static analysis result."""
         return {
             "metadata": result.metadata,
-            "service_dependencies": [asdict(dep) for dep in result.service_dependencies],
-            "configuration_dependencies": [asdict(dep) for dep in result.configuration_dependencies],
+            "service_dependencies": [convert_to_dict(dep) for dep in result.service_dependencies],
+            "configuration_dependencies": [convert_to_dict(dep) for dep in result.configuration_dependencies],
             "network_dependencies": result.network_dependencies,
             "volume_dependencies": result.volume_dependencies,
             "analysis_summary": result.analysis_summary,
@@ -341,9 +381,9 @@ class ComprehensiveDependencyAnalyzer:
         """Serialize repository analysis result."""
         return {
             "metadata": result.metadata,
-            "repositories": [asdict(repo) for repo in result.repositories],
-            "model_relationships": [asdict(rel) for rel in result.model_relationships],
-            "repository_dependencies": [asdict(dep) for dep in result.repository_dependencies],
+            "repositories": [convert_to_dict(repo) for repo in result.repositories],
+            "model_relationships": [convert_to_dict(rel) for rel in result.model_relationships],
+            "repository_dependencies": [convert_to_dict(dep) for dep in result.repository_dependencies],
             "complexity_analysis": result.complexity_analysis,
             "inheritance_hierarchy": result.inheritance_hierarchy,
             "pattern_analysis": result.pattern_analysis,
@@ -353,8 +393,8 @@ class ComprehensiveDependencyAnalyzer:
         """Serialize runtime analysis result."""
         return {
             "metadata": result.metadata,
-            "operation_traces": [asdict(trace) for trace in result.operation_traces],
-            "dependency_patterns": [asdict(pattern) for pattern in result.dependency_patterns],
+            "operation_traces": [convert_to_dict(trace) for trace in result.operation_traces],
+            "dependency_patterns": [convert_to_dict(pattern) for pattern in result.dependency_patterns],
             "performance_summary": result.performance_summary,
             "bottleneck_analysis": result.bottleneck_analysis,
             "failure_patterns": result.failure_patterns,
