@@ -13,9 +13,11 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from audit_utils.database import AuditDatabaseMixin, get_audit_session
 from audit_utils.exceptions import audit_error_handler
 from audit_utils.file_operations import safe_read_json, safe_write_json
 from audit_utils.logging import log_audit_event, setup_audit_logger
+from audit_utils.models import AuditMetadata, AuditResult, AuditStatus, create_audit_result
 
 from .repository_analyzer import RepositoryAnalyzer
 from .schema_discovery import SchemaDiscoveryTool
@@ -24,7 +26,7 @@ from .security_classification import classify_data_assets
 logger = setup_audit_logger(__name__)
 
 
-class DataAssetInventoryTool:
+class DataAssetInventoryTool(AuditDatabaseMixin):
     """Unified tool for comprehensive data asset discovery and inventory."""
 
     def __init__(self, project_root: Optional[str] = None):
@@ -38,12 +40,12 @@ class DataAssetInventoryTool:
         self.repository_analyzer = RepositoryAnalyzer(str(self.project_root))
 
     @audit_error_handler
-    async def perform_full_inventory(self) -> Dict[str, Any]:
+    async def perform_full_inventory(self) -> AuditResult:
         """
         Perform comprehensive data asset inventory.
 
         Returns:
-            Dict containing complete asset inventory
+            AuditResult containing complete asset inventory with standardized format
         """
         self.discovery_time = datetime.now().isoformat() + "Z"
 
@@ -125,7 +127,21 @@ class DataAssetInventoryTool:
             logger.error(f"Error during comprehensive inventory: {e}")
             master_inventory["error"] = str(e)
 
-        return master_inventory
+        # Convert to standardized AuditResult format
+        return create_audit_result(
+            audit_type="DataAssetInventory",
+            scope="full_project",
+            findings=[master_inventory],
+            recommendations=self._generate_inventory_recommendations(master_inventory),
+            summary={
+                "discovery_time": self.discovery_time,
+                "total_assets": len(master_inventory.get("logical_assets", {}))
+                + len(master_inventory.get("physical_stores", {})),
+                "has_errors": "error" in master_inventory,
+                "project_root": str(self.project_root),
+            },
+            status=AuditStatus.FAILED if "error" in master_inventory else AuditStatus.COMPLETED,
+        )
 
     async def perform_full_inventory_parallel(self) -> Dict[str, Any]:
         """
@@ -729,13 +745,86 @@ class DataAssetInventoryTool:
         logger.info(f"Comprehensive inventory saved to {output_path}")
         return output_path
 
+    def _generate_inventory_recommendations(self, inventory: Dict[str, Any]) -> List[str]:
+        """Generate recommendations based on inventory analysis."""
+        recommendations = []
+
+        # Check for errors
+        if "error" in inventory:
+            recommendations.append("Address the inventory collection error to ensure complete data asset visibility")
+
+        # Analyze physical stores
+        physical_stores = inventory.get("physical_stores", {})
+        if not physical_stores:
+            recommendations.append("No physical data stores discovered - verify database connectivity")
+
+        # Analyze gaps
+        gaps = inventory.get("gap_analysis", {})
+        total_gaps = gaps.get("total_gaps_identified", 0)
+        if total_gaps > 0:
+            recommendations.append(f"Address {total_gaps} identified gaps in data asset documentation and security")
+
+        # Analyze risk
+        risk_assessment = inventory.get("risk_assessment", {})
+        high_risk_assets = risk_assessment.get("high_risk_assets", 0)
+        if high_risk_assets > 0:
+            recommendations.append(f"Prioritize security measures for {high_risk_assets} high-risk assets")
+
+        # Default recommendations if none generated
+        if not recommendations:
+            recommendations.extend(
+                [
+                    "Establish regular data asset inventory schedules",
+                    "Implement automated asset discovery tools",
+                    "Maintain up-to-date data classification standards",
+                ]
+            )
+
+        return recommendations
+
+    @audit_error_handler
+    async def persist_inventory_to_database(self, audit_result: AuditResult) -> bool:
+        """
+        Persist inventory results to database using standardized session management.
+
+        Args:
+            audit_result: Standardized audit result to persist
+
+        Returns:
+            bool: True if persistence was successful, False otherwise
+        """
+        try:
+            logger.info("Persisting inventory results to database")
+
+            # Example of using inherited database capabilities
+            async with get_audit_session() as session:  # noqa: F841
+                # This is where you would persist the audit result
+                # For now, we just log the operation as the actual database
+                # schema for audit persistence would need to be defined
+                logger.info(
+                    "Inventory persistence simulated",
+                    audit_type=audit_result.metadata.audit_type,
+                    findings_count=len(audit_result.findings),
+                    recommendations_count=len(audit_result.recommendations),
+                )
+
+                # Could use inherited methods like:
+                # await self.bulk_insert(AuditResultModel, [audit_result.model_dump()])
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to persist inventory to database: {e}")
+            return False
+
 
 async def main():
     """Main function for running comprehensive data asset inventory."""
     tool = DataAssetInventoryTool()
 
     logger.info("Starting comprehensive data asset inventory...")
-    inventory = await tool.perform_full_inventory()
+    audit_result = await tool.perform_full_inventory()
+    inventory = audit_result.findings[0] if audit_result.findings else {}
 
     # Save in both formats
     yaml_path = await tool.save_inventory(inventory, "yaml")

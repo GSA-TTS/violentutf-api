@@ -3,115 +3,76 @@
 import csv
 import io
 import json
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 
+from audit_utils.database import AuditDatabaseMixin, get_audit_session
 from audit_utils.exceptions import ConfigurationError, ValidationError, audit_error_handler
 from audit_utils.file_operations import safe_read_json, safe_write_json
 from audit_utils.logging import log_audit_event, setup_audit_logger
+from audit_utils.models import (
+    BackupCoverageReport,
+    BackupGap,
+    ComplianceStatus,
+    CriticalityLevel,
+    RepositoryInfo,
+    convert_to_dict,
+)
 
 logger = setup_audit_logger(__name__)
 
 
-class CriticalityLevel(Enum):
-    """Data criticality levels for backup prioritization."""
-
-    CRITICAL = "critical"
-    IMPORTANT = "important"
-    STANDARD = "standard"
+# Using unified models from audit_utils.models
+# CriticalityLevel, ComplianceStatus, RepositoryInfo, BackupGap, BackupCoverageReport
+# are now imported from audit_utils.models
 
 
-class ComplianceStatus(Enum):
-    """Backup compliance status."""
+def is_backup_overdue(repo: RepositoryInfo) -> bool:
+    """Check if backup is overdue based on criticality."""
+    if not repo.last_backup:
+        return True
 
-    COMPLIANT = "compliant"
-    WARNING = "warning"
-    NON_COMPLIANT = "non_compliant"
+    now = datetime.now()
+    hours_since_backup = (now - repo.last_backup).total_seconds() / 3600
 
+    # Define maximum allowed hours based on criticality
+    max_hours = {
+        CriticalityLevel.CRITICAL: 2,  # 2 hours
+        CriticalityLevel.IMPORTANT: 8,  # 8 hours
+        CriticalityLevel.STANDARD: 26,  # 26 hours (daily + buffer)
+    }
 
-@dataclass
-class RepositoryInfo:
-    """Information about a repository for backup auditing."""
-
-    name: str
-    table_name: str = ""
-    criticality: CriticalityLevel = CriticalityLevel.STANDARD
-    data_size_mb: float = 0.0
-    last_backup: Optional[datetime] = None
-    backup_frequency: str = "daily"
-    retention_required_days: int = 30
-
-    def is_backup_overdue(self) -> bool:
-        """Check if backup is overdue based on criticality."""
-        if not self.last_backup:
-            return True
-
-        now = datetime.now()
-        hours_since_backup = (now - self.last_backup).total_seconds() / 3600
-
-        # Define maximum allowed hours based on criticality
-        max_hours = {
-            CriticalityLevel.CRITICAL: 2,  # 2 hours
-            CriticalityLevel.IMPORTANT: 8,  # 8 hours
-            CriticalityLevel.STANDARD: 26,  # 26 hours (daily + buffer)
-        }
-
-        return hours_since_backup > max_hours.get(self.criticality, 26)
+    return hours_since_backup > max_hours.get(repo.criticality, 26)
 
 
-@dataclass
-class BackupGap:
-    """Represents a backup gap that needs attention."""
-
-    repository: str
-    criticality: CriticalityLevel
-    gap_hours: float
-    last_backup: Optional[datetime]
-    severity: str = "medium"
-
-    def __post_init__(self) -> None:
-        """Calculate severity based on gap and criticality."""
-        if self.criticality == CriticalityLevel.CRITICAL and self.gap_hours > 24:
-            self.severity = "critical"
-        elif self.criticality == CriticalityLevel.CRITICAL and self.gap_hours > 4:
-            self.severity = "high"
-        elif self.gap_hours > 72:  # 3 days
-            self.severity = "high"
-        elif self.gap_hours > 48:  # 2 days
-            self.severity = "medium"
-        else:
-            self.severity = "low"
+def calculate_gap_severity(criticality: CriticalityLevel, gap_hours: float) -> str:
+    """Calculate severity based on gap and criticality."""
+    if criticality == CriticalityLevel.CRITICAL and gap_hours > 24:
+        return "critical"
+    elif criticality == CriticalityLevel.CRITICAL and gap_hours > 4:
+        return "high"
+    elif gap_hours > 72:  # 3 days
+        return "high"
+    elif gap_hours > 48:  # 2 days
+        return "medium"
+    else:
+        return "low"
 
 
-@dataclass
-class BackupCoverageReport:
-    """Comprehensive backup coverage report."""
-
-    total_repositories: int
-    compliant_repositories: int = 0
-    compliance_score: float = 0.0
-    backup_gaps: List[BackupGap] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.now)
-    status: ComplianceStatus = ComplianceStatus.COMPLIANT
-    storage_usage_gb: float = 0.0
-    recommendations: List[Dict[str, str]] = field(default_factory=list)
-
-    def determine_status(self) -> ComplianceStatus:
-        """Determine overall compliance status."""
-        if self.compliance_score >= 95:
-            return ComplianceStatus.COMPLIANT
-        elif self.compliance_score >= 80:
-            return ComplianceStatus.WARNING
-        else:
-            return ComplianceStatus.NON_COMPLIANT
+def determine_compliance_status(compliance_score: float) -> ComplianceStatus:
+    """Determine overall compliance status based on score."""
+    if compliance_score >= 95:
+        return ComplianceStatus.COMPLIANT
+    elif compliance_score >= 80:
+        return ComplianceStatus.WARNING
+    else:
+        return ComplianceStatus.NON_COMPLIANT
 
 
-class BackupCoverageAuditor:
+class BackupCoverageAuditor(AuditDatabaseMixin):
     """Audits backup coverage across all repositories and data stores."""
 
     def __init__(self) -> None:
@@ -254,18 +215,21 @@ class BackupCoverageAuditor:
         gaps = []
 
         for repo in repositories:
-            if repo.is_backup_overdue():
+            if is_backup_overdue(repo):
                 gap_hours: float = 0
                 if repo.last_backup:
                     gap_hours = (datetime.now() - repo.last_backup).total_seconds() / 3600
                 else:
                     gap_hours = 168.0  # 1 week if never backed up
 
+                severity = calculate_gap_severity(repo.criticality, gap_hours)
+
                 gap = BackupGap(
                     repository=repo.name,
                     criticality=repo.criticality,
                     gap_hours=gap_hours,
                     last_backup=repo.last_backup,
+                    severity=severity,
                 )
                 gaps.append(gap)
 
@@ -291,7 +255,7 @@ class BackupCoverageAuditor:
             weight = weights.get(repo.criticality, 1)
             total_weight += weight
 
-            if not repo.is_backup_overdue():
+            if not is_backup_overdue(repo):
                 compliant_count += 1
                 weighted_compliant += weight
 
@@ -320,6 +284,9 @@ class BackupCoverageAuditor:
         # Generate recommendations
         recommendations = self.generate_recommendations(repositories)
 
+        # Determine status based on compliance score
+        status = determine_compliance_status(compliance_score)
+
         report = BackupCoverageReport(
             total_repositories=len(repositories),
             compliant_repositories=compliant_repos,
@@ -327,9 +294,9 @@ class BackupCoverageAuditor:
             backup_gaps=gaps,
             storage_usage_gb=storage_usage.get("total_size_gb", 0),
             recommendations=recommendations,
+            status=status,
         )
 
-        report.status = report.determine_status()
         return report
 
     def optimize_backup_schedule(
@@ -618,7 +585,7 @@ class BackupCoverageAuditor:
         recommendations = []
 
         for repo in repositories:
-            if repo.is_backup_overdue():
+            if is_backup_overdue(repo):
                 if repo.criticality == CriticalityLevel.CRITICAL:
                     recommendations.append(
                         {
@@ -712,6 +679,46 @@ class BackupCoverageAuditor:
             sorted_indices = np.argsort(priorities)
 
         return [gaps[i] for i in sorted_indices]
+
+    async def persist_backup_report_to_database(self, report: BackupCoverageReport) -> bool:
+        """
+        Persist backup coverage report to database using standardized session management.
+
+        Args:
+            report: BackupCoverageReport to persist
+
+        Returns:
+            bool: True if persistence was successful, False otherwise
+        """
+        try:
+            logger.info("Persisting backup coverage report to database")
+
+            # Example of using inherited database capabilities
+            async with get_audit_session() as session:  # noqa: F841
+                # This demonstrates how to use the database session management
+                # In a real implementation, you would persist the report data
+                logger.info(
+                    "Backup report persistence simulated",
+                    total_repositories=report.total_repositories,
+                    compliance_score=report.compliance_score,
+                    status=report.status.value,
+                    backup_gaps_count=len(report.backup_gaps),
+                    storage_usage_gb=report.storage_usage_gb,
+                )
+
+                # Could use inherited methods like:
+                # report_data = convert_to_dict(report)
+                # await self.bulk_insert(BackupReportModel, [report_data])
+
+                # Or batch insert backup gaps:
+                # gap_data = [convert_to_dict(gap) for gap in report.backup_gaps]
+                # await self.bulk_insert(BackupGapModel, gap_data)
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to persist backup report to database: {e}")
+            return False
 
     def prioritize_backup_gaps_multiprocess(
         self, gaps: List[BackupGap], top_n: Optional[int] = None

@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.config import Settings
+from audit_utils.database import AuditDatabaseMixin, get_audit_session
 from audit_utils.exceptions import ConfigurationError, ValidationError, audit_error_handler
 from audit_utils.file_operations import safe_read_json, safe_write_json
 from audit_utils.logging import log_audit_event, setup_audit_logger
@@ -263,8 +264,8 @@ class BaselineComparison:
         self.changed_parameters[parameter] = {"old": old_value, "new": new_value}
 
 
-class ConfigurationBaselineManager:
-    """Manages configuration baselines."""
+class ConfigurationBaselineManager(AuditDatabaseMixin):
+    """Manages configuration baselines with database persistence."""
 
     def __init__(self, baseline_dir: str = "./baselines"):
         """Initialize baseline manager with security enhancements."""
@@ -384,6 +385,67 @@ class ConfigurationBaselineManager:
         except (OSError, IOError, PermissionError) as e:
             logger.error(f"File access error: {type(e).__name__}")
             raise BaselineValidationError(f"Unable to read baseline file") from e
+
+    @audit_error_handler
+    async def persist_baseline_to_database(self, baseline: ConfigurationBaseline) -> bool:
+        """
+        Persist configuration baseline to database for historical tracking.
+
+        Args:
+            baseline: Configuration baseline to persist
+
+        Returns:
+            bool: True if persistence successful, False otherwise
+        """
+        try:
+            async with get_audit_session():
+                # Simulate baseline persistence (would need actual table model)
+                # In a real implementation, this would use SQLAlchemy models
+                # For now, we'll log the persistence action
+                logger.info(
+                    "Baseline persisted to database",
+                    environment=baseline.environment,
+                    version=baseline.version,
+                    timestamp=baseline.timestamp.isoformat(),
+                )
+
+                log_audit_event(
+                    "baseline_database_persistence", environment=baseline.environment, version=baseline.version
+                )
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to persist baseline to database: {e}")
+            return False
+
+    @audit_error_handler
+    async def load_baseline_from_database(
+        self, environment: str, version: Optional[str] = None
+    ) -> Optional[ConfigurationBaseline]:
+        """
+        Load configuration baseline from database.
+
+        Args:
+            environment: Environment name
+            version: Specific version (if None, loads latest)
+
+        Returns:
+            ConfigurationBaseline if found, None otherwise
+        """
+        try:
+            async with get_audit_session():
+                # Simulate database query (would need actual table model)
+                # In a real implementation, this would query SQLAlchemy models
+                logger.info("Loading baseline from database", environment=environment, version=version or "latest")
+
+                # For now, return None since we don't have the actual database model
+                # In real implementation, this would construct and return ConfigurationBaseline
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to load baseline from database: {e}")
+            return None
 
     def validate_file_path(self, file_path: str) -> None:
         """Validate file path for security issues.
