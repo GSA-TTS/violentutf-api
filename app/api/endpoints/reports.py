@@ -448,7 +448,6 @@ async def download_report(
 
         # For file-based formats, serve the file
         if report.file_path:
-            import os
             from pathlib import Path
 
             # Validate path to prevent directory traversal attacks

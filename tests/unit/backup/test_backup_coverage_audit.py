@@ -125,7 +125,7 @@ class TestBackupCoverageAuditor:
         gaps = auditor.analyze_backup_gaps(sample_repositories)
 
         # Should find gap for overdue critical backup
-        critical_gaps = [gap for gap in gaps if gap.criticality == CriticalityLevel.CRITICAL]
+        critical_gaps = [gap for gap in gaps if gap.criticality == "critical"]
         assert len(critical_gaps) > 0
         assert critical_gaps[0].gap_hours > 24
 

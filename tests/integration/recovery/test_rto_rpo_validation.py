@@ -11,7 +11,6 @@ import pytest
 from scripts.rto_rpo_validator import (
     RecoveryMetrics,
     RecoveryScenario,
-    RecoveryTest,
     RTORPOValidator,
     ServiceTier,
     ValidationResult,

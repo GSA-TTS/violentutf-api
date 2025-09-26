@@ -130,6 +130,7 @@ class TestAuditConfig:
         with patch("audit_utils.config.get_settings") as mock_get_settings:
             mock_settings = Mock()
             mock_settings.DATABASE_URL = "postgresql://user:pass@localhost/db"
+            mock_settings.DATABASE_POOL_SIZE = 10
             mock_settings.LOG_LEVEL = "INFO"
             mock_get_settings.return_value = mock_settings
 
@@ -141,6 +142,7 @@ class TestAuditConfig:
         with patch("audit_utils.config.get_settings") as mock_get_settings:
             mock_settings = Mock()
             mock_settings.DATABASE_URL = ""  # Empty database URL
+            mock_settings.DATABASE_POOL_SIZE = 10
             mock_settings.LOG_LEVEL = "INFO"
             mock_get_settings.return_value = mock_settings
 
@@ -152,6 +154,7 @@ class TestAuditConfig:
         with patch("audit_utils.config.get_settings") as mock_get_settings:
             mock_settings = Mock()
             mock_settings.DATABASE_URL = "postgresql://user:pass@localhost/db"
+            mock_settings.DATABASE_POOL_SIZE = 10
             mock_settings.LOG_LEVEL = "INVALID_LEVEL"
             mock_get_settings.return_value = mock_settings
 
@@ -163,6 +166,7 @@ class TestAuditConfig:
         with patch("audit_utils.config.get_settings") as mock_get_settings:
             mock_settings = Mock()
             mock_settings.DATABASE_URL = "postgresql://test:test@localhost:5432/test"
+            mock_settings.DATABASE_POOL_SIZE = 10
             mock_get_settings.return_value = mock_settings
 
             config = AuditConfig()
@@ -200,6 +204,7 @@ class TestAuditConfig:
                 with patch("audit_utils.config.get_settings") as mock_get_settings:
                     mock_settings = Mock()
                     mock_settings.database_url = "postgresql://default:pass@default/db"
+                    mock_settings.DATABASE_POOL_SIZE = 10
                     mock_get_settings.return_value = mock_settings
 
                     config = AuditConfig(config_path=config_path)
@@ -285,6 +290,7 @@ class TestAuditConfig:
         with patch("audit_utils.config.get_settings") as mock_get_settings:
             mock_settings = Mock()
             mock_settings.DATABASE_URL = "postgresql://test:test@localhost:5432/test"
+            mock_settings.DATABASE_POOL_SIZE = 10
             mock_get_settings.return_value = mock_settings
 
             config = AuditConfig()

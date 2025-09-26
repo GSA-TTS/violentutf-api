@@ -269,8 +269,8 @@ def _handle_session_cleanup_on_error(session):
                 asyncio.create_task(session.close())
             else:
                 session.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to close database session", error=str(e))
 
 
 # Repository factory functions
