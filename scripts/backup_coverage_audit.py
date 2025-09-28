@@ -5,7 +5,7 @@ import io
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -30,6 +30,20 @@ logger = setup_audit_logger(__name__)
 # are now imported from audit_utils.models
 
 
+def get_criticality_value(criticality: Union[str, Any]) -> str:
+    """Safely extract criticality value whether it's enum or string."""
+    if hasattr(criticality, "value"):
+        return str(criticality.value)
+    return str(criticality)
+
+
+def get_enum_value(enum_or_string: Union[str, Any]) -> str:
+    """Safely extract enum value whether it's enum or string."""
+    if hasattr(enum_or_string, "value"):
+        return str(enum_or_string.value)
+    return str(enum_or_string)
+
+
 def is_backup_overdue(repo: RepositoryInfo) -> bool:
     """Check if backup is overdue based on criticality."""
     if not repo.last_backup:
@@ -45,7 +59,7 @@ def is_backup_overdue(repo: RepositoryInfo) -> bool:
         "standard": 26,  # 26 hours (daily + buffer)
     }
 
-    return hours_since_backup > max_hours.get(repo.criticality.value, 26)
+    return hours_since_backup > max_hours.get(get_criticality_value(repo.criticality), 26)
 
 
 def calculate_gap_severity(criticality: str, gap_hours: float) -> str:
@@ -171,8 +185,8 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
             criticality=criticality,
             data_size_mb=data_size,
             last_backup=self._get_last_backup_time(repo_name),
-            backup_frequency=self._get_backup_frequency(criticality.value),
-            retention_required_days=self._get_retention_days(criticality.value),
+            backup_frequency=self._get_backup_frequency(get_enum_value(criticality)),
+            retention_required_days=self._get_retention_days(get_enum_value(criticality)),
         )
 
     def _discover_from_fallback(self) -> List[RepositoryInfo]:
@@ -222,7 +236,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
                 else:
                     gap_hours = 168.0  # 1 week if never backed up
 
-                severity = calculate_gap_severity(repo.criticality.value, gap_hours)
+                severity = calculate_gap_severity(get_criticality_value(repo.criticality), gap_hours)
 
                 gap = BackupGap(
                     repository=repo.name,
@@ -252,7 +266,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
         }
 
         for repo in repositories:
-            weight = weights.get(repo.criticality.value, 1)
+            weight = weights.get(get_criticality_value(repo.criticality), 1)
             total_weight += weight
 
             if not is_backup_overdue(repo):
@@ -267,9 +281,10 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
 
         return round(weighted_score, 2)
 
-    def get_backup_frequency_requirements(self, criticality: str) -> Dict[str, Any]:
+    def get_backup_frequency_requirements(self, criticality: Union[str, Any]) -> Dict[str, Any]:
         """Get backup frequency requirements for criticality level."""
-        return self.backup_policies.get(criticality, self.backup_policies["standard"])
+        criticality_str = get_criticality_value(criticality)
+        return self.backup_policies.get(criticality_str, self.backup_policies["standard"])
 
     @audit_error_handler
     def generate_coverage_report(self, repositories: List[RepositoryInfo]) -> BackupCoverageReport:
@@ -309,17 +324,18 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
         optimized_schedules = []
 
         for repo in repositories:
-            requirements = self.get_backup_frequency_requirements(repo.criticality.value)
+            requirements = self.get_backup_frequency_requirements(repo.criticality)
+            criticality_str = get_criticality_value(repo.criticality)
 
             # Base schedule on criticality and size
-            if repo.criticality.value == "critical":
+            if criticality_str == "critical":
                 if repo.data_size_mb > 1000:  # > 1GB
                     frequency = "every_30_minutes"
                     backup_type = "incremental"
                 else:
                     frequency = "hourly"
                     backup_type = "mixed"
-            elif repo.criticality.value == "important":
+            elif get_criticality_value(repo.criticality) == "important":
                 frequency = "every_6_hours"
                 backup_type = "mixed" if repo.data_size_mb > 500 else "full"
             else:
@@ -343,7 +359,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
                 "type": backup_type,
                 "start_time": start_time,
                 "retention_days": requirements["retention_days"],
-                "priority": repo.criticality.value,
+                "priority": get_criticality_value(repo.criticality),
             }
 
             optimized_schedules.append(schedule)
@@ -548,7 +564,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
                 "important": 100,
                 "standard": 10,
             }
-            base_score = criticality_weights.get(gap.criticality.value, 1)
+            base_score = criticality_weights.get(get_enum_value(gap.criticality), 1)
 
             # Add gap hours to prioritize longer gaps
             return base_score + gap.gap_hours
@@ -562,7 +578,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
         compliance_results = []
 
         for repo in repositories:
-            requirements = self.get_backup_frequency_requirements(repo.criticality.value)
+            requirements = self.get_backup_frequency_requirements(repo.criticality)
             required_retention = requirements["retention_days"]
 
             # Check actual retention (simplified - would need real backup analysis)
@@ -586,7 +602,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
 
         for repo in repositories:
             if is_backup_overdue(repo):
-                if repo.criticality.value == "critical":
+                if get_criticality_value(repo.criticality) == "critical":
                     recommendations.append(
                         {
                             "repository": repo.name,
@@ -636,7 +652,11 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
                 "low": 3,
             }
 
-            return (criticality_order.get(gap.criticality.value, 3), severity_order.get(gap.severity, 4), gap.gap_hours)
+            return (
+                criticality_order.get(get_enum_value(gap.criticality), 3),
+                severity_order.get(gap.severity, 4),
+                gap.gap_hours,
+            )
 
         return sorted(gaps, key=gap_priority)
 
@@ -661,7 +681,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
 
         # Vectorized conversion (single pass through data)
         for i, gap in enumerate(gaps):
-            criticality_values[i] = criticality_map.get(gap.criticality.value, 3)
+            criticality_values[i] = criticality_map.get(get_enum_value(gap.criticality), 3)
             severity_values[i] = severity_map.get(gap.severity, 4)
             gap_hours[i] = gap.gap_hours
 
@@ -701,7 +721,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
                     "Backup report persistence simulated",
                     total_repositories=report.total_repositories,
                     compliance_score=report.compliance_score,
-                    status=report.status.value,
+                    status=get_enum_value(report.status),
                     backup_gaps_count=len(report.backup_gaps),
                     storage_usage_gb=report.storage_usage_gb,
                 )
@@ -764,12 +784,12 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
             "total_repositories": report.total_repositories,
             "compliant_repositories": report.compliant_repositories,
             "compliance_score": report.compliance_score,
-            "status": report.status.value,
+            "status": get_enum_value(report.status),
             "storage_usage_gb": report.storage_usage_gb,
             "backup_gaps": [
                 {
                     "repository": gap.repository,
-                    "criticality": gap.criticality.value,
+                    "criticality": get_enum_value(gap.criticality),
                     "gap_hours": gap.gap_hours,
                     "severity": gap.severity,
                     "last_backup": gap.last_backup.isoformat() if gap.last_backup else None,
@@ -792,7 +812,7 @@ class BackupCoverageAuditor(AuditDatabaseMixin):
             writer.writerow(
                 [
                     gap.repository,
-                    gap.criticality.value,
+                    get_enum_value(gap.criticality),
                     gap.gap_hours,
                     gap.severity,
                     gap.last_backup.isoformat() if gap.last_backup else "Never",
@@ -919,7 +939,7 @@ async def main() -> None:
     report = auditor.generate_coverage_report(repositories)
 
     print(f"Compliance Score: {report.compliance_score}%")
-    print(f"Status: {report.status.value}")
+    print(f"Status: {get_enum_value(report.status)}")
     print(f"Backup Gaps: {len(report.backup_gaps)}")
     print(f"Storage Usage: {report.storage_usage_gb} GB")
 

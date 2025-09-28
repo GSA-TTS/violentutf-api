@@ -396,7 +396,7 @@ class SecurityAuditService:
         # Check admin users without MFA
         admin_users_without_mfa = []
         for user in users:
-            if "admin" in user.roles and str(user.id) not in users_with_mfa:
+            if user.has_role("admin") and str(user.id) not in users_with_mfa:
                 admin_users_without_mfa.append(user.username)
 
         if admin_users_without_mfa:
@@ -536,7 +536,7 @@ class SecurityAuditService:
         # Find admin users who haven't logged in recently
         stale_admins = []
         for user in users:
-            if "admin" in user.roles and user.last_login_at:
+            if user.has_role("admin") and user.last_login_at:
                 days_since_login = (datetime.now(timezone.utc) - user.last_login_at).days
                 if days_since_login > 90:
                     stale_admins.append({"username": user.username, "days_since_login": days_since_login})

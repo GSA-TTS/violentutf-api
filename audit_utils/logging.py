@@ -206,11 +206,12 @@ def _contains_sensitive_pattern(text: str) -> bool:
         return True
 
     # Check for common sensitive data patterns
+    # Note: These are DETECTION PATTERNS for security filtering, not actual secrets  # nosec B105
     patterns = [
-        r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",  # Credit card
-        r"\b\d{3}[- ]?\d{2}[- ]?\d{4}\b",  # SSN
-        r"Bearer\s+[A-Za-z0-9\-._~+/]+=*",  # Bearer token
-        r'api[_-]?key["\s]*[:=]["\s]*[A-Za-z0-9]+',  # API key patterns
+        r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",  # Credit card pattern detection
+        r"\b\d{3}[- ]?\d{2}[- ]?\d{4}\b",  # SSN pattern detection
+        r"Bearer\s+[A-Za-z0-9\-._~+/]+=*",  # Bearer token pattern detection
+        r'api[_-]?key["\s]*[:=]["\s]*[A-Za-z0-9]+',  # API key pattern detection
     ]
 
     for pattern in patterns:

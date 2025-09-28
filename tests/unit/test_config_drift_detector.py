@@ -617,7 +617,9 @@ class TestConfigurationMonitor:
             filtered_changes.append((parameter, old_value, new_value))
 
         # Only monitor security-related changes
-        security_filter = lambda param, old, new: param.startswith(("SECRET", "AUTH", "JWT"))
+        def security_filter(param, old, new):
+            return param.startswith(("SECRET", "AUTH", "JWT"))
+
         self.config_monitor.register_callback("*", filtered_callback, filter_func=security_filter)
 
         # Simulate various changes

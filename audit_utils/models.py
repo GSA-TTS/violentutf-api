@@ -11,9 +11,30 @@ try:
 except ImportError:
     # Fallback when Pydantic is not available
     BaseModel = object  # type: ignore[misc,assignment]
-    Field = lambda **kwargs: None  # type: ignore[assignment]
-    field_validator = lambda *args, **kwargs: lambda func: func
-    model_validator = lambda **kwargs: lambda func: func
+
+    def _field_fallback(**kwargs: Any) -> None:
+        """Fallback for Pydantic Field when not available."""
+        return None
+
+    def _field_validator_fallback(*args: Any, **kwargs: Any) -> Any:
+        """Fallback for Pydantic field_validator when not available."""
+
+        def decorator(func: Any) -> Any:
+            return func
+
+        return decorator
+
+    def _model_validator_fallback(**kwargs: Any) -> Any:
+        """Fallback for Pydantic model_validator when not available."""
+
+        def decorator(func: Any) -> Any:
+            return func
+
+        return decorator
+
+    Field = _field_fallback  # type: ignore[assignment]
+    field_validator = _field_validator_fallback
+    model_validator = _model_validator_fallback
     PYDANTIC_AVAILABLE = False
 
 
@@ -45,7 +66,7 @@ if PYDANTIC_AVAILABLE:
         scope: str
         status: AuditStatus = AuditStatus.PENDING
 
-        model_config = {"use_enum_values": True, "json_encoders": {datetime: lambda v: v.isoformat()}}
+        model_config = {"json_encoders": {datetime: lambda v: v.isoformat()}}
 
         @field_validator("audit_type")
         @classmethod
@@ -104,7 +125,7 @@ if PYDANTIC_AVAILABLE:
         backup_frequency: str = "daily"
         retention_required_days: int = 30
 
-        model_config = {"use_enum_values": True, "json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
+        model_config = {"json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
 
         @field_validator("name")
         @classmethod
@@ -127,6 +148,27 @@ if PYDANTIC_AVAILABLE:
                 raise ValueError("retention_required_days must be at least 1")
             return v
 
+        def is_backup_overdue(self) -> bool:
+            """Check if backup is overdue based on criticality."""
+            if not self.last_backup:
+                return True
+
+            now = datetime.now()
+            hours_since_backup = (now - self.last_backup).total_seconds() / 3600
+
+            # Define maximum allowed hours based on criticality (using string values)
+            max_hours = {
+                "critical": 2,  # 2 hours
+                "important": 8,  # 8 hours
+                "standard": 26,  # 26 hours (daily + buffer)
+            }
+
+            # Handle both enum and string criticality values
+            criticality_str = (
+                str(self.criticality.value) if hasattr(self.criticality, "value") else str(self.criticality)
+            )
+            return hours_since_backup > max_hours.get(criticality_str, 26)
+
     class DependencyInfo(BaseModel):
         """Standard dependency information structure."""
 
@@ -138,7 +180,7 @@ if PYDANTIC_AVAILABLE:
         health_status: str = "unknown"
         last_check: Optional[datetime] = None
 
-        model_config = {"use_enum_values": True, "json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
+        model_config = {"json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
 
         @field_validator("name")
         @classmethod
@@ -171,7 +213,7 @@ if PYDANTIC_AVAILABLE:
         last_backup: Optional[datetime] = None
         severity: str = "medium"
 
-        model_config = {"use_enum_values": True, "json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
+        model_config = {"json_encoders": {datetime: lambda v: v.isoformat() if v else None}}
 
         @field_validator("repository")
         @classmethod
@@ -288,7 +330,7 @@ if PYDANTIC_AVAILABLE:
         storage_usage_gb: float = 0.0
         recommendations: List[Dict[str, str]] = Field(default_factory=list)
 
-        model_config = {"use_enum_values": True, "json_encoders": {datetime: lambda v: v.isoformat()}}
+        model_config = {"json_encoders": {datetime: lambda v: v.isoformat()}}
 
         @field_validator("total_repositories")
         @classmethod
@@ -317,6 +359,15 @@ if PYDANTIC_AVAILABLE:
             if v < 0:
                 raise ValueError("storage_usage_gb must be non-negative")
             return v
+
+        def determine_status(self) -> ComplianceStatus:
+            """Determine compliance status based on compliance score."""
+            if self.compliance_score >= 95:
+                return ComplianceStatus.COMPLIANT
+            elif self.compliance_score >= 80:
+                return ComplianceStatus.WARNING
+            else:
+                return ComplianceStatus.NON_COMPLIANT
 
         @model_validator(mode="after")
         def validate_consistency(self) -> "BackupCoverageReport":
@@ -365,6 +416,8 @@ else:
     # Fallback implementations when Pydantic is not available
 
     class AuditMetadata:  # type: ignore[no-redef]
+        """Fallback audit metadata structure when Pydantic is not available."""
+
         def __init__(self, audit_type: str, scope: str, **kwargs: Any) -> None:
             self.generated_at = datetime.now(timezone.utc)
             self.version = kwargs.get("version", "1.0")
@@ -373,6 +426,8 @@ else:
             self.status = kwargs.get("status", AuditStatus.PENDING)
 
     class AuditResult:  # type: ignore[no-redef]
+        """Fallback audit result structure when Pydantic is not available."""
+
         def __init__(
             self,
             metadata: AuditMetadata,
@@ -386,14 +441,42 @@ else:
             self.summary = summary
 
     class RepositoryInfo:  # type: ignore[no-redef]
+        """Fallback repository information structure when Pydantic is not available."""
+
         def __init__(self, name: str, criticality: CriticalityLevel, **kwargs: Any) -> None:
             self.name = name
             self.criticality = criticality
             self.data_size_mb = kwargs.get("data_size_mb", 0.0)
             self.last_backup = kwargs.get("last_backup")
             self.table_name = kwargs.get("table_name")
+            self.backup_frequency = kwargs.get("backup_frequency", "daily")
+            self.retention_required_days = kwargs.get("retention_required_days", 30)
+
+        def is_backup_overdue(self) -> bool:
+            """Check if backup is overdue based on criticality."""
+            if not self.last_backup:
+                return True
+
+            now = datetime.now()
+            hours_since_backup: float = (now - self.last_backup).total_seconds() / 3600
+
+            # Define maximum allowed hours based on criticality (using string values)
+            max_hours: Dict[str, int] = {
+                "critical": 2,  # 2 hours
+                "important": 8,  # 8 hours
+                "standard": 26,  # 26 hours (daily + buffer)
+            }
+
+            # Handle both enum and string criticality values
+            criticality_str = (
+                str(self.criticality.value) if hasattr(self.criticality, "value") else str(self.criticality)
+            )
+            max_allowed_hours: int = max_hours.get(criticality_str, 26)
+            return hours_since_backup > max_allowed_hours
 
     class DependencyInfo:  # type: ignore[no-redef]
+        """Fallback dependency information structure when Pydantic is not available."""
+
         def __init__(self, name: str, criticality: CriticalityLevel, service_type: str, **kwargs: Any) -> None:
             self.name = name
             self.criticality = criticality

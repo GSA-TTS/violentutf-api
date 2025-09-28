@@ -8,7 +8,6 @@ import pytest
 from sqlalchemy import MetaData, inspect
 
 from app.db.session import get_db
-from app.models import *
 from tools.inventory.schema_discovery import SchemaDiscoveryTool
 
 

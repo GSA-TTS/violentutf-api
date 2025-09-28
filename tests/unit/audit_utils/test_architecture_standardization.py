@@ -58,7 +58,7 @@ class TestEnhancedLoggingSystem:
         dev_logger = configure_standard_logging("service", "development")
         prod_logger = configure_standard_logging("service", "production")
 
-        assert type(dev_logger) == type(prod_logger)
+        assert type(dev_logger) is type(prod_logger)
 
     def test_setup_audit_logger_standardization(self):
         """Test that setup_audit_logger follows standardized pattern."""
@@ -177,7 +177,7 @@ class TestUnifiedDataModels:
         repo = RepositoryInfo(name="test_repo", criticality=CriticalityLevel.CRITICAL, data_size_mb=100.5)
 
         assert repo.name == "test_repo"
-        assert repo.criticality == CriticalityLevel.CRITICAL.value
+        assert repo.criticality == CriticalityLevel.CRITICAL
         assert repo.data_size_mb == 100.5
         assert repo.last_backup is None  # Default value
 
@@ -190,7 +190,7 @@ class TestUnifiedDataModels:
 
         assert dep.name == "test_service"
         assert dep.version == "1.0.0"
-        assert dep.criticality == CriticalityLevel.IMPORTANT.value
+        assert dep.criticality == CriticalityLevel.IMPORTANT
         assert dep.service_type == "database"
         assert len(dep.dependents) == 0  # Default empty list
 

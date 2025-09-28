@@ -403,7 +403,7 @@ class PostgresBackupManager:
         """Store backup metadata in separate file using safe JSON operations."""
         # Ensure we use the full path in backup directory
         if not os.path.isabs(backup_file):
-            backup_file = os.path.join(self.backup_directory, backup_file)
+            backup_file = os.path.join(str(self.backup_directory), backup_file)
 
         metadata_file = Path(f"{backup_file}.metadata")
         safe_write_json(metadata_file, metadata)

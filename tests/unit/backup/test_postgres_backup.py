@@ -67,6 +67,7 @@ class TestPostgresBackupManager:
             patch.object(Path, "exists", return_value=True),
             patch.object(Path, "stat") as mock_stat,
             patch.object(Path, "unlink"),
+            patch.object(Path, "mkdir"),
             patch.object(backup_manager, "encrypt_backup_file") as mock_encrypt,
         ):
 
@@ -77,6 +78,7 @@ class TestPostgresBackupManager:
             # Mock file size
             mock_stat_obj = MagicMock()
             mock_stat_obj.st_size = 1024 * 1024  # 1MB backup
+            mock_stat_obj.st_mode = 0o100644  # Regular file mode
             mock_stat.return_value = mock_stat_obj
 
             # Mock encryption returning encrypted file path

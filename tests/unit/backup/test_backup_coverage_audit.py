@@ -125,7 +125,7 @@ class TestBackupCoverageAuditor:
         gaps = auditor.analyze_backup_gaps(sample_repositories)
 
         # Should find gap for overdue critical backup
-        critical_gaps = [gap for gap in gaps if gap.criticality == "critical"]
+        critical_gaps = [gap for gap in gaps if gap.criticality == CriticalityLevel.CRITICAL]
         assert len(critical_gaps) > 0
         assert critical_gaps[0].gap_hours > 24
 
@@ -450,15 +450,15 @@ class TestBackupCoverageReport:
     def test_coverage_report_compliance_status(self):
         """Test compliance status determination."""
         # High compliance
-        report_high = BackupCoverageReport(total_repositories=5, compliance_score=95.0)
+        report_high = BackupCoverageReport(total_repositories=5, compliant_repositories=5, compliance_score=100.0)
         assert report_high.determine_status() == ComplianceStatus.COMPLIANT
 
         # Medium compliance
-        report_medium = BackupCoverageReport(total_repositories=5, compliance_score=85.0)
+        report_medium = BackupCoverageReport(total_repositories=5, compliant_repositories=4, compliance_score=80.0)
         assert report_medium.determine_status() == ComplianceStatus.WARNING
 
         # Low compliance
-        report_low = BackupCoverageReport(total_repositories=5, compliance_score=60.0)
+        report_low = BackupCoverageReport(total_repositories=5, compliant_repositories=3, compliance_score=60.0)
         assert report_low.determine_status() == ComplianceStatus.NON_COMPLIANT
 
 
