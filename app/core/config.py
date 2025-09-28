@@ -503,7 +503,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
         """
         result = {}
 
-        for field_name, _field_info in self.model_fields.items():
+        for field_name, _field_info in self.__class__.model_fields.items():
             value = getattr(self, field_name)
 
             if isinstance(value, SecretStr):

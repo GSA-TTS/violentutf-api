@@ -49,6 +49,7 @@ repos:
           - types-bleach
           - types-psutil
           - types-PyYAML
+          - types-aiofiles
           - pydantic
           - fastapi
           - starlette

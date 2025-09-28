@@ -10,7 +10,7 @@ Implements ADR-015 performance optimization patterns and ADR-010 compliance.
 import asyncio
 import json
 import re
-import subprocess
+import subprocess  # nosec B404
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -343,8 +343,8 @@ class OptimizedDependencyService:
         def _run_pip_list() -> Dict[str, str]:
             """Run pip list in thread pool."""
             try:
-                result = subprocess.run(
-                    ["pip", "list", "--format=json"],
+                result = subprocess.run(  # nosec B603 B607
+                    ["pip", "list", "--format=json"],  # trusted pip command with safe args
                     capture_output=True,
                     text=True,
                     check=True,
@@ -610,8 +610,8 @@ class OptimizedDependencyService:
         def _run_pip_audit() -> List[VulnerabilityInfo]:
             """Run pip-audit in thread pool."""
             try:
-                result = subprocess.run(
-                    ["pip-audit", "--format", "json", "--desc"],
+                result = subprocess.run(  # nosec B603 B607
+                    ["pip-audit", "--format", "json", "--desc"],  # trusted pip-audit command
                     capture_output=True,
                     text=True,
                     check=False,  # Don't raise on non-zero exit (vulnerabilities found)

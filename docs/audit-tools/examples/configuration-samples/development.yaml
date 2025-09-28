@@ -1,0 +1,26 @@
+# Development environment configuration
+database:
+  primary:
+    url: "${DEV_DATABASE_URL}"
+    pool_size: 5
+    timeout: 30
+
+redis:
+  url: "${DEV_REDIS_URL:-redis://localhost:6379/0}"
+  db: 0
+
+audit:
+  inventory:
+    include_schemas: ["public"]
+    exclude_tables: ["temp_*", "test_*"]
+    classify_sensitive_data: false
+
+  backup:
+    enabled: false
+
+  monitoring:
+    enabled: false
+
+logging:
+  level: DEBUG
+  handlers: ["console"]

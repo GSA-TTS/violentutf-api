@@ -462,3 +462,14 @@ class User(Base, BaseModelMixin):
         # The authority system will handle proper evaluation
 
         return True
+
+    def has_role(self, role_name: str) -> bool:
+        """Check if user has a specific role.
+
+        Args:
+            role_name: Name of the role to check for
+
+        Returns:
+            True if user has the role, False otherwise
+        """
+        return role_name in self.roles if self.roles else False

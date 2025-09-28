@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from structlog.stdlib import get_logger
 
 # Import existing authentication functions (frequently used)
 from app.core.auth import (
@@ -20,6 +21,8 @@ from app.core.auth import (
 
 # Import db session dependency for service layer initialization
 from app.db.session import get_db_dependency as get_db
+
+logger = get_logger(__name__)
 
 # Repository imports removed to maintain layer boundary compliance (ADR-013)
 # Services now handle repository creation internally when provided with AsyncSession
@@ -338,8 +341,8 @@ async def get_user_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_user_repository()
     if repository is None:
@@ -364,8 +367,8 @@ async def get_api_key_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_api_key_repository()
     if repository is None:
@@ -390,8 +393,8 @@ async def get_session_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_session_repository()
     if repository is None:
@@ -416,8 +419,8 @@ async def get_audit_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_audit_repository()
     if repository is None:
@@ -442,8 +445,8 @@ async def get_security_scan_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_security_scan_repository()
     if repository is None:
@@ -468,8 +471,8 @@ async def get_vulnerability_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_vulnerability_repository()
     if repository is None:
@@ -494,8 +497,8 @@ async def get_role_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_role_repository()
     if repository is None:
@@ -520,8 +523,8 @@ async def get_health_repository_dep() -> object:
                 return session_maker()
 
             await container.register_repositories(session_factory)
-    except Exception:
-        pass  # Continue if registration fails
+    except Exception as e:
+        logger.warning("Failed to register repositories", error=str(e))  # Continue if registration fails
 
     repository = container.get_health_repository()
     if repository is None:
